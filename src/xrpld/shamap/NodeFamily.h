@@ -33,13 +33,13 @@ public:
 
     NodeFamily(Application& app, CollectorManager& cm);
 
-    NodeStore::Database&
+    node_store::Database&
     db() override
     {
         return db_;
     }
 
-    [[nodiscard]] NodeStore::Database const&
+    [[nodiscard]] node_store::Database const&
     db() const override
     {
         return db_;
@@ -70,17 +70,17 @@ public:
     reset() override;
 
     void
-    missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& hash) override;
+    missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& hash) override;
 
     void
-    missingNodeAcquireByHash(uint256 const& hash, std::uint32_t seq) override
+    missingNodeAcquireByHash(UInt256 const& hash, std::uint32_t seq) override
     {
         acquire(hash, seq);
     }
 
 private:
     Application& app_;
-    NodeStore::Database& db_;
+    node_store::Database& db_;
     beast::Journal const j_;
 
     std::shared_ptr<FullBelowCache> fbCache_;
@@ -91,7 +91,7 @@ private:
     std::mutex maxSeqMutex_;
 
     void
-    acquire(uint256 const& hash, std::uint32_t seq);
+    acquire(UInt256 const& hash, std::uint32_t seq);
 };
 
 }  // namespace xrpl

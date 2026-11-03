@@ -207,7 +207,7 @@ private:
     static constexpr auto kMaxPacketSize = 1472;
 
     Journal journal_;
-    IP::Endpoint address_;
+    ip::Endpoint address_;
     std::string prefix_;
     boost::asio::io_context ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
@@ -222,13 +222,13 @@ private:
     std::thread thread_;
 
     static boost::asio::ip::udp::endpoint
-    toEndpoint(IP::Endpoint const& ep)
+    toEndpoint(ip::Endpoint const& ep)
     {
         return boost::asio::ip::udp::endpoint(ep.address(), ep.port());
     }
 
 public:
-    StatsDCollectorImp(IP::Endpoint address, std::string prefix, Journal journal)
+    StatsDCollectorImp(ip::Endpoint address, std::string prefix, Journal journal)
         : journal_(journal)
         , address_(std::move(address))
         , prefix_(std::move(prefix))
@@ -343,7 +343,7 @@ public:
 
         if (ec)
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "async_send failed: " << ec.message();
             return;
         }
@@ -377,7 +377,7 @@ public:
         buffers.reserve(data_.size());
         std::size_t size(0);
 
-        auto keepAlive = std::make_shared<std::deque<std::string>>(std::move(data_));
+        auto const keepAlive = std::make_shared<std::deque<std::string>>(std::move(data_));
         data_.clear();
 
         for (auto const& s : *keepAlive)
@@ -432,7 +432,7 @@ public:
 
         if (ec)
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "onTimer failed: " << ec.message();
             return;
         }
@@ -454,7 +454,7 @@ public:
 
         if (socket_.connect(toEndpoint(address_), ec))
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "Connect failed: " << ec.message();
             return;
         }
@@ -707,7 +707,7 @@ StatsDMeterImpl::doProcess()
 //------------------------------------------------------------------------------
 
 std::shared_ptr<StatsDCollector>
-StatsDCollector::make(IP::Endpoint const& address, std::string const& prefix, Journal journal)
+StatsDCollector::make(ip::Endpoint const& address, std::string const& prefix, Journal journal)
 {
     return std::make_shared<detail::StatsDCollectorImp>(address, prefix, journal);
 }

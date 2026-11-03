@@ -20,8 +20,8 @@ class AMMDeleteBuilder;
  *
  * Type: ttAMM_DELETE (40)
  * Delegable: Delegation::Delegable
- * Amendment: featureAMM
- * Privileges: MustDeleteAcct | MayDeleteMpt
+ * Amendment: UInt256{}
+ * Privileges: Privilege::MustDeleteAcct | Privilege::MayDeleteMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMDeleteBuilder to construct new transactions.

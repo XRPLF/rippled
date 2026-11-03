@@ -49,7 +49,7 @@ public:
 
         using namespace der;
 
-        auto p = parsePreamble(s, ec);
+        auto const p = parsePreamble(s, ec);
         if (ec)
             return nullptr;
 
@@ -105,9 +105,9 @@ public:
     [[nodiscard]] Buffer
     fingerprint() const override
     {
-        sha256_hasher h;
+        Sha256Hasher h;
         h(payload_.data(), payload_.size());
-        auto const d = static_cast<sha256_hasher::result_type>(h);
+        auto const d = static_cast<Sha256Hasher::result_type>(h);
         return {d.data(), d.size()};
     }
 

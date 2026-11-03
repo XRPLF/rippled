@@ -36,14 +36,8 @@ namespace xrpl {
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
 NotTEC
@@ -87,7 +81,7 @@ AMMBid::preflight(PreflightContext const& ctx)
             std::set<AccountID> unique;
             for (auto const& obj : authAccounts)
             {
-                auto authAccount = obj[sfAccount];
+                auto const authAccount = obj[sfAccount];
                 if (authAccount == account || unique.contains(authAccount))
                 {
                     JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
@@ -193,10 +187,10 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
     // Auction slot discounted fee
-    auto const discountedFee = (*ammSle)[sfTradingFee] / kAuctionSlotDiscountedFeeFraction;
-    auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
+    auto const ammTradingFee = (*ammSle)[sfTradingFee];
+    auto const discountedFee = ammTradingFee / kAuctionSlotDiscountedFeeFraction;
     // Min price
-    auto const minSlotPrice = lptAMMBalance * tradingFee / kAuctionSlotMinFeeFraction;
+    auto const minSlotPrice = ammAuctionMinSlotPrice(lptAMMBalance, ammTradingFee);
 
     static constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
 
@@ -205,13 +199,14 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
 
     // Account must exist and the slot not expired.
-    auto validOwner = [&](AccountID const& account) {
+    auto const validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
         return timeSlot && *timeSlot < kTailingSlot && sb.read(keylet::account(account));
     };
 
-    auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
+    auto const updateSlot =
+        [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account);
         auctionSlot.setFieldU32(sfExpiration, current + kTotalTimeSlotSecs);
         if (fee != 0)
@@ -259,32 +254,38 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
-    auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
-        auto const payPrice = [&]() -> std::optional<Number> {
+    auto const getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
+        auto effectivePrice = computedPrice;
+        if (ctx.view().rules().enabled(fixCleanup3_4_0) && ammTradingFee == 0)
+        {
+            // Prevent zero-fee pools from granting auction slots at zero or dust prices.
+            effectivePrice = std::max(effectivePrice, ammAuctionMinSlotPrice(lptAMMBalance, 1));
+        }
+        auto const payPrice = [&] -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
-                if (computedPrice <= *bidMax)
-                    return std::max(computedPrice, Number(*bidMin));
-                JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
+                if (effectivePrice <= *bidMax)
+                    return std::max(effectivePrice, Number(*bidMin));
+                JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << effectivePrice << " "
                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
-            // Bidder pays max(bidPrice, computedPrice)
+            // Bidder pays max(bidPrice, effectivePrice)
             if (bidMin)
             {
-                return std::max(computedPrice, Number(*bidMin));
+                return std::max(effectivePrice, Number(*bidMin));
             }
             if (bidMax)
             {
-                if (computedPrice <= *bidMax)
-                    return computedPrice;
+                if (effectivePrice <= *bidMax)
+                    return effectivePrice;
                 JLOG(ctx.journal.debug())
-                    << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
+                    << "AMM Bid: not in range " << effectivePrice << " " << *bidMax;
                 return std::nullopt;
             }
 
-            return computedPrice;
+            return effectivePrice;
         }();
         if (!payPrice)
         {
@@ -316,7 +317,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         auto const fractionUsed = (Number(*timeSlot) + 1) / kAuctionSlotTimeIntervals;
         auto const fractionRemaining = Number(1) - fractionUsed;
-        auto const computedPrice = [&]() -> Number {
+        auto const computedPrice = [&] -> Number {
             auto const p105 = Number(105, -2);
             // First interval slot price
             if (*timeSlot == 0)
@@ -371,7 +372,7 @@ AMMBid::doApply()
 }
 
 void
-AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMBid::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

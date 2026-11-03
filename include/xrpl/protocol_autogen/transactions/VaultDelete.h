@@ -21,7 +21,7 @@ class VaultDeleteBuilder;
  * Type: ttVAULT_DELETE (67)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: MustDeleteAcct | DestroyMptIssuance | MustModifyVault
+ * Privileges: Privilege::MustDeleteAcct | Privilege::DestroyMptIssuance | Privilege::MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultDeleteBuilder to construct new transactions.

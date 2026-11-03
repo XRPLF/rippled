@@ -75,13 +75,6 @@ operator==(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-template <class In, class Out>
-bool
-operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
-{
-    return !(lhs == rhs);
-}
-
 //------------------------------------------------------------------------------
 
 // XRPL specific constant used for parsing qualities and other things
@@ -271,12 +264,6 @@ public:
         return lhs.value_ == rhs.value_;
     }
 
-    friend bool
-    operator!=(Quality const& lhs, Quality const& rhs) noexcept
-    {
-        return !(lhs == rhs);
-    }
-
     friend std::ostream&
     operator<<(std::ostream& os, Quality const& quality)
     {
@@ -297,8 +284,10 @@ public:
 
         auto const [minV, maxV] = std::minmax(q1.value_, q2.value_);
 
-        auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
-        auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };
+        auto const mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
+        auto const exponent = [](std::uint64_t rate) {
+            return static_cast<int>(rate >> (64 - 8)) - 100;
+        };
 
         auto const minVMantissa = mantissa(minV);
         auto const maxVMantissa = mantissa(maxV);

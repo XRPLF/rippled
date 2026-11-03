@@ -1,6 +1,6 @@
 #pragma once
 
-namespace xrpl::Resource {
+namespace xrpl::resource {
 
 /**
  * The disposition of a consumer after applying a load charge.
@@ -21,7 +21,7 @@ enum class Disposition {
      * Consumer should be disconnected for excess consumption.
      */
     ,
-    Drop
+    Drop,
 };
 
-}  // namespace xrpl::Resource
+}  // namespace xrpl::resource

@@ -20,8 +20,8 @@ class PaymentChannelFundBuilder;
  *
  * Type: ttPAYCHAN_FUND (14)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
- * Privileges: NoPriv
+ * Amendment: UInt256{}
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelFundBuilder to construct new transactions.

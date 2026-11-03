@@ -15,14 +15,13 @@
 
 namespace xrpl {
 
-namespace Resource {
+namespace resource {
 class Charge;
-}  // namespace Resource
+}  // namespace resource
 
 enum class ProtocolFeature {
-    ValidatorListPropagation,
-    ValidatorList2Propagation,
     LedgerReplay,
+    LedgerNodeDepth,
 };
 
 /**
@@ -31,7 +30,7 @@ enum class ProtocolFeature {
 class Peer
 {
 public:
-    using ptr = std::shared_ptr<Peer>;
+    using Ptr = std::shared_ptr<Peer>;
 
     /**
      * Uniquely identifies a peer.
@@ -39,7 +38,7 @@ public:
      * can discover if the peer is no longer connected and make
      * adjustments as needed.
      */
-    using id_t = std::uint32_t;
+    using ID = std::uint32_t;
 
     virtual ~Peer() = default;
 
@@ -50,7 +49,7 @@ public:
     virtual void
     send(std::shared_ptr<Message> const& m) = 0;
 
-    [[nodiscard]] virtual beast::IP::Endpoint
+    [[nodiscard]] virtual beast::ip::Endpoint
     getRemoteAddress() const = 0;
 
     /**
@@ -63,25 +62,25 @@ public:
      * Aggregate transaction's hash.
      */
     virtual void
-    addTxQueue(uint256 const&) = 0;
+    addTxQueue(UInt256 const&) = 0;
 
     /**
      * Remove hash from the transactions' hashes queue.
      */
     virtual void
-    removeTxQueue(uint256 const&) = 0;
+    removeTxQueue(UInt256 const&) = 0;
 
     /**
      * Adjust this peer's load balance based on the type of load imposed.
      */
     virtual void
-    charge(Resource::Charge const& fee, std::string const& context) = 0;
+    charge(resource::Charge const& fee, std::string const& context) = 0;
 
     //
     // Identity
     //
 
-    [[nodiscard]] virtual id_t
+    [[nodiscard]] virtual ID
     id() const = 0;
 
     /**
@@ -117,14 +116,14 @@ public:
     // Ledger
     //
 
-    [[nodiscard]] virtual uint256 const&
+    [[nodiscard]] virtual UInt256
     getClosedLedgerHash() const = 0;
     [[nodiscard]] virtual bool
-    hasLedger(uint256 const& hash, std::uint32_t seq) const = 0;
+    hasLedger(UInt256 const& hash, std::uint32_t seq) const = 0;
     virtual void
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
     [[nodiscard]] virtual bool
-    hasTxSet(uint256 const& hash) const = 0;
+    hasTxSet(UInt256 const& hash) const = 0;
     virtual void
     cycleStatus() = 0;
     virtual bool

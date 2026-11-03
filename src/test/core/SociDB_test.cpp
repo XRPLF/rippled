@@ -6,9 +6,6 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/boost-optional.h>  // IWYU pragma: keep
@@ -20,6 +17,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
@@ -32,27 +30,27 @@ class SociDB_test final : public TestSuite
 {
 private:
     static void
-    setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
+    setupSQLiteConfig(BasicConfig& config, std::filesystem::path const& dbPath)
     {
         config.overwrite(Sections::kSqdb, Keys::kBackend, "sqlite");
-        auto value = dbPath.string();
+        auto const value = dbPath.string();
         if (!value.empty())
             config.legacy(Sections::kDatabasePath, value);
     }
 
     static void
-    cleanupDatabaseDir(boost::filesystem::path const& dbPath)
+    cleanupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath) || !is_directory(dbPath) || !is_empty(dbPath))
             return;
         remove(dbPath);
     }
 
     static void
-    setupDatabaseDir(boost::filesystem::path const& dbPath)
+    setupDatabaseDir(std::filesystem::path const& dbPath)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (!exists(dbPath))
         {
             create_directory(dbPath);
@@ -65,10 +63,10 @@ private:
             Throw<std::runtime_error>("Cannot create directory: " + dbPath.string());
         }
     }
-    static boost::filesystem::path
+    static std::filesystem::path
     getDatabasePath()
     {
-        return boost::filesystem::current_path() / "socidb_test_databases";
+        return std::filesystem::current_path() / "socidb_test_databases";
     }
 
 public:
@@ -99,16 +97,17 @@ public:
         testcase("sqliteFileNames");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        std::vector<std::pair<std::string, std::string>> const d(
-            {{"peerfinder", ".sqlite"},
-             {"state", ".db"},
-             {"random", ".db"},
-             {"validators", ".sqlite"}});
+        std::vector<std::pair<std::string, std::string>> const d({
+            {"peerfinder", ".sqlite"},
+            {"state", ".db"},
+            {"random", ".db"},
+            {"validators", ".sqlite"},
+        });
 
         for (auto const& i : d)
         {
             DBConfig const sc(c, i.first);
-            BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
+            BEAST_EXPECT(sc.connectionString().ends_with(i.first + i.second));
         }
     }
     void
@@ -120,7 +119,7 @@ public:
         DBConfig const sc(c, "SociTestDB");
         std::vector<std::string> const stringData({"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
-        auto checkValues = [this, &stringData, &intData](soci::session& s) {
+        auto const checkValues = [this, &stringData, &intData](soci::session& s) {
             // Check values in db
             std::vector<std::string> stringResult(20 * stringData.size());
             std::vector<int> intResult(20 * intData.size());
@@ -130,9 +129,10 @@ public:
                 stringResult.size() == stringData.size() && intResult.size() == intData.size());
             for (int i = 0; i < stringResult.size(); ++i)
             {
-                auto si = std::distance(
+                auto const si = std::distance(
                     stringData.begin(), std::ranges::find(stringData, stringResult[i]));
-                auto ii = std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
+                auto const ii =
+                    std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };
@@ -158,7 +158,7 @@ public:
             checkValues(s);
         }
         {
-            namespace bfs = boost::filesystem;
+            namespace bfs = std::filesystem;
             // Remove the database
             bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
@@ -232,7 +232,7 @@ public:
             // boost::tuple. DO NOT USE soci row!
         }
         {
-            namespace bfs = boost::filesystem;
+            namespace bfs = std::filesystem;
             // Remove the database
             bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
@@ -256,7 +256,8 @@ public:
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
                 LedgerSeq       BIGINT UNSIGNED             \
             );",
-                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);"};
+                "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
+            };
             for (auto const c : dbInit)
                 s << c;
             char lh[65];
@@ -284,7 +285,7 @@ public:
             s << "SELECT LedgerSeq FROM Ledgers;", soci::into(ledgersLS);
             BEAST_EXPECT(ledgersLS.size() == numRows);
         }
-        namespace bfs = boost::filesystem;
+        namespace bfs = std::filesystem;
         // Remove the database
         bfs::path const dbPath(sc.connectionString());
         if (bfs::is_regular_file(dbPath))

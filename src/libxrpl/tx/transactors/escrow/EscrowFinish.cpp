@@ -9,27 +9,27 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/EscrowEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+#include <optional>
 #include <system_error>
 #include <variant>
 
@@ -50,11 +50,11 @@ checkCondition(Slice f, Slice c)
 
     std::error_code ec;
 
-    auto condition = Condition::deserialize(c, ec);
+    auto const condition = Condition::deserialize(c, ec);
     if (!condition)
         return false;
 
-    auto fulfillment = Fulfillment::deserialize(f, ec);
+    auto const fulfillment = Fulfillment::deserialize(f, ec);
     if (!fulfillment)
         return false;
 
@@ -64,7 +64,13 @@ checkCondition(Slice f, Slice c)
 bool
 EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfGas) && !ctx.rules.enabled(featureSmartEscrow))
+        return false;
+
+    return true;
 }
 
 NotTEC
@@ -76,7 +82,24 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     // If you specify a condition, then you must also specify
     // a fulfillment.
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
+    {
+        JLOG(ctx.j.debug()) << "Condition != Fulfillment";
         return temMALFORMED;
+    }
+
+    if (auto const allowance = ctx.tx[~sfGas]; allowance)
+    {
+        // Protocol ceiling only; `preflight` has no view.
+        if (*allowance == 0)
+        {
+            return temBAD_LIMIT;
+        }
+        if (*allowance > kMaxGasLimit)
+        {
+            JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
+            return temBAD_LIMIT;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -92,25 +115,45 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         auto& router = ctx.registry.get().getHashRouter();
 
         auto const id = ctx.tx.getTransactionID();
-        auto const flags = router.getFlags(id);
+        auto flags = router.getFlags(id);
 
         // If we haven't checked the condition, check it
-        // now. Whether it passes or not isn't important
-        // in preflight.
+        // now. Other than a malformed condition, whether
+        // it passes or not isn't important in preflight.
         if (!any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             if (checkCondition(*fb, *cb))
             {
                 router.setFlags(id, kSfCfValid);
+                flags = kSfCfValid;
             }
             else
             {
                 router.setFlags(id, kSfCfInvalid);
+                flags = kSfCfInvalid;
+            }
+        }
+
+        // The invalid flag also covers a bad fulfillment, so
+        // check the condition itself. This runs whether or not
+        // the flag was cached, so the result is the same on
+        // every node.
+        if (any(flags & kSfCfInvalid) && ctx.rules.enabled(fixCleanup3_5_0))
+        {
+            using namespace xrpl::cryptoconditions;
+
+            std::error_code ec;
+
+            auto const condition = Condition::deserialize(*cb, ec);
+            if (!condition)
+            {
+                JLOG(ctx.j.debug()) << "Malformed condition during escrow finish: " << ec.message();
+                return temMALFORMED;
             }
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -125,70 +168,16 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-
+    if (auto const allowance = tx[~sfGas]; allowance)
+    {
+        // The extra fee is the allowance in drops, rounded up to the nearest
+        // whole drop. Widen before multiplying: both factors are 32-bit.
+        std::uint64_t const allowanceFee =
+            ((std::uint64_t{*allowance} * view.fees().gasPrice) + microDropsPerDrop - 1) /
+            microDropsPerDrop;
+        extraFee += allowanceFee;
+    }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
-}
-
-template <ValidIssueType T>
-static TER
-escrowFinishPreclaimHelper(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount);
-
-template <>
-TER
-escrowFinishPreclaimHelper<Issue>(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tesSUCCESS
-    if (issuer == dest)
-        return tesSUCCESS;
-
-    // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), dest); !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.get<Issue>().currency, amount.getIssuer()))
-        return tecFROZEN;
-
-    return tesSUCCESS;
-}
-
-template <>
-TER
-escrowFinishPreclaimHelper<MPTIssue>(
-    PreclaimContext const& ctx,
-    AccountID const& dest,
-    STAmount const& amount)
-{
-    AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the dest, return tesSUCCESS
-    if (issuer == dest)
-        return tesSUCCESS;
-
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    // If the issuer has requireAuth set, check if the destination is
-    // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
-        return ter;
-
-    // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
-        return tecLOCKED;
-
-    return tesSUCCESS;
 }
 
 TER
@@ -201,25 +190,66 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
             return err;
     }
 
-    if (ctx.view.rules().enabled(featureTokenEscrow))
+    if (ctx.view.rules().enabled(featureTokenEscrow) ||
+        ctx.view.rules().enabled(featureSmartEscrow))
     {
-        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-        auto const slep = ctx.view.read(k);
-        if (!slep)
+        // this check is done in doApply before this amendment is enabled
+        auto const seqProxy = SeqProxy::rawSequence(ctx.tx[sfOfferSequence]);
+        EscrowEntryR const escrow(ctx.tx[sfOwner], seqProxy, ctx.view);
+        if (!escrow)
             return tecNO_TARGET;
 
-        AccountID const dest = (*slep)[sfDestination];
-        STAmount const amount = (*slep)[sfAmount];
-
-        if (!isXRP(amount))
+        if (ctx.view.rules().enabled(featureSmartEscrow))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
-                    },
-                    amount.asset().value());
-                !isTesSuccess(ret))
-                return ret;
+            if (escrow->isFieldPresent(sfBytecode))
+            {
+                if (!ctx.tx.isFieldPresent(sfGas))
+                {
+                    JLOG(ctx.j.debug()) << "Bytecode requires Gas";
+                    return tefBYTECODE_NOT_INCLUDED;
+                }
+
+                // The limits are voted, so they can change between ledgers.
+                // A `tef`, unlike a `tem`, does not mark the transaction bad
+                // for the hold time.
+                auto const& fees = ctx.view.fees();
+                if (isBytecodeExecutionDisabled(fees))
+                {
+                    JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
+                    return tefTEMP_DISABLED;
+                }
+
+                if (ctx.tx[sfGas] > fees.gasLimit)
+                {
+                    JLOG(ctx.j.debug()) << "Gas over voted limit: " << ctx.tx[sfGas];
+                    return tefEXCEEDS_LIMIT;
+                }
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfGas))
+                {
+                    JLOG(ctx.j.debug()) << "Bytecode not present, "
+                                           "Gas present";
+                    return tefNO_BYTECODE;
+                }
+            }
+        }
+        if (ctx.view.rules().enabled(featureTokenEscrow))
+        {
+            AccountID const dest = (*escrow)[sfDestination];
+            STAmount const amount = (*escrow)[sfAmount];
+
+            if (!isXRP(amount))
+            {
+                if (auto const ret = std::visit(
+                        [&]<typename T>(T const&) {
+                            return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
+                        },
+                        amount.asset().value());
+                    !isTesSuccess(ret))
+                    return ret;
+            }
         }
     }
     return tesSUCCESS;
@@ -228,11 +258,12 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peek(k);
-    if (!slep)
+    auto const seqProxy = SeqProxy::rawSequence(ctx_.tx[sfOfferSequence]);
+    EscrowEntryW escrow(ctx_.tx[sfOwner], seqProxy, ctx_.view(), j_);
+    if (!escrow)
     {
-        if (ctx_.view().rules().enabled(featureTokenEscrow))
+        if (ctx_.view().rules().enabled(featureTokenEscrow) ||
+            ctx_.view().rules().enabled(featureSmartEscrow))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         return tecNO_TARGET;
@@ -243,12 +274,26 @@ EscrowFinish::doApply()
     auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
-    if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+    if ((*escrow)[~sfFinishAfter] && !after(now, (*escrow)[sfFinishAfter]))
         return tecNO_PERMISSION;
 
     // Too late: can't execute after the cancel time
-    if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+    if ((*escrow)[~sfCancelAfter] && after(now, (*escrow)[sfCancelAfter]))
         return tecNO_PERMISSION;
+
+    AccountID const destID = (*escrow)[sfDestination];
+    auto const sled = ctx_.view().peek(keylet::account(destID));
+    if (ctx_.view().rules().enabled(featureSmartEscrow))
+    {
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        if (!sled)
+            return tecNO_DST;
+
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
+    }
 
     // Check cryptocondition fulfillment
     {
@@ -287,7 +332,7 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
 
         // Check against condition in the ledger entry:
-        auto const cond = (*slep)[~sfCondition];
+        auto const cond = (*escrow)[~sfCondition];
 
         // If a condition wasn't specified during creation,
         // one shouldn't be included now.
@@ -303,23 +348,40 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts.
-    AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
-    if (!sled)
-        return tecNO_DST;
+    if (!ctx_.view().rules().enabled(featureSmartEscrow))
+    {
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        if (!sled)
+            return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
-        !isTesSuccess(err))
-        return err;
+        if (auto err =
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
+    }
 
-    AccountID const account = (*slep)[sfAccount];
+    // Execute custom release function
+    if ((*escrow)[~sfBytecode])
+    {
+        // TODO(SmartEscrow): run the escrow's contract here once the WASM
+        // engine lands. That change also brings with it the reporting the run
+        // produces - the gas it consumed and the code it returned, in the
+        // transaction metadata - and the tecBYTECODE_REJECTED result that lets
+        // a rejected escrow survive with the data the contract wrote.
+        //
+        // Until then an escrow carrying bytecode can be created, funded and
+        // cancelled, but not finished. Reachable only under featureSmartEscrow,
+        // which is Supported::No.
+        JLOG(j_.debug()) << "EscrowFinish: no WASM engine to run the escrow's bytecode";
+        return tecFAILED_PROCESSING;
+    }
+
+    AccountID const account = (*escrow)[sfAccount];
 
     // Remove escrow from owner directory
     {
-        auto const page = (*slep)[sfOwnerNode];
-        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
+        auto const page = (*escrow)[sfOwnerNode];
+        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, escrow.key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
@@ -329,9 +391,9 @@ EscrowFinish::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfDestinationNode])
+    if (auto const optPage = (*escrow)[~sfDestinationNode])
     {
-        if (!ctx_.view().dirRemove(keylet::ownerDir(destID), *optPage, k.key, true))
+        if (!ctx_.view().dirRemove(keylet::ownerDir(destID), *optPage, escrow.key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
@@ -340,17 +402,20 @@ EscrowFinish::doApply()
         }
     }
 
-    // With the Sponsor amendment, release the escrow reserve before delivery.
-    // Token delivery can auto-create a destination holding, and the same
-    // sponsor (or the same account, for a self-escrow) may cover both the
-    // escrow being removed and the holding being created. Without the
-    // amendment, keep the legacy order: releasing early changes the reserve
-    // arithmetic for self-escrows and would break consensus if not gated.
-    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
-    if (sponsorEnabled)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+    auto const reserveToSubtract = calculateAdditionalReserve((*escrow)[~sfBytecode]);
 
-    STAmount const amount = slep->getFieldAmount(sfAmount);
+    // Delivery can auto-create the destination's holding; the removed escrow
+    // must not be counted against its reserve. The two share a reserve payer
+    // for a self-escrow, or when one sponsor covers both.
+    bool const recycleReserve =
+        ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
+    {
+        decreaseOwnerCountForObject(
+            ctx_.view(), account, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
+
+    STAmount const amount = escrow->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
     {
@@ -361,8 +426,8 @@ EscrowFinish::doApply()
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
             return temDISABLED;  // LCOV_EXCL_LINE
 
-        Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
+        Rate lockedRate = escrow->isFieldPresent(sfTransferRate)
+            ? xrpl::Rate(escrow->getFieldU32(sfTransferRate))
             : kParityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == accountID_;
@@ -385,9 +450,9 @@ EscrowFinish::doApply()
             return ret;
 
         // Remove escrow from issuers owner directory, if present.
-        if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+        if (auto const optPage = (*escrow)[~sfIssuerNode]; optPage)
         {
-            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
+            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, escrow.key(), true))
             {
                 // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
@@ -399,17 +464,19 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count (legacy position, pre-Sponsor)
-    if (!sponsorEnabled)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+    if (!recycleReserve)
+    {
+        decreaseOwnerCountForObject(
+            ctx_.view(), account, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    escrow.erase();
     return tesSUCCESS;
 }
 
 void
-EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowFinish::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -41,7 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -52,7 +52,7 @@ public:
         beast::Journal const& j) override;
 
     static TER
-    deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);
+    deleteOracle(ApplyView& view, SLE::Ref sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl

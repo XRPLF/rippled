@@ -7,7 +7,7 @@
 namespace xrpl {
 
 json::Value
-doValidators(RPC::JsonContext& context)
+doValidators(rpc::JsonContext& context)
 {
     return context.app.getValidators().getJson();
 }

@@ -7,19 +7,19 @@
 namespace xrpl {
 
 /**
- * A NodeStore::Scheduler which uses the JobQueue.
+ * A node_store::Scheduler which uses the JobQueue.
  */
-class NodeStoreScheduler : public NodeStore::Scheduler
+class NodeStoreScheduler : public node_store::Scheduler
 {
 public:
     explicit NodeStoreScheduler(JobQueue& jobQueue);
 
     void
-    scheduleTask(NodeStore::Task& task) override;
+    scheduleTask(node_store::Task& task) override;
     void
-    onFetch(NodeStore::FetchReport const& report) override;
+    onFetch(node_store::FetchReport const& report) override;
     void
-    onBatchWrite(NodeStore::BatchWriteReport const& report) override;
+    onBatchWrite(node_store::BatchWriteReport const& report) override;
 
 private:
     JobQueue& jobQueue_;

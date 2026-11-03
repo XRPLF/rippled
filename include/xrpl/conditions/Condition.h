@@ -18,7 +18,7 @@ enum class Type : std::uint8_t {
     PrefixSha256 = 1,
     ThresholdSha256 = 2,
     RsaSha256 = 3,
-    Ed25519Sha256 = 4
+    Ed25519Sha256 = 4,
 };
 
 class Condition
@@ -90,12 +90,6 @@ operator==(Condition const& lhs, Condition const& rhs)
 {
     return lhs.type == rhs.type && lhs.cost == rhs.cost && lhs.subtypes == rhs.subtypes &&
         lhs.fingerprint == rhs.fingerprint;
-}
-
-inline bool
-operator!=(Condition const& lhs, Condition const& rhs)
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl::cryptoconditions

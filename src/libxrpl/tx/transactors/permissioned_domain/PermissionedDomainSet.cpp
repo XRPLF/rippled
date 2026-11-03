@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -97,7 +98,8 @@ PermissionedDomainSet::doApply()
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
         // Modify existing permissioned domain.
-        auto slePd = view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
+        auto const slePd =
+            view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
@@ -114,12 +116,13 @@ PermissionedDomainSet::doApply()
             return tecINSUFFICIENT_RESERVE;
 
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
-        auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        auto const seq = fixEnabled ? ctx_.tx.getSeqProxy()
+                                    : SeqProxy::rawSequence(ctx_.tx.getFieldU32(sfSequence));
         Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
-        auto slePd = std::make_shared<SLE>(pdKeylet);
+        auto const slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, accountID_);
-        slePd->setFieldU32(sfSequence, seq);
+        slePd->setFieldU32(sfSequence, seq.value());
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
             view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
@@ -136,7 +139,7 @@ PermissionedDomainSet::doApply()
 }
 
 void
-PermissionedDomainSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PermissionedDomainSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

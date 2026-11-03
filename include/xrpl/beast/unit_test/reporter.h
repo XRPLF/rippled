@@ -8,7 +8,6 @@
 #include <xrpl/beast/unit_test/runner.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 
-#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 
 #include <algorithm>
@@ -33,7 +32,7 @@ template <class = void>
 class Reporter : public Runner
 {
 private:
-    using clock_type = std::chrono::steady_clock;
+    using ClockType = std::chrono::steady_clock;
 
     struct CaseResults
     {
@@ -52,7 +51,7 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        clock_type::time_point start = clock_type::now();
+        ClockType::time_point start = ClockType::now();
 
         explicit SuiteResults(std::string name = "") : name(std::move(name))
         {
@@ -64,7 +63,7 @@ private:
 
     struct Results
     {
-        using run_time = std::pair<std::string, clock_type::duration>;
+        using RunTime = std::pair<std::string, ClockType::duration>;
 
         static constexpr auto kMaxTop = 10;
 
@@ -72,8 +71,8 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        std::vector<run_time> top;
-        clock_type::time_point start = clock_type::now();
+        std::vector<RunTime> top;
+        ClockType::time_point start = ClockType::now();
 
         void
         add(SuiteResults const& r);
@@ -95,7 +94,7 @@ public:
 
 private:
     static std::string
-    fmtdur(clock_type::duration const& d);
+    fmtdur(ClockType::duration const& d);
 
     void
     onSuiteBegin(SuiteInfo const& info) override;
@@ -138,14 +137,13 @@ Reporter<Unused>::Results::add(SuiteResults const& r)
     total += r.total;
     cases += r.cases;
     failed += r.failed;
-    auto const elapsed = clock_type::now() - r.start;
+    auto const elapsed = ClockType::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
-            elapsed,
-            [](run_time const& t1, clock_type::duration const& t2) { return t1.second > t2; });
+            top.begin(), top.end(), elapsed, [](RunTime const& t1, ClockType::duration const& t2) {
+                return t1.second > t2;
+            });
         if (iter != top.end())
         {
             if (top.size() == kMaxTop)
@@ -175,7 +173,7 @@ Reporter<Unused>::~Reporter()
         for (auto const& i : results_.top)
             os_ << std::setw(8) << fmtdur(i.second) << " " << i.first << '\n';
     }
-    auto const elapsed = clock_type::now() - results_.start;
+    auto const elapsed = ClockType::now() - results_.start;
     os_ << fmtdur(elapsed) << ", " << Amount{results_.suites, "suite"} << ", "
         << Amount{results_.cases, "case"} << ", " << Amount{results_.total, "test"} << " total, "
         << Amount{results_.failed, "failure"} << std::endl;
@@ -183,12 +181,12 @@ Reporter<Unused>::~Reporter()
 
 template <class Unused>
 std::string
-Reporter<Unused>::fmtdur(clock_type::duration const& d)
+Reporter<Unused>::fmtdur(ClockType::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
     if (ms < seconds{1})
-        return boost::lexical_cast<std::string>(ms.count()) + "ms";
+        return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) << (ms.count() / 1000.) << "s";
     return ss.str();
@@ -250,6 +248,10 @@ Reporter<Unused>::onLog(std::string const& s)
 
 }  // namespace detail
 
-using reporter = detail::Reporter<>;
+using Reporter = detail::Reporter<>;
+
+// TODO [#8340]: Legacy name still used by external consumers of libxrpl (e.g. validator-keys-tool).
+// Do not use in new code; remove once those consumers have migrated.
+using reporter = Reporter;  // NOLINT(readability-identifier-naming)
 
 }  // namespace beast::unit_test

@@ -7,9 +7,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -21,6 +22,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -29,9 +31,9 @@ namespace xrpl {
 /**
  * Broker cover preclaim precision guard (fixCleanup3_2_0).
  *
- * Prevents a "silent sub-ULP no-op" where a deposit, withdrawal, or clawback
- * amount is so small that it rounds to zero at `sfCoverAvailable`'s scale.
- * Without this guard, both the pseudo trust-line and `sfCoverAvailable` would
+ * Prevents a silent sub-ULP no-op where a deposit, withdrawal, or clawback
+ * amount is so small that it rounds to zero at sfCoverAvailable's scale.
+ * Without this guard, both the pseudo trust-line and sfCoverAvailable would
  * identically absorb the rounded zero, resulting in a successful transaction
  * (tesSUCCESS) where no funds actually moved.
  *
@@ -42,21 +44,133 @@ namespace xrpl {
  * @param j          Journal for logging.
  * @param logPrefix  Transactor name for log diagnostics.
  *
- * @return `tecPRECISION_LOSS` if the request rounds to zero at cover scale.
- * `tesSUCCESS` if the amendment is disabled or the request is safely supra-ULP.
+ * @return tecPRECISION_LOSS if the request rounds to zero at cover scale.
+ * tesSUCCESS if the amendment is disabled or the request is safely supra-ULP.
  */
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    SLE::ConstRef sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
     std::string_view logPrefix);
 
+namespace detail {
+
+/**
+ * Return a LoanBroker's posterior live cover exponent after applying an
+ * unrounded delta.
+ */
+[[nodiscard]] int
+getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, Number const& delta);
+
+/**
+ * Round a cover outflow delta (cover withdraw, cover clawback, the
+ * broker-side decrease of a default's cover credit) at the LoanBroker's
+ * posterior live exponent. Safe to round the delta directly for an outflow:
+ * amount on the posterior grid of CoverAvailable always leaves CoverAvailable
+ * minus amount representable, since the posterior grid is exactly the grid
+ * CoverAvailable itself will canonicalize to after the subtraction.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    STAmount const& delta,
+    Number::RoundingMode roundingMode);
+
+}  // namespace detail
+
+/**
+ * Round a cover debit (cover withdraw, cover clawback, the broker-side
+ * decrease of a default's cover credit): amount is the non-negative
+ * magnitude leaving CoverAvailable. Negates so the posterior is computed for
+ * CoverAvailable minus amount, then negates the result back to a
+ * non-negative magnitude, per roundToPosteriorBrokerCoverScale's outflow
+ * rationale above. Magnitude in, magnitude out -- unlike the vault-side
+ * outflow dispatcher (clampVaultOutflow), which takes and returns a negative
+ * delta; callers on each side already hold the value in that side's native
+ * form.
+ */
+[[nodiscard]] STAmount
+debitToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode);
+
+/**
+ * Round a cover inflow (cover deposit, LoanPay's fee redirect into cover)
+ * into CoverAvailable by flooring the sum rather than the delta:
+ * credit = floor16(CoverAvailable + raw) - CoverAvailable, never finer
+ * than the Vault's base exponent (-Scale). See
+ * creditToPosteriorAvailableScale's doc for why the sum, not the delta,
+ * must be floored; the same reasoning applies to CoverAvailable.
+ */
+[[nodiscard]] STAmount
+creditToPosteriorBrokerCoverScale(
+    SLE::ConstRef vault,
+    SLE::ConstRef broker,
+    Number const& raw,
+    Number::RoundingMode roundingMode);
+
+/**
+ * Check whether amount is an admissible optional cover inflow.
+ *
+ * Legacy and CashBasis Vaults always succeed. A LoanBroker attached to a
+ * FixedPrecision Vault must remain at the Vault's base scale after applying
+ * the rounded amount, and its posterior CoverAvailable must stay within the
+ * Open zone.
+ *
+ * LoanPay's fee redirect into cover is a mandatory inflow and does not call
+ * this check, so it can push CoverAvailable past the Open zone limit this
+ * check enforces. Once that happens, every subsequent LoanBrokerCoverDeposit
+ * returns tecLIMIT_EXCEEDED until the owner withdraws cover back under the
+ * limit; LoanBrokerCoverWithdraw and LoanBrokerCoverClawback are unaffected.
+ */
+[[nodiscard]] TER
+checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmount const& amount);
+
 // Lending protocol has dependencies, so capture them here.
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
+
+/**
+ * The accounts and asset that LoanManage::defaultLoan's fixCleanup3_4_0
+ * freeze/lock exemption applies to.
+ *
+ * defaultLoan moves funds from the LoanBroker pseudo-account to the Vault
+ * pseudo-account via accountSend. Since neither is the vault asset's
+ * issuer, this is a third-party transfer that transits through the issuer in
+ * two hops (broker -> issuer, issuer -> vault; see
+ * directSendNoLimitIOU/directSendNoLimitMPT), so the exemption must cover
+ * both the issuer/broker and issuer/vault pairs, not a direct broker/vault
+ * pair. asset scopes it further to the vault's own currency/MPT issuance,
+ * so an unrelated one the same accounts happen to hold is still protected.
+ */
+struct LoanDefaultFreezeExemptAccounts
+{
+    AccountID issuer;
+    AccountID broker;
+    AccountID vault;
+    Asset asset;
+};
+
+/**
+ * Resolves the accounts and asset a LoanManage default transaction is
+ * exempt from freeze/lock for.
+ *
+ * @param view Ledger view used to resolve the Loan -> LoanBroker -> Vault
+ * chain.
+ * @param tx The transaction under invariant review.
+ * @return The exempt accounts and asset if tx is a ttLOAN_MANAGE
+ * transaction with the tfLoanDefault flag set, fixCleanup3_4_0 is
+ * enabled, and the loan/broker/vault objects it references can all be
+ * resolved; std::nullopt otherwise.
+ */
+[[nodiscard]] std::optional<LoanDefaultFreezeExemptAccounts>
+getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx);
 
 static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 
@@ -216,28 +330,38 @@ adjustImpreciseNumber(
         value = 0;
 }
 
-inline int
-getAssetsTotalScale(SLE::const_ref vaultSle)
-{
-    if (!vaultSle)
-        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
-    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
-}
+/**
+ * Apply a signed delta to a LoanBroker's DebtTotal: on FixedPrecision Vaults,
+ * add the exact delta (DebtTotal moves by exactly the same amount as the
+ * Vault's AssetsDeployed, never re-rounded); on Legacy/CashBasis Vaults,
+ * round through adjustImpreciseNumber at vaultScale. Shared by LoanSet
+ * (origination) and LoanPay (payment, where delta is negative).
+ *
+ * @param brokerSle The LoanBroker whose DebtTotal is adjusted.
+ * @param vaultSle The LoanBroker's Vault.
+ * @param delta The signed change to DebtTotal.
+ * @param vaultScale The Vault scale the caller captured before changing
+ *        AssetsTotal. Legacy/CashBasis round DebtTotal at that scale, not at
+ *        the scale after this transaction's AssetsTotal change. Unused on
+ *        FixedPrecision Vaults.
+ */
+void
+adjustBrokerDebtTotal(
+    SLE::Ref brokerSle,
+    SLE::ConstRef vaultSle,
+    Number const& delta,
+    int vaultScale);
 
-// Compute the minimum required broker cover, rounded consistently.
-// DebtTotal is a broker-level aggregate maintained at vault scale, so the
-// rounding must also use vault scale — never an individual loan's scale.
-inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
-{
-    XRPL_ASSERT(
-        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
-    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    return roundToAsset(
-        vaultSle->at(sfAsset),
-        tenthBipsOfValue(debtTotal, coverRateMinimum),
-        getAssetsTotalScale(vaultSle));
-}
+/**
+ * Minimum required broker cover, rounded up.
+ *
+ * DebtTotal is a broker-level aggregate, never rounded at an individual
+ * loan's scale. Legacy and CashBasis Vaults round at the live AssetsTotal
+ * exponent. FixedPrecision Vaults round at the Vault's base exponent
+ * (-Scale, or 0 for integral assets).
+ */
+Number
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::ConstRef vaultSle);
 
 TER
 checkLoanGuards(
@@ -263,10 +387,11 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
-// Constructs a valid LoanState object from a Loan object, which always has
-// rounded values
+// Overload of constructLoanState() that reads the three tracked fields
+// directly from a Loan ledger object, which always holds rounded values,
+// rather than taking them as separate Number arguments.
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructLoanState(SLE::ConstRef loan);
 
 Number
 computeManagementFee(
@@ -284,6 +409,83 @@ computeFullPaymentInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
+
+// Returns true if the loan's next payment is late per protocol rules. The
+// boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
+// strictly in the past, otherwise the exact due-date instant counts as late.
+[[nodiscard]] bool
+isPaymentLate(ReadView const& view, SLE::ConstRef loanSle);
+
+// Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
+// accounting touch point (origination, payment, impair/unimpair/default).
+struct AccountingDeltas
+{
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+};
+
+// Instant interest recognition (pre-LendingProtocolV1_1): interest is
+// recognized into AssetsTotal/DebtTotal immediately, at origination.
+namespace instant_recognition {
+
+// LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+
+// LoanSet origination: would recognizing this loan's interest push
+// Vault.AssetsTotal past Vault.AssetsMaximum?
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+// LoanManage impair/unimpair/default: the vault's exposure to this loan
+Number
+loanVaultExposure(SLE::ConstRef loanSle);
+
+// LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace instant_recognition
+
+// Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
+// are principal-only, interest is recognized only as it's actually paid.
+namespace cash_basis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested);
+
+Number
+loanVaultExposure(SLE::ConstRef loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace cash_basis
+
+// Public dispatchers: pick cash_basis:: if the Vault's LEVersion
+// (VaultHelpers::getVaultVersion) is CashBasis or later (CashBasis or
+// FixedPrecision), else instant_recognition::. These are the only entry
+// points transactors call.
+AccountingDeltas
+loanOriginationDeltas(
+    SLE::ConstRef vaultSle,
+    Number const& principalRequested,
+    Number const& interestDue);
+
+bool
+loanOriginationExceedsVaultMaximum(
+    SLE::ConstRef vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
+Number
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
@@ -551,8 +753,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    SLE::Ref loan,
+    SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);

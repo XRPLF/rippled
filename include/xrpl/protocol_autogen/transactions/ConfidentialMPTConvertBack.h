@@ -21,7 +21,7 @@ class ConfidentialMPTConvertBackBuilder;
  * Type: ttCONFIDENTIAL_MPT_CONVERT_BACK (87)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTConvertBackBuilder to construct new transactions.

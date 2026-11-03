@@ -12,7 +12,7 @@
 namespace xrpl {
 
 json::Value
-doLedgerAccept(RPC::JsonContext& context)
+doLedgerAccept(rpc::JsonContext& context)
 {
     json::Value jvResult;
 

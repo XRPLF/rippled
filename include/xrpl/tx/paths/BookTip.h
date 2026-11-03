@@ -21,10 +21,10 @@ class BookTip
 private:
     ApplyView& view_;
     bool valid_{false};
-    uint256 book_;
-    uint256 end_;
-    uint256 dir_;
-    uint256 index_;
+    UInt256 book_;
+    UInt256 end_;
+    UInt256 dir_;
+    UInt256 index_;
     SLE::pointer entry_;
     Quality quality_{};
 
@@ -34,13 +34,13 @@ public:
      */
     BookTip(ApplyView& view, Book const& book);
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     dir() const noexcept
     {
         return dir_;
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     index() const noexcept
     {
         return index_;

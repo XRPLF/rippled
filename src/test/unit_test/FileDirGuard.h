@@ -3,9 +3,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/filesystem.hpp>
-
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <ostream>
 #include <stdexcept>
@@ -20,17 +19,17 @@ namespace xrpl::detail {
 class DirGuard
 {
 protected:
-    using path = boost::filesystem::path;
+    using Path = std::filesystem::path;
 
 private:
-    path subDir_;
+    Path subDir_;
     bool rmSubDir_{false};
 
 protected:
     beast::unit_test::Suite& test_;
 
     auto
-    rmDir(path const& toRm)
+    rmDir(Path const& toRm)
     {
         if (is_directory(toRm) && is_empty(toRm))
         {
@@ -44,10 +43,10 @@ protected:
     }
 
 public:
-    DirGuard(beast::unit_test::Suite& test, path subDir, bool useCounter = true)
+    DirGuard(beast::unit_test::Suite& test, Path subDir, bool useCounter = true)
         : subDir_(std::move(subDir)), test_(test)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         static auto kSubDirCounter = 0;
         if (useCounter)
@@ -73,7 +72,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
 
             if (rmSubDir_)
                 rmDir(subDir_);
@@ -85,7 +84,7 @@ public:
         };
     }
 
-    [[nodiscard]] path const&
+    [[nodiscard]] Path const&
     subdir() const
     {
         return subDir_;
@@ -98,14 +97,14 @@ public:
 class FileDirGuard : public DirGuard
 {
 protected:
-    path const file_;
+    Path const file_;
     bool created_ = false;
 
 public:
     FileDirGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path file,
+        Path subDir,
+        Path file,
         std::string const& contents,
         bool useCounter = true,
         bool create = true)
@@ -130,7 +129,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             if (exists(file_))
             {
                 remove(file_);
@@ -151,7 +150,7 @@ public:
         };
     }
 
-    [[nodiscard]] path const&
+    [[nodiscard]] Path const&
     file() const
     {
         return file_;
@@ -160,7 +159,7 @@ public:
     [[nodiscard]] bool
     fileExists() const
     {
-        return boost::filesystem::exists(file_);
+        return std::filesystem::exists(file_);
     }
 };
 

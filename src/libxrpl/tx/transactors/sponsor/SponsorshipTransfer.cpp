@@ -2,12 +2,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -26,7 +28,7 @@ namespace xrpl {
 static TER
 incrementSponsorCount(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     SF_UINT32 const& field,
     std::uint32_t const delta)
 {
@@ -48,7 +50,7 @@ incrementSponsorCount(
 static TER
 decrementSponsorCount(
     ApplyView& view,
-    SLE::ref sle,
+    SLE::Ref sle,
     SF_UINT32 const& field,
     std::uint32_t const delta)
 {
@@ -69,7 +71,7 @@ decrementSponsorCount(
 // Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
 // object's RemainingOwnerCount.
 static TER
-decrementPrefundedReserveCount(ApplyView& view, SLE::ref sponsorshipSle, std::uint32_t const delta)
+decrementPrefundedReserveCount(ApplyView& view, SLE::Ref sponsorshipSle, std::uint32_t const delta)
 {
     if (delta == 0)
         return tesSUCCESS;  // LCOV_EXCL_LINE
@@ -199,9 +201,20 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     bool const isAccountReserveSponsorship =
         isCreateOrReassign && reserveSponsor && !ctx.tx.isFieldPresent(sfObjectID);
 
-    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
+    // A proposed SponsorshipTransfer is stored unsigned; its SponsorSignature
+    // is collected on-ledger afterward, so its absence here is expected, not
+    // an error (On-Chain Cosigner spec §5.3.1.2).
+    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature) &&
+        (ctx.flags & TapProposal) == 0)
     {
         JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
+        return temMALFORMED;
+    }
+
+    if (auto const objectID = ctx.tx[~sfObjectID];
+        ctx.rules.enabled(fixCleanup3_5_0) && objectID && *objectID == beast::kZero)
+    {
+        JLOG(ctx.j.debug()) << "preflight: sfObjectID must not be zero";
         return temMALFORMED;
     }
 
@@ -304,7 +317,7 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> XRPAmount {
+    auto const balanceBeforeFee = [&](SLE::ConstRef sle) -> XRPAmount {
         if (sle->getAccountID(sfAccount) == accountID_)
             return preFeeBalance_;
         return sle->getFieldAmount(sfBalance).xrp();
@@ -412,9 +425,24 @@ SponsorshipTransfer::doApply()
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            // The owner reclaims the reserve burden when the object is no longer sponsored.
-            // We do not check the sponsee's reserve here (via `checkReserve`) so that a sponsor can
-            // always end a sponsorship, even if the sponsee lacks sufficient reserve.
+            // The owner reclaims the reserve burden when the object is no longer
+            // sponsored, so it must be able to hold that reserve on its own once the
+            // sponsorship is removed. This mirrors the account-level End check below,
+            // keeping the behavior consistent across accounts and objects: a
+            // sponsorship can only be ended if the sponsee self-funds, another sponsor
+            // steps in (Reassign), or the object/account is deleted.
+            if (view().rules().enabled(fixCleanup3_4_0))
+            {
+                if (auto const ter = checkReserve(
+                        ctx_.getApplyViewContext(),
+                        sponseeSle,
+                        balanceBeforeFee(sponseeSle),
+                        SLE::pointer(),
+                        {.ownerCountDelta = ownerCountDelta},
+                        ctx_.journal);
+                    !isTesSuccess(ter))
+                    return ter;
+            }
 
             // Decrement sponsored count
             if (auto const ter = decrementSponsorCount(
@@ -524,7 +552,7 @@ SponsorshipTransfer::doApply()
 }
 
 void
-SponsorshipTransfer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SponsorshipTransfer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

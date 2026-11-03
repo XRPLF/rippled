@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(LoanBrokerTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -37,6 +37,7 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
     auto const coverAvailableValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     LoanBrokerBuilder builder{
         previousTxnIDValue,
@@ -58,6 +59,7 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
     builder.setCoverAvailable(coverAvailableValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
     builder.setCoverRateLiquidation(coverRateLiquidationValue);
+    builder.setDomainID(domainIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -186,6 +188,14 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasCoverRateLiquidation());
     }
 
+    {
+        auto const& expected = domainIDValue;
+        auto const actualOpt = entry.getDomainID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDomainID");
+        EXPECT_TRUE(entry.hasDomainID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -197,7 +207,7 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -216,6 +226,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
     auto const coverAvailableValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(LoanBroker::entryType, index);
 
@@ -236,6 +247,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
     sle->at(sfCoverAvailable) = coverAvailableValue;
     sle->at(sfCoverRateMinimum) = coverRateMinimumValue;
     sle->at(sfCoverRateLiquidation) = coverRateLiquidationValue;
+    sle->at(sfDomainID) = domainIDValue;
 
     LoanBrokerBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -440,6 +452,19 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfCoverRateLiquidation");
     }
 
+    {
+        auto const& expected = domainIDValue;
+
+        auto const fromSleOpt = entryFromSle.getDomainID();
+        auto const fromBuilderOpt = entryFromBuilder.getDomainID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDomainID");
+        expectEqualField(expected, *fromBuilderOpt, "sfDomainID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -447,7 +472,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(LoanBrokerTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -466,7 +491,7 @@ TEST(LoanBrokerTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(LoanBrokerTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -483,7 +508,7 @@ TEST(LoanBrokerTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -526,5 +551,7 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCoverRateMinimum().has_value());
     EXPECT_FALSE(entry.hasCoverRateLiquidation());
     EXPECT_FALSE(entry.getCoverRateLiquidation().has_value());
+    EXPECT_FALSE(entry.hasDomainID());
+    EXPECT_FALSE(entry.getDomainID().has_value());
 }
 }

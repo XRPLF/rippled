@@ -2,8 +2,8 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -15,8 +15,10 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -35,13 +37,12 @@
 
 namespace xrpl {
 
-class SHAMapNodeID;
 class SHAMapSyncFilter;
 
 /**
  * Describes the current state of a given SHAMap
  */
-enum class SHAMapState {
+enum class SHAMapState : std::uint8_t {
     /**
      * The map is in flux and objects can be added and removed.
      *
@@ -95,6 +96,21 @@ enum class SHAMapState {
  *
  * See https://en.wikipedia.org/wiki/Merkle_tree
  */
+
+/**
+ * Holds a SHAMap node's identity, leaf status, and serialized data. Used by
+ * getNodeFat to return node data for peer synchronization.
+ */
+struct SHAMapNodeData
+{
+    SHAMapNodeID nodeID;
+    // The `data` field (a Blob, 8-byte aligned) needs 4 bytes of padding after the `nodeID` field
+    // (36 bytes, 4-byte aligned) regardless of what comes between them, so `isLeaf` costs nothing
+    // extra here. Moving it after `data` would add 8 bytes to the size of this struct instead.
+    bool isLeaf;
+    Blob data;
+};
+
 class SHAMap
 {
 private:
@@ -106,16 +122,42 @@ private:
      */
     std::uint32_t cowid_ = 1;
 
+    // ledgerSeq_, state_ and full_ are touched on the nodestore fetch path and on a
+    // getMissingNodes() walk, neither of which may block, so pin them lock-free.
+    static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+    static_assert(std::atomic<SHAMapState>::is_always_lock_free);
+    static_assert(std::atomic<bool>::is_always_lock_free);
+
     /**
      * The sequence of the ledger that this map references, if any.
+     *
+     * Written when a map's ledger sequence is established (Ledger::setFull(),
+     * InboundLedger) while a nodestore reader thread reads it. Relaxed either
+     * way: it serves as a lookup hint for a nodestore keyed by hash.
      */
-    std::uint32_t ledgerSeq_ = 0;
+    std::atomic<std::uint32_t> ledgerSeq_ = 0;
 
     SHAMapTreeNodePtr root_;
-    mutable SHAMapState state_;
+
+    /**
+     * The map's state.
+     *
+     * A getMissingNodes() walk writes it, through setInvalid() and
+     * clearSynching(), while whatever drives the acquisition reads it.
+     * The walk runs with the acquisition's lock released, so this is atomic
+     * rather than guarded.
+     */
+    mutable std::atomic<SHAMapState> state_;
     SHAMapType const type_;
-    bool backed_ = true;         // Map is backed by the database
-    mutable bool full_ = false;  // Map is believed complete in database
+    bool backed_ = true;  // Map is backed by the database
+
+    /**
+     * Map is believed complete in database.
+     *
+     * Atomic because finishFetch() clears it on any nodestore reader thread,
+     * several of which can run at once.
+     */
+    mutable std::atomic<bool> full_ = false;
 
 public:
     /**
@@ -131,20 +173,27 @@ public:
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
-    using Delta = std::map<uint256, DeltaItem>;
+    using Delta = std::map<UInt256, DeltaItem>;
 
     SHAMap() = delete;
     SHAMap(SHAMap const&) = delete;
     SHAMap&
     operator=(SHAMap const&) = delete;
 
-    // Take a snapshot of the given map:
+    /**
+     * Take a snapshot of the given map.
+     *
+     * @param other The map to snapshot. An Invalid source yields an Invalid
+     *        snapshot.
+     * @param isMutable Whether the snapshot may be modified. Ignored when other
+     *        is Invalid.
+     */
     SHAMap(SHAMap const& other, bool isMutable);
 
     // build new map
     SHAMap(SHAMapType t, Family& f);
 
-    SHAMap(SHAMapType t, uint256 const& hash, Family& f);
+    SHAMap(SHAMapType t, UInt256 const& hash, Family& f);
 
     ~SHAMap() = default;
 
@@ -176,17 +225,33 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Returns a new map that's a snapshot of this one.
-    // Handles copy on write for mutable snapshots.
+    /**
+     * Return a new map that is a snapshot of this one.
+     *
+     * Handles copy on write for mutable snapshots. An invalid map yields an
+     * invalid snapshot.
+     *
+     * @param isMutable Whether the snapshot may be modified.
+     * @return The snapshot.
+     */
     std::shared_ptr<SHAMap>
     snapShot(bool isMutable) const;
 
-    /*  Mark this SHAMap as "should be full", indicating
-        that the local server wants all the corresponding nodes
-        in durable storage.
-    */
+    /**
+     * Mark this map as "should be full": the local server wants every node
+     * it references in durable storage, so a nodestore miss is a gap to report.
+     *
+     * Publishes the ledger sequence before the flag. The sequence store is
+     * relaxed and the flag store is release, and finishFetch() reads the
+     * sequence only after acquiring the flag, so the one miss that withdraws
+     * the flag always reports the sequence stored here. Keeping both stores in
+     * one place is what makes that order impossible to get wrong.
+     *
+     * @param ledgerSeq Sequence of the ledger this map belongs to, which the
+     *        gap report names.
+     */
     void
-    setFull();
+    setFull(std::uint32_t ledgerSeq);
 
     void
     setLedgerSeq(std::uint32_t lseq);
@@ -200,10 +265,10 @@ public:
      * Does the tree have an item with the given ID?
      */
     bool
-    hasItem(uint256 const& id) const;
+    hasItem(UInt256 const& id) const;
 
     bool
-    delItem(uint256 const& id);
+    delItem(UInt256 const& id);
 
     bool
     addItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
@@ -221,9 +286,9 @@ public:
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
     boost::intrusive_ptr<SHAMapItem const> const&
-    peekItem(uint256 const& id) const;
+    peekItem(UInt256 const& id) const;
     boost::intrusive_ptr<SHAMapItem const> const&
-    peekItem(uint256 const& id, SHAMapHash& hash) const;
+    peekItem(UInt256 const& id, SHAMapHash& hash) const;
 
     // traverse functions
     /**
@@ -234,7 +299,7 @@ public:
      * @note The item does not need to exist.
      */
     ConstIterator
-    upperBound(uint256 const& id) const;
+    upperBound(UInt256 const& id) const;
 
     /**
      * Find the object with the greatest object id smaller than the input id.
@@ -244,7 +309,7 @@ public:
      * @note The item does not need to exist.
      */
     ConstIterator
-    lowerBound(uint256 const& id) const;
+    lowerBound(UInt256 const& id) const;
 
     /**
      * Visit every node in this SHAMap
@@ -282,17 +347,21 @@ public:
      * concurrency, to discover nodes referenced in the
      * SHAMap but not available locally.
      *
+     * Only a leaf may occupy a position at or beyond kLeafDepth. A map that
+     * breaks that is marked Invalid and the traversal is abandoned, so callers
+     * ask isValid() to tell an empty result from a satisfied map.
+     *
      * @param maxNodes The maximum number of found nodes to return
      * @param filter The filter to use when retrieving nodes
-     * @param return The nodes known to be missing
+     * @return The nodes known to be missing, or empty if the map is Invalid
      */
-    std::vector<std::pair<SHAMapNodeID, uint256>>
+    std::vector<std::pair<SHAMapNodeID, UInt256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
-    bool
+    [[nodiscard]] bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<std::pair<SHAMapNodeID, Blob>>& data,
+        std::vector<SHAMapNodeData>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 
@@ -303,7 +372,7 @@ public:
      * @return the proof path if found
      */
     std::optional<std::vector<Blob>>
-    getProofPath(uint256 const& key) const;
+    getProofPath(UInt256 const& key) const;
 
     /**
      * Verify the proof path
@@ -313,7 +382,7 @@ public:
      * @return true if verified successfully
      */
     static bool
-    verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector<Blob> const& path);
+    verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector<Blob> const& path);
 
     /**
      * Serializes the root in a format appropriate for sending over the wire
@@ -321,21 +390,104 @@ public:
     void
     serializeRoot(Serializer& s) const;
 
+    /**
+     * Add a root node to the SHAMap during synchronization.
+     *
+     * This function is used when receiving the root node of a SHAMap from a peer during ledger
+     * synchronization. The node must already have been deserialized.
+     *
+     * A root offered under a hash the map does not hold names another tree and
+     * is reported as invalid data. A root matching that hash is a duplicate.
+     *
+     * @param hash The expected hash of the root node.
+     * @param rootNode A deserialized root node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the rootNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function.
+     */
     SHAMapAddNode
-    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter);
-    SHAMapAddNode
-    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter const* filter);
+    addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
 
-    // status functions
-    void
+    /**
+     * Add a known node at a specific position in the SHAMap during synchronization.
+     *
+     * This function is used when receiving nodes from peers during ledger synchronization. The node
+     * is inserted at the position specified by nodeID. The node must already have been
+     * deserialized.
+     *
+     * A node that no valid tree can hold makes the map Invalid, which is
+     * terminal: the root hash committed to an impossible shape, so no peer
+     * can satisfy it.
+     *
+     * @param nodeID The position in the tree where this node belongs.
+     * @param treeNode A deserialized tree node to add.
+     * @param filter Optional sync filter to track received nodes.
+     * @return Status indicating whether the node was useful, duplicate, or invalid.
+     *
+     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function. This also means that the nodeID must be consistent with the node's content.
+     */
+    SHAMapAddNode
+    addKnownNode(
+        SHAMapNodeID const& nodeID,
+        SHAMapTreeNodePtr treeNode,
+        SHAMapSyncFilter const* filter);
+
+    /**
+     * Mark this map as immutable, so it can no longer be modified.
+     *
+     * @return false if the map is Invalid and was left unchanged, true
+     *         otherwise.
+     */
+    [[nodiscard]] bool
     setImmutable();
-    bool
+
+    /**
+     * @return Whether the map is being synced against a hash it was given, so
+     *         its hash is fixed while nodes may still be added.
+     */
+    [[nodiscard]] bool
     isSynching() const;
+
+    /**
+     * @return Whether the map is settled, with its hash and nodes fixed.
+     */
+    [[nodiscard]] bool
+    isImmutable() const;
+
+    /**
+     * Mark this map as syncing, fixing its hash while still allowing missing
+     * nodes to be added.
+     *
+     * The map must be freshly constructed. The body asserts that the map is not
+     * Invalid, so a caller that ignores the precondition stops a build with
+     * assertions enabled.
+     */
     void
     setSynching();
+
+    /**
+     * Mark this map as no longer syncing, so it can be modified again.
+     *
+     * Moves only a Synching map. An Immutable map stays settled, a Modifying
+     * map has nothing to clear, and Invalid is terminal.
+     */
     void
     clearSynching();
-    bool
+
+    /**
+     * Whether the map can still be the map it claims to be.
+     *
+     * A map that is merely missing nodes is valid, and stays valid until
+     * something proves the tree it is syncing against cannot exist.
+     *
+     * @return Whether the map has not been proven impossible.
+     */
+    [[nodiscard]] bool
     isValid() const;
 
     // caution: otherMap must be accessed only by this function
@@ -371,9 +523,154 @@ public:
     invariants() const;
 
 private:
-    using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
+    /**
+     * A path from the root of the map down to some node, pairing each node with the ID naming its
+     * position.
+     *
+     * The two halves of an entry must agree, and the only way to get that wrong is to compute an ID
+     * from the wrong branch. So this type does not accept an ID at all: every push takes the branch
+     * being descended and derives the ID itself, so a node and its ID cannot disagree. Reads are
+     * exposed through the same accessors a std::stack would offer.
+     */
+    class NodePathStack
+    {
+    public:
+        [[nodiscard]] bool
+        empty() const
+        {
+            return stack_.empty();
+        }
+
+        [[nodiscard]] std::size_t
+        size() const
+        {
+            return stack_.size();
+        }
+
+        [[nodiscard]] std::pair<SHAMapTreeNodePtr, SHAMapNodeID> const&
+        top() const
+        {
+            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::top : non-empty stack");
+            return stack_.top();
+        }
+
+        void
+        pop()
+        {
+            XRPL_ASSERT(!stack_.empty(), "xrpl::SHAMap::NodePathStack::pop : non-empty stack");
+            stack_.pop();
+        }
+
+        void
+        clear()
+        {
+            stack_ = {};
+        }
+
+        /**
+         * Start a path at the root of the map, whose ID is the zero-depth ID by definition.
+         */
+        void
+        pushRoot(SHAMapTreeNodePtr node)
+        {
+            XRPL_ASSERT(stack_.empty(), "xrpl::SHAMap::NodePathStack::pushRoot : empty stack");
+            stack_.emplace(std::move(node), SHAMapNodeID{});
+        }
+
+        /**
+         * Extend the path to the child of the current node reached by `branch`.
+         *
+         * A node keeps the depth it was reached at, never a normalized kLeafDepth. Only a leaf may
+         * sit at kLeafDepth, since an inner node there would have no branch left to select.
+         */
+        void
+        pushChild(SHAMapTreeNodePtr node, unsigned int branch)
+        {
+            XRPL_ASSERT(node, "xrpl::SHAMap::NodePathStack::pushChild : non-null node input");
+            XRPL_ASSERT(
+                !stack_.empty(), "xrpl::SHAMap::NodePathStack::pushChild : non-empty stack");
+            auto const childID = stack_.top().second.getChildNodeID(branch);
+            XRPL_ASSERT_IF(
+                node->isInner(),
+                childID.getDepth() < kLeafDepth,
+                "xrpl::SHAMap::NodePathStack::pushChild : inner node above leaf depth");
+            XRPL_ASSERT_IF(
+                node->isLeaf(),
+                childID.isPrefixOf(leafKey(*node)),
+                "xrpl::SHAMap::NodePathStack::pushChild : leaf key below branch");
+            stack_.emplace(std::move(node), childID);
+        }
+
+        /**
+         * Extend the path to a node lying on the path to `target`.
+         *
+         * For nodes not reached by descending a known branch: the walk tracks only the key it is
+         * heading for, or the node is newly created. Either way `target` selects the branch.
+         */
+        void
+        pushNode(SHAMapTreeNodePtr node, UInt256 const& target)
+        {
+            if (stack_.empty())
+            {
+                pushRoot(std::move(node));
+            }
+            else
+            {
+                pushChild(std::move(node), selectBranch(stack_.top().second, target));
+            }
+        }
+
+    private:
+        std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>> stack_;
+    };
+
     using DeltaRef =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
+
+    /**
+     * The sequence of the ledger this map references, read atomically.
+     *
+     * @return The sequence, or zero if the map references no ledger.
+     */
+    [[nodiscard]] std::uint32_t
+    ledgerSeq() const;
+
+    /**
+     * The current state, read atomically.
+     *
+     * Orders state_ alone. The tree's nodes carry no ordering guarantees.
+     *
+     * @return The state as of the call, which a concurrent walk may already
+     *         have moved past.
+     */
+    [[nodiscard]] SHAMapState
+    state() const;
+
+    /**
+     * Record that the map is provably not the one it claims to be.
+     *
+     * Private because only the map itself can prove that, from a node that
+     * contradicts the hashes it is syncing against. Cannot fail, since
+     * Invalid outranks every other state; see trySetState().
+     */
+    void
+    setInvalid();
+
+    /**
+     * Move the map to a new state, atomically.
+     *
+     * With clearSynching(), the only writer of state_ past construction, so
+     * the order between the states lives in one place: Invalid outranks all
+     * of them and is always stored, while every other transition is refused
+     * once the map is Invalid, which is what makes that verdict terminal.
+     * clearSynching() is narrower and moves only Synching.
+     *
+     * @param desired The state to move to.
+     * @return false if the map is Invalid and the requested state is not,
+     *         leaving it unchanged; true otherwise.
+     */
+    bool
+    trySetState(SHAMapState desired);
 
     // tree node cache operations
     SHAMapTreeNodePtr
@@ -398,7 +695,7 @@ private:
      * Update hashes up to the root
      */
     void
-    dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
+    dirtyUp(NodePathStack& stack, UInt256 const& target, SHAMapTreeNodePtr terminal);
 
     /**
      * Walk towards the specified id, returning the node.  Caller must check
@@ -406,12 +703,12 @@ private:
      * id
      */
     SHAMapLeafNode*
-    walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr) const;
+    walkTowardsKey(UInt256 const& id, NodePathStack* stack = nullptr) const;
     /**
      * Return nullptr if key not found
      */
     SHAMapLeafNode*
-    findKey(uint256 const& id) const;
+    findKey(UInt256 const& id) const;
 
     /**
      * Unshare the node, allowing it to be modified
@@ -433,56 +730,63 @@ private:
     SHAMapTreeNodePtr
     writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const;
 
-    // returns the first item at or below this node
-    SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
+    // direction in which a scan walks an inner node's branches
+    enum class BelowDirection { First, Last };
 
-    // returns the last item at or below this node
+    /**
+     * Returns the first or last item at or below the node already on top of `stack`, extending
+     * `stack` with the path walked to reach it.
+     */
     SHAMapLeafNode*
-    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = kBranchFactor) const;
+    belowHelper(NodePathStack& stack, BelowDirection direction) const;
 
-    // helper function for firstBelow and lastBelow
-    SHAMapLeafNode*
-    belowHelper(
-        SHAMapTreeNodePtr node,
-        SharedPtrNodeStack& stack,
-        int branch,
-        std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
-        const;
+    /**
+     * Returns the nearest item strictly past `id`, in the given direction.
+     *
+     * Walks back up the path to `id`. At each inner node the branches beyond the one `id` takes
+     * hold the candidates, so the first non-empty one is the closest and the extreme leaf below
+     * it is the answer.
+     *
+     * @param id The key to search from, which need not be in the map.
+     * @param direction First to search upwards from `id`, Last to search downwards.
+     * @return An iterator to the item found, or end() if no item lies on that side of `id`.
+     */
+    ConstIterator
+    boundHelper(UInt256 const& id, BelowDirection direction) const;
 
     // Simple descent
     // Get a child of the specified node
     SHAMapTreeNode*
-    descend(SHAMapInnerNode*, int branch) const;
+    descend(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNode*
-    descendThrow(SHAMapInnerNode*, int branch) const;
+    descendThrow(SHAMapInnerNode*, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descend(SHAMapInnerNode&, int branch) const;
+    descend(SHAMapInnerNode&, unsigned int branch) const;
     SHAMapTreeNodePtr
-    descendThrow(SHAMapInnerNode&, int branch) const;
+    descendThrow(SHAMapInnerNode&, unsigned int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
+    using DescendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter,
         bool& pending,
-        descendCallback&&) const;
+        DescendCallback&&) const;
 
     std::pair<SHAMapTreeNode*, SHAMapNodeID>
     descend(
         SHAMapInnerNode* parent,
         SHAMapNodeID const& parentID,
-        int branch,
+        unsigned int branch,
         SHAMapSyncFilter const* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
     SHAMapTreeNodePtr
-    descendNoStore(SHAMapInnerNode&, int branch) const;
+    descendNoStore(SHAMapInnerNode&, unsigned int branch) const;
 
     /**
      * If there is only one leaf below this node, get its contents
@@ -493,12 +797,12 @@ private:
     bool
     hasInnerNode(SHAMapNodeID const& nodeID, SHAMapHash const& hash) const;
     bool
-    hasLeafNode(uint256 const& tag, SHAMapHash const& hash) const;
+    hasLeafNode(UInt256 const& tag, SHAMapHash const& hash) const;
 
     SHAMapLeafNode const*
-    peekFirstItem(SharedPtrNodeStack& stack) const;
+    peekFirstItem(NodePathStack& stack) const;
     SHAMapLeafNode const*
-    peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const;
+    peekNextItem(UInt256 const& id, NodePathStack& stack) const;
     bool
     walkBranch(
         SHAMapTreeNode* node,
@@ -525,15 +829,15 @@ private:
         std::uint32_t generation;
 
         // nodes we have discovered to be missing
-        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes;
+        std::vector<std::pair<SHAMapNodeID, UInt256>> missingNodes;
         std::set<SHAMapHash> missingHashes;
 
         // nodes we are in the process of traversing
         using StackEntry = std::tuple<
             SHAMapInnerNode*,  // pointer to the node
             SHAMapNodeID,      // the node's ID
-            int,               // while child we check first
-            int,               // which child we check next
+            unsigned int,      // which child we check first
+            unsigned int,      // which child we check next
             bool>;             // whether we've found any missing children yet
 
         // We explicitly choose to specify the use of std::deque here, because
@@ -547,7 +851,7 @@ private:
         using DeferredNode = std::tuple<
             SHAMapInnerNode*,    // parent node
             SHAMapNodeID,        // parent node ID
-            int,                 // branch
+            unsigned int,        // branch
             SHAMapTreeNodePtr>;  // node
 
         int deferred;
@@ -583,46 +887,120 @@ private:
 };
 
 inline void
-SHAMap::setFull()
+SHAMap::setFull(std::uint32_t ledgerSeq)
 {
-    full_ = true;
+    ledgerSeq_.store(ledgerSeq, std::memory_order_relaxed);
+    full_.store(true, std::memory_order_release);
 }
 
 inline void
 SHAMap::setLedgerSeq(std::uint32_t lseq)
 {
-    ledgerSeq_ = lseq;
+    ledgerSeq_.store(lseq, std::memory_order_relaxed);
 }
 
-inline void
+inline std::uint32_t
+SHAMap::ledgerSeq() const
+{
+    return ledgerSeq_.load(std::memory_order_relaxed);
+}
+
+inline SHAMapState
+SHAMap::state() const
+{
+    return state_.load(std::memory_order_acquire);
+}
+
+inline bool
+SHAMap::trySetState(SHAMapState desired)
+{
+    // Invalid is stored outright: a walk reaching that verdict has to win against a thread
+    // settling the map.
+    if (desired == SHAMapState::Invalid)
+    {
+        state_.store(SHAMapState::Invalid, std::memory_order_release);
+        return true;
+    }
+
+    // A failed exchange both reports the state and refreshes expected, so no load is needed
+    // ahead of the loop.
+    auto expected = SHAMapState::Modifying;
+    while (expected != SHAMapState::Invalid)
+    {
+        if (state_.compare_exchange_weak(
+                expected, desired, std::memory_order_acq_rel, std::memory_order_acquire))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool
 SHAMap::setImmutable()
 {
-    XRPL_ASSERT(state_ != SHAMapState::Invalid, "xrpl::SHAMap::setImmutable : state is valid");
-    state_ = SHAMapState::Immutable;
+    SOMETIMES(!isValid(), "xrpl::SHAMap::setImmutable : map is invalid");
+    return trySetState(SHAMapState::Immutable);
 }
 
 inline bool
 SHAMap::isSynching() const
 {
-    return state_ == SHAMapState::Synching;
+    return state() == SHAMapState::Synching;
+}
+
+inline bool
+SHAMap::isImmutable() const
+{
+    return state() == SHAMapState::Immutable;
 }
 
 inline void
 SHAMap::setSynching()
 {
-    state_ = SHAMapState::Synching;
+    // Guarded, so this is not a way out of Invalid.
+    if (!trySetState(SHAMapState::Synching))
+    {
+        // Only ever called on a freshly constructed map.
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::SHAMap::setSynching : map is invalid");
+        // LCOV_EXCL_STOP
+    }
 }
 
 inline void
 SHAMap::clearSynching()
 {
-    state_ = SHAMapState::Modifying;
+    // Only Synching moves. A walk can end after the ledger settled, and then the map stays
+    // Immutable; a Modifying map has nothing to clear; an invalid map stays invalid. Only that
+    // last refusal is logged, since a concurrent walk is what produces it.
+    auto expected = SHAMapState::Synching;
+    if (state_.compare_exchange_strong(
+            expected, SHAMapState::Modifying, std::memory_order_acq_rel, std::memory_order_acquire))
+    {
+        return;
+    }
+
+    bool const invalid = expected == SHAMapState::Invalid;
+    SOMETIMES(invalid, "xrpl::SHAMap::clearSynching : map is invalid");
+    if (invalid)
+    {
+        JLOG(journal_.warn()) << "Refused to clear synching on an invalid map, root hash "
+                              << root_->getHash();
+    }
 }
 
 inline bool
 SHAMap::isValid() const
 {
-    return state_ != SHAMapState::Invalid;
+    return state() != SHAMapState::Invalid;
+}
+
+inline void
+SHAMap::setInvalid()
+{
+    // Through trySetState() like every other transition, so state_ has one writer funnel.
+    trySetState(SHAMapState::Invalid);
 }
 
 inline void
@@ -643,7 +1021,7 @@ public:
     using pointer = value_type const*;
 
 private:
-    SharedPtrNodeStack stack_;
+    NodePathStack stack_;
     SHAMap const* map_ = nullptr;
     pointer item_ = nullptr;
 
@@ -669,7 +1047,7 @@ public:
 private:
     explicit ConstIterator(SHAMap const* map);
     ConstIterator(SHAMap const* map, std::nullptr_t);
-    ConstIterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
+    ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack);
 
     friend bool
     operator==(ConstIterator const& x, ConstIterator const& y);
@@ -688,10 +1066,7 @@ inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, std::nullptr_t) :
 {
 }
 
-inline SHAMap::ConstIterator::ConstIterator(
-    SHAMap const* map,
-    pointer item,
-    SharedPtrNodeStack&& stack)
+inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack)
     : stack_(std::move(stack)), map_(map), item_(item)
 {
 }
@@ -725,7 +1100,7 @@ SHAMap::ConstIterator::operator++()
 inline SHAMap::ConstIterator
 SHAMap::ConstIterator::operator++(int)
 {
-    auto tmp = *this;
+    auto const tmp = *this;
     ++(*this);
     return tmp;
 }
@@ -738,12 +1113,6 @@ operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
         "xrpl::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
         "inputs map do match");
     return x.item_ == y.item_;
-}
-
-inline bool
-operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
-{
-    return !(x == y);
 }
 
 inline SHAMap::ConstIterator

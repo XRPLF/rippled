@@ -24,7 +24,7 @@ enum class Severity : std::uint8_t {
     Fatal = 5,
 
     Disabled = 6,
-    None = Disabled
+    None = Disabled,
 };
 
 /**
@@ -471,7 +471,7 @@ public:
     }
 };
 
-using logstream = BasicLogstream<char>;
-using logwstream = BasicLogstream<wchar_t>;
+using LogStream = BasicLogstream<char>;
+using LogWStream = BasicLogstream<wchar_t>;
 
 }  // namespace beast

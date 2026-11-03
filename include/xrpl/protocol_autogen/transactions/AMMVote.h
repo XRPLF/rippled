@@ -20,8 +20,8 @@ class AMMVoteBuilder;
  *
  * Type: ttAMM_VOTE (38)
  * Delegable: Delegation::Delegable
- * Amendment: featureAMM
- * Privileges: NoPriv
+ * Amendment: UInt256{}
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMVoteBuilder to construct new transactions.

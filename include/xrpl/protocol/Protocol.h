@@ -9,8 +9,10 @@
 #include <mpt_protocol.h>
 #include <secp256k1_mpt.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 
@@ -139,7 +141,7 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / kTenthBipsPerUnity.value();
 }
 
-namespace Lending {
+namespace lending {
 /**
  * The maximum management fee rate allowed by a loan broker in 1/10 bips.
  *
@@ -236,7 +238,7 @@ static constexpr int kLoanPaymentsPerFeeIncrement = 5;
  * without an amendment
  */
 static constexpr int kLoanMaximumPaymentsPerTransaction = 100;
-}  // namespace Lending
+}  // namespace lending
 
 /**
  * The maximum length of a URI inside an NFT
@@ -309,18 +311,97 @@ constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;
  * Default IOU scale factor for a Vault
  */
 constexpr std::uint8_t kVaultDefaultIouScale = 6;
+
 /**
- * Maximum scale factor for a Vault. The number is chosen to ensure that
- * 1 IOU can be always converted to shares.
- * 10^19 > maxMPTokenAmount (2^64-1) > 10^18
+ * Maximum Scale for a Vault created before featureLendingProtocolV1_2.
+ * Chosen so 1 IOU can always convert to shares:
+ * 10^19 > maxMPTokenAmount (2^64-1) > 10^18.
  */
-constexpr std::uint8_t kVaultMaximumIouScale = 18;
+constexpr std::uint8_t kLegacyVaultMaximumIouScale = 18;
+
+/**
+ * Maximum Scale for a Vault created under featureLendingProtocolV1_2.
+ */
+constexpr std::uint8_t kFixedPrecisionVaultMaximumIouScale = 10;
+
+/**
+ * Vault ledger-entry schema versions, persisted as sfLEVersion.
+ *
+ * LEVersion records which protocol a Vault was created under so later
+ * amendments can change the rules for new Vaults without rewriting
+ * existing ones. VaultCreate writes it from the then-active lending
+ * amendments; later transactions do not update it. A Vault created
+ * under an older amendment keeps that amendment's behaviour for its
+ * lifetime, even after a newer lending amendment activates.
+ *
+ * Absent sfLEVersion is implicit Legacy (version 0): instant interest
+ * recognition and a dynamic AssetsTotal scale. CashBasis (V1.1) uses
+ * cash-basis recognition on the same dynamic scale. FixedPrecision
+ * (V1.2) keeps cash-basis recognition and adds the lifetime base grid.
+ */
+enum class VaultVersion : uint8_t {
+    Legacy = 0,
+    CashBasis,
+    FixedPrecision,
+};
+
+// Code compares VaultVersion values with < and >= (e.g. "CashBasis or later"),
+// so each later version must stay numerically larger than the one before.
+static_assert(
+    VaultVersion::Legacy < VaultVersion::CashBasis &&
+    VaultVersion::CashBasis < VaultVersion::FixedPrecision);
+
+/**
+ * Vault kind. Distinguishes closed-ended vaults from the default open-ended
+ * kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
+ */
+enum class VaultKind : std::uint8_t {
+    OpenEnded = 0,
+    ClosedEnded = 1,
+};
+
+/**
+ * Lifecycle phase of a vault. Open-ended vaults are always NoPhase; the other
+ * three values are the phases of a closed-ended vault.
+ */
+enum class VaultPhase : std::uint8_t {
+    NoPhase = 0,
+    Subscription,
+    Investment,
+    Redemption,
+};
+
+/**
+ * Minimum gap between a closed-ended loan's final scheduled payment and the
+ * vault's RedemptionDate. LoanSet rejects a schedule whose final payment is
+ * fewer than this many seconds before RedemptionDate.
+ */
+constexpr std::uint32_t kLoanRedemptionBuffer = std::chrono::seconds{60}.count();
+
+/**
+ * Bounds on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
+ *
+ * 180s is enough to originate a loan that uses the minimum payment interval
+ * and kLoanRedemptionBuffer after StartDate, which is strictly after
+ * SubscriptionDate. The interval and buffer need not be equal; only their
+ * sum plus one second must fit in this floor.
+ */
+constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{180}.count();
+// This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
+constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
 /**
  * Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0
  */
 constexpr std::uint8_t kMaxAssetCheckDepth = 5;
+
+/**
+ * Maximum length of a Data field in Escrow object that can be updated by WASM code.
+ */
+constexpr std::size_t kMaxWasmDataLength = 1 * 1024;  // 1KB
 
 /**
  * A ledger index.
@@ -346,7 +427,7 @@ isFlagLedger(LedgerIndex seq);
  * The value is computed as the hash of the
  * canonicalized, serialized transaction object.
  */
-using TxID = uint256;
+using TxID = UInt256;
 
 /**
  * The maximum number of trustlines to delete as part of AMM account
@@ -487,9 +568,19 @@ constexpr std::size_t kEcConvertBackProofLength =
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
 
 /**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
+
+/**
  * Extra base fee multiplier charged to confidential MPT transactions.
  */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;
+
+/**
+ * Maximum value a confidential MPT key epoch may reach.
+ */
+constexpr std::uint32_t kMaxKeyEpoch = std::numeric_limits<std::uint32_t>::max();
 
 /**
  * Compressed EC point prefix for even y-coordinate

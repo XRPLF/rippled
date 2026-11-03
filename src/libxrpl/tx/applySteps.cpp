@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -30,6 +31,8 @@
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
+#undef TRANSACTION_INCLUDE
+
 #pragma pop_macro("TRANSACTION")
 
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
@@ -133,7 +136,7 @@ invokePreflight(PreflightContext const& ctx)
 {
     try
     {
-        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T> {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
@@ -157,7 +160,7 @@ invokePreclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T> -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -174,7 +177,7 @@ invokePreclaim(PreclaimContext const& ctx)
 
             if (id != beast::kZero)
             {
-                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                if (NotTEC const preSigResult = [&] -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
                             return result;
 
@@ -195,7 +198,12 @@ invokePreclaim(PreclaimContext const& ctx)
                     }())
                     return preSigResult;
 
-                if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                // We can't check the fee if we can't compute it, so reject.
+                auto const baseFee = calculateBaseFee(ctx.view, ctx.tx);
+                if (!baseFee)
+                    return baseFee.error();
+
+                if (TER const result = T::checkFee(ctx, *baseFee))
                     return result;
             }
 
@@ -223,27 +231,38 @@ invokePreclaim(PreclaimContext const& ctx)
  *
  * @param view The ledger view to use for fee calculation.
  * @param tx The transaction for which the base fee is to be calculated.
- * @return The calculated base fee as an XRPAmount.
+ * @return The calculated base fee. Returns `std::unexpected(temUNKNOWN)` if the transaction
+ * type is not recognized, and `std::unexpected(tefEXCEPTION)` if the transactor's
+ * `calculateBaseFee` threw.
  *
- * @throws std::exception If an error occurs during fee calculation, including
- * but not limited to unknown transaction types or internal errors, the function
- * logs an error and returns an XRPAmount of zero.
  */
-static XRPAmount
+static std::expected<XRPAmount, TER>
 invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T> {
             return T::calculateBaseFee(view, tx);
         });
     }
-    catch (UnknownTxnType const& e)
+    catch (UnknownTxnType const&)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
-        return XRPAmount{0};
+        return std::unexpected(temUNKNOWN);
         // LCOV_EXCL_STOP
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(debugLog().error()) << "calculateBaseFee: " << tx.getTransactionID()
+                                 << " threw an exception: " << e.what();
+        return std::unexpected(tefEXCEPTION);
+    }
+    catch (...)
+    {
+        JLOG(debugLog().error()) << "calculateBaseFee: " << tx.getTransactionID()
+                                 << " threw an unknown exception";
+        return std::unexpected(tefEXCEPTION);
     }
 }
 
@@ -251,7 +270,7 @@ TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZero)
     , potentialSpend_(beast::kZero)
-    , seqProx_(SeqProxy::sequence(0))
+    , seqProx_(SeqProxy::rawSequence(0))
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(
@@ -287,7 +306,7 @@ invokeApply(ApplyContext& ctx)
 {
     try
     {
-        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T> {
             T p(ctx);
             return p();
         });
@@ -310,7 +329,7 @@ std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
     return withTxnType(
-        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T> -> std::unique_ptr<Transactor> {
             return std::make_unique<T>(ctx);
         });
 }
@@ -324,6 +343,19 @@ preflight(
     beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
+
+    // XRPL_ASSERT_IF in the PreflightContext constructor only fires in debug
+    // builds; re-check the same invariant here so a release build can't
+    // silently skip a proposed transaction's signature-presence checks
+    // outside of a dry run.
+    if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
+    }
+
     try
     {
         return {pfCtx, invokePreflight(pfCtx)};
@@ -339,12 +371,22 @@ PreflightResult
 preflight(
     ServiceRegistry& registry,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    UInt256 const& parentBatchId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
+
+    // See the comment in the other preflight() overload above.
+    if ((flags & TapProposal) != TapNone && (flags & TapDryRun) == TapNone)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "apply (preflight): TapProposal set without TapDryRun.";
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
+        // LCOV_EXCL_STOP
+    }
+
     try
     {
         return {pfCtx, invokePreflight(pfCtx)};
@@ -356,13 +398,34 @@ preflight(
     }
 }
 
+NotTEC
+invokeCheckPermission(ReadView const& view, STTx const& tx)
+{
+    try
+    {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T> {
+            return Transactor::invokeCheckPermission<T>(view, tx);
+        });
+    }
+    // LCOV_EXCL_START
+    catch (UnknownTxnType const& e)
+    {
+        // Should never happen
+        JLOG(debugLog().fatal()) << "Unknown transaction type in invokeCheckPermission: "
+                                 << e.txnType;
+        UNREACHABLE("xrpl::invokeCheckPermission : unknown transaction type");
+        return temUNKNOWN;
+    }
+    // LCOV_EXCL_STOP
+}
+
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = [&]() {
+        auto const secondFlight = [&] {
             if (preflightResult.parentBatchId)
             {
                 return preflight(
@@ -416,7 +479,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     }
 }
 
-XRPAmount
+std::expected<XRPAmount, TER>
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     return invokeCalculateBaseFee(view, tx);
@@ -441,13 +504,26 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
     {
         if (!preclaimResult.likelyToClaimFee)
             return {preclaimResult.ter, false};
+
+        // For any tx with a real account, preclaim already computed this fee
+        // successfully against this same view.
+        auto const baseFee = calculateBaseFee(view, preclaimResult.tx);
+        if (!baseFee)
+        {
+            // LCOV_EXCL_START
+            JLOG(preclaimResult.j.error())
+                << "apply: could not compute base fee: " << transToken(baseFee.error());
+            return {tefINTERNAL, false};
+            // LCOV_EXCL_STOP
+        }
+
         ApplyContext ctx(
             registry,
             view,
             preclaimResult.parentBatchId,
             preclaimResult.tx,
             preclaimResult.ter,
-            calculateBaseFee(view, preclaimResult.tx),
+            *baseFee,
             preclaimResult.flags,
             preclaimResult.j);
         return invokeApply(ctx);

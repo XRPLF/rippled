@@ -51,6 +51,8 @@ target_compile_options(
 
 target_link_libraries(xrpl.libpb PUBLIC protobuf::libprotobuf gRPC::grpc++)
 
+add_dependencies(tidy_prerequisites xrpl.libpb)
+
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 
@@ -79,7 +81,7 @@ include(target_link_modules)
 add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
-include(GitInfo)
+include(XrplVersion)
 add_module(xrpl git)
 target_compile_definitions(
     xrpl.libxrpl.git
@@ -109,6 +111,11 @@ target_link_libraries(
     xrpl.libxrpl.protocol
     PUBLIC xrpl.libxrpl.crypto xrpl.libxrpl.git xrpl.libxrpl.json
 )
+# Only on BuildInfo.cpp, so a new version does not rebuild the whole module.
+set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/protocol/BuildInfo.cpp
+    PROPERTIES COMPILE_DEFINITIONS XRPLD_VERSION="${XRPLD_VERSION}"
+)
 
 # Level 05
 add_module(xrpl protocol_autogen)
@@ -132,6 +139,12 @@ target_link_libraries(
 # Level 07
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
+
+add_module(xrpl peerfinder)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
 
 # Level 08
 add_module(xrpl net)
@@ -201,6 +214,16 @@ target_link_libraries(
 add_module(xrpl tx)
 target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+)
+
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 
@@ -220,6 +243,7 @@ target_link_modules(
     beast
     conditions
     config
+    consensus
     core
     crypto
     git
@@ -227,6 +251,7 @@ target_link_modules(
     ledger
     net
     nodestore
+    peerfinder
     protocol
     protocol_autogen
     rdb
@@ -267,6 +292,25 @@ if(xrpld)
     )
     target_sources(xrpld PRIVATE ${sources})
 
+    rpcspec_generate_instantiations(
+        OUT_VAR rpcspec_instantiations
+        VALUE_TYPE "::json::Value"
+        VIEW_HEADER "xrpld/rpc/detail/JsonObjectView.hpp"
+        HANDLERS
+            account_channels
+            account_currencies
+            account_info
+            account_lines
+            account_nfts
+            account_offers
+            book_changes
+            deposit_authorized
+            ledger
+            nft_offers_common
+            transaction_entry
+    )
+    target_sources(xrpld PRIVATE ${rpcspec_instantiations})
+
     if(tests)
         file(
             GLOB_RECURSE sources
@@ -276,7 +320,14 @@ if(xrpld)
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
-    target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+    target_link_libraries(
+        xrpld
+        Xrpl::boost
+        Xrpl::opts
+        Xrpl::libs
+        xrpl.libxrpl
+        rpcspec::rpcspec
+    )
     exclude_if_included(xrpld)
     # define a macro for tests that might need to
     # be excluded or run differently in CI environment
@@ -290,6 +341,7 @@ if(xrpld)
         # antithesis_instrumentation.h, which is not exported as INTERFACE
         target_include_directories(
             xrpld
+            SYSTEM
             PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
         )
     endif()

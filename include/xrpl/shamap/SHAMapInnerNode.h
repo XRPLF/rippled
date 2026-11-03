@@ -31,7 +31,19 @@ private:
      */
     TaggedPointer hashesAndChildren_;
 
-    std::uint32_t fullBelowGen_ = 0;
+    // Pin that wrapping fullBelowGen_ in an atomic keeps the packed layout, and that the load
+    // isFullBelow() does once per node of every walk stays lock-free.
+    static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+    static_assert(sizeof(std::atomic<std::uint32_t>) == sizeof(std::uint32_t));
+    static_assert(alignof(std::atomic<std::uint32_t>) == alignof(std::uint32_t));
+
+    /**
+     * Written from more than one thread, since canonicalization shares a node
+     * between maps and a walk can run with the acquisition lock released (see
+     * SHAMap::state_). Relaxed both ways, since a generation is only compared
+     * for equality and the children it vouches for are published through lock_.
+     */
+    std::atomic<std::uint32_t> fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
     /**
@@ -62,8 +74,8 @@ private:
      *
      * @param i index of the requested child
      */
-    std::optional<int>
-    getChildIndex(int i) const;
+    std::optional<unsigned int>
+    getChildIndex(unsigned int i) const;
 
     /**
      * Call the `f` callback for all 16 (branchFactor) branches - even if
@@ -125,28 +137,28 @@ public:
     isEmpty() const;
 
     bool
-    isEmptyBranch(int m) const;
+    isEmptyBranch(unsigned int branch) const;
 
-    int
+    unsigned int
     getBranchCount() const;
 
     SHAMapHash const&
-    getChildHash(int m) const;
+    getChildHash(unsigned int branch) const;
 
     void
-    setChild(int m, SHAMapTreeNodePtr child);
+    setChild(unsigned int branch, SHAMapTreeNodePtr child);
 
     void
-    shareChild(int m, SHAMapTreeNodePtr const& child);
+    shareChild(unsigned int branch, SHAMapTreeNodePtr const& child);
 
     SHAMapTreeNode*
-    getChildPointer(int branch);
+    getChildPointer(unsigned int branch);
 
     SHAMapTreeNodePtr
-    getChild(int branch);
+    getChild(unsigned int branch);
 
     SHAMapTreeNodePtr
-    canonicalizeChild(int branch, SHAMapTreeNodePtr node);
+    canonicalizeChild(unsigned int branch, SHAMapTreeNodePtr node);
 
     // sync functions
     bool
@@ -190,12 +202,12 @@ SHAMapInnerNode::isEmpty() const
 }
 
 inline bool
-SHAMapInnerNode::isEmptyBranch(int m) const
+SHAMapInnerNode::isEmptyBranch(unsigned int branch) const
 {
-    return (isBranch_ & (1 << m)) == 0;
+    return (isBranch_ & (1u << branch)) == 0u;
 }
 
-inline int
+inline unsigned int
 SHAMapInnerNode::getBranchCount() const
 {
     return popcnt16(isBranch_);
@@ -204,13 +216,13 @@ SHAMapInnerNode::getBranchCount() const
 inline bool
 SHAMapInnerNode::isFullBelow(std::uint32_t generation) const
 {
-    return fullBelowGen_ == generation;
+    return fullBelowGen_.load(std::memory_order_relaxed) == generation;
 }
 
 inline void
 SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 {
-    fullBelowGen_ = gen;
+    fullBelowGen_.store(gen, std::memory_order_relaxed);
 }
 
 }  // namespace xrpl

@@ -5,8 +5,10 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -25,7 +27,11 @@ namespace xrpl {
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+    if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
 }
 
 NotTEC
@@ -49,6 +55,9 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -57,6 +66,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+    auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -94,10 +104,28 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    // Helper handles both IOU and MPT correctly without explicit branching.
-    if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
-        return ret;
+    STAmount roundedAmount{amount};
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision outflows are rounded at the posterior exponent here
+        // instead of going through canApplyToBrokerCover: the live
+        // CoverAvailable scale it uses would reject a re-fining withdrawal as
+        // sub-ULP.
+        roundedAmount = debitToPosteriorBrokerCoverScale(
+            vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+        if (roundedAmount == beast::kZero)
+        {
+            JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: withdraw amount: " << amount
+                               << " is zero at loan broker scale";
+            return tecPRECISION_LOSS;
+        }
+    }
+    else
+    {
+        if (auto const ret = canApplyToBrokerCover(
+                ctx.view, sleBroker, vaultAsset, roundedAmount, ctx.j, "LoanBrokerCoverWithdraw"))
+            return ret;
+    }
 
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
@@ -109,12 +137,26 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct, waive))
         return ret;
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
+
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
     AuthType authType = AuthType::WeakAuth;
     if (account != dstAcct)
     {
-        if (auto const ret = canWithdraw(ctx.view, tx))
+        // Check the amount actually sent: on FixedPrecision it is the rounded
+        // amount, not sfAmount.
+        if (auto const ret = canWithdraw(
+                ctx.view,
+                account,
+                dstAcct,
+                roundedAmount,
+                tx.isFieldPresent(sfDestinationTag),
+                tx[~sfCredentialIDs]))
             return ret;
 
         // The destination account must have consented to receive the asset by
@@ -125,6 +167,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
+
+    if (fix340Enabled && account == dstAcct && !holdingExists(ctx.view, dstAcct, vaultAsset))
+    {
+        if (auto const ter = canAddHolding(ctx.view, vaultAsset); !isTesSuccess(ter))
+            return ter;
+    }
 
     if (fix330Enabled)
     {
@@ -148,7 +196,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
-    auto const minimumCover = [&]() {
+    auto const minimumCover = [&] {
         if (fix320Enabled)
         {
             return minimumBrokerCover(
@@ -163,9 +211,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
             scale(currentDebtTotal, vaultAsset));
     }();
-    if (coverAvail < amount)
+    if (coverAvail < roundedAmount)
         return tecINSUFFICIENT_FUNDS;
-    if ((coverAvail - amount) < minimumCover)
+    if ((coverAvail - roundedAmount) < minimumCover)
         return tecINSUFFICIENT_FUNDS;
 
     auto const freezeHandling = fix330Enabled && dstAcct == vaultAsset.getIssuer()
@@ -178,7 +226,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             vaultAsset,
             freezeHandling,
             AuthHandling::ZeroIfUnauthorized,
-            ctx.j) < amount)
+            ctx.j) < roundedAmount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -190,10 +238,10 @@ LoanBrokerCoverWithdraw::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto const amount = tx[sfAmount];
+    auto const requestedAmount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    auto const broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -202,6 +250,10 @@ LoanBrokerCoverWithdraw::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
+    auto const amount = getVaultVersion(vault) == VaultVersion::FixedPrecision
+        ? debitToPosteriorBrokerCoverScale(
+              vault, broker, requestedAmount, Number::RoundingMode::TowardsZero)
+        : requestedAmount;
 
     auto const brokerPseudoID = *broker->at(sfAccount);
 
@@ -218,11 +270,12 @@ LoanBrokerCoverWithdraw::doApply()
         brokerPseudoID,
         preFeeBalance_,
         amount,
+        amount,
         j_);
 }
 
 void
-LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

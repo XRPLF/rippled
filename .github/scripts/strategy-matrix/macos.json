@@ -12,6 +12,19 @@
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "build_only": true,
       "minimal": false
+    },
+    {
+      "build_type": "Release",
+      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "toolchain": "nix",
+      "minimal": false
+    },
+    {
+      "build_type": "Debug",
+      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "toolchain": "nix",
+      "build_only": true,
+      "minimal": false
     }
   ]
 }

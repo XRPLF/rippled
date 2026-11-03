@@ -27,6 +27,8 @@
 #include <cstdint>
 #include <optional>
 #include <ostream>
+#include <source_location>
+#include <string>
 #include <utility>
 
 namespace xrpl::test::jtx::batch {
@@ -60,6 +62,30 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
     return jv;
+}
+
+void
+validateInnerTxn(
+    Env& env,
+    std::string const& batchID,
+    std::string const& txHash,
+    std::string const& txType,
+    std::string const& result,
+    std::source_location const& loc)
+{
+    json::Value const jrr = env.rpc("tx", txHash)[jss::result];
+    env.test.expect(
+        jrr[sfTransactionType.jsonName] == txType, "TransactionType", loc.file_name(), loc.line());
+    env.test.expect(
+        jrr[jss::meta][sfTransactionResult.jsonName] == result,
+        "TransactionResult",
+        loc.file_name(),
+        loc.line());
+    env.test.expect(
+        jrr[jss::meta][sfParentBatchID.jsonName] == batchID,
+        "ParentBatchID",
+        loc.file_name(),
+        loc.line());
 }
 
 void
@@ -102,7 +128,7 @@ Sig::operator()(Env& env, JTx& jt) const
         serializeBatch(
             msg,
             stx.getAccountID(sfAccount),
-            stx.getSeqValue(),
+            stx.getSeqProxy().value(),
             stx.getFlags(),
             stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
@@ -146,7 +172,7 @@ Msig::operator()(Env& env, JTx& jt) const
         serializeBatch(
             msg,
             stx.getAccountID(sfAccount),
-            stx.getSeqValue(),
+            stx.getSeqProxy().value(),
             stx.getFlags(),
             stx.getBatchTransactionIDs());
         msg.addBitString(master.id());

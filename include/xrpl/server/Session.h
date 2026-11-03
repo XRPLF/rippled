@@ -52,13 +52,13 @@ public:
     /**
      * Returns the remote address of the connection.
      */
-    virtual beast::IP::Endpoint
+    virtual beast::ip::Endpoint
     remoteAddress() = 0;
 
     /**
      * Returns the current HTTP request.
      */
-    virtual http_request_type&
+    virtual HttpRequestType&
     request() = 0;
 
     /**

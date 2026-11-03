@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -41,11 +42,12 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
+#include <functional>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -326,10 +328,9 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     auto const sigValid = checkValidity(ctx.registry.get().getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
-    {  // LCOV_EXCL_START
+    {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
         return temINVALID;
-        // LCOV_EXCL_STOP
     }
 
     // Do not add any checks after this point that are relevant for
@@ -709,7 +710,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     }
 
     SeqProxy const tSeqProx = tx.getSeqProxy();
-    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const aSeq = SeqProxy::rawSequence((*sle)[sfSequence]);
 
     if (tSeqProx.isSeq())
     {
@@ -754,6 +755,19 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefNO_TICKET;
         }
+
+        // While a TransactionProposal keyed to this Ticket exists, the
+        // Ticket is reserved: only the proposal's own proposed transaction
+        // may consume it, so unrelated activity cannot invalidate the
+        // proposal while signatures are being collected (On-Chain Cosigner spec §4.2.1).
+        // Cancelling the proposal frees the Ticket, so this is a retry, not
+        // a final failure. No proposal can exist before the Cosign amendment,
+        // so the gate only makes that dependency explicit.
+        if (view.rules().enabled(featureCosign) && !proposal::canConsumeTicket(view, tx))
+        {
+            JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx << " is reserved";
+            return terTICKET_RESERVED;
+        }
     }
 
     return tesSUCCESS;
@@ -791,16 +805,17 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-    if (seqProx.isSeq())
+    SeqProxy const seqProxy = ctx_.tx.getSeqProxy();
+    if (seqProxy.isSeq())
     {
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+        sleAccount->setFieldU32(sfSequence, seqProxy.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
+    auto const keylet = keylet::ticket(accountID_, seqProxy);
+    return ticketDelete(view(), accountID_, keylet.key, j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -808,7 +823,7 @@ TER
 Transactor::ticketDelete(
     ApplyView& view,
     AccountID const& account,
-    uint256 const& ticketIndex,
+    UInt256 const& ticketIndex,
     beast::Journal j)
 {
     // Delete the Ticket, adjust the account root ticket count, and
@@ -833,7 +848,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
+    auto const sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
         // LCOV_EXCL_START
@@ -864,8 +879,28 @@ Transactor::ticketDelete(
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
+    std::uint32_t const ticketSeq{(*sleTicket)[sfTicketSequence]};
+
     // Remove Ticket from ledger.
     view.erase(sleTicket);
+
+    // Once the Ticket is gone, a TransactionProposal keyed to it can never
+    // execute: its proposed transaction would fail with tefNO_TICKET. Clean
+    // up the stale proposal and release its Owner's reserve (On-Chain Cosigner spec §4.5).
+    // The reservation check in checkSeqProxy means this is reached only by
+    // the proposal's own proposed transaction executing (or failing with a
+    // claimed-fee tec), or by AccountDelete sweeping the target account's
+    // Tickets. No proposal can exist before the Cosign amendment, so the gate
+    // only makes that dependency explicit.
+    if (view.rules().enabled(featureCosign))
+    {
+        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+        {
+            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -916,7 +951,7 @@ NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<UInt256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
     beast::Journal const j,
@@ -1208,7 +1243,7 @@ Transactor::checkMultiSign(
 //------------------------------------------------------------------------------
 
 static void
-removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
+removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast::Journal viewJ)
 {
     int removed = 0;
 
@@ -1227,7 +1262,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
 static void
 removeExpiredNFTokenOffers(
     ApplyView& view,
-    std::vector<uint256> const& offers,
+    std::vector<UInt256> const& offers,
     beast::Journal viewJ)
 {
     std::size_t removed = 0;
@@ -1244,7 +1279,7 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeExpiredCredentials(ApplyView& view, std::vector<UInt256> const& creds, beast::Journal viewJ)
 {
     for (auto const& index : creds)
     {
@@ -1263,7 +1298,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
 static void
 removeDeletedTrustLines(
     ApplyView& view,
-    std::vector<uint256> const& trustLines,
+    std::vector<UInt256> const& trustLines,
     beast::Journal viewJ)
 {
     if (trustLines.size() > kMaxDeletableAmmTrustLines)
@@ -1392,7 +1427,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
                 .id = sponsorID,
                 .keylet = sponsorshipKeylet,
                 .balanceField = sfFeeAmount,
-                .type = FeePayerType::SponsorPreFunded};
+                .type = FeePayerType::SponsorPreFunded,
+            };
         }
 
         // Checked in Transactor::checkSponsor
@@ -1405,7 +1441,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
             .id = sponsorID,
             .keylet = keylet::account(sponsorID),
             .balanceField = sfBalance,
-            .type = FeePayerType::SponsorCoSigned};
+            .type = FeePayerType::SponsorCoSigned,
+        };
     }
 
     AccountID const payerID = tx.getInitiator();
@@ -1414,13 +1451,17 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
     return FeePayer{
-        .id = payerID, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
+        .id = payerID,
+        .keylet = payerAccountKeylet,
+        .balanceField = sfBalance,
+        .type = payerType,
+    };
 }
 
 // The sole purpose of this function is to provide a convenient, named
 // location to set a breakpoint, to be used when replaying transactions.
 void
-Transactor::trapTransaction(uint256 txHash) const
+Transactor::trapTransaction(UInt256 txHash) const
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
@@ -1435,7 +1476,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
-    auto typesForResult = [](TER const ter) {
+    auto const typesForResult = [](TER const ter) {
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
@@ -1458,12 +1499,12 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     // re-applied after the context is reset.
     auto const typesToCollect = typesForResult(result);
 
-    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    std::map<LedgerEntryType, std::vector<UInt256>> deletedObjects;
     if (!typesToCollect.empty())
     {
         ctx_.visit(
             [&typesToCollect, &deletedObjects](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                UInt256 const& index, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
                 if (isDelete)
                 {
                     XRPL_ASSERT(
@@ -1538,53 +1579,12 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
 }
 
 [[nodiscard]] TER
-Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
+Transactor::checkInvariants(TER result, XRPAmount fee, InvariantScope scope)
 {
-    try
-    {
-        // Phase 1: visit modified entries
-        ctx_.visit(
-            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                this->visitInvariantEntry(isDelete, before, after);
-            });
+    if (scope == InvariantScope::Full)
+        return xrpl::checkInvariants(ctx_, result, fee, *this);
 
-        // Phase 2: finalize
-        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
-        {
-            JLOG(ctx_.journal.fatal()) <<                                             //
-                "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(ctx_.journal.fatal()) <<                               //
-            "Exception while checking transaction invariants: " <<  //
-            ex.what() <<                                            //
-            ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-
-        return tecINVARIANT_FAILED;
-    }
-
-    return result;
-}
-
-[[nodiscard]] TER
-Transactor::checkInvariants(TER result, XRPAmount fee)
-{
-    /*
-     * DISABLED for 3.2.0 — Must be re-introduced for 3.3.0
-     *
-     * Transaction invariants are disabled due to a performance regression:
-     * the two-pass design (transaction-specific invariants + protocol invariants)
-     * iterates over modified ledger entries twice per transaction.
-     *
-     * Until resolved, only protocol invariants are checked (delegated to ctx_).
-     * This is safe because all transaction invariants in 3.2.0 are  no-ops.
-     */
-    return ctx_.checkInvariants(result, fee);
+    return xrpl::checkInvariants(ctx_, result, fee);
 }
 
 //------------------------------------------------------------------------------
@@ -1633,88 +1633,100 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
-    if (auto stream = j_.trace())
+    if (auto const stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
-    bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
+    bool const canApply = std::invoke([&result, &fee, this] {
+        bool canApplyTmp = isTesSuccess(result);
 
-    if (ctx_.size() > kOversizeMetaDataCap)
-        result = tecOVERSIZE;
+        if (ctx_.size() > kOversizeMetaDataCap)
+            result = tecOVERSIZE;
 
-    if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
-    {
-        // If the TapFailHard flag is set, a tec result
-        // must not do anything
-        ctx_.discard();
-        applied = false;
-    }
-    else if (
-        (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
-    {
-        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
-    }
-
-    if (applied)
-    {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
-        result = checkInvariants(result, fee);
-        if (result == tecINVARIANT_FAILED)
+        if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
         {
-            // Reset to fee-claim only
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-
-            // Check invariants again to ensure the fee claiming doesn't violate
-            // invariants. After reset, only protocol invariants are re-checked.
-            // Transaction invariants are not meaningful here — the transaction's
-            // effects have been rolled back.
-            if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
+            // If the TapFailHard flag is set, a tec result
+            // must not do anything
+            ctx_.discard();
+            canApplyTmp = false;
         }
+        else if (
+            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+            (result == tecEXPIRED) || isTecClaimHardFail(result, view().flags()))
+        {
+            // This is and must remain the only place where `canApplyTmp` can change from false to
+            // true. Changing from true to false is no problem.
+            std::tie(result, fee, canApplyTmp) = processPersistentChanges(result, fee);
+        }
+        return canApplyTmp;
+    });
 
-        // We ran through the invariant checker, which can, in some cases,
-        // return a tef error code. Don't apply the transaction in that case.
-        if (!isTecClaim(result) && !isTesSuccess(result))
-            applied = false;
+    auto const logger = [this](
+                            TER result,
+                            bool canApply,
+                            std::optional<TxMeta>&& metadata = std::nullopt) -> ApplyResult {
+        JLOG(j_.trace()) << (canApply ? "applied " : "not applied ") << transToken(result);
+        return {result, canApply, std::move(metadata)};
+    };
+
+    if (!canApply)
+        return logger(result, canApply);
+
+    // First invariant pass: both protocol and transaction-specific
+    // checks run against the transaction's tentative outcome. If it
+    // does not return tecINVARIANT_FAILED, we can proceed to apply the
+    // tx.
+    result = checkInvariants(result, fee, InvariantScope::Full);
+    if (result == tecINVARIANT_FAILED)
+    {
+        // Fee-claim reset: roll the transaction's effects back so that
+        // only the fee deduction remains. This is the reset referenced
+        // by InvariantScope::ProtocolOnly.
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+
+        // Re-check invariants against the post-reset (fee-claim only)
+        // state. The transaction's effects are gone, so the
+        // transaction-specific invariants no longer apply and only the
+        // protocol invariants are re-run. A failure here escalates to
+        // tefINVARIANT_FAILED and excludes the tx from the ledger.
+        if (isTesSuccess(result) || isTecClaim(result))
+            result = checkInvariants(result, fee, InvariantScope::ProtocolOnly);
     }
+
+    // We ran through the invariant checker, which can, in some cases,
+    // return a tef error code. Don't apply the transaction in that case.
+    if (!isTecClaim(result) && !isTesSuccess(result))
+        return logger(result, false);
 
     std::optional<TxMeta> metadata;
-    if (applied)
-    {
-        // Transaction succeeded fully or (retries are not allowed and the
-        // transaction could claim a fee)
 
-        // The transactor and invariant checkers guarantee that this will
-        // *never* trigger but if it, somehow, happens, don't allow a tx
-        // that charges a negative fee.
-        if (fee < beast::kZero)
-            Throw<std::logic_error>("fee charged is negative!");
+    // Transaction succeeded fully or (retries are not allowed and the
+    // transaction could claim a fee)
 
-        // Charge whatever fee they specified. The fee has already been
-        // deducted from the balance of the account that issued the
-        // transaction. We just need to account for it in the ledger
-        // header.
-        if (!view().open() && fee != beast::kZero)
-            ctx_.destroyXRP(fee);
+    // The transactor and invariant checkers guarantee that this will
+    // *never* trigger but if it, somehow, happens, don't allow a tx
+    // that charges a negative fee.
+    if (fee < beast::kZero)
+        Throw<std::logic_error>("fee charged is negative!");
 
-        // Once we call apply, we will no longer be able to look at view()
-        metadata = ctx_.apply(result);
-    }
+    // Charge whatever fee they specified. The fee has already been
+    // deducted from the balance of the account that issued the
+    // transaction. We just need to account for it in the ledger
+    // header.
+    if (!view().open() && fee != beast::kZero)
+        ctx_.destroyXRP(fee);
+
+    // Once we call apply, we will no longer be able to look at view()
+    metadata = ctx_.apply(result);
 
     if ((ctx_.flags() & TapDryRun) != 0u)
-    {
-        applied = false;
-    }
+        return logger(result, false, std::move(metadata));
 
-    JLOG(j_.trace()) << (applied ? "applied " : "not applied ") << transToken(result);
-
-    return {result, applied, metadata};
+    return logger(result, canApply, std::move(metadata));
 }
 
 }  // namespace xrpl

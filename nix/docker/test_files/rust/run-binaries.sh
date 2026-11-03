@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run pre-compiled Rust binaries and confirm each emits its expected diagnostic.
 # Binaries must already exist in <bins_dir> as <name> for name in
-# {hello,panic,overflow}.
+# {hello,panic,overflow,proc_macro}.
 
 set -eo pipefail
 
@@ -54,12 +54,13 @@ declare -A expect=(
     [hello]="Hello from main thread"
     [panic]="explicit panic from test"
     [overflow]="attempt to add with overflow"
+    [proc_macro]="proc-macro answer = 42"
 )
 
-for name in hello panic overflow; do
+for name in hello panic overflow proc_macro; do
     binary="${bins_dir}/${name}"
 
-    if [ "${name}" = "hello" ]; then
+    if [ "${name}" = "hello" ] || [ "${name}" = "proc_macro" ]; then
         expected_rc=0
     else
         expected_rc=nonzero

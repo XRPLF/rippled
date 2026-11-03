@@ -126,7 +126,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         env.fund(XRP(10000), alice, gw1, gw2);
 
-        auto j = env.app().getJournal("View");
+        auto const j = env.app().getJournal("View");
 
         auto const usdGw1 = gw1["USD"];
         auto const usdGw2 = gw2["USD"];
@@ -147,7 +147,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             auto const startingAmount =
                 accountHolds(av, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j);
             {
-                auto r = accountSend(av, gw1, alice, toCredit, j);
+                auto const r = accountSend(av, gw1, alice, toCredit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -155,7 +155,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                     av, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j) ==
                 startingAmount + toCredit);
             {
-                auto r = accountSend(av, alice, gw1, toDebit, j);
+                auto const r = accountSend(av, alice, gw1, toDebit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -195,7 +195,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                 accountHolds(pv, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j);
 
             {
-                auto r = accountSend(pv, gw1, alice, toCredit, j);
+                auto const r = accountSend(pv, gw1, alice, toCredit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -204,7 +204,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                 startingAmount);
 
             {
-                auto r = accountSend(pv, alice, gw1, toDebit, j);
+                auto const r = accountSend(pv, alice, gw1, toDebit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -271,7 +271,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                 accountHolds(pv, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j);
 
             {
-                auto r = accountSend(pv, gw1, alice, toCredit, j);
+                auto const r = accountSend(pv, gw1, alice, toCredit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -286,7 +286,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                         pv2, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j) ==
                     startingAmount);
                 {
-                    auto r = accountSend(pv2, gw1, alice, toCredit, j);
+                    auto const r = accountSend(pv2, gw1, alice, toCredit, j);
                     BEAST_EXPECT(isTesSuccess(r));
                 }
                 BEAST_EXPECT(
@@ -296,7 +296,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             }
 
             {
-                auto r = accountSend(pv, alice, gw1, toDebit, j);
+                auto const r = accountSend(pv, alice, gw1, toDebit, j);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
@@ -341,13 +341,13 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         testcase("Reserve");
         using namespace jtx;
 
-        auto accountFundsXRP =
+        auto const accountFundsXRP =
             [](ReadView const& view, AccountID const& id, beast::Journal j) -> XRPAmount {
             return toAmount<XRPAmount>(accountHolds(
                 view, id, xrpCurrency(), xrpAccount(), FreezeHandling::ZeroIfFrozen, j));
         };
 
-        auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
+        auto const reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
             return env.current()->fees().accountReserve(count, 1);
         };
 
@@ -365,11 +365,11 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             // zero (there was a bug that caused her funds to become negative).
 
             {
-                auto r = accountSend(sb, xrpAccount(), alice, XRP(100), env.journal);
+                auto const r = accountSend(sb, xrpAccount(), alice, XRP(100), env.journal);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             {
-                auto r = accountSend(sb, alice, xrpAccount(), XRP(100), env.journal);
+                auto const r = accountSend(sb, alice, xrpAccount(), XRP(100), env.journal);
                 BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(accountFundsXRP(sb, alice, env.journal) == beast::kZero);
@@ -601,7 +601,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
-        auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
+        auto const reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
             return env.current()->fees().accountReserve(count, 1);
         };
 
@@ -718,7 +718,7 @@ public:
     void
     run() override
     {
-        auto testAll = [this](FeatureBitset features) {
+        auto const testAll = [this](FeatureBitset features) {
             testSelfFunding(features);
             testSubtractCredits(features);
             testTinyBalance(features);

@@ -80,19 +80,21 @@ private:
 
         fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
 
-        MPTTester const eth(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .pay = 200'000'000'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const eth({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .pay = 200'000'000'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .pay = 2'000'000'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .pay = 2'000'000'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
         // Must be two offers at the same quality
         // "taker gets" must be XRP
@@ -116,7 +118,7 @@ private:
             Txflags(tfPartialPayment));
 
         BEAST_EXPECT(ammCarol.expectBalances(
-            btc(1'001'000'000'374'816), eth(100'000'000'000'000'000), ammCarol.tokens()));
+            btc(1'001'000'000'374'814), eth(100'000'000'000'000'000), ammCarol.tokens()));
 
         env.require(Balance(bob_, eth(200'100'000'000'000'000)));
         BEAST_EXPECT(isOffer(env, carol_, btc(49'000'000'000'000), XRP(49)));
@@ -137,7 +139,7 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const& btc = MPT(ammAlice[1]);
                 auto const baseFee = env.current()->fees().base;
-                auto carolBTC = env.balance(carol_, btc);
+                auto const carolBTC = env.balance(carol_, btc);
                 auto carolXRP = env.balance(carol_, XRP);
                 // Order that can't be filled
                 env(offer(carol_, btc(100), XRP(100)), Txflags(tfFillOrKill), Ter(tecKILLED));
@@ -168,8 +170,8 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 auto const& btc = MPT(ammAlice[1]);
                 auto const baseFee = env.current()->fees().base;
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolXRP = env.balance(carol_, XRP);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolXRP = env.balance(carol_, XRP);
                 env(offer(carol_, XRP(200), btc(200)),
                     Txflags(tfImmediateOrCancel),
                     Ter(tesSUCCESS));
@@ -188,20 +190,29 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        testAMM(
-            [&](AMM& ammAlice, Env& env) {
-                // Carol creates a passive offer that could cross AMM.
-                // Carol's offer should stay in the ledger.
-                auto const& btc = MPT(ammAlice[1]);
-                env(offer(carol_, XRP(100), btc(100), tfPassive));
-                env.close();
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), btc(10'000), ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), btc(100)}}}));
-            },
-            {{XRP(10'100), gAmmmpt(10'000)}},
-            0,
-            std::nullopt,
-            {features});
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, XRP(30'000'000));
+
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, carol_},
+                .pay = 30'000'000,
+                .flags = kMptDexFlags,
+            });
+
+            AMM const ammAlice(env, alice_, XRP(10'100'000), btc(10'000'000));
+
+            // Scale the exact-quality fixture up so the visual relationship
+            // stays clear: the passive CLOB offer has the same 1:1 quality as
+            // the generated AMM offer, so it should not cross.
+            env(offer(carol_, XRP(100'000), btc(100'000), tfPassive));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100'000), btc(10'000'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), btc(100'000)}}}));
+        }
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -235,12 +246,13 @@ private:
 
         fund(env, gw_, {bob_, alice_}, XRP(300'000));
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .pay = 100'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .pay = 100'000'000,
+            .flags = kMptDexFlags,
+        });
 
         AMM const ammAlice(env, alice_, XRP(150'000), btc(50'000'000));
 
@@ -310,7 +322,7 @@ private:
         BEAST_EXPECT(ammBob.expectBalances(btc(300'000'000), XRP(1'000), ammBob.tokens()));
         env.require(Balance(alice_, btc(0)));
 
-        auto jrr = ledgerEntryRoot(env, alice_);
+        auto const jrr = ledgerEntryRoot(env, alice_);
         env.require(Balance(alice_, XRP(10'000) + XRP(500) - env.current()->fees().base * 2));
     }
 
@@ -325,12 +337,13 @@ private:
         env.fund(XRP(30'000), gw_, bob_);
         env.fund(XRP(40'000), alice_);
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .pay = 30'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .pay = 30'000'000'000,
+            .flags = kMptDexFlags,
+        });
         env(pay(gw_, alice_, btc(10'000'000'000)));
 
         AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000'000'000));
@@ -410,23 +423,25 @@ private:
 
         using namespace jtx;
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this);
             auto const dan = Account{"dan"};
             env.fund(XRP(60'000), alice_, bob_, carol_, gw_, dan);
             env.close();
-            auto const eth = issue1(
-                {.env = env,
-                 .token = "ETH",
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, dan},
-                 .limit = 10'000'000'000'000'000});
-            auto const btc = issue2(
-                {.env = env,
-                 .token = "BTC",
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, dan},
-                 .limit = 10'000'000'000'000'000});
+            auto const eth = issue1({
+                .env = env,
+                .token = "ETH",
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, dan},
+                .limit = 10'000'000'000'000'000,
+            });
+            auto const btc = issue2({
+                .env = env,
+                .token = "BTC",
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, dan},
+                .limit = 10'000'000'000'000'000,
+            });
             env(pay(gw_, alice_, btc(500'000'000'000'000)));
             env(pay(gw_, carol_, btc(6'000'000'000'000'000)));
             env(pay(gw_, dan, eth(400'000'000'000'000)));
@@ -503,12 +518,13 @@ private:
 
         fund(env, gw_, {alice_, bob_}, XRP(200'000));
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .transferFee = 500,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .transferFee = 500,
+            .flags = kMptDexFlags,
+        });
 
         env(pay(gw_, bob_, btc(1'000'000'000'000)));
         env(pay(gw_, alice_, btc(200'000'000'000'000)));
@@ -534,12 +550,13 @@ private:
         env.fund(XRP(30'000), gw_, bob_, carol_);
         env.fund(XRP(39'900), alice_);
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .pay = 30'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .pay = 30'000,
+            .flags = kMptDexFlags,
+        });
         env(pay(gw_, alice_, btc(10'100)));
 
         AMM const ammAlice(env, alice_, XRP(9'900), btc(10'100));
@@ -597,18 +614,20 @@ private:
         auto const startingXrp = XRP(100.1) + reserve(env, 1) + env.current()->fees().base * 2;
         env.fund(startingXrp, gw_, alice_, bob_);
 
-        MPTTester const xts(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .pay = 1'000'000'000'000'000,
-             .flags = kMptDexFlags});
-        MPTTester const xxx(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .pay = 1'000'000'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const xts({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .pay = 1'000'000'000'000'000,
+            .flags = kMptDexFlags,
+        });
+        MPTTester const xxx({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .pay = 1'000'000'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
         AMM const ammAlice(env, alice_, xts(1'000'000'000'000'000), xxx(1'000'000'000'000'000));
 
@@ -644,18 +663,20 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             // The scenario:
             //   o BTC/XRP AMM is created.
@@ -683,18 +704,20 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             // The scenario:
             //   o BTC/XRP AMM is created.
@@ -724,18 +747,20 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 15'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 15'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             // The scenario:
             //   o BTC/XRP offer is created.
@@ -774,12 +799,13 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .pay = 20'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .pay = 20'000'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const ammBob(env, bob_, XRP(20'000), btc(200'000'000));
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
             env(offer(alice_, btc(2'100'000), XRP(210), tfSell | tfFillOrKill), Ter(tecKILLED));
@@ -791,12 +817,13 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const ammBob(env, bob_, XRP(20'000), btc(200'000'000'000'000));
             // alice submits a tfSell | tfFillOrKill offer that crosses.
             // Even though tfSell is present it doesn't matter this time.
@@ -813,12 +840,13 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const ammBob(env, bob_, XRP(20'000), btc(200'000'000'000'000));
 
             env(offer(alice_, btc(10'000'000'000'000), XRP(1'500), tfSell | tfFillOrKill));
@@ -838,12 +866,13 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .pay = 10'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .pay = 10'000'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const ammBob(env, bob_, XRP(5000), btc(10'000'000));
 
             env(offer(alice_, btc(1'000'000), XRP(501), tfSell | tfFillOrKill), Ter(tecKILLED));
@@ -866,13 +895,14 @@ private:
             env.fund(XRP(30'000), gw_, bob_, carol_);
             env.fund(XRP(40'000), alice_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 30'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 30'000'000,
+                .flags = kMptDexFlags,
+            });
             env(pay(gw_, alice_, btc(10'100'000)));
 
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'100'000));
@@ -892,13 +922,14 @@ private:
             env.fund(XRP(30'000), gw_, bob_, carol_);
             env.fund(XRP(40'100), alice_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 30'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 30'000'000,
+                .flags = kMptDexFlags,
+            });
             env(pay(gw_, alice_, btc(10'000'000)));
 
             AMM const ammAlice(env, alice_, XRP(10'100), btc(10'000'000));
@@ -918,20 +949,22 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 15'000'000,
-                 .flags = kMptDexFlags});
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 15'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 15'000'000,
+                .flags = kMptDexFlags,
+            });
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 15'000'000,
+                .flags = kMptDexFlags,
+            });
 
             // The scenario:
             //   o BTC/XRP AMM is created.
@@ -963,20 +996,22 @@ private:
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 15'000'000,
-                 .flags = kMptDexFlags});
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 15'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 15'000'000,
+                .flags = kMptDexFlags,
+            });
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 15'000'000,
+                .flags = kMptDexFlags,
+            });
 
             // The scenario:
             //   o BTC/XRP AMM is created.
@@ -1077,16 +1112,16 @@ private:
         env.close();
         env.require(Balance(cam, aBux(350'000'000'000'000)));
         env.require(Balance(cam, bBux(350'000'000'000'000)));
-        env.require(offers(cam, 1));
+        env.require(Offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(300'000'000'000'000), aBux(300'000'000'000'000)));
 
         // AMM is consumed up to the first cam Offer quality
         BEAST_EXPECT(ammCarol.expectBalances(
-            aBux(3'093'541'659'651'604), bBux(3'200'215'509'984'418), ammCarol.tokens()));
+            aBux(3'093'541'659'651'603), bBux(3'200'215'509'984'419), ammCarol.tokens()));
         BEAST_EXPECT(expectOffers(
-            env, cam, 1, {{Amounts{bBux(200'215'509'984'418), aBux(200'215'509'984'419)}}}));
+            env, cam, 1, {{Amounts{bBux(200'215'509'984'419), aBux(200'215'509'984'419)}}}));
     }
 
     void
@@ -1099,11 +1134,12 @@ private:
         Env env{*this, features};
         env.fund(XRP(400'000), gw_, alice_, bob_);
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .flags = tfMPTRequireAuth | kMptDexFlags});
+        MPTTester btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+        });
 
         // Authorize bob and alice
         btc.authorize({.holder = alice_});
@@ -1141,11 +1177,12 @@ private:
         env.fund(XRP(400'000), gw_, alice_, bob_);
         env.close();
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_},
-             .flags = tfMPTRequireAuth | kMptDexFlags});
+        MPTTester btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_},
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+        });
 
         // Alice doesn't have the funds
         {
@@ -1220,12 +1257,13 @@ private:
         env.fund(XRP(100'000'260), alice_);
         env.fund(XRP(30'000), gw_, bob_, carol_);
 
-        MPTTester const eth(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .pay = 100'000'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const eth({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .pay = 100'000'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
         AMM const ammCarol(env, carol_, XRP(100), eth(100'000'000'000'000));
 
@@ -1241,7 +1279,7 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99e12ETH. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(da, eth(99'999'900'000'100)));
+        BEAST_EXPECT(equal(da, eth(99'999'900'000'099)));
     }
 
     // carol holds ETH, sells ETH for XRP
@@ -1257,19 +1295,21 @@ private:
         env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
         env.close();
 
-        MPTTester const eth(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .transferFee = 10'000,
-             .flags = kMptDexFlags});
+        MPTTester const eth({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .transferFee = 10'000,
+            .flags = kMptDexFlags,
+        });
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice_, bob_, carol_},
-             .transferFee = 10'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice_, bob_, carol_},
+            .transferFee = 10'000,
+            .flags = kMptDexFlags,
+        });
 
         env(pay(gw_, carol_, eth(51)));
         env.close();
@@ -1295,12 +1335,13 @@ private:
             Env env = pathTestEnv();
             env.fund(XRP(30'000), alice_, bob_, charlie, gw_);
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, charlie},
-                 .pay = 11'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, charlie},
+                .pay = 11'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammCharlie(env, charlie, XRP(10), eth(11'000'000'000'000));
             auto [st, sa, da] = findPaths(env, alice_, bob_, eth(-1), XRP(1).value());
@@ -1319,12 +1360,13 @@ private:
             Env env = pathTestEnv();
             env.fund(XRP(30'000), alice_, bob_, charlie, gw_);
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, charlie},
-                 .pay = 11'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, charlie},
+                .pay = 11'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammCharlie(env, charlie, XRP(11), eth(10'000'000'000'000));
             env.close();
@@ -1439,12 +1481,13 @@ private:
         env.fund(XRP(11'000), m1);
         env.close();
 
-        MPTTester const eth(
-            {.env = env,
-             .issuer = g3,
-             .holders = {a1, a2, m1},
-             .pay = 1'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const eth({
+            .env = env,
+            .issuer = g3,
+            .holders = {a1, a2, m1},
+            .pay = 1'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
         AMM const ammM1(env, m1, eth(1'000'000'000), XRP(10'010));
 
@@ -1478,19 +1521,21 @@ private:
             env.fund(XRP(1'000), a1, a2, a3, g1, g2);
             env.close();
 
-            MPTTester const hkdG1(
-                {.env = env,
-                 .issuer = g1,
-                 .holders = {a1, m1},
-                 .pay = 5'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const hkdG1({
+                .env = env,
+                .issuer = g1,
+                .holders = {a1, m1},
+                .pay = 5'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const hkdG2(
-                {.env = env,
-                 .issuer = g2,
-                 .holders = {a2, m1},
-                 .pay = 5'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const hkdG2({
+                .env = env,
+                .issuer = g2,
+                .holders = {a2, m1},
+                .pay = 5'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammM1(env, m1, hkdG1(1'000'000'000), hkdG2(1'010'000'000));
 
@@ -1502,6 +1547,98 @@ private:
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, hkdG1(10'000'000)));
             BEAST_EXPECT(same(st, stpath(ipe(MPT(hkdG2)))));
+        }
+    }
+
+    void
+    pathFindMPTAMMExecutableSourceAmount()
+    {
+        testcase("Path Find: MPT AMM source amount is executable");
+        using namespace jtx;
+
+        auto const checkQuote = [&](std::int64_t usdPool,
+                                    std::int64_t eurPool,
+                                    std::int64_t deliverAmount,
+                                    std::int64_t expectedSourceAmount) {
+            Env env = pathTestEnv();
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+
+            MPTTester const usd({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = usdPool,
+                .flags = kMptDexFlags,
+            });
+
+            MPTTester const eur({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = eurPool,
+                .flags = kMptDexFlags,
+            });
+
+            AMM const ammCarol(env, carol_, usd(usdPool), eur(eurPool));
+            env.close();
+
+            STPathSet st;
+            STAmount sa, da;
+            auto const deliver = eur(deliverAmount);
+            std::tie(st, sa, da) = findPaths(
+                env,
+                alice_,
+                bob_,
+                deliver,
+                std::nullopt,
+                usd.issuanceID(),
+                std::nullopt,
+                std::nullopt);
+
+            // Each quote must execute when used as an exact-output SendMax.
+            BEAST_EXPECT(equal(da, deliver));
+            BEAST_EXPECT(equal(sa, usd(expectedSourceAmount)));
+            BEAST_EXPECT(!st.empty());
+
+            auto const before = eur.getBalance(bob_);
+            env(pay(alice_, bob_, deliver),
+                Json(jss::Paths, st.getJson(JsonOptions::Values::None)),
+                Sendmax(sa),
+                Txflags(tfNoRippleDirect));
+            BEAST_EXPECT(eur.getBalance(bob_) == before + deliverAmount);
+        };
+
+        struct TestCase
+        {
+            std::int64_t usdPool;
+            std::int64_t eurPool;
+            std::int64_t deliverAmount;
+            std::int64_t expectedSourceAmount;
+        };
+
+        // Cover the original 2:1 pool and the same pool scaled down by 1000.
+        // clang-format off
+        TestCase const testCases[] = {
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 100,   .expectedSourceAmount = 201},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1'000, .expectedSourceAmount = 2'003},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 100,   .expectedSourceAmount = 223},
+        };
+        // clang-format on
+
+        for (auto const& testCase : testCases)
+        {
+            checkQuote(
+                testCase.usdPool,
+                testCase.eurPool,
+                testCase.deliverAmount,
+                testCase.expectedSourceAmount);
         }
     }
 
@@ -1558,22 +1695,24 @@ private:
 
         // simple MPT/IOU mix offer
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 100'000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 100'000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 100'000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 100'000'000,
+                });
                 env(pay(gw_, alice_, btc(500000)));
                 env(pay(gw_, bob_, btc(500000)));
                 env(pay(gw_, carol_, btc(500000)));
@@ -1599,19 +1738,21 @@ private:
             Env env(*this, features);
             env.fund(XRP(10'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 150'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 150'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBobBtcXrp(env, bob_, btc(100'000), XRP(150));
             AMM const ammBobXrpEth(env, bob_, XRP(100), eth(150'000));
@@ -1633,12 +1774,13 @@ private:
             XRPAmount const baseFee{env.current()->fees().base};
             env.fund(XRP(10'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 150'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 150'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBob(env, bob_, XRP(100), eth(150'000));
 
@@ -1656,12 +1798,13 @@ private:
             XRPAmount const baseFee{env.current()->fees().base};
             env.fund(XRP(10'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBob(env, bob_, eth(100'000), XRP(150));
 
@@ -1677,28 +1820,31 @@ private:
 
         // test unfunded offers are removed when payment succeeds
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const btc = issue1(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1000'000000});
-                auto const eth = issue2(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1000'000000});
-                auto const gbp = issue3(
-                    {.env = env,
-                     .token = "GBP",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1000'000000});
+                auto const btc = issue1({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1000'000000,
+                });
+                auto const eth = issue2({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1000'000000,
+                });
+                auto const gbp = issue3({
+                    .env = env,
+                    .token = "GBP",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1000'000000,
+                });
 
                 env(pay(gw_, alice_, btc(60'000)));
                 env(pay(gw_, bob_, eth(200'000)));
@@ -1749,23 +1895,26 @@ private:
             // the original test
             fund(env, gw_, {alice_}, XRP(10'000), {}, Fund::Acct);
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .flags = kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .flags = kMptDexFlags});
+            MPTTester eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .flags = kMptDexFlags});
+            MPTTester gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .flags = kMptDexFlags,
+            });
 
             env(pay(gw_, alice_, btc(60'000'000)));
             env(pay(gw_, bob_, btc(100'000'000)));
@@ -1794,7 +1943,7 @@ private:
                 STAmount smax(btc(61'000'000));
                 PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
-                auto ipe = [](MPTTester const& iss) {
+                auto const ipe = [](MPTTester const& iss) {
                     return STPathElement(
                         STPathElement::TypeMpt | STPathElement::TypeIssuer,
                         xrpAccount(),
@@ -1833,7 +1982,7 @@ private:
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
+                    if (auto const ok = sb.peek(keylet::offer(o)))
                     {
                         offerDelete(sb, ok, flowJournal);
                     }
@@ -1858,22 +2007,24 @@ private:
             // the forward pass. This test checks that the payment produces
             // 1'000 BTC, as expected.
 
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 10'000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 10'000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 10'000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 10'000'000,
+                });
 
                 env(pay(gw_, alice_, eth(1'000'000)));
                 env(pay(gw_, bob_, btc(1'000'000)));
@@ -1906,21 +2057,23 @@ private:
             Env env(*this, features);
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm(env, bob_, gbp(1'000'000'000'000'000), btc(1'000'000'000'000'000));
 
@@ -1948,29 +2101,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_, ed);
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             env(offer(ed, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000)),
                 Txflags(tfPassive));
@@ -2009,29 +2165,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_, ed);
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm1(env, bob_, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000));
             AMM const amm2(env, ed, eth(1'000'000'000'000'000), btc(1'000'000'000'000'000));
@@ -2064,21 +2223,23 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .transferFee = 25'000,
-                 .pay = 1'100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .transferFee = 25'000,
+                .pay = 1'100'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_},
-                 .transferFee = 25'000,
-                 .pay = 1'100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_},
+                .transferFee = 25'000,
+                .pay = 1'100'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm(env, bob_, btc(1'000'000), eth(1'100'000));
             env(offer(alice_, eth(100'000), btc(100'000)));
@@ -2097,21 +2258,23 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'000'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'000'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm(env, bob_, gbp(1'000'000'000'000'000), btc(1'000'000'000'000'000));
 
@@ -2141,21 +2304,23 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'200'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'200'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'200'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'200'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm(env, bob_, gbp(1'000'000'000'000'000), btc(1'200'000'000'000'000));
 
@@ -2171,13 +2336,15 @@ private:
             // on 24e12GBP
             // 1,200e12 - 24e12*1.25 =~ 1,170e12GBP
             env.require(Balance(alice_, gbp(1'170'000'000'000'000)));
-            // 24e12GBP is swapped in for 28.125e12BTC
+            // 24e12GBP is swapped in for 28.125e12BTC, less one unit: the
+            // limit quality 120/90 is rounded to nearest, so a trade at
+            // exactly 4/3 is just over the limit
             BEAST_EXPECT(amm.expectBalances(
-                gbp(1'024'000'000'000'000), btc(1'171'875'000'000'000), amm.tokens()));
+                gbp(1'024'000'000'000'000), btc(1'171'875'000'000'001), amm.tokens()));
 
             // 25% on 22.5e12BTC is paid in tr fee
             // 22.5*1.25 = 28.125e12BTC
-            env.require(Balance(carol_, btc(1'222'500'000'000'000)));
+            env.require(Balance(carol_, btc(1'222'499'999'999'999)));
         }
         {
             // Payment via offer and AMM with limit quality, deliver less
@@ -2187,29 +2354,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_, ed);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             env(offer(ed, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000)),
                 Txflags(tfPassive));
@@ -2253,29 +2423,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_, ed);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm(env, bob_, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000));
 
@@ -2322,29 +2495,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_, ed);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, ed},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, ed},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm1(env, bob_, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000));
             AMM const amm2(env, ed, eth(1'000'000'000'000'000), btc(1'400'000'000'000'000));
@@ -2381,29 +2557,32 @@ private:
 
             env.fund(XRP(1'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const gbp(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const gbp({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .transferFee = 25'000,
-                 .pay = 1'400'000'000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .transferFee = 25'000,
+                .pay = 1'400'000'000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const amm1(env, alice_, gbp(1'000'000'000'000'000), eth(1'000'000'000'000'000));
             AMM const amm2(env, bob_, eth(1'000'000'000'000'000), btc(1'400'000'000'000'000));
@@ -2444,12 +2623,13 @@ private:
             Env env(*this);
             env.fund(XRP(10'000), gw_, alice_, bob_, carol_);
 
-            MPTTester const eth(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 2'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const eth({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 2'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBob(env, bob_, XRP(1'000), eth(1'050'000));
             env(offer(bob_, XRP(100), eth(50'000)));
@@ -2474,22 +2654,24 @@ private:
 
         // Payment path starting with XRP
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, gw_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
 
                 env(pay(gw_, alice_, btc(200'000)));
                 env(pay(gw_, bob_, btc(200'000)));
@@ -2510,22 +2692,24 @@ private:
 
         // Payment path ending with XRP
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, gw_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
 
                 env(pay(gw_, alice_, btc(200'000)));
                 env(pay(gw_, bob_, btc(200'000)));
@@ -2548,28 +2732,31 @@ private:
         // Payment where loop is formed in the middle of the path, not
         // on an endpoint
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this);
                 env.fund(XRP(10'000), gw_, alice_, bob_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
-                auto const jpy = issue2(
-                    {.env = env,
-                     .token = "JPY",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_},
-                     .limit = 2000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
+                auto const jpy = issue2({
+                    .env = env,
+                    .token = "JPY",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_},
+                    .limit = 2000'000,
+                });
 
                 env(pay(gw_, alice_, btc(200'000)));
                 env(pay(gw_, bob_, btc(200'000)));
@@ -2648,12 +2835,13 @@ private:
             env.fund(XRP(100'000), gw_, alice_, bob_, carol_, dan, ed);
             env.close();
 
-            MPTTester const usd(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, dan, ed},
-                 .pay = 10000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const usd({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, dan, ed},
+                .pay = 10000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             env.trust(BTC(11'000'000'000'000), ed);
             env(pay(gw_, ed, BTC(11'000'000'000'000)));
@@ -2729,12 +2917,13 @@ private:
 
             MPTTester const btc(
                 {.env = env, .issuer = gw_, .holders = {bob_, dan, ed}, .flags = kMptDexFlags});
-            MPTTester const usd(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_, dan, ed},
-                 .pay = 10000'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const usd({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_, dan, ed},
+                .pay = 10000'000'000,
+                .flags = kMptDexFlags,
+            });
 
             env(pay(gw_, ed, btc(11'000'000'000'000)));
             env(pay(gw_, bob_, btc(1'000'000'000'000)));
@@ -2766,11 +2955,12 @@ private:
             Env env(*this, features);
             fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .flags = kMptDexFlags,
+            });
 
             env(pay(alice_, bob_, btc(10'000)), DeliverMin(btc(10'000)), Ter(temBAD_AMOUNT));
             env(pay(alice_, bob_, btc(10'000)),
@@ -2821,22 +3011,24 @@ private:
 
         // IOU/MPT mix, similar to the above case
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 3000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 3000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1'000'000,
+                });
 
                 env(pay(gw_, alice_, usd(10'000)));
                 env(pay(gw_, bob_, usd(10'000)));
@@ -2880,22 +3072,24 @@ private:
 
         // IOU/MPT mix, similar to the above case
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 3000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 3000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1'000'000,
+                });
 
                 env(pay(gw_, alice_, usd(100'000)));
                 env(pay(gw_, bob_, usd(100'000)));
@@ -3012,7 +3206,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto failedMptPayments = [this, &env, &btc]() {
+        auto const failedMptPayments = [this, &env, &btc] {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't
@@ -3089,11 +3283,12 @@ private:
 
         env.fund(XRP(1'000), g1, alice, bob);
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = g1,
-             .holders = {alice, bob},
-             .flags = tfMPTCanLock | kMptDexFlags});
+        MPTTester btc({
+            .env = env,
+            .issuer = g1,
+            .holders = {alice, bob},
+            .flags = tfMPTCanLock | kMptDexFlags,
+        });
 
         env(pay(g1, bob, btc(10)));
         env(pay(g1, alice, btc(205)));
@@ -3163,17 +3358,19 @@ private:
         env.fund(XRP(1'000), a1);
         env.fund(XRP(20'000), a2, a3, a4);
 
-        MPTTester const eth(
-            {.env = env,
-             .issuer = g1,
-             .holders = {a1, a2, a3, a4},
-             .flags = tfMPTCanLock | kMptDexFlags});
+        MPTTester const eth({
+            .env = env,
+            .issuer = g1,
+            .holders = {a1, a2, a3, a4},
+            .flags = tfMPTCanLock | kMptDexFlags,
+        });
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = g1,
-             .holders = {a1, a2, a3, a4},
-             .flags = tfMPTCanLock | kMptDexFlags});
+        MPTTester btc({
+            .env = env,
+            .issuer = g1,
+            .holders = {a1, a2, a3, a4},
+            .flags = tfMPTCanLock | kMptDexFlags,
+        });
 
         env(pay(g1, a1, eth(1'000)));
         env(pay(g1, a2, eth(100)));
@@ -3258,11 +3455,12 @@ private:
         env.fund(XRP(2'000), a2);
         env.close();
 
-        MPTTester btc(
-            {.env = env,
-             .issuer = g1,
-             .holders = {a2, a3, a4},
-             .flags = tfMPTCanLock | kMptDexFlags});
+        MPTTester btc({
+            .env = env,
+            .issuer = g1,
+            .holders = {a2, a3, a4},
+            .flags = tfMPTCanLock | kMptDexFlags,
+        });
 
         env(pay(g1, a3, btc(2'000)));
         env(pay(g1, a4, btc(2'001)));
@@ -3305,7 +3503,7 @@ private:
         env.close();
 
         //    test: offer was removed by offer_create
-        auto offers = getAccountOffers(env, a4)[jss::offers];
+        auto const offers = getAccountOffers(env, a4)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
     }
@@ -3323,12 +3521,13 @@ private:
         Account const zelda{"zelda", KeyType::Secp256k1};
         fund(env, gw_, {alice, becky, zelda}, XRP(20'000));
 
-        MPTTester const btc(
-            {.env = env,
-             .issuer = gw_,
-             .holders = {alice, becky, zelda},
-             .pay = 20'000'000'000,
-             .flags = kMptDexFlags});
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw_,
+            .holders = {alice, becky, zelda},
+            .pay = 20'000'000'000,
+            .flags = kMptDexFlags,
+        });
 
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
@@ -3382,22 +3581,24 @@ private:
 
         // cannot have more than one offer with the same output issue
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
-                auto const eth = issue1(
-                    {.env = env,
-                     .token = "ETH",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1'000'000});
-                auto const btc = issue2(
-                    {.env = env,
-                     .token = "BTC",
-                     .issuer = gw_,
-                     .holders = {alice_, bob_, carol_},
-                     .limit = 1'000'000});
+                auto const eth = issue1({
+                    .env = env,
+                    .token = "ETH",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1'000'000,
+                });
+                auto const btc = issue2({
+                    .env = env,
+                    .token = "BTC",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1'000'000,
+                });
                 env(pay(gw_, alice_, btc(50000)));
                 env(pay(gw_, bob_, btc(50000)));
                 env(pay(gw_, carol_, btc(50000)));
@@ -3429,19 +3630,21 @@ private:
             Env env(*this, features);
             fund(env, gw_, {alice_, bob_}, XRP(10'000));
 
-            MPTTester btc(
-                {.env = env,
-                 .issuer = bob_,
-                 .holders = {alice_, gw_},
-                 .pay = 100'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester btc({
+                .env = env,
+                .issuer = bob_,
+                .holders = {alice_, gw_},
+                .pay = 100'000'000,
+                .flags = kMptDexFlags,
+            });
 
-            MPTTester eth(
-                {.env = env,
-                 .issuer = bob_,
-                 .holders = {alice_, gw_},
-                 .pay = 100'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester eth({
+                .env = env,
+                .issuer = bob_,
+                .holders = {alice_, gw_},
+                .pay = 100'000'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammXrpBtc(env, bob_, XRP(100), btc(100'000));
             env(offer(gw_, XRP(100), btc(100'000)), Txflags(tfPassive));
@@ -3470,12 +3673,13 @@ private:
 
             fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBob(env, bob_, XRP(100), btc(100));
 
@@ -3491,12 +3695,13 @@ private:
 
             fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
 
             AMM const ammBob(env, bob_, XRP(100), btc(100));
 
@@ -3520,11 +3725,12 @@ private:
 
             env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw_,
-                 .holders = {alice_, bob_, carol_},
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw_,
+                .holders = {alice_, bob_, carol_},
+                .flags = kMptDexFlags,
+            });
 
             env(pay(gw_, bob_, btc(100'000'000)));
             env(pay(gw_, alice_, btc(100'000'000)));
@@ -3541,7 +3747,7 @@ private:
         }
 
         {
-            auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
@@ -3583,6 +3789,7 @@ private:
         pathFind01();
         pathFind02();
         pathFind06();
+        pathFindMPTAMMExecutableSourceAmount();
     }
 
     void

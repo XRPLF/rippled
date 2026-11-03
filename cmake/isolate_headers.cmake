@@ -34,11 +34,12 @@ include(create_symbolic_link)
 # sometimes `PUBLIC` and sometimes `PRIVATE`.
 # The Cs are all guaranteed to be unique.
 # We can guarantee a unique X per target by using
-# `${CMAKE_CURRENT_BINARY_DIR}/include/${target}`.
+# `${CMAKE_CURRENT_BINARY_DIR}/modules/${target}`.
 #
 # isolate_headers(target A B scope)
 function(isolate_headers target A B scope)
     file(RELATIVE_PATH C "${A}" "${B}")
+    # Keep in sync with ExcludeHeaderFilterRegex in .clang-tidy.
     set(X "${CMAKE_CURRENT_BINARY_DIR}/modules/${target}")
     set(Y "${X}/${C}")
     cmake_path(GET Y PARENT_PATH parent)

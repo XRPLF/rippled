@@ -14,6 +14,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -46,7 +47,7 @@ public:
         json::Value accountAlice;
         accountAlice[jss::account] = alice.human();
 
-        for (auto setOrClear : {true, false})
+        for (auto const setOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
             env(trust(gw, usd(100), alice, setOrClear ? tfSetNoRipple : tfClearNoRipple));
@@ -110,7 +111,7 @@ public:
         auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
-        auto getAccountLines = [&env](Account const& acct) {
+        auto const getAccountLines = [&env](Account const& acct) {
             auto const r = jtx::getAccountLines(env, acct);
             return r[jss::lines];
         };
@@ -256,6 +257,9 @@ public:
                 else
                 {
                     BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                    BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
+                    BEAST_EXPECT(
+                        lines[jss::result][jss::error_message] == "Invalid field 'transactions'.");
                 }
             }
         }
@@ -266,7 +270,7 @@ public:
     {
         testSetAndClear();
 
-        auto withFeatsTests = [this](FeatureBitset features) {
+        auto const withFeatsTests = [this](FeatureBitset features) {
             forAllApiVersions(
                 [&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
             testNegativeBalance(features);

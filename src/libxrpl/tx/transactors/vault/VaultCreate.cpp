@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -8,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -17,6 +19,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -30,6 +33,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -40,6 +44,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    if (!ctx.rules.enabled(featureLendingProtocolV1_1) &&
+        (ctx.tx.isFieldPresent(sfVaultKind) || ctx.tx.isFieldPresent(sfSubscriptionDate) ||
+         ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
 
     return true;
@@ -80,6 +89,11 @@ VaultCreate::preflight(PreflightContext const& ctx)
     {
         if (*assetMax < beast::kZero)
             return temMALFORMED;
+
+        // An AssetsMaximum out of range for the asset, e.g. XRP above
+        // STAmount::kMaxNativeN, would throw when rounded to the asset.
+        if (ctx.rules.enabled(fixCleanup3_5_0) && !isRepresentable(ctx.tx[sfAsset], *assetMax))
+            return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
@@ -94,7 +108,26 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVaultMaximumIouScale)
+        auto const maximumScale = getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision
+            ? kFixedPrecisionVaultMaximumIouScale
+            : kLegacyVaultMaximumIouScale;
+        if (scale > maximumScale)
+            return temMALFORMED;
+    }
+
+    if (!isValidVaultKind(ctx.tx))
+        return temMALFORMED;
+    auto const kind = getVaultKind(ctx.tx);
+    auto const hasSubscription = ctx.tx.isFieldPresent(sfSubscriptionDate);
+    auto const hasRedemption = ctx.tx.isFieldPresent(sfRedemptionDate);
+    auto const isClosedEnded = kind == VaultKind::ClosedEnded;
+    if (!isClosedEnded && (hasSubscription || hasRedemption))
+        return temMALFORMED;
+    if (isClosedEnded)
+    {
+        if (!hasSubscription || !hasRedemption)
+            return temMALFORMED;
+        if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
             return temMALFORMED;
     }
 
@@ -130,10 +163,36 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto const sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqProxy();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
+
+    // preflight enforces red >= sub + kMinInvestmentPeriod for closed-ended
+    // vaults, so a past RedemptionDate always implies a strictly-earlier,
+    // equally-past SubscriptionDate. The RedemptionDate arm below is therefore
+    // defensive: it cannot be the sole cause of tecEXPIRED. It is kept to
+    // preserve the invariant locally in case the preflight gap check is ever
+    // weakened.
+    if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
+        hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
+        return tecEXPIRED;
+
+    // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
+    // otherwise associateAsset would silently round the cap the owner asked for. Legacy and
+    // CashBasis Vaults keep their existing behavior.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && getVaultDefaultVersion(ctx.view.rules()) == VaultVersion::FixedPrecision)
+    {
+        int const baseScale =
+            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
+        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
+        {
+            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -146,13 +205,13 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
-    auto const sequence = tx.getSeqValue();
+    auto const applyViewContext = ctx_.getApplyViewContext();
+    auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    auto const vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
@@ -190,7 +249,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<uint256> {
+    auto const referenceHolding = [&] -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -209,7 +268,6 @@ VaultCreate::doApply()
             .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
             .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
@@ -218,7 +276,7 @@ VaultCreate::doApply()
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
-    vault->at(sfSequence) = sequence;
+    vault->at(sfSequence) = sequence.value();
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
@@ -241,6 +299,28 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
+    VaultVersion const version = getVaultDefaultVersion(view().rules());
+    if (version == VaultVersion::FixedPrecision)
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
+        vault->at(sfYieldUnrealized) = Number(0);
+        vault->at(sfAssetsDeployed) = Number(0);
+    }
+    else if (version == VaultVersion::CashBasis)
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    }
+
+    if (version != VaultVersion::Legacy)
+    {
+        auto const kind = getVaultKind(tx);
+        vault->at(sfVaultKind) = std::to_underlying(kind);
+        if (kind == VaultKind::ClosedEnded)
+        {
+            vault->at(sfSubscriptionDate) = tx[sfSubscriptionDate];
+            vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
+        }
+    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
@@ -270,7 +350,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

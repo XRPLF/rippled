@@ -1,10 +1,9 @@
 #pragma once
 
-#include <xrpld/consensus/Validations.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -52,7 +51,7 @@ public:
     /**
      * Validated ledger's hash
      */
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     ledgerID() const
     {
         return val_->getLedgerHash();
@@ -219,7 +218,7 @@ public:
 private:
     ID ledgerID_;
     Seq ledgerSeq_;
-    std::vector<uint256> ancestors_;
+    std::vector<UInt256> ancestors_;
     beast::Journal j_;
 };
 

@@ -29,6 +29,9 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
+[[nodiscard]] bool
+isGlobalFrozen(SLE const& issuanceSle);
+
 /**
  * Returns true if @p account's MPToken for @p mptIssue carries the
  * individual-lock flag (lsfMPTLocked).
@@ -40,15 +43,47 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
  * receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
  * isVaultPseudoAccountFrozen into a single complete check.
  */
+
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
+[[nodiscard]] bool
+isIndividualFrozen(SLE const& mptSle);
+
+/**
+ * Returns true if @p account cannot send or receive tokens of @p mptIssue
+ * because a freeze applies. This is the complete check callers should use
+ * before moving MPT value: it combines @ref isGlobalFrozen (issuance-level
+ * lock), @ref isIndividualFrozen (per-holder lock bit), and the transitive
+ * vault pseudo-account check (if @p mptIssue is a vault share, the underlying
+ * asset is checked, and so on recursively up to @c maxAssetCheckDepth).
+ *
+ * The @c SLE overload takes an already-loaded ltMPTOKEN or ltMPTOKEN_ISSUANCE
+ * ledger entry; for ltMPTOKEN it can skip the per-holder individual-lock lookup.
+ * @ref isAnyFrozen answers the same question for a set of accounts and returns true
+ * if the freeze applies to any of them.
+ *
+ * @param depth Current recursion depth for the vault-share walk. Callers
+ * outside this module should leave it at the default.
+ */
 [[nodiscard]] bool
 isFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
     std::uint8_t depth = 0);
+
+/**
+ * SLE overload: pass an already-loaded ltMPTOKEN (holder row) or
+ * ltMPTOKEN_ISSUANCE to reuse it for the freeze checks and avoid re-reading
+ * the same object. For an ltMPTOKEN, @p sle is used directly for the
+ * individual-lock check and the issuance is read once for global-freeze and
+ * vault-pseudo-account. For an ltMPTOKEN_ISSUANCE, @p sle is used directly
+ * for global-freeze and vault-pseudo-account, and the caller's holder row is
+ * read for the individual-lock check.
+ */
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(
@@ -252,7 +287,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t const flags);
 
 TER
@@ -260,7 +295,15 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
+    std::uint32_t flags,
+    beast::Journal j);
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
     beast::Journal j);
 
 //------------------------------------------------------------------------------
@@ -269,12 +312,22 @@ checkCreateMPT(
 //
 //------------------------------------------------------------------------------
 
-// MaximumAmount doesn't exceed 2**63-1
+/**
+ * MaximumAmount doesn't exceed 2**63-1
+ */
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance);
 
-// OutstandingAmount may overflow and available amount might be negative.
-// But available amount is always <= |MaximumAmount - OutstandingAmount|.
+/**
+ * std::nullopt if the issuance doesn't exist.
+ */
+std::optional<std::int64_t>
+maxMPTAmount(ReadView const& view, MPTID const& mptID);
+
+/**
+ * OutstandingAmount may overflow and available amount might be negative.
+ * But available amount is always <= |MaximumAmount - OutstandingAmount|.
+ */
 std::int64_t
 availableMPTAmount(SLE const& sleIssuance);
 
@@ -288,7 +341,12 @@ availableMPTAmount(ReadView const& view, MPTID const& mptID);
  * directSendNoFee transactions that bypass the payment engine.
  * 2.  **accountSend & Payment Engine (Overflow: Yes):** A temporary overflow
  * check when `OutstandingAmount > UINT64_MAX`. This higher threshold is used
- * for `accountSend` and payments processed via the payment engine.
+ * for `accountSend` and payments processed via the payment engine, whose
+ * reverse pass may issue before it redeems.
+ *
+ * In both cases a single `sendAmount > MaximumAmount` is rejected. Such a send
+ * can never settle: redemptions within the transaction are bounded by the
+ * outstanding amount, so the final OutstandingAmount would exceed the cap.
  */
 bool
 isMPTOverflow(
@@ -310,6 +368,12 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
 /**
  * Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
  * See ApplyView::issuerSelfDebitHookMPT().
+ *
+ * `amount` may be 0. BookStep removes an offer whose fee-adjusted funded
+ * output is 0, but other clips (for example MaximumAmount via limitStepIn)
+ * can still consume a zero slice of a funded remainder. The hook must
+ * accept 0: first call still snapshots origBalance; a zero debit adds
+ * nothing to selfDebit.
  */
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);

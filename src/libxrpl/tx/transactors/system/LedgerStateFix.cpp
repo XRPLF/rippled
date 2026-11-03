@@ -24,10 +24,12 @@ namespace {
 
 using FixType = LedgerStateFix::FixType;
 
-std::array<std::pair<FixType, SField const*>, 2> const kLedgerFixFields = {{
-    {FixType::NfTokenPageLink, &sfOwner},
-    {FixType::BookExchangeRate, &sfBookDirectory},
-}};
+std::array<std::pair<FixType, SField const*>, 2> const kLedgerFixFields = {
+    {
+        {FixType::NfTokenPageLink, &sfOwner},
+        {FixType::BookExchangeRate, &sfBookDirectory},
+    },
+};
 
 [[nodiscard]] SField const*
 fixField(FixType const fixType)
@@ -138,7 +140,7 @@ LedgerStateFix::doApply()
     if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::BookExchangeRate)
     {
         auto const dirKey = ctx_.tx.getFieldH256(sfBookDirectory);
-        auto sle = view().peek(Keylet(ltDIR_NODE, dirKey));
+        auto const sle = view().peek(Keylet(ltDIR_NODE, dirKey));
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -152,7 +154,7 @@ LedgerStateFix::doApply()
 }
 
 void
-LedgerStateFix::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LedgerStateFix::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

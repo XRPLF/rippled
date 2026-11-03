@@ -54,7 +54,7 @@ private:
      * Maintains the list of squelched relaying to downstream peers.
      * Expiration time is included in the TMSquelch message.
      */
-    hash_map<PublicKey, time_point> squelched_;
+    HashMap<PublicKey, time_point> squelched_;
     beast::Journal const journal_;
 };
 
@@ -89,7 +89,7 @@ template <typename ClockType>
 bool
 Squelch<ClockType>::expireSquelch(PublicKey const& validator)
 {
-    auto now = ClockType::now();
+    auto const now = ClockType::now();
 
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())

@@ -20,12 +20,14 @@ SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept : ptr_{p}
 
 template <class T>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)
-    : ptr_{[&] {
-        auto p = rhs.unsafeGetRawPtr();
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = rhs.unsafeGetRawPtr();
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -33,12 +35,14 @@ template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = rhs.unsafeGetRawPtr();
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = rhs.unsafeGetRawPtr();
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -113,13 +117,6 @@ SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 
 template <class T>
 bool
-SharedIntrusive<T>::operator!=(std::nullptr_t) const
-{
-    return this->get() != nullptr;
-}
-
-template <class T>
-bool
 SharedIntrusive<T>::operator==(std::nullptr_t) const
 {
     return this->get() == nullptr;
@@ -147,12 +144,14 @@ SharedIntrusive<T>::~SharedIntrusive()
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = static_cast<T*>(rhs.unsafeGetRawPtr());
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = static_cast<T*>(rhs.unsafeGetRawPtr());
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -166,12 +165,14 @@ SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusiv
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = dynamic_cast<T*>(rhs.unsafeGetRawPtr());
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = dynamic_cast<T*>(rhs.unsafeGetRawPtr());
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -267,7 +268,7 @@ SharedIntrusive<T>::unsafeReleaseAndStore(T* next)
         return;
 
     using enum ReleaseStrongRefAction;
-    auto action = prev->releaseStrongRef();
+    auto const action = prev->releaseStrongRef();
     switch (action)
     {
         case NoOp:
@@ -368,7 +369,7 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
         return;
 
     using enum ReleaseWeakRefAction;
-    auto action = ptr_->releaseWeakRef();
+    auto const action = ptr_->releaseWeakRef();
     switch (action)
     {
         case NoOp:
@@ -587,7 +588,7 @@ SharedWeakUnion<T>::convertToStrong()
     auto p = unsafeGetRawPtr();
     if (p && p->checkoutStrongRefFromWeak())
     {
-        [[maybe_unused]] auto action = p->releaseWeakRef();
+        [[maybe_unused]] auto const action = p->releaseWeakRef();
         XRPL_ASSERT(
             (action == ReleaseWeakRefAction::NoOp),
             "xrpl::SharedWeakUnion::convertToStrong : "
@@ -610,7 +611,7 @@ SharedWeakUnion<T>::convertToWeak()
         return false;
 
     using enum ReleaseStrongRefAction;
-    auto action = p->addWeakReleaseStrongRef();
+    auto const action = p->addWeakReleaseStrongRef();
     switch (action)
     {
         case NoOp:
@@ -625,13 +626,16 @@ SharedWeakUnion<T>::convertToWeak()
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
             // LCOV_EXCL_STOP
-        case PartialDestroy:
-            // This is a weird case. We just converted the last strong
-            // pointer to a weak pointer.
+        case PartialDestroy: {
+            // We just converted the last strong pointer to a weak pointer.
+            // The weak ref we now hold keeps the object from being fully
+            // destroyed, so `p` stays valid; only the copy passed to
+            // `partialDestructorFinished` is nulled.
             p->partialDestructor();
-            partialDestructorFinished(&p);
-            // p is null and may no longer be used
+            auto finished = p;
+            partialDestructorFinished(&finished);
             break;
+        }
     }
     unsafeSetRawPtr(p, RefStrength::Weak);
     return true;
@@ -674,7 +678,7 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
     if (isStrong())
     {
         using enum ReleaseStrongRefAction;
-        auto strongAction = p->releaseStrongRef();
+        auto const strongAction = p->releaseStrongRef();
         switch (strongAction)
         {
             case NoOp:
@@ -692,7 +696,7 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
     else
     {
         using enum ReleaseWeakRefAction;
-        auto weakAction = p->releaseWeakRef();
+        auto const weakAction = p->releaseWeakRef();
         switch (weakAction)
         {
             case NoOp:

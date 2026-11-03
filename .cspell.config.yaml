@@ -7,6 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -30,7 +31,9 @@ ignoreRegExpList:
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
-  - filename: "**/*_test.cpp" # all test files
+  - filename:
+      - "**/*_test.cpp" # legacy boost.test files
+      - "src/tests/**/*.cpp" # gtest test files
     ignoreRegExpList:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
@@ -61,11 +64,13 @@ words:
   - blindings
   - bookdir
   - Bougalis
+  - bthomee
   - Britto
   - Btrfs
   - Buildx
   - canonicality
   - canonicalised
+  - cctools
   - changespq
   - checkme
   - choco
@@ -98,6 +103,7 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -107,6 +113,7 @@ words:
   - disablerepo
   - distro
   - doxyfile
+  - dsymutil
   - dxrpl
   - elgamal
   - enabled
@@ -130,11 +137,13 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
   - ifndef
   - inequation
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -163,6 +172,8 @@ words:
   - llection
   - LOCALGOOD
   - logwstream
+  - Lombrozo
+  - lresolv
   - lseq
   - lsmf
   - ltype
@@ -172,7 +183,6 @@ words:
   - MPTAMM
   - MPTDEX
   - Merkle
-  - Metafuncton
   - misprediction
   - missingok
   - mptbalance
@@ -188,6 +198,7 @@ words:
   - mptokens
   - mpts
   - mtgox
+  - mudhra
   - multisig
   - multisign
   - multisigned
@@ -200,6 +211,7 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - Nikolaos
   - nixfmt
   - nixos
   - nixpkgs
@@ -216,6 +228,8 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - otool
+  - oxalica
   - pargs
   - partitioner
   - paychan
@@ -243,12 +257,17 @@ words:
   - queuable
   - Raphson
   - rcflags
+  - reencrypted
   - replayer
+  - repodata
+  - repomd
   - rerandomize
   - rerandomization
   - rerandomized
   - rerandomizes
   - rerere
+  - retargeted
+  - retargets
   - retriable
   - RIPD
   - ripdtop
@@ -262,6 +281,8 @@ words:
   - Rohrs
   - roundings
   - rustc
+  - rustfmt
+  - rustup
   - sahyadri
   - Satoshi
   - scons
@@ -282,6 +303,7 @@ words:
   - sles
   - soci
   - socidb
+  - Sonatype
   - sponsee
   - sponsees
   - SRPMS
@@ -297,14 +319,15 @@ words:
   - sttx
   - stvar
   - stvector
-  - stxchainattestations
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
   - TMEndpointv2
+  - toolchain
   - tparam
   - trixie
   - tx
@@ -322,6 +345,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undeserializable
   - unergonomic
   - unfetched
   - unfindable
@@ -337,6 +361,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
@@ -352,14 +377,17 @@ words:
   - writeme
   - wsrch
   - wthread
-  - xbridge
   - xchain
+  - xcrun
   - ximinez
   - XMACRO
+  - xored
   - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
+  - ungated

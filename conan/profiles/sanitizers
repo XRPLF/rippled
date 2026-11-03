@@ -5,6 +5,9 @@ include(default)
 
 {% if not sanitizers %}
 {# Sanitizers not configured; no additional settings needed #}
+{% elif context == "build" %}
+{# Build-context packages are tools we run, not code we test, #}
+{# so don't instrument them #}
 {% else %}
 
 {% if compiler == "msvc" %}

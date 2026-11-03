@@ -84,7 +84,7 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
     ret += to_string(item_->key());
     ret += "\n  Hash=";
     ret += to_string(hash_);
-    ret += "/";
+    ret += '/';
     ret += std::to_string(item_->size());
     return ret;
 }
