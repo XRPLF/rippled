@@ -13,11 +13,13 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -76,8 +78,12 @@ public:
         // non-conventional ledger input should throw an error
         params["ledger"] = "non_conventional_ledger_input";
         resp = env.rpc("json", "book_changes", to_string(params));
-        BEAST_EXPECT(resp[jss::result].isMember(jss::error));
-        BEAST_EXPECT(resp[jss::result][jss::status] != "success");
+        BEAST_EXPECT(resp[jss::result][jss::status] == "error");
+        BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+        BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'ledger', not string or number.");
     }
 
     void
@@ -194,7 +200,7 @@ public:
             metadata->add(*metaSerializer);
 
             ledger->rawTxInsert(UInt256{1}, txSerializer, metaSerializer);
-            ledger->setImmutable();
+            BEAST_EXPECT(ledger->setImmutable());
             ledger->setValidated();
 
             try
@@ -277,7 +283,12 @@ public:
             ledger->rawTxInsert(UInt256{seq}, txSerializer, metaSerializer);
         }
 
-        ledger->setImmutable();
+        // Thrown rather than asserted because a refusal leaves the ledger unusable, and this
+        // helper is static, so BEAST_EXPECT is out of reach.
+        if (!ledger->setImmutable())
+        {
+            Throw<std::runtime_error>("bookChangesFor: ledger could not be made immutable");
+        }
         ledger->setValidated();
 
         return xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));

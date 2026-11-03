@@ -137,6 +137,8 @@ transResults()
         MAKE_ERROR(tefBAD_PATH_COUNT,              "Malformed: Too many paths."),
         MAKE_ERROR(tefNO_BYTECODE,                 "There is no WASM code to run, but a WASM-specific field was included."),
         MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field that was not included."),
+        MAKE_ERROR(tefTEMP_DISABLED,               "The transaction requires logic that is currently temporarily disabled."),
+        MAKE_ERROR(tefEXCEEDS_LIMIT,               "The transaction exceeds a limit set by fee voting."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -209,7 +211,6 @@ transResults()
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
         MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided byte code is invalid."),
-        MAKE_ERROR(temTEMP_DISABLED,             "The transaction requires logic that is currently temporarily disabled."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

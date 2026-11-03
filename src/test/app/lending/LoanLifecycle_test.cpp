@@ -190,6 +190,8 @@ private:
             BEAST_EXPECT(jr.isMember(jss::result));
             auto const jResult = jr[jss::result];
             BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jResult.isMember(jss::error_code));
+            BEAST_EXPECT(jResult[jss::error_message].isNull());
             BEAST_EXPECT(
                 jResult[jss::error_exception] ==
                 "fails local checks: Transaction has bad signature.");
@@ -289,8 +291,7 @@ private:
         Account const issuer("issuer");
         Account const borrower = issuer;
         Account const lender("lender");
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
 
         env.fund(XRP(1'000), issuer, lender);
 
@@ -330,8 +331,7 @@ private:
         Account const depositor{"depositor"};
 
         auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
-            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+            Env env(*this);
             Vault const vault(env);
 
             if (borrower == broker)
