@@ -880,6 +880,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     {sfPaymentTotal, SoeOptional},
     {sfPaymentInterval, SoeOptional},
     {sfGracePeriod, SoeOptional},
+    {sfCollateralID, SoeOptional},
 }))
 
 /** This transaction deletes an existing Loan */

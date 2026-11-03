@@ -46,6 +46,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const collateralIDValue = canonical_UINT256();
 
     LoanSetBuilder builder{
         accountValue,
@@ -71,6 +72,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     builder.setPaymentTotal(paymentTotalValue);
     builder.setPaymentInterval(paymentIntervalValue);
     builder.setGracePeriod(gracePeriodValue);
+    builder.setCollateralID(collateralIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -220,6 +222,14 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasGracePeriod());
     }
 
+    {
+        auto const& expected = collateralIDValue;
+        auto const actualOpt = tx.getCollateralID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCollateralID should be present";
+        expectEqualField(expected, *actualOpt, "sfCollateralID");
+        EXPECT_TRUE(tx.hasCollateralID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -253,6 +263,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const collateralIDValue = canonical_UINT256();
 
     // Build an initial transaction
     LoanSetBuilder initialBuilder{
@@ -278,6 +289,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setPaymentTotal(paymentTotalValue);
     initialBuilder.setPaymentInterval(paymentIntervalValue);
     initialBuilder.setGracePeriod(gracePeriodValue);
+    initialBuilder.setCollateralID(collateralIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -413,6 +425,13 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
     }
 
+    {
+        auto const& expected = collateralIDValue;
+        auto const actualOpt = rebuiltTx.getCollateralID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCollateralID should be present";
+        expectEqualField(expected, *actualOpt, "sfCollateralID");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -502,6 +521,8 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getPaymentInterval().has_value());
     EXPECT_FALSE(tx.hasGracePeriod());
     EXPECT_FALSE(tx.getGracePeriod().has_value());
+    EXPECT_FALSE(tx.hasCollateralID());
+    EXPECT_FALSE(tx.getCollateralID().has_value());
 }
 
 }

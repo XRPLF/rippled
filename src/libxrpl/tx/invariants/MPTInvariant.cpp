@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -125,6 +126,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
         else if (!before)
         {
             mptokensCreated_++;
+            mptokenHolders_.push_back(after->at(sfAccount));
             MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
             if (mptIssue.getIssuer() == after->at(sfAccount))
                 mptCreatedByIssuer_ = true;
@@ -437,6 +439,23 @@ ValidMPTIssuance::finalize(
             XRPL_ASSERT_PARTS(
                 !enforceEscrowFinish, "xrpl::ValidMPTIssuance::finalize", "not escrow finish tx");
             return true;
+        }
+
+        // CollateralLock: a default sweeps pledged collateral to the broker
+        // owner as an EscrowFinish submitted by that destination would, so it
+        // may create that one MPToken: the broker owner's, for a collateralised
+        // loan this transaction defaulted.
+        if (txnType == ttLOAN_MANAGE && rules.enabled(featureCollateralLock) &&
+            tx.isFlag(tfLoanDefault) && mptokensCreated_ == 1 && mptokensDeleted_ == 0 &&
+            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
+        {
+            auto const loan = view.read(keylet::loan(tx[sfLoanID]));
+            auto const broker =
+                loan ? view.read(keylet::loanBroker(loan->at(sfLoanBrokerID))) : nullptr;
+            if (loan && broker && loan->isFlag(lsfLoanDefault) &&
+                loan->isFieldPresent(sfCollateralID) &&
+                mptokenHolders_.front() == broker->at(sfOwner))
+                return true;
         }
 
         if (hasPrivilege(tx, Privilege::MayDeleteMpt) &&

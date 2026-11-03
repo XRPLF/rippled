@@ -15,10 +15,13 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 
 namespace xrpl {
@@ -293,6 +296,123 @@ ValidLoan::finalize(
                            "other than LoanDelete";
         return false;
     }
+    return true;
+}
+
+void
+ValidCollateralLock::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+{
+    if (isDelete)
+    {
+        if (before && before->getType() == ltESCROW && before->isFieldPresent(sfLoanID))
+            deletedPledges_.push_back(before);
+        if (before && before->getType() == ltLOAN && before->isFieldPresent(sfCollateralID))
+            collateralLoanDeleted_ = true;
+        return;
+    }
+
+    if (!after)
+        return;  // LCOV_EXCL_LINE
+
+    // An escrow whose LoanID was added, changed or removed, including an
+    // escrow created already carrying one (before is null).
+    if (after->getType() == ltESCROW &&
+        (before ? (*before)[~sfLoanID] != (*after)[~sfLoanID] : after->isFieldPresent(sfLoanID)))
+        changedPledges_.emplace_back(before, after);
+
+    if (after->getType() == ltLOAN)
+    {
+        if (!before && after->isFieldPresent(sfCollateralID))
+            newLoans_.push_back(after);
+        if (before && !before->isFlag(lsfLoanDefault) && after->isFlag(lsfLoanDefault))
+            defaultedLoans_.push_back(after->key());
+    }
+}
+
+bool
+ValidCollateralLock::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (!view.rules().enabled(featureCollateralLock))
+        return true;
+
+    bool const touched = !changedPledges_.empty() || !deletedPledges_.empty() ||
+        !newLoans_.empty() || collateralLoanDeleted_;
+
+    // A failed transaction keeps only its fee and sequence effects, so no
+    // collateral link may be created, changed or released by it.
+    if (!isTesSuccess(result))
+    {
+        if (touched)
+        {
+            JLOG(j.fatal()) << "Invariant failed: collateral changed by a failed transaction";
+            return false;
+        }
+        return true;
+    }
+
+    auto const txType = tx.getTxnType();
+
+    // 1. A LoanID is only added, by the LoanSet that creates the loan it
+    //    names, to the escrow that loan names. It is never changed or removed.
+    for (auto const& [before, after] : changedPledges_)
+    {
+        bool const added =
+            (!before || !before->isFieldPresent(sfLoanID)) && after->isFieldPresent(sfLoanID);
+        bool const matchesNewLoan = added && txType == ttLOAN_SET && before &&
+            std::any_of(newLoans_.begin(), newLoans_.end(), [&](auto const& loan) {
+                                        return tx[~sfCollateralID] == after->key() &&
+                                            loan->key() == (*after)[sfLoanID] &&
+                                            (*loan)[sfCollateralID] == after->key();
+                                    });
+        if (!matchesNewLoan)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Escrow LoanID set or changed outside the "
+                               "LoanSet that pledges it";
+            return false;
+        }
+    }
+
+    // 2. A pledged escrow is deleted only once its loan is paid off or gone,
+    //    or by the LoanManage that defaults that same loan in this transaction.
+    for (auto const& escrow : deletedPledges_)
+    {
+        auto const loanID = (*escrow)[sfLoanID];
+        auto const loan = view.read(keylet::loan(loanID));
+        bool const paidOff =
+            !loan || (loan->at(sfPaymentRemaining) == 0 && !loan->isFlag(lsfLoanDefault));
+        bool const swept = loan && txType == ttLOAN_MANAGE && tx.isFlag(tfLoanDefault) &&
+            tx[sfLoanID] == loanID && (*loan)[~sfCollateralID] == escrow->key() &&
+            std::find(defaultedLoans_.begin(), defaultedLoans_.end(), loanID) !=
+                defaultedLoans_.end();
+        auto const cancelAfter = (*escrow)[~sfCancelAfter];
+        bool const lapsed = txType == ttESCROW_CANCEL && cancelAfter &&
+            view.header().parentCloseTime.time_since_epoch().count() > *cancelAfter &&
+            keylet::escrow(tx[sfOwner], SeqProxy::rawSequence(tx[sfOfferSequence])).key ==
+                escrow->key();
+        if (!paidOff && !swept && !lapsed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: pledged Escrow deleted while its Loan is unpaid";
+            return false;
+        }
+    }
+
+    // 3. A new loan's CollateralID names an escrow pledged back to it.
+    for (auto const& loan : newLoans_)
+    {
+        auto const escrow = view.read(Keylet{ltESCROW, (*loan)[sfCollateralID]});
+        if (!escrow || (*escrow)[~sfLoanID] != loan->key())
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan CollateralID does not name an Escrow "
+                               "pledged to it";
+            return false;
+        }
+    }
+
     return true;
 }
 

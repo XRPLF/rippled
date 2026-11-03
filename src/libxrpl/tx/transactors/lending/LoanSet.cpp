@@ -9,6 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -154,6 +155,14 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::kZero)
         return temINVALID;
+
+    if (auto const collateralID = tx[~sfCollateralID])
+    {
+        if (!ctx.rules.enabled(featureCollateralLock))
+            return temDISABLED;
+        if (*collateralID == beast::kZero)
+            return temINVALID;
+    }
 
     return tesSUCCESS;
 }
@@ -444,6 +453,79 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
     {
         JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+        return ret;
+    }
+
+    if (auto const collateralID = tx[~sfCollateralID])
+    {
+        auto const grace = tx[~sfGracePeriod].value_or(kDefaultGracePeriod);
+        auto const maturity =
+            std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total) + grace;
+        if (auto const ret = checkCollateral(
+                ctx.view, *collateralID, borrower, brokerOwner, maturity + grace, ctx.j))
+            return ret;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+LoanSet::checkCollateral(
+    ReadView const& view,
+    uint256 const& collateralID,
+    AccountID const& borrower,
+    AccountID const& brokerOwner,
+    std::uint64_t releaseFloor,
+    beast::Journal j)
+{
+    auto const escrow = view.read(Keylet{ltESCROW, collateralID});
+    if (!escrow)
+    {
+        JLOG(j.warn()) << "Collateral escrow does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    STAmount const amount = (*escrow)[sfAmount];
+    if (isXRP(amount))
+    {
+        JLOG(j.warn()) << "Collateral must be a token escrow.";
+        return tecWRONG_ASSET;
+    }
+
+    // Only the borrower can pledge, and only to themselves: after payoff the
+    // collateral can go nowhere but back to the borrower.
+    if ((*escrow)[sfAccount] != borrower || (*escrow)[sfDestination] != borrower)
+    {
+        JLOG(j.warn()) << "Collateral escrow must be owned by and payable to the borrower.";
+        return tecNO_PERMISSION;
+    }
+
+    if (escrow->isFieldPresent(sfLoanID))
+    {
+        JLOG(j.warn()) << "Collateral escrow is already pledged.";
+        return tecDUPLICATE;
+    }
+
+    // The pledge lapses at the escrow's CancelAfter, so it must have one, and it
+    // must leave the broker at least one grace period after maturity to default.
+    if (auto const cancelAfter = (*escrow)[~sfCancelAfter];
+        !cancelAfter || *cancelAfter < releaseFloor)
+    {
+        JLOG(j.debug()) << "Collateral escrow can be cancelled before the release floor.";
+        return tecTOO_SOON;
+    }
+
+    // The default sweep finishes the escrow to the broker owner, as an
+    // EscrowFinish by that destination would. This is an eligibility check;
+    // issuer controls and the broker owner's reserve can still change.
+    if (auto const ret = std::visit(
+            [&]<typename T>(T const&) {
+                return escrowUnlockPreclaimHelper<T>(view, brokerOwner, amount);
+            },
+            amount.asset().value());
+        !isTesSuccess(ret))
+    {
+        JLOG(j.debug()) << "The broker owner can not receive the collateral.";
         return ret;
     }
 
@@ -747,6 +829,16 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
+    if (auto const collateralID = tx[~sfCollateralID])
+    {
+        // Pledge the escrow: the loan points at it, and it points back.
+        auto const escrow = view.peek(Keylet{ltESCROW, *collateralID});
+        if (!escrow)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        loan->setFieldH256(sfCollateralID, *collateralID);
+        escrow->setFieldH256(sfLoanID, loan->key());
+        view.update(escrow);
+    }
     view.insert(loan);
 
     // Update the balances in the vault

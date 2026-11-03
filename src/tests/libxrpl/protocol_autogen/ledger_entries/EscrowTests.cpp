@@ -37,6 +37,7 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     auto const destinationNodeValue = canonical_UINT64();
     auto const transferRateValue = canonical_UINT32();
     auto const issuerNodeValue = canonical_UINT64();
+    auto const loanIDValue = canonical_UINT256();
 
     EscrowBuilder builder{
         accountValue,
@@ -58,6 +59,7 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     builder.setDestinationNode(destinationNodeValue);
     builder.setTransferRate(transferRateValue);
     builder.setIssuerNode(issuerNodeValue);
+    builder.setLoanID(loanIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -192,6 +194,14 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasIssuerNode());
     }
 
+    {
+        auto const& expected = loanIDValue;
+        auto const actualOpt = entry.getLoanID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLoanID");
+        EXPECT_TRUE(entry.hasLoanID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -222,6 +232,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     auto const destinationNodeValue = canonical_UINT64();
     auto const transferRateValue = canonical_UINT32();
     auto const issuerNodeValue = canonical_UINT64();
+    auto const loanIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(Escrow::entryType, index);
 
@@ -242,6 +253,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     sle->at(sfDestinationNode) = destinationNodeValue;
     sle->at(sfTransferRate) = transferRateValue;
     sle->at(sfIssuerNode) = issuerNodeValue;
+    sle->at(sfLoanID) = loanIDValue;
 
     EscrowBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -455,6 +467,19 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfIssuerNode");
     }
 
+    {
+        auto const& expected = loanIDValue;
+
+        auto const fromSleOpt = entryFromSle.getLoanID();
+        auto const fromBuilderOpt = entryFromBuilder.getLoanID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLoanID");
+        expectEqualField(expected, *fromBuilderOpt, "sfLoanID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -541,5 +566,7 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getTransferRate().has_value());
     EXPECT_FALSE(entry.hasIssuerNode());
     EXPECT_FALSE(entry.getIssuerNode().has_value());
+    EXPECT_FALSE(entry.hasLoanID());
+    EXPECT_FALSE(entry.getLoanID().has_value());
 }
 }

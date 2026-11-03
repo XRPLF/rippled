@@ -41,6 +41,7 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     auto const gracePeriodValue = canonical_UINT32();
     auto const previousPaymentDueDateValue = canonical_UINT32();
     auto const nextPaymentDueDateValue = canonical_UINT32();
+    auto const collateralIDValue = canonical_UINT256();
     auto const paymentRemainingValue = canonical_UINT32();
     auto const periodicPaymentValue = canonical_NUMBER();
     auto const principalOutstandingValue = canonical_NUMBER();
@@ -73,6 +74,7 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     builder.setGracePeriod(gracePeriodValue);
     builder.setPreviousPaymentDueDate(previousPaymentDueDateValue);
     builder.setNextPaymentDueDate(nextPaymentDueDateValue);
+    builder.setCollateralID(collateralIDValue);
     builder.setPaymentRemaining(paymentRemainingValue);
     builder.setPrincipalOutstanding(principalOutstandingValue);
     builder.setTotalValueOutstanding(totalValueOutstandingValue);
@@ -245,6 +247,14 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = collateralIDValue;
+        auto const actualOpt = entry.getCollateralID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfCollateralID");
+        EXPECT_TRUE(entry.hasCollateralID());
+    }
+
+    {
         auto const& expected = paymentRemainingValue;
         auto const actualOpt = entry.getPaymentRemaining();
         ASSERT_TRUE(actualOpt.has_value());
@@ -318,6 +328,7 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     auto const gracePeriodValue = canonical_UINT32();
     auto const previousPaymentDueDateValue = canonical_UINT32();
     auto const nextPaymentDueDateValue = canonical_UINT32();
+    auto const collateralIDValue = canonical_UINT256();
     auto const paymentRemainingValue = canonical_UINT32();
     auto const periodicPaymentValue = canonical_NUMBER();
     auto const principalOutstandingValue = canonical_NUMBER();
@@ -348,6 +359,7 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     sle->at(sfGracePeriod) = gracePeriodValue;
     sle->at(sfPreviousPaymentDueDate) = previousPaymentDueDateValue;
     sle->at(sfNextPaymentDueDate) = nextPaymentDueDateValue;
+    sle->at(sfCollateralID) = collateralIDValue;
     sle->at(sfPaymentRemaining) = paymentRemainingValue;
     sle->at(sfPeriodicPayment) = periodicPaymentValue;
     sle->at(sfPrincipalOutstanding) = principalOutstandingValue;
@@ -621,6 +633,19 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = collateralIDValue;
+
+        auto const fromSleOpt = entryFromSle.getCollateralID();
+        auto const fromBuilderOpt = entryFromBuilder.getCollateralID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfCollateralID");
+        expectEqualField(expected, *fromBuilderOpt, "sfCollateralID");
+    }
+
+    {
         auto const& expected = paymentRemainingValue;
 
         auto const fromSleOpt = entryFromSle.getPaymentRemaining();
@@ -781,6 +806,8 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getPreviousPaymentDueDate().has_value());
     EXPECT_FALSE(entry.hasNextPaymentDueDate());
     EXPECT_FALSE(entry.getNextPaymentDueDate().has_value());
+    EXPECT_FALSE(entry.hasCollateralID());
+    EXPECT_FALSE(entry.getCollateralID().has_value());
     EXPECT_FALSE(entry.hasPaymentRemaining());
     EXPECT_FALSE(entry.getPaymentRemaining().has_value());
     EXPECT_FALSE(entry.hasPrincipalOutstanding());

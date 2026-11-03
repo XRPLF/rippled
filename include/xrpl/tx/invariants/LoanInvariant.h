@@ -63,4 +63,37 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: CollateralLock pledges stay consistent
+ *
+ * 1. An Escrow's `LoanID` may only be added by a `ttLOAN_SET`, and is never
+ *    changed or removed while the escrow exists.
+ * 2. A pledged Escrow (one with `LoanID`) may only be deleted when its loan is
+ *    paid off or deleted, or by the `ttLOAN_MANAGE` default that sweeps it.
+ * 3. A Loan created with `CollateralID` names an Escrow whose `LoanID` names
+ *    the Loan back.
+ *
+ * `NoModifiedUnmodifiableFields` keeps `Loan.CollateralID` immutable.
+ */
+class ValidCollateralLock
+{
+    // Escrows whose LoanID changed, as <before, after>.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> changedPledges_;
+    // Pledged escrows that were deleted.
+    std::vector<SLE::const_pointer> deletedPledges_;
+    // Loans created with a CollateralID.
+    std::vector<SLE::const_pointer> newLoans_;
+    // Keys of loans that this transaction moved into default.
+    std::vector<uint256> defaultedLoans_;
+    // Whether a Loan carrying a CollateralID was deleted.
+    bool collateralLoanDeleted_ = false;
+
+public:
+    void
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
 }  // namespace xrpl

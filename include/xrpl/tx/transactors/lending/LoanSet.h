@@ -46,6 +46,22 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    /** CollateralLock: checks that an escrow can be pledged to a new loan.
+
+        The escrow must be a token escrow owned by and payable to the borrower,
+        not already pledged, with a CancelAfter no earlier than releaseFloor
+        (the loan's maturity plus one more grace period), and the broker owner
+        must pass the checks an EscrowFinish destination must pass.
+    */
+    static TER
+    checkCollateral(
+        ReadView const& view,
+        uint256 const& collateralID,
+        AccountID const& borrower,
+        AccountID const& brokerOwner,
+        std::uint64_t releaseFloor,
+        beast::Journal j);
+
     TER
     doApply() override;
 

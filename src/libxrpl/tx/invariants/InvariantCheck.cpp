@@ -1322,7 +1322,9 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfStartDate) ||
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
-                    kFieldChanged(before, after, sfLoanScale);
+                    kFieldChanged(before, after, sfLoanScale) ||
+                    (view.rules().enabled(featureCollateralLock) &&
+                     kFieldChanged(before, after, sfCollateralID));
 
                 // lsfLoanOverpayment must never toggle. lsfLoanDefault may only
                 // transition from unset to set, which combined with ValidLoan's rule that
