@@ -614,8 +614,7 @@ port_wss_admin
     {
         testcase("single-value section");
 
-        auto const loadError = [](std::string const& toLoad) {
-            Config c;
+        auto const load = [](Config& c, std::string const& toLoad) {
             try
             {
                 c.loadFromString(toLoad);
@@ -627,12 +626,25 @@ port_wss_admin
             return std::string();
         };
 
-        BEAST_EXPECT(loadError("[network_id]\n10000\n").empty());
-        BEAST_EXPECT(
-            loadError("[network_id]\n") == "[network_id] requires exactly one value, not 0");
-        BEAST_EXPECT(
-            loadError("[network_id]\n10000\n[network_id]\n21337\n") ==
-            "[network_id] requires exactly one value, not 2");
+        {
+            Config c;
+            BEAST_EXPECT(load(c, "[network_id]\n10000\n").empty());
+            BEAST_EXPECT(c.networkId == 10000);
+        }
+
+        {
+            // A header above a commented-out value keeps the default.
+            Config c;
+            BEAST_EXPECT(load(c, "[network_id]\n# 10000\n").empty());
+            BEAST_EXPECT(c.networkId == 0);
+        }
+
+        {
+            Config c;
+            BEAST_EXPECT(
+                load(c, "[network_id]\n10000\n[network_id]\n21337\n") ==
+                "[network_id] requires exactly one value, not 2");
+        }
     }
 
     void
