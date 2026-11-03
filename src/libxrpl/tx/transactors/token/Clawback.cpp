@@ -109,7 +109,7 @@ preclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.get<Issue>().currency));
+        ctx.view.read(keylet::trustLine(holder, issuer, clawAmount.get<Issue>().currency));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -153,7 +153,7 @@ preclaimHelper<MPTIssue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -274,7 +274,7 @@ Clawback::doApply()
 }
 
 void
-Clawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Clawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

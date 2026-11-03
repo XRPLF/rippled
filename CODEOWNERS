@@ -1,0 +1,4 @@
+# By default, anyone can review changes.
+
+# The CI tooling team should review changes to the CI configuration.
+/.github/ @XRPLF/ci-tooling

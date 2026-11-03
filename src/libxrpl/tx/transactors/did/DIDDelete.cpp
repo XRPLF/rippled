@@ -50,8 +50,7 @@ DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, b
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
-    view.update(sleOwner);
+    decreaseOwnerCountForObject(view, sleOwner, sle, 1, j);
 
     // Remove object from ledger
     view.erase(sle);
@@ -65,7 +64,7 @@ DIDDelete::doApply()
 }
 
 void
-DIDDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DIDDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

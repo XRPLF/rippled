@@ -5,8 +5,10 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -43,13 +45,15 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 TER
 LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -77,12 +81,21 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
-    // Cannot transfer a frozen Asset
-    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
-        return ret;
-    // Pseudo-account cannot receive if asset is deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
-        return ret;
+
+    if (fix330Enabled)
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+            return ret;
+
+        if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
+            return ret;
+    }
+
     // Cannot transfer unauthorized asset
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
@@ -92,23 +105,35 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // `sfCoverAvailable  +=` could credit the broker more than the depositor paid  Computing it
     // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
     // failing only in  doApply.
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
-    auto const roundedAmount = [&]() -> STAmount {
+    auto const roundedAmount = [&] -> STAmount {
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
+            // Cover deposit is an inflow to CoverAvailable, so it must floor
+            // the sum, not just the delta.
+            return creditToPosteriorBrokerCoverScale(
+                vault, sleBroker, amount, Number::RoundingMode::Downward);
+        }
         if (!fix320Enabled)
-            return tx[sfAmount];
+            return STAmount{amount};
 
         return roundToScale(
-            tx[sfAmount],
+            amount,
             scale(sleBroker->at(sfCoverAvailable), vaultAsset),
             Number::RoundingMode::Downward);
     }();
 
-    if (fix320Enabled && roundedAmount == beast::kZero)
+    // fixCleanup3_2_0 is enabled on the network, so this also covers the
+    // FixedPrecision zero-credit case.
+    if (fix320Enabled && roundedAmount <= beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
-                           << " is zero at loan broker scale";
+        JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << amount
+                           << " is zero or negative at loan broker scale";
         return tecPRECISION_LOSS;
     }
+
+    if (auto const ter = checkOptionalBrokerCoverInflow(vault, sleBroker, roundedAmount);
+        !isTesSuccess(ter))
+        return ter;
 
     if (accountHolds(
             ctx.view,
@@ -129,7 +154,7 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -144,7 +169,14 @@ LoanBrokerCoverDeposit::doApply()
     // value drives both the trustline transfer and the cover increment;
     // see the rationale comment in preclaim.
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
-    auto const amount = [&]() -> STAmount {
+    auto const amount = [&] -> STAmount {
+        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        {
+            // Cover deposit is an inflow to CoverAvailable, so it must floor
+            // the sum, not just the delta.
+            return creditToPosteriorBrokerCoverScale(
+                vault, broker, tx[sfAmount], Number::RoundingMode::Downward);
+        }
         if (!fix320Enabled)
             return tx[sfAmount];
 
@@ -154,19 +186,19 @@ LoanBrokerCoverDeposit::doApply()
             Number::RoundingMode::Downward);
     }();
 
-    // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
-    if (amount == beast::kZero)
+    // We validated zero-or-negative amount in preclaim, if we ended up with one now, fail hard.
+    if (amount <= beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
-                         << " is zero";
+                         << " is zero or negative";
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
     // Transfer assets from depositor to pseudo-account.
     if (auto ter =
-            accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, {}, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
@@ -179,7 +211,7 @@ LoanBrokerCoverDeposit::doApply()
 }
 
 void
-LoanBrokerCoverDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerCoverDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

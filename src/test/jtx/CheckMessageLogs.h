@@ -1,10 +1,16 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl::test {
 
-/** Log manager that searches for a specific message substring
+/**
+ * Log manager that searches for a specific message substring
  */
 class CheckMessageLogs : public Logs
 {
@@ -36,12 +42,13 @@ class CheckMessageLogs : public Logs
     };
 
 public:
-    /** Constructor
-
-        @param msg The message string to search for
-        @param pFound Pointer to the variable to set to true if the message is
-       found
-    */
+    /**
+     * Constructor
+     *
+     * @param msg The message string to search for
+     * @param pFound Pointer to the variable to set to true if the message is
+     * found
+     */
     CheckMessageLogs(std::string msg, bool* pFound)
         : Logs{beast::Severity::Debug}, msg_{std::move(msg)}, pFound_{pFound}
     {

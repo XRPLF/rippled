@@ -8,7 +8,7 @@
 namespace xrpl {
 
 inline void
-serializePayChanAuthorization(Serializer& msg, uint256 const& key, XRPAmount const& amt)
+serializePayChanAuthorization(Serializer& msg, UInt256 const& key, XRPAmount const& amt)
 {
     msg.add32(HashPrefix::PaymentChannelClaim);
     msg.addBitString(key);

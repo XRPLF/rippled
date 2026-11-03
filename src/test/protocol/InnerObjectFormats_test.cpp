@@ -5,7 +5,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>  // json::Reader
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
+#include <xrpl/protocol/ErrorCodes.h>    // rpc::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
 
 #include <stdexcept>
@@ -13,7 +13,7 @@
 
 namespace xrpl {
 
-namespace InnerObjectFormatsUnitTestDetail {
+namespace inner_object_formats_unit_test_detail {
 
 struct TestJSONTxt
 {
@@ -24,7 +24,8 @@ struct TestJSONTxt
 static TestJSONTxt const kTestArray[] = {
 
     // Valid SignerEntry
-    {.txt = R"({
+    {
+        .txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -46,10 +47,12 @@ static TestJSONTxt const kTestArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = false},
+        .expectFail = false,
+    },
 
     // SignerEntry missing Account
-    {.txt = R"({
+    {
+        .txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -70,10 +73,12 @@ static TestJSONTxt const kTestArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+        .expectFail = true,
+    },
 
     // SignerEntry missing SignerWeight
-    {.txt = R"({
+    {
+        .txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -94,10 +99,12 @@ static TestJSONTxt const kTestArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+        .expectFail = true,
+    },
 
     // SignerEntry with unexpected Amount
-    {.txt = R"({
+    {
+        .txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -120,10 +127,12 @@ static TestJSONTxt const kTestArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+        .expectFail = true,
+    },
 
     // SignerEntry with no Account and unexpected Amount
-    {.txt = R"({
+    {
+        .txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -145,11 +154,12 @@ static TestJSONTxt const kTestArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+        .expectFail = true,
+    },
 
 };
 
-}  // namespace InnerObjectFormatsUnitTestDetail
+}  // namespace inner_object_formats_unit_test_detail
 
 class InnerObjectFormatsParsedJSON_test : public beast::unit_test::Suite
 {
@@ -157,7 +167,7 @@ public:
     void
     run() override
     {
-        using namespace InnerObjectFormatsUnitTestDetail;
+        using namespace inner_object_formats_unit_test_detail;
 
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env const env(*this);
@@ -166,7 +176,7 @@ public:
         {
             json::Value req;
             json::Reader().parse(test.txt, req);
-            if (RPC::containsError(req))
+            if (rpc::containsError(req))
             {
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");

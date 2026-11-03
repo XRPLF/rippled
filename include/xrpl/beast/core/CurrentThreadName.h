@@ -6,14 +6,16 @@
 
 #include <boost/predef.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 
 namespace beast {
 
-/** Changes the name of the caller thread.
-    Different OSes may place different length or content limits on this name.
-*/
+/**
+ * Changes the name of the caller thread.
+ * Different OSes may place different length or content limits on this name.
+ */
 void
 setCurrentThreadName(std::string_view newThreadName);
 
@@ -23,13 +25,14 @@ setCurrentThreadName(std::string_view newThreadName);
 // Maximum number of characters is therefore 15.
 constexpr std::size_t kMaxThreadNameLength = 15;
 
-/** Sets the name of the caller thread with compile-time size checking.
-    @tparam N The size of the string literal including null terminator
-    @param newThreadName A string literal to set as the thread name
-
-    This template overload enforces that thread names are at most 16 characters
-    (including null terminator) at compile time, matching Linux's limit.
-*/
+/**
+ * Sets the name of the caller thread with compile-time size checking.
+ * @tparam N The size of the string literal including null terminator
+ * @param newThreadName A string literal to set as the thread name
+ *
+ * This template overload enforces that thread names are at most 16 characters
+ * (including null terminator) at compile time, matching Linux's limit.
+ */
 template <std::size_t N>
 void
 setCurrentThreadName(char const (&newThreadName)[N])
@@ -40,14 +43,15 @@ setCurrentThreadName(char const (&newThreadName)[N])
 }
 #endif
 
-/** Returns the name of the caller thread.
-
-    The name returned is the name as set by a call to setCurrentThreadName().
-    If the thread name is set by an external force, then that name change
-    will not be reported.
-
-    If no name has ever been set, then the empty string is returned.
-*/
+/**
+ * Returns the name of the caller thread.
+ *
+ * The name returned is the name as set by a call to setCurrentThreadName().
+ * If the thread name is set by an external force, then that name change
+ * will not be reported.
+ *
+ * If no name has ever been set, then the empty string is returned.
+ */
 std::string
 getCurrentThreadName();
 

@@ -1,6 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
@@ -22,6 +33,9 @@ public:
     static std::vector<OptionaledField<STNumber>> const&
     getValueFields();
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static TER
     preclaim(PreclaimContext const& ctx);
 
@@ -29,7 +43,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

@@ -6,24 +6,34 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 namespace xrpl {
 
-/// Body that holds JSON
+/**
+ * Body that holds JSON
+ */
 struct JsonBody
 {
     explicit JsonBody() = default;
 
     using value_type = json::Value;
 
-    class reader  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
+    // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name
+    class reader
     {
-        using dynamic_buffer_type = boost::beast::multi_buffer;
+        using DynamicBufferType = boost::beast::multi_buffer;
 
-        dynamic_buffer_type buffer_;
+        DynamicBufferType buffer_;
 
     public:
-        using const_buffers_type = typename dynamic_buffer_type::const_buffers_type;
+        // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name
+        using const_buffers_type = DynamicBufferType::const_buffers_type;
 
+        // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name
         using is_deferred = std::false_type;
 
         template <bool IsRequest, class Fields>
@@ -54,11 +64,13 @@ struct JsonBody
         }
     };
 
-    class writer  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
+    // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name
+    class writer
     {
         std::string bodyString_;
 
     public:
+        // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name
         using const_buffers_type = boost::asio::const_buffer;
 
         template <bool IsRequest, class Fields>

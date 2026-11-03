@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -16,7 +18,7 @@ template <class ValueType>
 class ReadViewFwdIter
 {
 public:
-    using base_type = ReadViewFwdIter;
+    using BaseType = ReadViewFwdIter;
 
     using value_type = ValueType;
 
@@ -46,7 +48,7 @@ template <class ValueType>
 class ReadViewFwdRange
 {
 public:
-    using iter_base = ReadViewFwdIter<ValueType>;
+    using IterBase = ReadViewFwdIter<ValueType>;
 
     static_assert(
         std::is_nothrow_move_constructible<ValueType>{},
@@ -72,7 +74,7 @@ public:
         Iterator(Iterator&& other) noexcept;
 
         // Used by the implementation
-        explicit Iterator(ReadView const* view, std::unique_ptr<iter_base> impl);
+        explicit Iterator(ReadView const* view, std::unique_ptr<IterBase> impl);
 
         Iterator&
         operator=(Iterator const& other);
@@ -82,9 +84,6 @@ public:
 
         bool
         operator==(Iterator const& other) const;
-
-        bool
-        operator!=(Iterator const& other) const;
 
         // Can throw
         reference
@@ -102,12 +101,12 @@ public:
 
     private:
         ReadView const* view_ = nullptr;
-        std::unique_ptr<iter_base> impl_{};
+        std::unique_ptr<IterBase> impl_{};
         std::optional<value_type> mutable cache_;
     };
 
-    static_assert(std::is_nothrow_move_constructible<Iterator>{}, "");
-    static_assert(std::is_nothrow_move_assignable<Iterator>{}, "");
+    static_assert(std::is_nothrow_move_constructible<Iterator>{});
+    static_assert(std::is_nothrow_move_assignable<Iterator>{});
 
     using const_iterator = Iterator;
 

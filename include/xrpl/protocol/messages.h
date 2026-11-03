@@ -10,5 +10,3 @@
 #ifdef TYPE_BOOL
 #undef TYPE_BOOL
 #endif
-
-#include <xrpl/proto/xrpl.pb.h>

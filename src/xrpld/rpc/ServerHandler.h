@@ -2,11 +2,19 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
+#include <xrpl/beast/insight/Counter.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/server/Server.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/Server.h>  // IWYU pragma: keep
 #include <xrpl/server/Session.h>
 #include <xrpl/server/WSSession.h>
 
@@ -15,8 +23,15 @@
 #include <boost/utility/string_view.hpp>
 
 #include <condition_variable>
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -61,11 +76,11 @@ public:
     };
 
 private:
-    using socket_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<socket_type>;
+    using SocketType = boost::beast::tcp_stream;
+    using StreamType = boost::beast::ssl_stream<SocketType>;
 
     Application& app_;
-    Resource::Manager& resourceManager_;
+    resource::Manager& resourceManager_;
     beast::Journal journal_;
     NetworkOPs& networkOPs_;
     std::unique_ptr<Server> server_;
@@ -94,7 +109,7 @@ private:
         boost::asio::io_context&,
         JobQueue&,
         NetworkOPs&,
-        Resource::Manager&,
+        resource::Manager&,
         CollectorManager& cm);
 
 public:
@@ -105,7 +120,7 @@ public:
         boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
-        Resource::Manager& resourceManager,
+        resource::Manager& resourceManager,
         CollectorManager& cm);
 
     ~ServerHandler();
@@ -140,17 +155,17 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        std::unique_ptr<stream_type>&& bundle,
-        http_request_type&& request,
+        std::unique_ptr<StreamType>&& bundle,
+        HttpRequestType&& request,
         boost::asio::ip::tcp::endpoint const& remoteAddress);
 
     Handoff
     onHandoff(
         Session& session,
-        http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        HttpRequestType&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         boost::asio::ip::tcp::endpoint const& remoteAddress)
     {
-        return onHandoff(session, {}, std::forward<http_request_type>(request), remoteAddress);
+        return onHandoff(session, {}, std::forward<HttpRequestType>(request), remoteAddress);
     }
 
     void
@@ -181,14 +196,14 @@ private:
     processRequest(
         Port const& port,
         std::string const& request,
-        beast::IP::Endpoint const& remoteIPAddress,
+        beast::ip::Endpoint const& remoteIPAddress,
         Output const&,
         std::shared_ptr<JobQueue::Coro> coro,
         std::string_view forwardedFor,
         std::string_view user);
 
     [[nodiscard]] Handoff
-    statusResponse(http_request_type const& request) const;
+    statusResponse(HttpRequestType const& request) const;
 };
 
 ServerHandler::Setup
@@ -200,7 +215,7 @@ makeServerHandler(
     boost::asio::io_context&,
     JobQueue&,
     NetworkOPs&,
-    Resource::Manager&,
+    resource::Manager&,
     CollectorManager& cm);
 
 }  // namespace xrpl

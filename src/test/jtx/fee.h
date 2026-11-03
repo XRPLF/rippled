@@ -1,16 +1,21 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/tags.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
 #include <optional>
+#include <stdexcept>
 
 namespace xrpl::test::jtx {
 
-/** Set the fee on a JTx. */
+/**
+ * Set the fee on a JTx.
+ */
 class Fee
 {
 private:

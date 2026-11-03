@@ -11,6 +11,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -45,6 +47,10 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         {
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
+            // MPTID stores the sequence in canonical big-endian bytes. STIssue
+            // ledger bytes are the legacy LE-host encoding, so convert the
+            // native get32() value to LE bytes before copying into the MPTID.
+            sequence = boost::endian::native_to_little(sequence);
             static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
             memcpy(mptID.data(), &sequence, sizeof(sequence));
             memcpy(
@@ -100,6 +106,10 @@ STIssue::add(Serializer& s) const
             s.addBitString(noAccount());
             std::uint32_t sequence = 0;
             memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
+            // The MPTID bytes are canonical big-endian. Interpret those bytes
+            // as the legacy LE-host value so add32() writes the preserved
+            // STIssue wire bytes on every host endian.
+            sequence = boost::endian::little_to_native(sequence);
             s.add32(sequence);
         });
 }
@@ -107,7 +117,7 @@ STIssue::add(Serializer& s) const
 bool
 STIssue::isEquivalent(STBase const& t) const
 {
-    STIssue const* v = dynamic_cast<STIssue const*>(&t);
+    auto const* v = dynamic_cast<STIssue const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
 

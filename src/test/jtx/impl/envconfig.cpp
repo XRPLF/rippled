@@ -7,8 +7,10 @@
 #include <xrpl/config/Constants.h>
 
 #include <atomic>
+#include <cstdint>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace xrpl::test {
@@ -19,8 +21,9 @@ void
 setupConfigForUnitTests(Config& cfg)
 {
     using namespace jtx;
-    // Default fees to old values, so tests don't have to worry about changes in
-    // Config.h
+    // Reserves held at pre-2021 mainnet values; many tests carry balance
+    // expectations built on them. Extension limits are deliberately unset --
+    // tests inherit the FeeSetup defaults, or set [voting].
     cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();
     cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
@@ -59,6 +62,15 @@ setupConfigForUnitTests(Config& cfg)
 }
 
 namespace jtx {
+
+std::unique_ptr<Config>
+onlineDelete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
+{
+    cfg->ledgerHistory = deleteInterval;
+    auto& section = cfg->section(Sections::kNodeDatabase);
+    section.set(Keys::kOnlineDelete, std::to_string(deleteInterval));
+    return cfg;
+}
 
 std::unique_ptr<Config>
 noAdmin(std::unique_ptr<Config> cfg)

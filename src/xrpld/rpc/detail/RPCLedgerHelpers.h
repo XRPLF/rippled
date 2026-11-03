@@ -1,24 +1,27 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <org/xrpl/rpc/v1/ledger.pb.h>
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/Ledger.hpp>
+
+#include <cstdint>
 #include <expected>
-#include <optional>
+#include <memory>
 
 namespace xrpl {
 
 class ReadView;
 class Transaction;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
@@ -36,8 +39,8 @@ struct JsonContext;
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
+::rpc::Status
+getLedger(T& ledger, UInt256 const& ledgerHash, Context const& context);
 
 /**
  * @brief Retrieves a ledger by its sequence index.
@@ -54,7 +57,7 @@ getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
 
 /**
@@ -72,8 +75,36 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context const& context);
+::rpc::Status
+getLedger(T& ledger, ::rpc::spec::LedgerShortcut shortcut, Context const& context);
+
+/**
+ * @brief Retrieves the ledger a spec-parsed request selects.
+ *
+ * An unspecified selection means the current ledger.
+ *
+ * @tparam T Type of the ledger pointer to be filled.
+ * @param ledger Reference to the ledger pointer to be filled.
+ * @param specifier The ledger the request selects.
+ * @param context The RPC context.
+ * @return Status indicating success or failure of the operation.
+ */
+template <class T>
+::rpc::Status
+getLedger(T& ledger, ::rpc::spec::LedgerSpecifier const& specifier, Context const& context);
+
+/**
+ * @brief Writes the fields that identify a ledger into a result.
+ *
+ * A closed ledger gets `ledger_hash` and `ledger_index`, an open one
+ * `ledger_current_index`, and both get `validated`.
+ *
+ * @param ledger The ledger to describe.
+ * @param context The RPC context.
+ * @param result Reference to a json::Value to be filled with ledger data.
+ */
+void
+injectLedgerFields(ReadView const& ledger, Context const& context, json::Value& result);
 
 /**
  * @brief Looks up a ledger from a request and returns a json::Value with either
@@ -108,7 +139,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&);
  * @param result Reference to a json::Value to be filled with ledger data.
  * @return Status indicating success or failure of the operation.
  */
-Status
+::rpc::Status
 lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, json::Value& result);
 
 /**
@@ -126,7 +157,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, json::Value& 
  * @return Status indicating success or failure of the operation.
  */
 template <class T, class R>
-Status
+::rpc::Status
 ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
 
 /**
@@ -142,7 +173,7 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
  * @return Status indicating success or failure of the operation.
  */
 template <class T>
-Status
+::rpc::Status
 ledgerFromSpecifier(
     T& ledger,
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
@@ -169,8 +200,8 @@ ledgerFromSpecifier(
  *         On failure, contains a json::Value describing the error.
  */
 std::expected<std::shared_ptr<Ledger const>, json::Value>
-getOrAcquireLedger(RPC::JsonContext const& context);
+getOrAcquireLedger(rpc::JsonContext const& context);
 
-}  // namespace RPC
+}  // namespace rpc
 
 }  // namespace xrpl

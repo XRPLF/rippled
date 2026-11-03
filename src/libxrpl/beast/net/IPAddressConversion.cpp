@@ -5,7 +5,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-namespace beast::IP {
+namespace beast::ip {
 
 Endpoint
 fromAsio(boost::asio::ip::address const& address)
@@ -31,4 +31,4 @@ toAsioEndpoint(Endpoint const& endpoint)
     return boost::asio::ip::tcp::endpoint{endpoint.address(), endpoint.port()};
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

@@ -1,10 +1,15 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <cstdint>
 
 namespace xrpl::test::jtx {
 
-/** Set the flags on a JTx. */
+/**
+ * Set the flags on a JTx.
+ */
 class Txflags
 {
 private:

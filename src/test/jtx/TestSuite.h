@@ -1,7 +1,9 @@
 #pragma once
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <exception>
+#include <sstream>
 #include <string>
 
 namespace xrpl {
@@ -52,7 +54,7 @@ public:
         Collection const& expected,
         std::string const& message = "")
     {
-        auto msg = addPrefix(message);
+        auto const msg = addPrefix(message);
         bool success = expectEquals(actual.size(), expected.size(), msg + "Sizes are different");
         using std::begin;
         using std::end;

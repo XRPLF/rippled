@@ -9,7 +9,9 @@
 
 namespace xrpl {
 
-/** Manages all counted object types. */
+/**
+ * Manages all counted object types.
+ */
 class CountedObjects
 {
 public:
@@ -23,10 +25,11 @@ public:
     getCounts(int minimumThreshold) const;
 
 public:
-    /** Implementation for @ref CountedObject.
-
-        @internal
-    */
+    /**
+     * Implementation for @ref CountedObject.
+     *
+     * @internal
+     */
     class Counter
     {
     public:
@@ -94,13 +97,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-/** Tracks the number of instances of an object.
-
-    Derived classes have their instances counted automatically. This is used
-    for reporting purposes.
-
-    @ingroup basics
-*/
+/**
+ * Tracks the number of instances of an object.
+ *
+ * Derived classes have their instances counted automatically. This is used
+ * for reporting purposes.
+ *
+ * @ingroup basics
+ */
 template <class Object>
 class CountedObject
 {

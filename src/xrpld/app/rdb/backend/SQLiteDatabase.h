@@ -1,10 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -55,7 +67,7 @@ public:
      * @return Ledger if found, otherwise no value.
      */
     std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) override;
+    getLedgerInfoByHash(UInt256 const& ledgerHash) override;
 
     /**
      * @brief getHashByIndex Returns the hash of the ledger with the given
@@ -63,7 +75,7 @@ public:
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
-    uint256
+    UInt256
     getHashByIndex(LedgerIndex ledgerIndex) override;
 
     /**
@@ -337,7 +349,7 @@ public:
      */
     std::variant<AccountTx, TxSearched>
     getTransaction(
-        uint256 const& id,
+        UInt256 const& id,
         std::optional<ClosedInterval<std::uint32_t>> const& range,
         ErrorCodeI& ec) override;
 

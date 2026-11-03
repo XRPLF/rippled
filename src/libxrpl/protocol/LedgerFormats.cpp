@@ -15,6 +15,7 @@ LedgerFormats::getCommonFields()
         {sfLedgerIndex, SoeOptional, SoeImmutable},
         {sfLedgerEntryType, SoeRequired, SoeImmutable},
         {sfFlags, SoeRequired, SoeMutable},
+        {sfSponsor, SoeOptional, SoeMutable},
     };
     return kCommonFields;
 }

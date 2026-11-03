@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
 
+#include <limits>
 #include <map>
 #include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -26,12 +30,12 @@ private:
         using namespace std::chrono_literals;
         int const maxLimit = std::numeric_limits<int>::max();
 
-        auto add = [this](
-                       JobType jt,
-                       std::string name,
-                       int limit,
-                       std::chrono::milliseconds avgLatency,
-                       std::chrono::milliseconds peakLatency) {
+        auto const add = [this](
+                             JobType jt,
+                             std::string name,
+                             int limit,
+                             std::chrono::milliseconds avgLatency,
+                             std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(!map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
@@ -114,7 +118,7 @@ public:
     [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(map.find(jt));
+        auto const iter = map.find(jt);
         XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
         if (iter != map.end())

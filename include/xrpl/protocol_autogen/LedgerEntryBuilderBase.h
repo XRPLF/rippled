@@ -59,7 +59,7 @@ public:
      * @return Reference to the derived builder for method chaining.
      */
     Derived&
-    setLedgerIndex(uint256 const& value)
+    setLedgerIndex(UInt256 const& value)
     {
         object_[sfLedgerIndex] = value;
         return static_cast<Derived&>(*this);

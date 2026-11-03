@@ -1,107 +1,109 @@
 #pragma once
 
-#include <xrpl/basics/ToString.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/json_value.h>
 
+#include <cstddef>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace json {
 
 /**
- *  Writer implements an O(1)-space, O(1)-granular output JSON writer.
+ * Writer implements an O(1)-space, O(1)-granular output JSON writer.
  *
- *  O(1)-space means that it uses a fixed amount of memory, and that there are
- *  no heap allocations at each step of the way.
+ * O(1)-space means that it uses a fixed amount of memory, and that there are
+ * no heap allocations at each step of the way.
  *
- *  O(1)-granular output means the writer only outputs in small segments of a
- *  bounded size, using a bounded number of CPU cycles in doing so.  This is
- *  very helpful in scheduling long jobs.
+ * O(1)-granular output means the writer only outputs in small segments of a
+ * bounded size, using a bounded number of CPU cycles in doing so.  This is
+ * very helpful in scheduling long jobs.
  *
- *  The tradeoff is that you have to fill items in the JSON tree as you go,
- *  and you can never go backward.
+ * The tradeoff is that you have to fill items in the JSON tree as you go,
+ * and you can never go backward.
  *
- *  Writer can write single JSON tokens, but the typical use is to write out an
- *  entire JSON object.  For example:
+ * Writer can write single JSON tokens, but the typical use is to write out an
+ * entire JSON object.  For example:
  *
- *      {
- *          Writer w (out);
+ *     {
+ *         Writer w (out);
  *
- *          w.startObject ();          // Start the root object.
- *          w.set ("hello", "world");
- *          w.set ("goodbye", 23);
- *          w.finishObject ();         // Finish the root object.
- *      }
+ *         w.startObject ();          // Start the root object.
+ *         w.set ("hello", "world");
+ *         w.set ("goodbye", 23);
+ *         w.finishObject ();         // Finish the root object.
+ *     }
  *
- *  which outputs the string
+ * which outputs the string
  *
- *      {"hello":"world","goodbye":23}
+ *     {"hello":"world","goodbye":23}
  *
- *  There can be an object inside an object:
+ * There can be an object inside an object:
  *
- *      {
- *          Writer w (out);
+ *     {
+ *         Writer w (out);
  *
- *          w.startObject ();                // Start the root object.
- *          w.set ("hello", "world");
+ *         w.startObject ();                // Start the root object.
+ *         w.set ("hello", "world");
  *
- *          w.startObjectSet ("subobject");  // Start a sub-object.
- *          w.set ("goodbye", 23);           // Add a key, value assignment.
- *          w.finishObject ();               // Finish the sub-object.
+ *         w.startObjectSet ("subobject");  // Start a sub-object.
+ *         w.set ("goodbye", 23);           // Add a key, value assignment.
+ *         w.finishObject ();               // Finish the sub-object.
  *
- *          w.finishObject ();               // Finish the root-object.
- *      }
+ *         w.finishObject ();               // Finish the root-object.
+ *     }
  *
- *  which outputs the string
+ * which outputs the string
  *
- *     {"hello":"world","subobject":{"goodbye":23}}.
+ *    {"hello":"world","subobject":{"goodbye":23}}.
  *
- *  Arrays work similarly
+ * Arrays work similarly
  *
- *      {
- *          Writer w (out);
- *          w.startObject ();           // Start the root object.
+ *     {
+ *         Writer w (out);
+ *         w.startObject ();           // Start the root object.
  *
- *          w.startArraySet ("hello");  // Start an array.
- *          w.append (23)               // Append some items.
- *          w.append ("skidoo")
- *          w.finishArray ();           // Finish the array.
+ *         w.startArraySet ("hello");  // Start an array.
+ *         w.append (23)               // Append some items.
+ *         w.append ("skidoo")
+ *         w.finishArray ();           // Finish the array.
  *
- *          w.finishObject ();          // Finish the root object.
- *      }
+ *         w.finishObject ();          // Finish the root object.
+ *     }
  *
- *  which outputs the string
+ * which outputs the string
  *
- *      {"hello":[23,"skidoo"]}.
+ *     {"hello":[23,"skidoo"]}.
  *
  *
- *  If you've reached the end of a long object, you can just use finishAll()
- *  which finishes all arrays and objects that you have started.
+ * If you've reached the end of a long object, you can just use finishAll()
+ * which finishes all arrays and objects that you have started.
  *
- *      {
- *          Writer w (out);
- *          w.startObject ();           // Start the root object.
+ *     {
+ *         Writer w (out);
+ *         w.startObject ();           // Start the root object.
  *
- *          w.startArraySet ("hello");  // Start an array.
- *          w.append (23)               // Append an item.
+ *         w.startArraySet ("hello");  // Start an array.
+ *         w.append (23)               // Append an item.
  *
- *          w.startArrayAppend ()       // Start a sub-array.
- *          w.append ("one");
- *          w.append ("two");
+ *         w.startArrayAppend ()       // Start a sub-array.
+ *         w.append ("one");
+ *         w.append ("two");
  *
- *          w.startObjectAppend ();     // Append a sub-object.
- *          w.finishAll ();             // Finish everything.
- *      }
+ *         w.startObjectAppend ();     // Append a sub-object.
+ *         w.finishAll ();             // Finish everything.
+ *     }
  *
- *  which outputs the string
+ * which outputs the string
  *
- *      {"hello":[23,["one","two",{}]]}.
+ *     {"hello":[23,["one","two",{}]]}.
  *
- *  For convenience, the destructor of Writer calls w.finishAll() which makes
- *  sure that all arrays and objects are closed.  This means that you can throw
- *  an exception, or have a coroutine simply clean up the stack, and be sure
- *  that you do in fact generate a complete JSON object.
+ * For convenience, the destructor of Writer calls w.finishAll() which makes
+ * sure that all arrays and objects are closed.  This means that you can throw
+ * an exception, or have a coroutine simply clean up the stack, and be sure
+ * that you do in fact generate a complete JSON object.
  */
 
 class Writer
@@ -116,26 +118,37 @@ public:
 
     ~Writer();
 
-    /** Start a new collection at the root level. */
+    /**
+     * Start a new collection at the root level.
+     */
     void startRoot(CollectionType);
 
-    /** Start a new collection inside an array. */
+    /**
+     * Start a new collection inside an array.
+     */
     void startAppend(CollectionType);
 
-    /** Start a new collection inside an object. */
+    /**
+     * Start a new collection inside an object.
+     */
     void
     startSet(CollectionType, std::string const& key);
 
-    /** Finish the collection most recently started. */
+    /**
+     * Finish the collection most recently started.
+     */
     void
     finish();
 
-    /** Finish all objects and arrays.  After finishArray() has been called, no
-     *  more operations can be performed. */
+    /**
+     * Finish all objects and arrays.  After finishArray() has been called, no
+     *  more operations can be performed.
+     */
     void
     finishAll();
 
-    /** Append a value to an array.
+    /**
+     * Append a value to an array.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
      *  literal, nullptr or json::Value
@@ -148,12 +161,15 @@ public:
         output(t);
     }
 
-    /** Add a comma before this next item if not the first item in an array.
-        Useful if you are writing the actual array yourself. */
+    /**
+     * Add a comma before this next item if not the first item in an array.
+     * Useful if you are writing the actual array yourself.
+     */
     void
     rawAppend();
 
-    /** Add a key, value assignment to an object.
+    /**
+     * Add a key, value assignment to an object.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
      *  literal, or nullptr.
@@ -172,8 +188,10 @@ public:
         output(t);
     }
 
-    /** Emit just "tag": as part of an object.  Useful if you are writing the
-        actual value data yourself. */
+    /**
+     * Emit just "tag": as part of an object.  Useful if you are writing the
+     * actual value data yourself.
+     */
     void
     rawSet(std::string const& key);
 
@@ -192,22 +210,32 @@ public:
     void
     output(json::Value const&);
 
-    /** Output a null. */
+    /**
+     * Output a null.
+     */
     void output(std::nullptr_t);
 
-    /** Output a float. */
+    /**
+     * Output a float.
+     */
     void
     output(float);
 
-    /** Output a double. */
+    /**
+     * Output a double.
+     */
     void
     output(double);
 
-    /** Output a bool. */
+    /**
+     * Output a bool.
+     */
     void
     output(bool);
 
-    /** Output numbers or booleans. */
+    /**
+     * Output numbers or booleans.
+     */
     template <typename Type>
     void
     output(Type t)

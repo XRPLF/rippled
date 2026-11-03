@@ -34,7 +34,7 @@ higher index than the default Conan Center remote, so it is consulted first. You
 can do this by running:
 
 ```bash
-conan remote add --index 0 --force xrplf https://conan.ripplex.io
+conan remote add --index 0 --force xrplf https://conan.xrplf.org/repository/conan/
 ```
 
 Alternatively, you can pull our recipes from the repository and export them locally:

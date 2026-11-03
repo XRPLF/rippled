@@ -1,5 +1,10 @@
 #pragma once
-#include <xrpl/ledger/View.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl::permissioned_dex {
 
@@ -11,7 +16,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 [[nodiscard]] bool
 offerInDomain(
     ReadView const& view,
-    uint256 const& offerID,
+    UInt256 const& offerID,
     Domain const& domainID,
     beast::Journal j);
 

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -14,7 +16,7 @@ namespace xrpl {
 class ValidBookDirectory
 {
     bool badBookDirectory_ = false;
-    hash_set<uint256> rootIndexes_;
+    HashSet<UInt256> rootIndexes_;
 
 public:
     void

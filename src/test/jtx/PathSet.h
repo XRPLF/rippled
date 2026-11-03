@@ -1,24 +1,35 @@
 #pragma once
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STPathSet.h>
+
+#include <cstddef>
 
 namespace xrpl::test {
 
-/** Count offer
+/**
+ * Count offer
  */
 inline std::size_t
 countOffers(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     Asset const& takerPays,
     Asset const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
             sle->getFieldAmount(sfTakerGets).asset() == takerGets)
             ++count;
@@ -28,13 +39,13 @@ countOffers(
 
 inline std::size_t
 countOffers(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
             sle->getFieldAmount(sfTakerGets) == takerGets)
             ++count;
@@ -42,11 +53,12 @@ countOffers(
     return count;
 }
 
-/** An offer exists
+/**
+ * An offer exists
  */
 inline bool
 isOffer(
-    jtx::Env& env,
+    jtx::Env const& env,
     jtx::Account const& account,
     STAmount const& takerPays,
     STAmount const& takerGets)
@@ -54,10 +66,15 @@ isOffer(
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
 
-/** An offer exists
+/**
+ * An offer exists
  */
 inline bool
-isOffer(jtx::Env& env, jtx::Account const& account, Asset const& takerPays, Asset const& takerGets)
+isOffer(
+    jtx::Env const& env,
+    jtx::Account const& account,
+    Asset const& takerPays,
+    Asset const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }

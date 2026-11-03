@@ -1,9 +1,9 @@
 #pragma once
 
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/safe_cast.h>
 
-#include <iosfwd>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -40,7 +40,7 @@ public:
     {
     }
 
-    SHAMapMissingNode(SHAMapType t, uint256 const& id)
+    SHAMapMissingNode(SHAMapType t, UInt256 const& id)
         : std::runtime_error("Missing Node: " + to_string(t) + ": id " + to_string(id))
     {
     }

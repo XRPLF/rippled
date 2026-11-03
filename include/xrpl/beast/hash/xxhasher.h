@@ -124,14 +124,18 @@ public:
         }
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    explicit Xxhasher(Seed seed) : seed_(seed)
+    template <class Seed>
+    explicit Xxhasher(Seed seed)
+        requires(std::is_unsigned_v<Seed>)
+        : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
-    Xxhasher(Seed seed, Seed) : seed_(seed)
+    template <class Seed>
+    Xxhasher(Seed seed, Seed)
+        requires(std::is_unsigned_v<Seed>)
+        : seed_(seed)
     {
         resetBuffers();
     }

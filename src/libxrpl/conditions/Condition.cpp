@@ -104,7 +104,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
         return {};
     }
 
-    auto cost = parseInteger<std::uint32_t>(s, p.length, ec);
+    auto const cost = parseInteger<std::uint32_t>(s, p.length, ec);
 
     if (ec)
         return {};
@@ -190,17 +190,8 @@ Condition::deserialize(Slice s, std::error_code& ec)
             break;
 
         case 1:  // PrefixSha256
-            ec = Error::UnsupportedType;
-            return {};
-
         case 2:  // ThresholdSha256
-            ec = Error::UnsupportedType;
-            return {};
-
         case 3:  // RsaSha256
-            ec = Error::UnsupportedType;
-            return {};
-
         case 4:  // Ed25519Sha256
             ec = Error::UnsupportedType;
             return {};

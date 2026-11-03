@@ -7,15 +7,16 @@
 
 namespace beast {
 
-/** Manual clock implementation.
-
-    This concrete class implements the @ref abstract_clock interface and
-    allows the time to be advanced manually, mainly for the purpose of
-    providing a clock in unit tests.
-
-    @tparam Clock A type meeting these requirements:
-        http://en.cppreference.com/w/cpp/concept/Clock
-*/
+/**
+ * Manual clock implementation.
+ *
+ * This concrete class implements the @ref abstract_clock interface and
+ * allows the time to be advanced manually, mainly for the purpose of
+ * providing a clock in unit tests.
+ *
+ * @tparam Clock A type meeting these requirements:
+ *     http://en.cppreference.com/w/cpp/concept/Clock
+ */
 template <class Clock>
 class ManualClock : public AbstractClock<Clock>
 {
@@ -38,7 +39,9 @@ public:
         return now_;
     }
 
-    /** Set the current time of the manual clock. */
+    /**
+     * Set the current time of the manual clock.
+     */
     void
     set(time_point const& when)
     {
@@ -48,7 +51,9 @@ public:
         now_ = when;
     }
 
-    /** Convenience for setting the time in seconds from epoch. */
+    /**
+     * Convenience for setting the time in seconds from epoch.
+     */
     template <class Integer>
     void
     set(Integer secondsFromEpoch)
@@ -56,7 +61,9 @@ public:
         set(time_point(duration(std::chrono::seconds(secondsFromEpoch))));
     }
 
-    /** Advance the clock by a duration. */
+    /**
+     * Advance the clock by a duration.
+     */
     template <class Rep, class Period>
     void
     advance(std::chrono::duration<Rep, Period> const& elapsed)
@@ -67,7 +74,9 @@ public:
         now_ += elapsed;
     }
 
-    /** Convenience for advancing the clock by one second. */
+    /**
+     * Convenience for advancing the clock by one second.
+     */
     ManualClock&
     operator++()
     {

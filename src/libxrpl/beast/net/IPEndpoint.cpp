@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-namespace beast::IP {
+namespace beast::ip {
 
 Endpoint::Endpoint() : port_(0)
 {
@@ -153,7 +153,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
     }
 
     boost::system::error_code ec;
-    auto addr = boost::asio::ip::make_address(addrStr, ec);
+    auto const addr = boost::asio::ip::make_address(addrStr, ec);
     if (ec)
     {
         is.setstate(std::ios_base::failbit);
@@ -176,4 +176,4 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

@@ -1,5 +1,15 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -11,13 +21,13 @@ private:
     pay(AccountID const& from, AccountID const& to, STAmount const& amount);
 
     TER
-    acceptOffer(SLE::ref offer);
+    acceptOffer(SLE::Ref offer);
 
     TER
-    bridgeOffers(SLE::ref buy, SLE::ref sell);
+    bridgeOffers(SLE::Ref buy, SLE::Ref sell);
 
     TER
-    transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);
+    transferNFToken(AccountID const& buyer, AccountID const& seller, UInt256 const& nfTokenID);
 
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
@@ -36,7 +46,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

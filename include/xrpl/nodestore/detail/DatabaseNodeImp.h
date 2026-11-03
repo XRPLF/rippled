@@ -1,12 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+
+namespace xrpl::node_store {
 
 class DatabaseNodeImp : public Database
 {
@@ -42,7 +58,7 @@ public:
 
         if (cacheSize.has_value() || cacheAge.has_value())
         {
-            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+            cache_ = std::make_shared<TaggedCache<UInt256, NodeObject>>(
                 "DatabaseNodeImp",
                 cacheSize.value_or(0),
                 std::chrono::minutes(cacheAge.value_or(0)),
@@ -52,7 +68,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::node_store::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -76,11 +92,11 @@ public:
     void
     importDatabase(Database& source) override
     {
-        importInternal(*backend_.get(), source);
+        importInternal(*backend_, source);
     }
 
     void
-    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t) override;
+    store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t) override;
 
     bool
     isSameDB(std::uint32_t, std::uint32_t) override
@@ -97,7 +113,7 @@ public:
 
     void
     asyncFetch(
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback) override;
 
@@ -107,12 +123,12 @@ public:
 private:
     // Cache for database objects. This cache is not always initialized. Check
     // for null before using.
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> cache_;
+    std::shared_ptr<TaggedCache<UInt256, NodeObject>> cache_;
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
 
     std::shared_ptr<NodeObject>
-    fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
+    fetchNodeObject(UInt256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
         override;
 
     void
@@ -122,4 +138,4 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -11,6 +11,9 @@ endfunction()
 function(create_symbolic_link target link)
 endfunction()
 
+function(xrpl_add_benchmark name)
+endfunction()
+
 macro(exclude_from_default target_)
 endmacro()
 
@@ -46,6 +49,12 @@ function(target_protobuf_sources target prefix)
 endfunction()
 
 function(add_module parent name)
+endfunction()
+
+function(verify_target_headers target headers_dir)
+endfunction()
+
+function(_verify_add_headers target dir)
 endfunction()
 
 function(setup_protocol_autogen)
@@ -88,6 +97,81 @@ function(verbose_find_path variable name)
     )
     set(oneValueArgs REGISTRY_VIEW VALIDATOR DOC)
     set(multiValueArgs NAMES HINTS PATHS PATH_SUFFIXES)
+    cmake_parse_arguments(
+        THIS_FUNCTION_PREFIX
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+endfunction()
+
+function(patch_nix_binary target)
+endfunction()
+
+function(rpcspec_generate_instantiations)
+    set(options)
+    set(oneValueArgs OUT_VAR VALUE_TYPE VIEW_HEADER INCLUDE_DIR)
+    set(multiValueArgs HANDLERS)
+    cmake_parse_arguments(
+        THIS_FUNCTION_PREFIX
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+endfunction()
+
+function(corrosion_import_crate)
+    set(options
+        ALL_FEATURES
+        NO_DEFAULT_FEATURES
+        NO_STD
+        NO_LINKER_OVERRIDE
+        NO_USES_TERMINAL
+        LOCKED
+        FROZEN
+    )
+    set(oneValueArgs MANIFEST_PATH PROFILE IMPORTED_CRATES)
+    set(multiValueArgs
+        CRATE_TYPES
+        CRATES
+        FEATURES
+        FLAGS
+        OVERRIDE_CRATE_TYPE
+    )
+    cmake_parse_arguments(
+        THIS_FUNCTION_PREFIX
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+endfunction()
+
+function(corrosion_set_env_vars target_name env_var)
+endfunction()
+
+function(corrosion_add_cxxbridge cxx_target)
+    set(options)
+    set(oneValueArgs CRATE)
+    set(multiValueArgs FILES)
+    cmake_parse_arguments(
+        THIS_FUNCTION_PREFIX
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+endfunction()
+
+function(_unlink_libgcc_s crate)
+endfunction()
+
+function(add_xrpl_crate name)
+    set(options)
+    set(oneValueArgs CRATE)
+    set(multiValueArgs FILES)
     cmake_parse_arguments(
         THIS_FUNCTION_PREFIX
         "${options}"

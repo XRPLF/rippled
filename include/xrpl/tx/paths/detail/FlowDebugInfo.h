@@ -1,22 +1,29 @@
 #pragma once
 
-#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 
 #include <boost/container/flat_map.hpp>
 
 #include <chrono>
-#include <optional>
+#include <cstddef>
 #include <sstream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::path::detail {
 // Track performance information of a single payment
 struct FlowDebugInfo
 {
-    using clock = std::chrono::high_resolution_clock;
-    using time_point = clock::time_point;
+    using Clock = std::chrono::high_resolution_clock;
+    using time_point = Clock::time_point;
     boost::container::flat_map<std::string, std::pair<time_point, time_point>> timePoints;
     boost::container::flat_map<std::string, std::size_t> counts;
 
@@ -95,7 +102,7 @@ struct FlowDebugInfo
     [[nodiscard]] auto
     duration(std::string const& tag) const
     {
-        auto i = timePoints.find(tag);
+        auto const i = timePoints.find(tag);
         if (i == timePoints.end())
         {
             // LCOV_EXCL_START
@@ -112,7 +119,7 @@ struct FlowDebugInfo
     [[nodiscard]] std::size_t
     count(std::string const& tag) const
     {
-        auto i = counts.find(tag);
+        auto const i = counts.find(tag);
         if (i == counts.end())
             return 0;
         return i->second;
@@ -128,12 +135,12 @@ struct FlowDebugInfo
             FlowDebugInfo* info;
             Stopper(std::string name, FlowDebugInfo& pi) : tag(std::move(name)), info(&pi)
             {
-                auto const start = FlowDebugInfo::clock::now();
+                auto const start = FlowDebugInfo::Clock::now();
                 info->timePoints.emplace(tag, std::make_pair(start, start));
             }
             ~Stopper()
             {
-                auto const end = FlowDebugInfo::clock::now();
+                auto const end = FlowDebugInfo::Clock::now();
                 info->timePoints[tag].second = end;
             }
             Stopper(Stopper&&) = default;
@@ -144,7 +151,7 @@ struct FlowDebugInfo
     void
     inc(std::string const& tag)
     {
-        auto i = counts.find(tag);
+        auto const i = counts.find(tag);
         if (i == counts.end())
         {
             counts[tag] = 1;
@@ -205,24 +212,25 @@ struct FlowDebugInfo
             };
             auto writeXrpAmtList = [&writeList](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto getVal = [](EitherAmount const& a) -> std::string {
+                auto const getVal = [](EitherAmount const& a) -> std::string {
                     return xrpl::to_string(a.get<XRPAmount>());
                 };
                 writeList(amts, getVal, delim);
             };
             auto writeIouAmtList = [&writeList](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
-                auto getVal = [](EitherAmount const& a) -> std::string {
+                auto const getVal = [](EitherAmount const& a) -> std::string {
                     return xrpl::to_string(a.get<IOUAmount>());
                 };
                 writeList(amts, getVal, delim);
             };
-            auto writeIntList = [&writeList](std::vector<size_t> const& vals, char delim = ';') {
+            auto const writeIntList = [&writeList](
+                                          std::vector<size_t> const& vals, char delim = ';') {
                 // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
-                auto getVal = [](size_t const& v) -> size_t const& { return v; };
+                auto const getVal = [](size_t const& v) -> size_t const& { return v; };
                 writeList(vals, getVal);
             };
-            auto writeNestedIouAmtList =
+            auto const writeNestedIouAmtList =
                 [&ostr, &writeIouAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
                     ostr << '[';
                     if (!amts.empty())
@@ -236,7 +244,7 @@ struct FlowDebugInfo
                     }
                     ostr << ']';
                 };
-            auto writeNestedXrpAmtList =
+            auto const writeNestedXrpAmtList =
                 [&ostr, &writeXrpAmtList](std::vector<std::vector<EitherAmount>> const& amts) {
                     ostr << '[';
                     if (!amts.empty())

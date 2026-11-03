@@ -5,33 +5,34 @@
 
 namespace xrpl {
 
-/** A type that represents either a sequence value or a ticket value.
-
-  We use the value() of a SeqProxy in places where a sequence was used
-  before.  An example of this is the sequence of an Offer stored in the
-  ledger.  We do the same thing with the in-ledger identifier of a
-  Check, Payment Channel, and Escrow.
-
-  Why is this safe?  If we use the SeqProxy::value(), how do we know that
-  each ledger entry will be unique?
-
-  There are two components that make this safe:
-
-  1. A "TicketCreate" transaction carefully avoids creating a ticket
-     that corresponds with an already used Sequence or Ticket value.
-     The transactor does this by referring to the account root's
-     sequence number.  Creating the ticket advances the account root's
-     sequence number so the same ticket (or sequence) value cannot be
-     used again.
-
-  2. When a "TicketCreate" transaction creates a batch of tickets it advances
-     the account root sequence to one past the largest created ticket.
-
-     Therefore all tickets in a batch other than the first may never have
-     the same value as a sequence on that same account.  And since a ticket
-     may only be used once there will never be any duplicates within this
-     account.
-*/
+/**
+ * A type that represents either a sequence value or a ticket value.
+ *
+ * We use the value() of a SeqProxy in places where a sequence was used
+ * before.  An example of this is the sequence of an Offer stored in the
+ * ledger.  We do the same thing with the in-ledger identifier of a
+ * Check, Payment Channel, and Escrow.
+ *
+ * Why is this safe?  If we use the SeqProxy::value(), how do we know that
+ * each ledger entry will be unique?
+ *
+ * There are two components that make this safe:
+ *
+ * 1. A "TicketCreate" transaction carefully avoids creating a ticket
+ *    that corresponds with an already used Sequence or Ticket value.
+ *    The transactor does this by referring to the account root's
+ *    sequence number.  Creating the ticket advances the account root's
+ *    sequence number so the same ticket (or sequence) value cannot be
+ *    used again.
+ *
+ * 2. When a "TicketCreate" transaction creates a batch of tickets it advances
+ *    the account root sequence to one past the largest created ticket.
+ *
+ *    Therefore all tickets in a batch other than the first may never have
+ *    the same value as a sequence on that same account.  And since a ticket
+ *    may only be used once there will never be any duplicates within this
+ *    account.
+ */
 class SeqProxy
 {
 public:
@@ -51,11 +52,28 @@ public:
     SeqProxy&
     operator=(SeqProxy const& other) = default;
 
-    /** Factory function to return a sequence-based SeqProxy */
+    /**
+     * Factory function to return a sequence-based SeqProxy.
+     * Outside of tests, this function should only be used for "secondary" transaction sequences,
+     * e.g. `sfOfferSequence`, or sequence fields in an existing ledger object. DO NOT use this for
+     * the "primary" sequence of a transaction, `sfSequence`.
+     */
     static constexpr SeqProxy
-    sequence(std::uint32_t v)
+    rawSequence(std::uint32_t v)
     {
         return SeqProxy{Type::Seq, v};
+    }
+
+    /**
+     * Factory function to return a ticket-based SeqProxy.
+     * Outside of tests, this function should only be used for "secondary" transaction sequences,
+     * e.g. `sfOfferSequence`, or sequence fields in an existing ledger object. DO NOT use this for
+     * the "primary" ticket sequence of a transaction, `sfTicketSequence`.
+     */
+    static constexpr SeqProxy
+    rawTicket(std::uint32_t v)
+    {
+        return SeqProxy{Type::Ticket, v};
     }
 
     [[nodiscard]] constexpr std::uint32_t
@@ -103,12 +121,6 @@ public:
         if (lhs.type_ != rhs.type_)
             return false;
         return (lhs.value() == rhs.value());
-    }
-
-    friend constexpr bool
-    operator!=(SeqProxy lhs, SeqProxy rhs)
-    {
-        return !(lhs == rhs);
     }
 
     friend constexpr bool

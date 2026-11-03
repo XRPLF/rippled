@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(VaultTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -32,9 +32,15 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -53,7 +59,13 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsAvailable(assetsAvailableValue);
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
+    builder.setYieldUnrealized(yieldUnrealizedValue);
+    builder.setAssetsDeployed(assetsDeployedValue);
     builder.setScale(scaleValue);
+    builder.setLEVersion(lEVersionValue);
+    builder.setVaultKind(vaultKindValue);
+    builder.setSubscriptionDate(subscriptionDateValue);
+    builder.setRedemptionDate(redemptionDateValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -159,11 +171,59 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = yieldUnrealizedValue;
+        auto const actualOpt = entry.getYieldUnrealized();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfYieldUnrealized");
+        EXPECT_TRUE(entry.hasYieldUnrealized());
+    }
+
+    {
+        auto const& expected = assetsDeployedValue;
+        auto const actualOpt = entry.getAssetsDeployed();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAssetsDeployed");
+        EXPECT_TRUE(entry.hasAssetsDeployed());
+    }
+
+    {
         auto const& expected = scaleValue;
         auto const actualOpt = entry.getScale();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfScale");
         EXPECT_TRUE(entry.hasScale());
+    }
+
+    {
+        auto const& expected = lEVersionValue;
+        auto const actualOpt = entry.getLEVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLEVersion");
+        EXPECT_TRUE(entry.hasLEVersion());
+    }
+
+    {
+        auto const& expected = vaultKindValue;
+        auto const actualOpt = entry.getVaultKind();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVaultKind");
+        EXPECT_TRUE(entry.hasVaultKind());
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+        auto const actualOpt = entry.getSubscriptionDate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
+        EXPECT_TRUE(entry.hasSubscriptionDate());
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+        auto const actualOpt = entry.getRedemptionDate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
+        EXPECT_TRUE(entry.hasRedemptionDate());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -177,7 +237,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(VaultTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -191,9 +251,15 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const lEVersionValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -209,9 +275,15 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfAssetsAvailable) = assetsAvailableValue;
     sle->at(sfAssetsMaximum) = assetsMaximumValue;
     sle->at(sfLossUnrealized) = lossUnrealizedValue;
+    sle->at(sfYieldUnrealized) = yieldUnrealizedValue;
+    sle->at(sfAssetsDeployed) = assetsDeployedValue;
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
+    sle->at(sfLEVersion) = lEVersionValue;
+    sle->at(sfVaultKind) = vaultKindValue;
+    sle->at(sfSubscriptionDate) = subscriptionDateValue;
+    sle->at(sfRedemptionDate) = redemptionDateValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -378,6 +450,32 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = yieldUnrealizedValue;
+
+        auto const fromSleOpt = entryFromSle.getYieldUnrealized();
+        auto const fromBuilderOpt = entryFromBuilder.getYieldUnrealized();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfYieldUnrealized");
+        expectEqualField(expected, *fromBuilderOpt, "sfYieldUnrealized");
+    }
+
+    {
+        auto const& expected = assetsDeployedValue;
+
+        auto const fromSleOpt = entryFromSle.getAssetsDeployed();
+        auto const fromBuilderOpt = entryFromBuilder.getAssetsDeployed();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAssetsDeployed");
+        expectEqualField(expected, *fromBuilderOpt, "sfAssetsDeployed");
+    }
+
+    {
         auto const& expected = scaleValue;
 
         auto const fromSleOpt = entryFromSle.getScale();
@@ -390,6 +488,58 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfScale");
     }
 
+    {
+        auto const& expected = lEVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getLEVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getLEVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLEVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfLEVersion");
+    }
+
+    {
+        auto const& expected = vaultKindValue;
+
+        auto const fromSleOpt = entryFromSle.getVaultKind();
+        auto const fromBuilderOpt = entryFromBuilder.getVaultKind();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVaultKind");
+        expectEqualField(expected, *fromBuilderOpt, "sfVaultKind");
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+
+        auto const fromSleOpt = entryFromSle.getSubscriptionDate();
+        auto const fromBuilderOpt = entryFromBuilder.getSubscriptionDate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSubscriptionDate");
+        expectEqualField(expected, *fromBuilderOpt, "sfSubscriptionDate");
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionDate();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionDate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionDate");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionDate");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -397,7 +547,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(VaultTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -416,7 +566,7 @@ TEST(VaultTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(VaultTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -433,7 +583,7 @@ TEST(VaultTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(VaultTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -470,7 +620,19 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAssetsMaximum().has_value());
     EXPECT_FALSE(entry.hasLossUnrealized());
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
+    EXPECT_FALSE(entry.hasYieldUnrealized());
+    EXPECT_FALSE(entry.getYieldUnrealized().has_value());
+    EXPECT_FALSE(entry.hasAssetsDeployed());
+    EXPECT_FALSE(entry.getAssetsDeployed().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
+    EXPECT_FALSE(entry.hasLEVersion());
+    EXPECT_FALSE(entry.getLEVersion().has_value());
+    EXPECT_FALSE(entry.hasVaultKind());
+    EXPECT_FALSE(entry.getVaultKind().has_value());
+    EXPECT_FALSE(entry.hasSubscriptionDate());
+    EXPECT_FALSE(entry.getSubscriptionDate().has_value());
+    EXPECT_FALSE(entry.hasRedemptionDate());
+    EXPECT_FALSE(entry.getRedemptionDate().has_value());
 }
 }
