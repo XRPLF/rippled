@@ -2195,6 +2195,44 @@ private:
             [this](
                 Env& env,
                 Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU transfer fee on third-party withdrawal to coarser trust line");
+
+                // Charlie's balance uses all 16 mantissa digits, so the inflow lands on a
+                // coarser grid than the vault's and the destination delta is quantized.
+                auto const issue = asset.raw().get<Issue>();
+                env.trust(asset(100'000'000'000'000'000), charlie);
+                env(pay(issuer, charlie, asset(9'999'999'999'999'995)));
+                env.close();
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+
+                // The vault gives up 63.75 gross to deliver 51 net.
+                auto tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(51)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                // 9999999999999995 + 51 = 10000000000000046 does not fit in 16 digits and is
+                // stored as 1000000000000005e1, so the trust line moves by 55 rather than 51.
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(10'000'000'000'000'050));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(Number{3625, -2}));
+                BEAST_EXPECT(
+                    env.balance(owner, funded.shares.raw().get<MPTIssue>()) ==
+                    funded.shares(36'250'000));
+                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
                 Account const&,
                 Account const& charlie,
                 auto,
