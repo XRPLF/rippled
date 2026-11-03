@@ -1305,10 +1305,17 @@ ValidVault::finalize(
                         auto expectedDestinationDelta = localPseudoDeltaAssets * -1;
                         if (feeAdjustedWithdrawal)
                         {
-                            expectedDestinationDelta =
+                            // Take the fee off the vault-scale outflow, then round the net amount
+                            // to localMinScale. The destination only ever receives the net amount,
+                            // so that is the value to quantize to its grid. Rounding last keeps the
+                            // expected value on the same grid as roundedDestinationDelta, which is
+                            // what the one-unit tolerance below assumes.
+                            expectedDestinationDelta = roundToAsset(
+                                vaultAsset,
                                 subtractTransferFee(
-                                    STAmount{vaultAsset, expectedDestinationDelta}, rate)
-                                    .value();
+                                    STAmount{vaultAsset, vaultPseudoDeltaAssets * -1}, rate)
+                                    .value(),
+                                localMinScale);
                         }
                         // For IOU assets near a precision boundary the destination's STAmount
                         // exponent can shift, making part of the sent value unrepresentable at
