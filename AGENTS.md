@@ -31,6 +31,21 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup
 
 New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING.md#before-making-a-pull-request). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
 
+## Code review
+
+When reviewing a change, or self-reviewing your own before asking for review, apply [docs/CodeReview.md](./docs/CodeReview.md): correctness rules first, then style and convention rules. Cite the rule number (`CR-N`) in each review comment. Never skip, disable or weaken tests, or remove an amendment gate, to satisfy a review comment; raise the conflict instead.
+
+### Review perspectives
+
+Examine every change from each of these angles, individually and as a whole:
+
+1. **Safety.** Log at the right level with the right amount of detail. Use `Throw`, `logicError`, `XRPL_ASSERT`, `SOMETIMES`, `REACHABLE` and `UNREACHABLE` correctly (see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation)). No crash may be reachable from data supplied by a peer or client over RPC, P2P or websocket.
+2. **Correctness.** The code does what its name, comments and commit message say. It protects against malicious peers and clients without penalizing honest peers or regular consensus, transaction and node processing. Variables, constants and functions use `constexpr`, `consteval`, `explicit`, `inline` and other C++23 facilities appropriately.
+3. **Performance.** `std::move` where appropriate, no unnecessary copies, no locking unless absolutely necessary. Minimize memory and CPU use; maximize transaction throughput.
+4. **Conciseness.** The code is easy to read, with no duplication and helper functions where they pay off. Touched functions have docstrings. Comments and commit messages describe what the code does, not what it used to do or could do; condense long comments. The change passes `clang-format` and `clang-tidy` (see [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks)).
+5. **Scope.** Each pull request is self-contained and fixes one problem. Split an oversized change into dependent pull requests; combine small related ones. A later pull request does not rework code changed by an earlier one unless necessary.
+6. **Coverage.** Test coverage of touched code is at least 90% (see [BUILD.md](./BUILD.md#coverage-report)). `LCOV_EXCL` stanzas exclude only untestable or unreachable blocks.
+
 ## Architecture
 
 Paths below reflect the current layout; update this section if modularization moves a subsystem to a different directory.
