@@ -149,9 +149,10 @@ public:
 private:
     OpenView& base_;
     ApplyFlags flags_;
+
+    // view_ and viewRef_ always represent the same view. Update viewRef_ whenever view_ is
+    // re-emplaced.
     std::optional<ApplyViewImpl> view_;
-    // Always refers to the engaged view_. Reseated whenever view_ is re-emplaced, so the
-    // accessors need no optional check.
     std::reference_wrapper<ApplyViewImpl> viewRef_;
 
     // The ID of the batch transaction we are executing under, if set.
