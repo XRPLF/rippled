@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
@@ -347,6 +348,11 @@ RCLConsensus::Adaptor::onClose(
     for (auto const& tx : initialLedger->txs)
     {
         JLOG(j_.trace()) << "Adding open ledger TX " << tx.first->getTransactionID();
+        // Inner batch txns are applied only when building from the agreed set, never to the open
+        // ledger, so they cannot leak into the proposal.
+        XRPL_ASSERT(
+            !tx.first->isFlag(tfInnerBatchTxn),
+            "xrpl::RCLConsensus::Adaptor::onClose : no inner batch txn in open ledger");
         Serializer s(2048);
         tx.first->add(s);
         initialSet->addItem(
