@@ -122,7 +122,7 @@ ValidatorList::PublisherListStats::mergeDispositions(PublisherListStats const& s
 
 ValidatorList::MessageWithHash::MessageWithHash(
     std::shared_ptr<Message> const& message,
-    uint256 hash,
+    UInt256 hash,
     std::size_t num)
     : message(message), hash(hash), numVLs(num)
 {
@@ -184,7 +184,7 @@ ValidatorList::load(
             return false;
         }
 
-        auto id = PublicKey(makeSlice(*ret));
+        auto const id = PublicKey(makeSlice(*ret));
         auto status = PublisherStatus::Unavailable;
 
         if (publisherManifests_.revoked(id))
@@ -265,7 +265,7 @@ ValidatorList::load(
         if (*id == localPubKey_ || *id == localSigningKey)
             continue;
 
-        auto ret = keyListings_.insert({*id, listThreshold_});
+        auto const ret = keyListings_.insert({*id, listThreshold_});
         if (!ret.second)
         {
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
@@ -287,7 +287,7 @@ ValidatorList::load(
 }
 
 std::filesystem::path
-ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
+ValidatorList::getCacheFileName(ValidatorList::ScopedLock const&, PublicKey const& pubKey) const
 {
     return dataPath_ / (kFilePrefix + strHex(pubKey));
 }
@@ -336,14 +336,14 @@ ValidatorList::buildFileData(
         case 2: {
             json::Value blobs(json::ValueType::Array);
 
-            auto add = [&blobs,
-                        &outerManifest = pubCollection.rawManifest](PublisherList const& pubList) {
-                auto& blob = blobs.append(json::ValueType::Object);
-                blob[jss::blob] = pubList.rawBlob;
-                blob[jss::signature] = pubList.rawSignature;
-                if (pubList.rawManifest && *pubList.rawManifest != outerManifest)
-                    blob[jss::manifest] = *pubList.rawManifest;
-            };
+            auto const add =
+                [&blobs, &outerManifest = pubCollection.rawManifest](PublisherList const& pubList) {
+                    auto& blob = blobs.append(json::ValueType::Object);
+                    blob[jss::blob] = pubList.rawBlob;
+                    blob[jss::signature] = pubList.rawSignature;
+                    if (pubList.rawManifest && *pubList.rawManifest != outerManifest)
+                        blob[jss::manifest] = *pubList.rawManifest;
+                };
 
             add(pubCollection.current);
             for (auto const& [_, pending] : pubCollection.remaining)
@@ -364,7 +364,7 @@ ValidatorList::buildFileData(
 }
 
 void
-ValidatorList::cacheValidatorFile(ValidatorList::scoped_lock const& lock, PublicKey const& pubKey)
+ValidatorList::cacheValidatorFile(ValidatorList::ScopedLock const& lock, PublicKey const& pubKey)
     const
 {
     if (dataPath_.empty())
@@ -496,10 +496,10 @@ splitMessage(
     if (end <= begin)
         return 0;
 
-    auto mid = (begin + end) / 2;
+    auto const mid = (begin + end) / 2;
     // The parts function will do range checking
     // Use two separate calls to ensure deterministic order
-    auto result = splitMessageParts(messages, largeMsg, maxSize, begin, mid);
+    auto const result = splitMessageParts(messages, largeMsg, maxSize, begin, mid);
     return result + splitMessageParts(messages, largeMsg, maxSize, mid, end);
 }
 
@@ -729,11 +729,15 @@ ValidatorList::buildBlobInfos(
     blobInfos[current.sequence] = {
         .blob = current.rawBlob,
         .signature = current.rawSignature,
-        .manifest = current.rawManifest};
+        .manifest = current.rawManifest,
+    };
     for (auto const& [sequence, vl] : remaining)
     {
         blobInfos[sequence] = {
-            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
+            .blob = vl.rawBlob,
+            .signature = vl.rawSignature,
+            .manifest = vl.rawManifest,
+        };
     }
 }
 
@@ -752,7 +756,7 @@ ValidatorList::broadcastBlobs(
     PublicKey const& publisherKey,
     ValidatorList::PublisherListCollection const& lists,
     std::size_t maxSequence,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     beast::Journal j)
@@ -774,7 +778,7 @@ ValidatorList::broadcastBlobs(
             "xrpl::ValidatorList::broadcastBlobs : valid sequence");
         // Can't use overlay.foreach here because we need to modify
         // the peer, and foreach provides a const&
-        for (auto& peer : overlay.getActivePeers())
+        for (auto const& peer : overlay.getActivePeers())
         {
             if (!toSkip->contains(peer->id()))
             {
@@ -808,7 +812,7 @@ ValidatorList::applyListsAndBroadcast(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    uint256 const& hash,
+    UInt256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
@@ -869,7 +873,7 @@ ValidatorList::applyLists(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    std::optional<uint256> const& hash /* = {} */)
+    std::optional<UInt256> const& hash /* = {} */)
 {
     if (std::count(std::begin(kSupportedListVersions), std::end(kSupportedListVersions), version) !=
         1)
@@ -914,7 +918,7 @@ ValidatorList::applyLists(
         auto const& current = pubCollection.current;
         for (auto iter = remaining.begin(); iter != remaining.end();)
         {
-            auto next = std::next(iter);
+            auto const next = std::next(iter);
             XRPL_ASSERT(
                 next == remaining.end() || next->first > iter->first,
                 "xrpl::ValidatorList::applyLists : next is valid");
@@ -945,7 +949,7 @@ ValidatorList::updatePublisherList(
     PublicKey const& pubKey,
     PublisherList const& current,
     std::vector<PublicKey> const& oldList,
-    ValidatorList::scoped_lock const&)
+    ValidatorList::ScopedLock const&)
 {
     // Update keyListings_ for added and removed keys
     std::vector<PublicKey> const& publisherList = current.list;
@@ -1016,8 +1020,8 @@ ValidatorList::applyList(
     std::string const& signature,
     std::uint32_t version,
     std::string siteUri,
-    std::optional<uint256> const& hash,
-    ValidatorList::scoped_lock const& lock)
+    std::optional<UInt256> const& hash,
+    ValidatorList::ScopedLock const& lock)
 {
     using namespace std::string_literals;
 
@@ -1217,7 +1221,7 @@ ValidatorList::loadLists()
         if (ec)
             continue;
 
-        std::string const prefix = [&fullPath]() {
+        std::string const prefix = [&fullPath] {
 #if _MSC_VER  // MSVC: Windows paths need a leading / added
             {
                 return fullPath.root_path() == "/"s ? "file://" : "file:///";
@@ -1240,7 +1244,7 @@ ValidatorList::loadLists()
 // contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
-    ValidatorList::scoped_lock const& lock,
+    ValidatorList::ScopedLock const& lock,
     json::Value& list,
     Manifest manifest,
     std::string const& blob,
@@ -1343,7 +1347,7 @@ ValidatorList::listed(PublicKey const& identity) const
 }
 
 bool
-ValidatorList::trusted(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::trusted(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return trustedMasterKeys_.contains(pubKey);
@@ -1368,7 +1372,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 }
 
 std::optional<PublicKey>
-ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
+ValidatorList::getTrustedKey(ValidatorList::SharedLock const&, PublicKey const& identity) const
 {
     auto pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.contains(pubKey))
@@ -1401,7 +1405,7 @@ ValidatorList::localPublicKey() const
 
 bool
 ValidatorList::removePublisherList(
-    ValidatorList::scoped_lock const&,
+    ValidatorList::ScopedLock const&,
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
@@ -1437,7 +1441,7 @@ ValidatorList::removePublisherList(
 }
 
 std::size_t
-ValidatorList::count(ValidatorList::shared_lock const&) const
+ValidatorList::count(ValidatorList::SharedLock const&) const
 {
     return publisherLists_.size() + static_cast<size_t>(!localPublisherList_.list.empty());
 }
@@ -1450,7 +1454,7 @@ ValidatorList::count() const
 }
 
 std::optional<TimeKeeper::time_point>
-ValidatorList::expires(ValidatorList::shared_lock const&) const
+ValidatorList::expires(ValidatorList::SharedLock const&) const
 {
     std::optional<TimeKeeper::time_point> res{};
     for (auto const& [_, collection] : publisherLists_)
@@ -1491,7 +1495,7 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
         PublisherList const collection = localPublisherList_;
         // Unfetched
         auto const& current = collection;
-        auto chainedExpiration = current.validUntil;
+        auto const chainedExpiration = current.validUntil;
 
         // Earliest
         if (!res || chainedExpiration < *res)
@@ -1567,7 +1571,7 @@ ValidatorList::getJson() const
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] = pubCollection.status == PublisherStatus::Available;
 
-        auto appendList = [](PublisherList const& publisherList, json::Value& target) {
+        auto const appendList = [](PublisherList const& publisherList, json::Value& target) {
             target[jss::uri] = publisherList.siteUri;
             if (publisherList.validUntil != TimeKeeper::time_point{})
             {
@@ -1618,7 +1622,7 @@ ValidatorList::getJson() const
     // signing keys
     json::Value& jSigningKeys = (res[jss::signing_keys] = json::ValueType::Object);
     validatorManifests_.forEachManifest([&jSigningKeys, this](Manifest const& manifest) {
-        auto it = keyListings_.find(manifest.masterKey);
+        auto const it = keyListings_.find(manifest.masterKey);
         if (it != keyListings_.end() && manifest.signingKey)
         {
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
@@ -1656,7 +1660,7 @@ ValidatorList::forEachAvailable(
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         PublicKey const& pubKey,
         std::size_t maxSequence,
-        uint256 const& hash)> func) const
+        UInt256 const& hash)> func) const
 {
     std::shared_lock const readLock{mutex_};
 
@@ -1692,7 +1696,7 @@ ValidatorList::getAvailable(
         return {};
     }
 
-    auto id = PublicKey(makeSlice(*keyBlob));
+    auto const id = PublicKey(makeSlice(*keyBlob));
 
     auto const iter = publisherLists_.find(id);
 
@@ -1798,7 +1802,7 @@ ValidatorList::calculateQuorum(
 
 TrustChanges
 ValidatorList::updateTrusted(
-    hash_set<NodeID> const& seenValidators,
+    HashSet<NodeID> const& seenValidators,
     NetClock::time_point closeTime,
     NetworkOPs& ops,
     Overlay& overlay,
@@ -1839,7 +1843,7 @@ ValidatorList::updateTrusted(
                     "remaining");
 
                 // Rotate the pending list in to current
-                auto sequence = iter->first;
+                auto const sequence = iter->first;
                 auto& candidate = iter->second;
                 auto& current = collection.current;
                 XRPL_ASSERT(
@@ -1946,7 +1950,7 @@ ValidatorList::updateTrusted(
             if (negativeUNL_.contains(k))
                 --effectiveUnlSize;
         }
-        hash_set<NodeID> negUnlNodeIDs;
+        HashSet<NodeID> negUnlNodeIDs;
         for (auto const& k : negativeUNL_)
         {
             negUnlNodeIDs.emplace(calcNodeID(k));
@@ -1978,7 +1982,7 @@ ValidatorList::updateTrusted(
     return trustChanges;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock const readLock{mutex_};
@@ -1992,7 +1996,7 @@ ValidatorList::getListThreshold() const
     return listThreshold_;
 }
 
-hash_set<PublicKey>
+HashSet<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
     std::shared_lock const readLock{mutex_};
@@ -2000,7 +2004,7 @@ ValidatorList::getNegativeUNL() const
 }
 
 void
-ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
+ValidatorList::setNegativeUNL(HashSet<PublicKey> const& negUnl)
 {
     std::scoped_lock const lock{mutex_};
     negativeUNL_ = negUnl;

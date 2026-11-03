@@ -18,6 +18,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -50,7 +51,7 @@ private:
 
         Env env(*this, features);
 
-        auto lowerFee = [&]() {
+        auto const lowerFee = [&] {
             // Run the local fee back down.
             while (env.app().getFeeTrack().lowerLocalFee())
                 ;
@@ -79,7 +80,7 @@ private:
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
-            auto const signParams = [&]() {
+            auto const signParams = [&] {
                 json::Value signParams{json::ValueType::Object};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
@@ -89,7 +90,7 @@ private:
             auto const jSign = env.rpc("json", "sign", to_string(signParams));
             BEAST_EXPECT(jSign.isMember(jss::result) && jSign[jss::result].isMember(jss::tx_json));
             auto txSignResult = jSign[jss::result][jss::tx_json];
-            auto txSignBlob = jSign[jss::result][jss::tx_blob].asString();
+            auto const txSignBlob = jSign[jss::result][jss::tx_blob].asString();
             txSignResult.removeMember(jss::hash);
 
             auto const jtx = env.jt(txJson, Sig(borrower));
@@ -117,7 +118,7 @@ private:
             // it holds no transaction signature, so it is not a target either.
             for (char const* target : {"Destination", "Book", "Signer"})
             {
-                auto const borrowerSignParams = [&]() {
+                auto const borrowerSignParams = [&] {
                     json::Value params{json::ValueType::Object};
                     params[jss::passphrase] = borrowerPass;
                     params[jss::key_type] = "ed25519";
@@ -126,12 +127,9 @@ private:
                     return params;
                 }();
                 auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
-                BEAST_EXPECT(
-                    jSignBorrower.isMember(jss::result) &&
-                    jSignBorrower[jss::result].isMember(jss::error) &&
-                    jSignBorrower[jss::result][jss::error] == "invalidParams" &&
-                    jSignBorrower[jss::result].isMember(jss::error_message) &&
-                    jSignBorrower[jss::result][jss::error_message] == target);
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error_message] == target);
             }
         }
         {
@@ -153,7 +151,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -185,7 +183,7 @@ private:
 
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -260,7 +258,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -291,7 +289,7 @@ private:
 
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -365,11 +363,12 @@ private:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+        MPTTester mpt({
+            .env = env,
+            .issuer = issuer,
+            .holders = {lender, borrower},
+            .flags = tfMPTCanTransfer | tfMPTCanLock,
+        });
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -438,7 +437,7 @@ public:
 class LoanBatch_test : public LoanTestBase
 {
 protected:
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
 
     std::uniform_int_distribution<> assetDist_{0, 2};
     std::uniform_int_distribution<std::int64_t> principalDist_{100'000, 1'000'000'000};
@@ -492,7 +491,8 @@ protected:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = managementFeeRate,
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -510,7 +510,7 @@ public:
     void
     run() override
     {
-        auto const numIterations = [s = arg()]() -> int {
+        auto const numIterations = [s = arg()] -> int {
             int const defaultNum = 5;
             if (s.empty())
                 return defaultNum;
@@ -553,14 +553,16 @@ class LoanArbitrary_test : public LoanBatch_test
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
             .principalRequest = Number{200000, -6},
             .interest = TenthBips32{50000},
             .payTotal = 2,
-            .payInterval = 200};
+            .payInterval = 200,
+        };
 
         runLoan(AssetType::XRP, brokerParams, loanParams, all_);
     }

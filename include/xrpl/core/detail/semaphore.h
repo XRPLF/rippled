@@ -91,6 +91,6 @@ public:
     }
 };
 
-using semaphore = BasicSemaphore<std::mutex, std::condition_variable>;
+using Semaphore = BasicSemaphore<std::mutex, std::condition_variable>;
 
 }  // namespace xrpl

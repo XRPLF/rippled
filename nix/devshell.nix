@@ -1,6 +1,7 @@
 { pkgs, customGlibc, ... }:
 let
   inherit (import ./packages.nix { inherit pkgs; })
+    cacert
     commonPackages
     gccPackage
     gccVersion
@@ -20,15 +21,19 @@ let
 
   # Custom-glibc stdenvs, matching the CI environment. darwin has no custom
   # glibc, so there they fall back to the plain nixpkgs stdenvs.
-  customGccStdenv = if pkgs.stdenv.isLinux then linux.gccStdenv else plainGccStdenv;
-  customClangStdenv = if pkgs.stdenv.isLinux then linux.clangStdenv else plainClangStdenv;
+  customGccStdenv = if pkgs.stdenv.hostPlatform.isLinux then linux.gccStdenv else plainGccStdenv;
+  customClangStdenv =
+    if pkgs.stdenv.hostPlatform.isLinux then linux.clangStdenv else plainClangStdenv;
 
   # gcov matching each gcc shell, so `-Dcoverage=ON` builds work in the shell.
   plainGcov = mkGcov {
     name = "plain";
     cc = gccPackage.cc;
   };
-  customGccGcov = if pkgs.stdenv.isLinux then linux.gcov else plainGcov;
+  customGccGcov = if pkgs.stdenv.hostPlatform.isLinux then linux.gcov else plainGcov;
+
+  # commonPackages whose clang tools parse with the custom toolchain's headers.
+  customCommonPackages = (import ./packages.nix { inherit pkgs customGlibc; }).commonPackages;
 
   # Whole directory: init.sh locates the profiles relative to itself.
   conanDir = ../conan;
@@ -49,9 +54,20 @@ let
     unset _xrpl_conan_stamp
   '';
 
+  # Nix's Python certifi (used by Conan) reads only NIX_SSL_CERT_FILE. Swap
+  # Nix's default profile bundle, frozen at install time, for the patched cacert,
+  # but leave a bundle the user chose (e.g. with a proxy CA) alone.
+  caHook = ''
+    case "''${NIX_SSL_CERT_FILE:-}" in
+      "" | /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt | "$HOME/.nix-profile/etc/ssl/certs/ca-bundle.crt")
+        export NIX_SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
+        ;;
+    esac
+  '';
+
   # Not sdkEnv: a shell's stdenv already sets that up. Prepended so the stub
   # beats the nixpkgs libresolv this shell's tooling drags in.
-  darwinLibresolvHook = pkgs.lib.optionalString pkgs.stdenv.isDarwin (
+  darwinLibresolvHook = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin (
     pkgs.lib.concatLines (
       pkgs.lib.mapAttrsToList (
         name: value: ''export ${name}="${value} ''${${name}:-}"''
@@ -85,11 +101,11 @@ let
       version ? null,
       versionedTools ? [ ],
       extraPackages ? [ ],
-      warningHook ? "",
-      # Opt out of PatchNixBinary.cmake retargeting binaries to the system
-      # loader. The plain toolchain links a newer glibc, so it must not be
-      # patched; the custom toolchain patches by default.
-      noPatchNixBinary ? false,
+      # The stock nixpkgs toolchain: warn that it doesn't match CI, keep the
+      # clang tools off the custom toolchain, and opt out of PatchNixBinary.cmake
+      # retargeting binaries to the system loader (the plain toolchain links a
+      # newer glibc, so it must not be patched).
+      plain ? false,
     }:
     let
       compilerVersionHook =
@@ -109,7 +125,8 @@ let
     in
     (pkgs.mkShell.override { inherit stdenv; }) (
       {
-        packages = commonPackages ++ versionedLinks ++ extraPackages;
+        packages =
+          (if plain then commonPackages else customCommonPackages) ++ versionedLinks ++ extraPackages;
         # Marks a managed dev shell, so the build (XrplSanity.cmake) can tell an
         # intentional Nix toolchain from one leaked into a bare shell.
         XRPL_DEVSHELL = shellName;
@@ -117,16 +134,17 @@ let
           echo "Welcome to xrpld development shell";
           ${compilerVersionHook}
           ${darwinLibresolvHook}
+          ${caHook}
           ${conanHook}
-          ${warningHook}
+          ${pkgs.lib.optionalString plain plainWarningHook}
         '';
       }
-      // pkgs.lib.optionalAttrs noPatchNixBinary { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
+      // pkgs.lib.optionalAttrs plain { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
     );
 in
 rec {
   # macOS: Nix Clang. Linux: Nix GCC.
-  default = if pkgs.stdenv.isDarwin then clang else gcc;
+  default = if pkgs.stdenv.hostPlatform.isDarwin then clang else gcc;
 
   # gcc/clang use the custom-glibc toolchain, matching CI. On darwin there is no
   # custom glibc, so they fall back to the plain nixpkgs toolchain.
@@ -147,6 +165,19 @@ rec {
     versionedTools = clangVersionedTools;
   };
 
+  # The gcc shell plus the Lean4 formal verification toolchain
+  formal-verification = makeShell {
+    shellName = "formal-verification";
+    stdenv = customGccStdenv;
+    compilerName = "gcc";
+    version = gccVersion;
+    versionedTools = gccVersionedTools;
+    extraPackages = [
+      customGccGcov
+      pkgs.lean4
+    ];
+  };
+
   # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
   no-compiler = makeShell {
     shellName = "no-compiler";
@@ -158,7 +189,7 @@ rec {
 # The *-plain shells (stock nixpkgs toolchain) exist only on Linux: on darwin
 # gcc/clang are already plain, so these would be redundant and are omitted, which
 # makes `nix develop .#gcc-plain` fail there rather than silently aliasing gcc.
-// pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+// pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
   gcc-plain = makeShell {
     shellName = "gcc-plain";
     stdenv = plainGccStdenv;
@@ -166,8 +197,7 @@ rec {
     version = gccVersion;
     versionedTools = gccVersionedTools;
     extraPackages = [ plainGcov ];
-    warningHook = plainWarningHook;
-    noPatchNixBinary = true;
+    plain = true;
   };
 
   clang-plain = makeShell {
@@ -176,7 +206,6 @@ rec {
     compilerName = "clang";
     version = llvmVersion;
     versionedTools = clangVersionedTools;
-    warningHook = plainWarningHook;
-    noPatchNixBinary = true;
+    plain = true;
   };
 }

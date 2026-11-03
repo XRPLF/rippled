@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -131,8 +132,8 @@ ConfidentialMPTClawback::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
-    auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
     {
@@ -208,6 +209,12 @@ ConfidentialMPTClawback::doApply()
 
         (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
     }
+
+    // Allow clawback on stale mirrors since the issuer can still generate the
+    // proof using the corresponding stale private key. The mirrors are updated
+    // to the current epoch during execution.
+    if (view().rules().enabled(featureConfidentialMPTKeyRotation))
+        setMirrorsCurrent(*sleIssuance, *sleHolderMPToken);
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];

@@ -15,30 +15,25 @@ outputs:
 runs:
   using: composite
   steps:
-    # A tag names its own version. Anything else takes it from BuildInfo.cpp and
-    # appends the commit hash as build metadata, joined with a plus sign because a
-    # Conan version cannot contain two hyphens.
+    # A tag names its own version. Anything else is a development build named by
+    # its commit hash, matching what cmake/XrplVersion.cmake derives: the head of
+    # a pull request rather than the merge commit GitHub creates for it.
     - name: Determine version
       id: version
       shell: bash
       env:
         IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
         REF_NAME: ${{ github.ref_name }}
-        SHA: ${{ github.sha }}
+        SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       run: |
         if [[ "${IS_TAG}" == "true" ]]; then
             version="${REF_NAME}"
         else
-            version="$(awk -F'"' '/versionString =/ { print $2 }' src/libxrpl/protocol/BuildInfo.cpp)"
-            if [[ -z "${version}" ]]; then
-                echo "Unable to read versionString from BuildInfo.cpp." >&2
-                exit 1
-            fi
-            version="${version}+${SHA:0:7}"
+            version="0.0.0-dev+${SHA:0:7}"
         fi
 
         echo "version=${version}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Determine release channel and package release
       id: release_info
-      uses: XRPLF/actions/release-info@7cc0e4a8d9d0b838f92c48d312856b190341bbba
+      uses: XRPLF/actions/release-info@a9f2eeca6fb3980ba3a84cf68566f1c69ad30674

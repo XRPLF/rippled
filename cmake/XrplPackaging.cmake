@@ -44,12 +44,18 @@ else()
     set(pkg_type rpm)
 endif()
 
+# Unquoted below, so an empty value adds no argument at all.
+set(pkg_variant_option "")
+if(assert)
+    set(pkg_variant_option --variant=assert)
+endif()
+
 add_custom_target(
     package
     COMMAND
         ${CMAKE_SOURCE_DIR}/package/build_pkg.py --package-type=${pkg_type}
         --build-dir=${CMAKE_BINARY_DIR} --pkg-release=${pkg_release}
-        --channel=UNRELEASED
+        ${pkg_variant_option} --channel=UNRELEASED
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS xrpld validator-keys
     COMMENT "Building Linux ${pkg_type} package"

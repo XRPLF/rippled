@@ -15,6 +15,14 @@ _BASE_CMAKE_ARGS = [
     "-Drust=ON",
 ]
 
+# The package formats a config can be packaged as, each with its own
+# install-test job in reusable-package.yml.
+PACKAGE_TYPES = ("deb", "rpm")
+
+# The package name a variant suffixes, as build_pkg.py's BASE_NAME spells it:
+# the two have to agree, or the artifact globs miss what was built.
+BASE_NAME = "xrpld"
+
 # Maps sanitizer names (as used in cmake) to short config-name suffixes.
 _SANITIZER_SUFFIX: dict[str, str] = {
     "address": "asan",
@@ -62,10 +70,20 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 class PackageConfig:
     """The 'package' map of a config whose binaries are also packaged."""
 
-    type: str  # "deb" or "rpm"; has to match what the image provides
+    type: str  # has to match what the image provides
     # The packaging container image: a vanilla distro image, not the nix image
     # the config itself builds in.
     image: str
+    # A flavour of the package, named xrpld-<variant>, for a config whose
+    # binaries are not the plain release build. A variant needs no counterpart
+    # in the other format.
+    variant: str = ""
+
+    def __post_init__(self) -> None:
+        assert self.type in PACKAGE_TYPES, (
+            f"unsupported package type {self.type!r}: "
+            f"use one of {', '.join(PACKAGE_TYPES)}."
+        )
 
 
 @dataclasses.dataclass
@@ -178,6 +196,8 @@ class PackagingEntry:
     validator_keys_artifact_name: str
     image: str
     package_type: str  # "deb" or "rpm"; drives the format-specific steps
+    package_variant: str  # passed to build_pkg.py --variant; empty for xrpld
+    package_name: str  # the name it builds under, which the artifact globs use
 
 
 # ---------------------------------------------------------------------------
@@ -267,10 +287,30 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
                         validator_keys_artifact_name=f"validator-keys-{name}",
                         image=cfg.package.image,
                         package_type=cfg.package.type,
+                        package_variant=cfg.package.variant,
+                        package_name=(
+                            f"{BASE_NAME}-{cfg.package.variant}"
+                            if cfg.package.variant
+                            else BASE_NAME
+                        ),
                     )
                 )
 
     return entries
+
+
+def package_names_by_type(entries: list[PackagingEntry]) -> dict[str, list[str]]:
+    """The names of the packages in 'entries', keyed by format.
+
+    Derived from the packaging matrix rather than listed again, so the packages
+    the install-test jobs look for are the packages that were built.
+    """
+    return {
+        package_type: sorted(
+            {e.package_name for e in entries if e.package_type == package_type}
+        )
+        for package_type in PACKAGE_TYPES
+    }
 
 
 def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
@@ -341,6 +381,10 @@ if __name__ == "__main__":
 
     if args.packaging:
         matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
+        # One list per format, so each install-test job installs the packages its
+        # own format produced.
+        for package_type, names in package_names_by_type(matrix).items():
+            print(f"{package_type}_package_names={json.dumps(names)}")
     else:
         if args.config in ("linux", None):
             matrix += expand_linux_matrix(

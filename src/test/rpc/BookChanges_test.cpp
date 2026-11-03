@@ -13,11 +13,13 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -28,6 +30,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -75,8 +78,12 @@ public:
         // non-conventional ledger input should throw an error
         params["ledger"] = "non_conventional_ledger_input";
         resp = env.rpc("json", "book_changes", to_string(params));
-        BEAST_EXPECT(resp[jss::result].isMember(jss::error));
-        BEAST_EXPECT(resp[jss::result][jss::status] != "success");
+        BEAST_EXPECT(resp[jss::result][jss::status] == "error");
+        BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+        BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'ledger', not string or number.");
     }
 
     void
@@ -106,22 +113,24 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), Domain(domainID));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+        env(pay(bob, carol, usd(10)), Path(~usd), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();
@@ -149,48 +158,49 @@ public:
         auto const big = MPT{gw.id(), 1};
         auto const usd = iouGw["USD"];
 
-        // This metadata represents a partial MPT/IOU offer fill whose deltas
-        // make divide(deltaGets, deltaPays) overflow before MPTokensV2 skips
-        // the unrepresentable book-change rate.
-        STObject finalFields = STObject::makeInnerObject(sfFinalFields);
-        finalFields.setFieldU32(sfSequence, 1);
-        finalFields.setFieldAmount(sfTakerGets, big(1'800'000'000'000'000'000ull));
-        finalFields.setFieldAmount(sfTakerPays, usd(9));
+        // Metadata for a partial MPT/IOU offer fill. The rate is
+        // divide(deltaGets, deltaPays): 1.8e18 MPT over `pays` IOU.
+        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features,
+                              STAmount const& pays,
+                              std::size_t expectedChanges) {
+            STObject finalFields = STObject::makeInnerObject(sfFinalFields);
+            finalFields.setFieldU32(sfSequence, 1);
+            finalFields.setFieldAmount(sfTakerGets, big(1'800'000'000'000'000'000ull));
+            finalFields.setFieldAmount(sfTakerPays, pays);
 
-        STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
-        previousFields.setFieldU32(sfSequence, 1);
-        previousFields.setFieldAmount(sfTakerGets, big(3'600'000'000'000'000'000ull));
-        previousFields.setFieldAmount(sfTakerPays, usd(18));
+            STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
+            previousFields.setFieldU32(sfSequence, 1);
+            previousFields.setFieldAmount(sfTakerGets, big(3'600'000'000'000'000'000ull));
+            previousFields.setFieldAmount(sfTakerPays, pays + pays);
 
-        STObject modifiedOffer{sfModifiedNode};
-        modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);
-        modifiedOffer.setFieldObject(sfFinalFields, finalFields);
-        modifiedOffer.setFieldObject(sfPreviousFields, previousFields);
+            STObject modifiedOffer{sfModifiedNode};
+            modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);
+            modifiedOffer.setFieldObject(sfFinalFields, finalFields);
+            modifiedOffer.setFieldObject(sfPreviousFields, previousFields);
 
-        STArray affectedNodes{sfAffectedNodes};
-        affectedNodes.pushBack(std::move(modifiedOffer));
+            STArray affectedNodes{sfAffectedNodes};
+            affectedNodes.pushBack(std::move(modifiedOffer));
 
-        auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
-        metadata->setFieldArray(sfAffectedNodes, affectedNodes);
+            auto const metadata = std::make_shared<STObject>(sfTransactionMetaData);
+            metadata->setFieldArray(sfAffectedNodes, affectedNodes);
 
-        auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
+            auto const tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
-            auto ledger = std::make_shared<Ledger>(
+            auto const ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
                 Rules{features},
                 env.current()->fees(),
                 env.app().getNodeFamily());
 
-            auto txSerializer = std::make_shared<Serializer>();
+            auto const txSerializer = std::make_shared<Serializer>();
             tx->add(*txSerializer);
 
-            auto metaSerializer = std::make_shared<Serializer>();
+            auto const metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
-            ledger->setImmutable();
+            ledger->rawTxInsert(UInt256{1}, txSerializer, metaSerializer);
+            BEAST_EXPECT(ledger->setImmutable());
             ledger->setValidated();
 
             try
@@ -198,7 +208,7 @@ public:
                 auto const result =
                     xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));
                 BEAST_EXPECT(result[jss::type] == "bookChanges");
-                BEAST_EXPECT(result[jss::changes].size() == 0);
+                BEAST_EXPECT(result[jss::changes].size() == expectedChanges);
             }
             catch (std::overflow_error const&)
             {
@@ -206,8 +216,21 @@ public:
             }
         };
 
-        test(std::unordered_set<uint256, beast::Uhash<>>{});
-        test(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2});
+        // Over the smallest IOU the rate is beyond the IOU exponent range:
+        // the change is skipped.
+        STAmount const tiny{usd.issue(), STAmount::kMinValue, STAmount::kMinOffset};
+        // Over 9 USD the rate is 2e17. divide() used to overflow here; with
+        // Number arithmetic for MPT operands it is reported.
+        STAmount const nine = usd(9);
+
+        for (auto const& features : {
+                 std::unordered_set<uint256, beast::Uhash<>>{},
+                 std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2},
+             })
+        {
+            test(features, tiny, 0);
+            test(features, nine, 1);
+        }
     }
 
     // Build a ledger whose transactions are OfferCreates carrying the supplied
@@ -216,10 +239,10 @@ public:
     static json::Value
     bookChangesFor(jtx::Env& env, std::vector<std::pair<STAmount, STAmount>> const& crossings)
     {
-        auto ledger = std::make_shared<Ledger>(
+        auto const ledger = std::make_shared<Ledger>(
             2,
             NetClock::time_point{},
-            Rules{std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}},
+            Rules{std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2}},
             env.current()->fees(),
             env.app().getNodeFamily());
 
@@ -246,21 +269,26 @@ public:
             STArray affectedNodes{sfAffectedNodes};
             affectedNodes.pushBack(std::move(modifiedOffer));
 
-            auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
+            auto const metadata = std::make_shared<STObject>(sfTransactionMetaData);
             metadata->setFieldArray(sfAffectedNodes, affectedNodes);
 
             STTx const tx{ttOFFER_CREATE, [](STObject&) {}};
 
-            auto txSerializer = std::make_shared<Serializer>();
+            auto const txSerializer = std::make_shared<Serializer>();
             tx.add(*txSerializer);
 
-            auto metaSerializer = std::make_shared<Serializer>();
+            auto const metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{seq}, txSerializer, metaSerializer);
+            ledger->rawTxInsert(UInt256{seq}, txSerializer, metaSerializer);
         }
 
-        ledger->setImmutable();
+        // Thrown rather than asserted because a refusal leaves the ledger unusable, and this
+        // helper is static, so BEAST_EXPECT is out of reach.
+        if (!ledger->setImmutable())
+        {
+            Throw<std::runtime_error>("bookChangesFor: ledger could not be made immutable");
+        }
         ledger->setValidated();
 
         return xrpl::rpc::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));

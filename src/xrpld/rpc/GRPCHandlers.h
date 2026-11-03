@@ -24,12 +24,12 @@ std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
-doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context);
+doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context);
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const& context);
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
-doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
+doLedgerDiffGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest> const& context);
 
 }  // namespace xrpl

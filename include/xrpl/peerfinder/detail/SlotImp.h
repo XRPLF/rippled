@@ -17,17 +17,17 @@ namespace xrpl::peer_finder {
 class SlotImp : public Slot
 {
 public:
-    using ptr = std::shared_ptr<SlotImp>;
+    using Ptr = std::shared_ptr<SlotImp>;
 
     // inbound
     SlotImp(
         beast::ip::Endpoint const& localEndpoint,
         beast::ip::Endpoint remoteEndpoint,
         bool fixed,
-        clock_type& clock);
+        ClockType& clock);
 
     // outbound
-    SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, clock_type& clock);
+    SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, ClockType& clock);
 
     bool
     inbound() const override
@@ -122,7 +122,7 @@ public:
     state(State state);
 
     void
-    activate(clock_type::time_point const& now);
+    activate(ClockType::time_point const& now);
 
     // "Memberspace"
     //
@@ -132,7 +132,7 @@ public:
     class RecentT
     {
     public:
-        explicit RecentT(clock_type& clock);
+        explicit RecentT(ClockType& clock);
 
         /**
          * Called for each valid endpoint received for a slot.
@@ -153,7 +153,7 @@ public:
         expire();
 
         friend class SlotImp;
-        beast::aged_unordered_map<beast::ip::Endpoint, std::uint32_t> cache_;
+        beast::AgedUnorderedMap<beast::ip::Endpoint, std::uint32_t> cache_;
     } recent;
 
     void
@@ -193,7 +193,7 @@ public:
     // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
     // sooner than the allotted time should impose a load charge.
     //
-    clock_type::time_point whenAcceptEndpoints;
+    ClockType::time_point whenAcceptEndpoints;
 };
 
 }  // namespace xrpl::peer_finder

@@ -19,7 +19,7 @@ struct JoinTest : public ::testing::Test
 
 TEST_F(JoinTest, join)
 {
-    auto test = [](auto collectionAndDelimiter, std::string expected) {
+    auto const test = [](auto collectionAndDelimiter, std::string expected) {
         std::stringstream ss;
         // Put something else in the buffer before and after to ensure that
         // the << operator returns the stream correctly.
@@ -35,6 +35,7 @@ TEST_F(JoinTest, join)
     // One item C++ array edge case
     test(CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "), "test");
     // Empty C++ array edge case
+    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
     test(CollectionAndDelimiter(std::array<int, 0>{}, ","), "");
     {
         // C-style array
@@ -59,10 +60,10 @@ TEST_F(JoinTest, join)
     test(CollectionAndDelimiter(std::vector<std::string>{"master"}, "xxx"), "master");
     // vector with one non-trivial streamable item edge case
     test(
-        CollectionAndDelimiter(std::vector<uint256>{uint256{1}}, "xxx"),
+        CollectionAndDelimiter(std::vector<UInt256>{UInt256{1}}, "xxx"),
         "0000000000000000000000000000000000000000000000000000000000000001");
     // empty vector edge case
-    test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
+    test(CollectionAndDelimiter(std::vector<UInt256>{}, ","), "");
     // C-style string
     test(CollectionAndDelimiter("string", " "), "s t r i n g");
     // Empty C-style string edge case

@@ -18,7 +18,7 @@
 namespace xrpl::node_store {
 
 void
-DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
+DatabaseNodeImp::store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t)
 {
     storeStats(1, data.size());
 
@@ -35,7 +35,7 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
 
 void
 DatabaseNodeImp::asyncFetch(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
 {
@@ -60,7 +60,7 @@ DatabaseNodeImp::sweep()
 
 std::shared_ptr<NodeObject>
 DatabaseNodeImp::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t,
     FetchReport& fetchReport,
     bool duplicate)

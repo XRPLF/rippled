@@ -36,7 +36,7 @@ struct RunState
     std::unique_ptr<DatabaseHarness> harness;
     Batch present;                     // prefix-1 objects, eligible to be stored
     Batch recent;                      // prefix-1 objects in the "future" key space
-    std::vector<uint256> missing;      // prefix-2 keys that are never stored
+    std::vector<UInt256> missing;      // prefix-2 keys that are never stored
     std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
     std::size_t avgPayload = 0;        // mean getData().size() over `present`
 };
@@ -192,7 +192,7 @@ Workload const kWork{
 void
 registerWorkload(BackendConfig const& bc, Workload const& w)
 {
-    auto rs = std::make_shared<RunState>();
+    auto const rs = std::make_shared<RunState>();
     std::string const cfg = bc.config;
     std::string name{kNamePrefix};
     name += w.name;
@@ -206,11 +206,16 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
         auto const seq = db.earliestLedgerSeq();
 
         std::size_t index = 0;
-        for (auto _ : state)
+        for (auto const _ : state)
         {
             w.iterate(
                 IterateContext{
-                    .rs = *rs, .db = db, .seq = seq, .index = index, .poolSize = poolSize});
+                    .rs = *rs,
+                    .db = db,
+                    .seq = seq,
+                    .index = index,
+                    .poolSize = poolSize,
+                });
             ++index;
         }
         benchmark::ClobberMemory();

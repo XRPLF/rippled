@@ -6,6 +6,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -20,7 +22,7 @@ namespace xrpl {
 ApplyContext::ApplyContext(
     ServiceRegistry& registry,
     OpenView& base,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<UInt256 const> const& parentBatchId,
     STTx const& tx,
     TER preclaimResult,
     XRPAmount baseFee,
@@ -54,6 +56,13 @@ ApplyContext::apply(TER ter)
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
+void
+ApplyContext::addOrderBook(Book const& book)
+{
+    if ((flags_ & TapDryRun) == TapNone)
+        registry.get().getOrderBookDB().addOrderBook(book);
+}
+
 std::size_t
 ApplyContext::size()
 {
@@ -62,7 +71,7 @@ ApplyContext::size()
 
 void
 ApplyContext::visit(
-    std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
+    std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }

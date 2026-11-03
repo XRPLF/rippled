@@ -51,7 +51,7 @@ enum TELcodes : TERUnderlyingType {
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
     telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    telENV_RPC_FAILED,
 };
 
 //------------------------------------------------------------------------------
@@ -133,7 +133,6 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_MPT,
     temBAD_CIPHERTEXT,
     temINVALID_BYTECODE,
-    temTEMP_DISABLED,
 };
 
 //------------------------------------------------------------------------------
@@ -184,6 +183,8 @@ enum TEFcodes : TERUnderlyingType {
     tefBAD_PATH_COUNT,
     tefNO_BYTECODE,
     tefBYTECODE_NOT_INCLUDED,
+    tefTEMP_DISABLED,
+    tefEXCEEDS_LIMIT,
 };
 
 //------------------------------------------------------------------------------
@@ -231,6 +232,8 @@ enum TERcodes : TERUnderlyingType {
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
     terNO_PERMISSION,           // No permission but retry
+    terTICKET_RESERVED,         // Ticket is reserved and cannot be consumed
+                                // until the reservation is released
 };
 
 //------------------------------------------------------------------------------
@@ -247,7 +250,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    tesSUCCESS = 0,
 };
 
 //------------------------------------------------------------------------------
@@ -449,7 +452,7 @@ public:
     // Trait tells the requires-clause which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
-        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        requires(Trait<std::remove_cvref_t<T>>::value)
         : code_(TERtoInt(rhs))
     {
     }

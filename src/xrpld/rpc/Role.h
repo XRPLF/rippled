@@ -71,6 +71,6 @@ ipAllowed(
     std::vector<boost::asio::ip::network_v6> const& nets6);
 
 std::string_view
-forwardedFor(http_request_type const& request);
+forwardedFor(HttpRequestType const& request);
 
 }  // namespace xrpl

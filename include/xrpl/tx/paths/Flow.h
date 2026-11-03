@@ -50,7 +50,7 @@ flow(
     OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
 

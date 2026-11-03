@@ -174,7 +174,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -280,7 +280,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << to_string(newLPTokenBalance.iou())
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto sendAmount = [&](STAmount const& saAmount) -> TER {
+    auto const sendAmount = [&](STAmount const& saAmount) -> TER {
         bool const checkIssuer = saAmount.holds<Issue>();
         return directSendNoFee(sb, holder, issuer, saAmount, checkIssuer, j_);
     };
@@ -323,7 +323,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     AccountID const issuer = ctx_.tx[sfAccount];
 
     auto frac = Number{amount} / amountBalance;
-    auto amount2Withdraw = amount2Balance * frac;
+    auto const amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
     auto const& rules = sb.rules();
@@ -355,7 +355,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
     if (rules.enabled(fixAMMClawbackRounding))
     {
-        auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+        auto const tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
         if (tokensAdj == beast::kZero)
@@ -365,7 +365,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
         auto amount2Rounded = getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
 
-        auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
+        auto const amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
         // The requested clawback amount is likely too small and results in
         // one-sided pool withdrawal due to round off. Fail so the issuer can
@@ -417,7 +417,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 }
 
 void
-AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

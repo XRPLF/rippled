@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -177,14 +178,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         MPTAmount const& out);
 
     std::pair<MPTAmount, MPTAmount>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         MPTAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -272,7 +273,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
+    check(StrandContext const& ctx, SLE::ConstRef sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -320,7 +321,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc);
+    check(StrandContext const& ctx, SLE::ConstRef sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -336,7 +337,7 @@ public:
 //------------------------------------------------------------------------------
 
 TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
+MPTEndpointPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -400,7 +401,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) c
 }
 
 TER
-MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, SLE::const_ref)
+MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, SLE::ConstRef)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a MPToken.  Offer crossing does not
@@ -505,7 +506,7 @@ std::pair<MPTAmount, MPTAmount>
 MPTEndpointStep<TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    boost::container::flat_set<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<UInt256>& /*ofrsToRm*/,
     MPTAmount const& out)
 {
     cache_.reset();
@@ -615,7 +616,7 @@ std::pair<MPTAmount, MPTAmount>
 MPTEndpointStep<TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    boost::container::flat_set<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<UInt256>& /*ofrsToRm*/,
     MPTAmount const& in)
 {
     XRPL_ASSERT(cache_, "MPTEndpointStep<TDerived>::fwdImp : valid cache");
@@ -731,7 +732,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
 
     try
     {
-        boost::container::flat_set<uint256> dummy;
+        boost::container::flat_set<UInt256> dummy;
         fwdImp(sb, afView, dummy, in.get<MPTAmount>());  // changes cache
     }
     catch (FlowException const&)
@@ -874,15 +875,18 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
 
     // pure issue/redeem can't be frozen (issuer/holder)
     // For the first step: check global freeze of the step's own asset.
-    // For the last step: check only the per-holder MPToken lock.
+    // For the last step: check only the per-holder lock.
     // Global freeze of the deliver asset is not checked here
     // because MPT semantics allow issuer<->holder transfers even when globally
     // locked — only holder-to-holder DEX paths are restricted.
+    // For both steps: a vault share inherits the freeze of the vault's
+    // underlying asset.
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const& account = ctx.isFirst ? src_ : dst_;
         bool const frozen = (ctx.isFirst && isGlobalFrozen(ctx.view, mptIssue_)) ||
-            isIndividualFrozen(ctx.view, account, mptIssue_);
+            isIndividualFrozen(ctx.view, account, mptIssue_) ||
+            isVaultPseudoAccountFrozen(ctx.view, account, mptIssue_, 0);
         if (frozen)
             return terLOCKED;
     }

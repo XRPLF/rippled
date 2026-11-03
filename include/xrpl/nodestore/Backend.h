@@ -99,7 +99,7 @@ public:
      * @return The result of the operation.
      */
     virtual Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
+    fetch(UInt256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
 
     /**
      * Store a single object.

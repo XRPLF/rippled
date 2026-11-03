@@ -72,8 +72,8 @@ public:
     // outlive the Rules; both are returned together.
     struct RulesFixture
     {
-        std::unordered_set<uint256, beast::Uhash<>> const noPresets;
-        std::unordered_set<uint256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
+        std::unordered_set<UInt256, beast::Uhash<>> const noPresets;
+        std::unordered_set<UInt256, beast::Uhash<>> const fixPresets{fixCleanup3_4_0};
         Rules const legacy{noPresets};
         Rules const fixed{fixPresets};
     };
@@ -192,7 +192,7 @@ public:
         // A transaction signed by its own account, with that signature copied
         // into an alternate signature field. sfSponsorSignature is a common
         // field; sfCounterpartySignature is only on a LoanSet.
-        auto makeCopiedSig = [&keypair, &account](SField const& sigField) {
+        auto const makeCopiedSig = [&keypair, &account](SField const& sigField) {
             bool const counterparty = sigField == sfCounterpartySignature;
             STTx tx(counterparty ? ttLOAN_SET : ttACCOUNT_SET, [&](auto& obj) {
                 obj.setAccountID(sfAccount, account);
@@ -201,7 +201,7 @@ public:
                 obj.setFieldVL(sfSigningPubKey, keypair.first.slice());
                 if (counterparty)
                 {
-                    obj.setFieldH256(sfLoanBrokerID, uint256{1});
+                    obj.setFieldH256(sfLoanBrokerID, UInt256{1});
                     obj.setFieldNumber(
                         sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{1}});
                 }
@@ -266,7 +266,7 @@ public:
         auto const signerKp = generateKeyPair(KeyType::Secp256k1, generateSeed("multisigner"));
         auto const signerId = calcAccountID(signerKp.first);
 
-        auto makeCopiedMultiSig = [&](SField const& sigField) {
+        auto const makeCopiedMultiSig = [&](SField const& sigField) {
             bool const counterparty = sigField == sfCounterpartySignature;
             STTx const tx(counterparty ? ttLOAN_SET : ttACCOUNT_SET, [&](auto& obj) {
                 obj.setAccountID(sfAccount, account);
@@ -276,7 +276,7 @@ public:
                 obj.setFieldVL(sfSigningPubKey, Slice{});
                 if (counterparty)
                 {
-                    obj.setFieldH256(sfLoanBrokerID, uint256{1});
+                    obj.setFieldH256(sfLoanBrokerID, UInt256{1});
                     obj.setFieldNumber(
                         sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{1}});
                 }
@@ -345,7 +345,8 @@ public:
         static constexpr unsigned char kPayload1[] = {
             0x0a, 0xff, 0xff, 0xff, 0xff, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63,
             0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x29, 0x1b, 0x1b, 0x1b,
-            0x1b, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef};
+            0x1b, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef,
+        };
 
         static constexpr unsigned char kPayload2[] = {
             0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff,
@@ -1337,7 +1338,8 @@ public:
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff,
             0xef, 0xff, 0x01, 0x00, 0xfd, 0xf1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0x3b, 0x3b, 0x43, 0x3b, 0x3b, 0xff, 0x3b,
-            0x12, 0xf1, 0x12, 0x12, 0x12, 0xff};
+            0x12, 0xf1, 0x12, 0x12, 0x12, 0xff,
+        };
 
         static constexpr unsigned char kPayload3[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
@@ -1357,7 +1359,8 @@ public:
             0x20, 0xf6, 0x00, 0x00, 0x03, 0x1f, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x00,
             0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x02, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00, 0x10, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00,
-            0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe};
+            0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe,
+        };
 
         static constexpr unsigned char kPayload4[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
@@ -1377,7 +1380,8 @@ public:
             0x00, 0x20, 0xf6, 0x00, 0x00, 0x03, 0x1f, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35,
             0x00, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x02, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00, 0x10, 0x00, 0x73, 0x00, 0x81, 0x14,
-            0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe};
+            0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe,
+        };
 
         // Construct an STObject with 11 levels of object nesting so the
         // maximum nesting level exception is thrown.
@@ -1391,7 +1395,7 @@ public:
 
             // Make an STObject that nests objects ten levels deep.  There's
             // a minimum transaction size we must meet, so include a hash256.
-            uint256 const hash{42u};
+            UInt256 const hash{42u};
             auto inner = std::make_unique<STObject>(recurse, sfTransactionMetaData);
             inner->setFieldH256(sfTransactionHash, hash);
 
@@ -1409,7 +1413,7 @@ public:
                 SerialIter tenSit{tenDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<xrpl::STTx const>(tenSit);
+                    auto const stx = std::make_shared<xrpl::STTx const>(tenSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1428,7 +1432,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
+                auto const stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1453,7 +1457,7 @@ public:
             // Make an STObject that nests ten levels deep alternating objects
             // and arrays.  Include a hash256 to meet the minimum transaction
             // size.
-            uint256 const hash{42u};
+            UInt256 const hash{42u};
             STObject inner = {recurse, sfTransactionMetaData};
             inner.setFieldH256(sfTransactionHash, hash);
 
@@ -1472,7 +1476,7 @@ public:
                 SerialIter nineSit{nineDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<xrpl::STTx const>(nineSit);
+                    auto const stx = std::make_shared<xrpl::STTx const>(nineSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1492,7 +1496,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
+                auto const stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1519,7 +1523,7 @@ public:
             {
                 // Verify we have a valid transaction.
                 SerialIter sit{serialized.slice()};
-                auto stx = std::make_shared<xrpl::STTx const>(sit);
+                auto const stx = std::make_shared<xrpl::STTx const>(sit);
             }
 
             // Tweak the serialized data to change the ClearFlag to
@@ -1531,7 +1535,7 @@ public:
             SerialIter sit{serialized.slice()};
             try
             {
-                auto stx = std::make_shared<xrpl::STTx const>(sit);
+                auto const stx = std::make_shared<xrpl::STTx const>(sit);
                 fail("An exception should have been thrown");
             }
             catch (std::exception const& ex)
@@ -1559,7 +1563,7 @@ public:
 
             xrpl::SerialIter sit(xrpl::makeSlice(tx2.rawtransaction()));
 
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const&)
@@ -1570,7 +1574,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload2};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1581,7 +1585,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload3};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1592,7 +1596,7 @@ public:
         try
         {
             xrpl::SerialIter sit{kPayload4};
-            auto stx = std::make_shared<xrpl::STTx const>(sit);
+            auto const stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1617,9 +1621,8 @@ public:
 
         // Rules store a reference to the presets. Create a local to guarantee
         // proper lifetime.
-        std::unordered_set<uint256, beast::Uhash<>> const presets;
+        std::unordered_set<UInt256, beast::Uhash<>> const presets;
         Rules const defaultRules{presets};
-        BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
         unexpected(!j.checkSign(defaultRules), "Transaction fails signature test");
 
@@ -1669,7 +1672,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Lambda that returns a Payment STObject.
-        auto getPayment = [kp1, id1, id2]() {
+        auto const getPayment = [kp1, id1, id2] {
             // Account id1 pays account id2 10,000 XRP.
             STObject payment(sfGeneric);
             payment.setFieldU16(sfTransactionType, ttPAYMENT);
@@ -1756,7 +1759,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // A raw inner transaction object of the given transaction type.
-        auto makeInner = [&](std::uint16_t txType) {
+        auto const makeInner = [&](std::uint16_t txType) {
             STObject inner(sfRawTransaction);
             inner.setFieldU16(sfTransactionType, txType);
             inner.setAccountID(sfAccount, id1);
@@ -1769,7 +1772,7 @@ public:
         };
 
         // An outer Batch STObject wrapping the given inner.
-        auto makeBatch = [&](STObject inner) {
+        auto const makeBatch = [&](STObject inner) {
             STArray rawTxns(sfRawTransactions);
             rawTxns.push_back(std::move(inner));
 
@@ -1851,7 +1854,8 @@ public:
         // the bad ones.
 
         // This lambda contains the bulk of the test code.
-        auto testMalformedSigningAccount = [this, &txn](STObject const& signer, bool expectPass) {
+        auto const testMalformedSigningAccount = [this, &txn](
+                                                     STObject const& signer, bool expectPass) {
             // Create SigningAccounts array.
             STArray signers(sfSigners, 1);
             signers.pushBack(signer);

@@ -21,15 +21,15 @@ namespace xrpl::detail {
 class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
 {
 protected:
-    using error_code = boost::system::error_code;
+    using ErrorCode = boost::system::error_code;
     // Override the definition in Work.h
-    using response_type = std::string;
+    using ResponseType = std::string;
 
 public:
-    using callback_type = std::function<void(error_code const&, response_type const&)>;
+    using CallbackType = std::function<void(ErrorCode const&, ResponseType const&)>;
 
 public:
-    WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb);
+    WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb);
     ~WorkFile() override;
 
     void
@@ -40,14 +40,14 @@ public:
 
 private:
     std::string path_;
-    callback_type cb_;
+    CallbackType cb_;
     boost::asio::io_context& ios_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 };
 
 //------------------------------------------------------------------------------
 
-inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb)
+inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, CallbackType cb)
     : path_(std::move(path)), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
 {
 }
@@ -69,7 +69,7 @@ WorkFile::run()
         return;
     }
 
-    error_code ec;
+    ErrorCode ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
 
     XRPL_ASSERT(cb_, "xrpl::detail::WorkFile::run : callback is set");

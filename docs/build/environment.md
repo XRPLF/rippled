@@ -4,20 +4,33 @@ This document explains how to set one up.
 
 [BUILD.md]: ../../BUILD.md
 
+## Supported development platforms
+
+- **Linux**: the [Nix development shell](./nix.md),
+  which provides the same toolchain CI uses on any distribution.
+- **macOS** 15 (Sequoia) or newer: the [Nix development shell](./nix.md),
+  or the system [Apple Clang](#macos-apple-clang).
+  CI runs on macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
+- **Windows**: best effort, see [Windows](#windows).
+
+For the platforms supported for running `xrpld`,
+see [Requirements](../install.md#requirements).
+
 ## Tested compiler versions
 
 `xrpld` is built in the **C++23** dialect by default, so your toolchain has to
 support it — see [compiler support for C++23][cpp23-support].
 The versions currently tested in CI are:
 
-| Compiler    | Version            |
-| ----------- | ------------------ |
-| GCC         | 15.2               |
-| Clang       | 22                 |
-| Apple Clang | 21                 |
-| MSVC        | Visual Studio 2026 |
+| Compiler    | Version                         |
+| ----------- | ------------------------------- |
+| GCC         | `gccVersion` in [packages.nix]  |
+| Clang       | `llvmVersion` in [packages.nix] |
+| Apple Clang | 21                              |
+| MSVC        | Visual Studio 2026              |
 
-LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
+LLVM tools (`clang-tidy` and `clang-format`)
+come from the same LLVM release as Clang.
 
 ### Older compilers
 
@@ -34,20 +47,16 @@ compiler building. Treat support for anything outside the table as best-effort.
 
 ## Required tools
 
-Besides a compiler, building `xrpld` requires:
-
-| Tool                                        | Minimum version |
-| ------------------------------------------- | --------------- |
-| [Git](https://git-scm.com/downloads)        | any recent      |
-| [Python](https://www.python.org/downloads/) | 3.11            |
-| [Conan](https://conan.io/downloads.html)    | 2.17            |
-| [CMake](https://cmake.org/download/)        | 3.16            |
+Besides a compiler, building `xrpld` requires
+[Git](https://git-scm.com/downloads),
+[Python](https://www.python.org/downloads/),
+[Conan](https://conan.io/downloads.html),
+and [CMake](https://cmake.org/download/).
+Building with `-Drust=ON` additionally requires a Rust toolchain,
+see [Rust](#rust).
 
 On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
-(see below). On Windows they have to be installed manually.
-
-Building with `-Drust=ON` additionally requires a Rust toolchain, see
-[Rust](#rust). A default build does not, so it is not in the table above.
+at the versions CI uses, recorded in [`nix/check-tools/`](../../nix/check-tools).
 
 Once they are in place, verify that everything is installed and runnable with:
 
@@ -57,60 +66,19 @@ Once they are in place, verify that everything is installed and runnable with:
 
 ## Linux and macOS
 
-The **recommended way** to get a development environment on Linux and macOS is
-the Nix development shell. It provides the exact tooling used in CI — `git`,
-`python`, `conan`, `cmake`, `clang-tidy`, `clang-format`, and everything else —
-with a single command and without installing anything system-wide:
+Use the [Nix development shell](./nix.md):
+it provides the compiler and every tool CI uses,
+without installing anything system-wide.
 
-```bash
-nix --experimental-features 'nix-command flakes' develop
-```
+### macOS: Apple Clang
 
-On **Linux**, Nix also provides the compiler (GCC); on **macOS**, it provides
-Clang. If you instead opt to use your system-wide Apple Clang (via
-`nix develop .#apple-clang`), you need to manage its version yourself (see
-below).
-
-See [Using the Nix development shell](./nix.md) for installation and usage
-details, including how to select a different compiler and why we recommend Nix
-over a hand-maintained environment.
-
-### macOS: managing the Apple Clang version
-
-If you use your system-wide Apple Clang on macOS (via `nix develop .#apple-clang`),
-the compiler version is whatever your installed Xcode (or Command Line Tools)
-provides. The following command should return a version greater than or equal to
-the [tested one](#tested-compiler-versions):
-
-```bash
-clang --version
-```
-
-If you develop other applications using Xcode, you might be consistently
-updating to the newest version of Apple Clang, which will likely cause issues
-building xrpld. You may want to install and pin a specific version of Xcode:
-
-1. **Download Xcode**
-   - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
-   - Sign in with your Apple Developer account
-   - Search for an Xcode version that includes the expected Apple Clang version
-   - Download the `.xip` file
-
-2. **Install and configure Xcode**
-
-   ```bash
-   # Extract the .xip file and rename for version management
-   # Example: Xcode_16.2.app
-
-   # Move to Applications directory
-   sudo mv Xcode_16.2.app /Applications/
-
-   # Set as default toolchain (persistent)
-   sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-
-   # Set as environment variable (temporary)
-   export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
-   ```
+You can also build with the system Apple Clang,
+installing the other [required tools](#required-tools) any way you like
+(or getting them from `nix develop .#apple-clang`).
+Its version is whatever your installed Xcode (or Command Line Tools) provides,
+so check that `clang --version` is at least the [tested one](#tested-compiler-versions).
+If several Xcode versions are installed,
+select one with `sudo xcode-select -s <path>` or the `DEVELOPER_DIR` environment variable.
 
 ## Windows
 
@@ -122,8 +90,7 @@ manually:
   "x64 Native Tools Command Prompt". CI configures CMake with the
   `Visual Studio 18 2026` generator.
 - [Git for Windows](https://git-scm.com/download/win)
-- Python, Conan, and CMake, at the versions listed in
-  [Required tools](#required-tools).
+- recent releases of Python, Conan, and CMake
 - a [Rust toolchain](https://rustup.rs) — only needed to build with
   `-Drust=ON`, see [Rust](#rust)
 
@@ -144,15 +111,5 @@ version.
 Everything else the Rust build needs on the CMake side comes from Conan along
 with the rest of the dependencies, so there is nothing further to install.
 
-## Clang-tidy
-
-`clang-tidy` is required to run static analysis checks locally (see
-[CONTRIBUTING.md](../../CONTRIBUTING.md)). It is not required to build the
-project. The version this project uses is listed in
-[Tested compiler versions](#tested-compiler-versions).
-
-On Linux and macOS, the [Nix development shell](./nix.md) provides that exact
-version out of the box — run it via `run-clang-tidy`. No separate installation
-is needed.
-
 [cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
+[packages.nix]: ../../nix/packages.nix

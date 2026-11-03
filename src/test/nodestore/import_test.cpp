@@ -107,8 +107,8 @@ prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
         if (d < nanoseconds{100})
         {
             // use floating
-            using ns = duration<float, std::nano>;
-            os << std::fixed << std::setprecision(1) << ns(d).count();
+            using Ns = duration<float, std::nano>;
+            os << std::fixed << std::setprecision(1) << Ns(d).count();
         }
         else
         {
@@ -123,8 +123,8 @@ prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
         if (d < microseconds{100})
         {
             // use floating
-            using ms = duration<float, std::micro>;
-            os << std::fixed << std::setprecision(1) << ms(d).count();
+            using Ms = duration<float, std::micro>;
+            os << std::fixed << std::setprecision(1) << Ms(d).count();
         }
         else
         {
@@ -139,8 +139,8 @@ prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
         if (d < milliseconds{100})
         {
             // use floating
-            using ms = duration<float, std::milli>;
-            os << std::fixed << std::setprecision(1) << ms(d).count();
+            using Ms = duration<float, std::milli>;
+            os << std::fixed << std::setprecision(1) << Ms(d).count();
         }
         else
         {
@@ -155,8 +155,8 @@ prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
         if (d < seconds{100})
         {
             // use floating
-            using s = duration<float>;
-            os << std::fixed << std::setprecision(1) << s(d).count();
+            using S = duration<float>;
+            os << std::fixed << std::setprecision(1) << S(d).count();
         }
         else
         {
@@ -171,8 +171,8 @@ prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
         if (d < minutes{100})
         {
             // use floating
-            using m = duration<float, std::ratio<60>>;
-            os << std::fixed << std::setprecision(1) << m(d).count();
+            using M = duration<float, std::ratio<60>>;
+            os << std::fixed << std::setprecision(1) << M(d).count();
         }
         else
         {
@@ -202,12 +202,12 @@ namespace node_store {
 class Progress
 {
 private:
-    using clock_type = beast::BasicSecondsClock;
+    using ClockType = beast::BasicSecondsClock;
 
     std::size_t const work_;
-    clock_type::time_point start_ = clock_type::now();
-    clock_type::time_point now_ = clock_type::now();
-    clock_type::time_point report_ = clock_type::now();
+    ClockType::time_point start_ = ClockType::now();
+    ClockType::time_point now_ = ClockType::now();
+    ClockType::time_point report_ = ClockType::now();
     std::size_t prev_ = 0;
     bool estimate_ = false;
 
@@ -221,7 +221,7 @@ public:
     operator()(Log& log, std::size_t work)
     {
         using namespace std::chrono;
-        auto const now = clock_type::now();
+        auto const now = ClockType::now();
         if (now == now_)
             return;
         now_ = now;
@@ -237,8 +237,8 @@ public:
             return;
         }
         auto const rate = elapsed.count() / double(work);
-        clock_type::duration const remain(
-            static_cast<clock_type::duration::rep>((work_ - work) * rate));
+        ClockType::duration const remain(
+            static_cast<ClockType::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
             << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
             << detail::fmtdur(now - report_) << ")";
@@ -250,7 +250,7 @@ public:
     void
     finish(Log& log)
     {
-        log << "Total time: " << detail::fmtdur(clock_type::now() - start_);
+        log << "Total time: " << detail::fmtdur(ClockType::now() - start_);
     }
 };
 
@@ -337,7 +337,7 @@ public:
         auto const fromPath = args.at("from");
         auto const toPath = args.at("to");
 
-        using hash_type = nudb::xxhasher;
+        using HashType = nudb::xxhasher;
         auto const bulkSize = 64 * 1024 * 1024;
         float const loadFactor = 0.5;
 
@@ -442,7 +442,7 @@ public:
         kh.appnum = dh.appnum;
         kh.key_size = 32;
         kh.salt = make_salt();
-        kh.pepper = pepper<hash_type>(kh.salt);
+        kh.pepper = pepper<HashType>(kh.salt);
         kh.block_size = block_size(kp);
         kh.load_factor = std::min<std::size_t>(65536.0 * loadFactor, 65535);
         kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * loadFactor));
@@ -510,7 +510,7 @@ public:
                     if (ec)
                         Throw<nudb::system_error>(ec);
                     std::uint8_t const* const key = is.data(dh.key_size);
-                    auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
+                    auto const h = hash<HashType>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
                     p(log, (npass * dfSize) + r.offset());
                     if (n < b0 || n >= b1)

@@ -200,7 +200,7 @@ public:
      * @return True if the feature is enabled.
      */
     [[nodiscard]] bool
-    isEnabled(uint256 const& feature) const;
+    isEnabled(UInt256 const& feature) const;
 
     /**
      * @brief Get the current rules.
@@ -227,7 +227,7 @@ public:
         submit(T&& builder, Account const& signer)
     {
         auto const& obj = builder.getSTObject();
-        auto accountId = obj[sfAccount];
+        auto const accountId = obj[sfAccount];
         // Only set sequence if not using a ticket (ticket sets sequence to 0)
         if (!obj.isFieldPresent(sfTicketSequence))
         {
@@ -355,7 +355,7 @@ public:
 
 private:
     TestServiceRegistry registry_;
-    std::unordered_set<uint256, beast::Uhash<>> featureSet_;
+    std::unordered_set<UInt256, beast::Uhash<>> featureSet_;
     std::optional<Rules> rules_;
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;

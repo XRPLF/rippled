@@ -923,7 +923,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Loan
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Loan{std::make_shared<SLE>(std::move(object_), index)};
     }
