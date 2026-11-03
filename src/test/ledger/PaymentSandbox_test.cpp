@@ -131,7 +131,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         STAmount const toDebit(usdGw1(20));
         {
             // accountSend, no deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
 
             auto const iss = usdGw1;
             auto const startingAmount =
@@ -156,7 +156,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // directSendNoFee, no deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
 
             auto const iss = usdGw1;
             auto const startingAmount =
@@ -177,7 +177,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // accountSend, w/ deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             PaymentSandbox pv(&av);
 
             auto const iss = usdGw1;
@@ -205,7 +205,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // directSendNoFee, w/ deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             PaymentSandbox pv(&av);
 
             auto const iss = usdGw1;
@@ -221,7 +221,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // redeemIOU, w/ deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             PaymentSandbox pv(&av);
 
             auto const iss = usdGw1;
@@ -237,7 +237,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // issueIOU, w/ deferredCredits
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             PaymentSandbox pv(&av);
 
             auto const iss = usdGw1;
@@ -253,7 +253,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         {
             // accountSend, w/ deferredCredits and stacked views
-            ApplyViewImpl av(&*env.current(), TapNone);
+            ApplyViewImpl av(&*env.current(), ApplyFlags::None);
             PaymentSandbox pv(&av);
 
             auto const iss = usdGw1;
@@ -319,7 +319,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         STAmount const hugeAmt(
             issue, STAmount::kMaxValue, STAmount::kMaxOffset - 1, false, STAmount::Unchecked{});
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        ApplyViewImpl av(&*env.current(), ApplyFlags::None);
         PaymentSandbox pv(&av);
         pv.creditHookIOU(gw, alice, hugeAmt, -tinyAmt);
         BEAST_EXPECT(pv.balanceHookIOU(alice, gw, hugeAmt) == tinyAmt);
@@ -347,7 +347,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         env.fund(reserve(env, 1), alice);
 
         env.close();
-        ApplyViewImpl av(&*env.current(), TapNone);
+        ApplyViewImpl av(&*env.current(), ApplyFlags::None);
         PaymentSandbox sb(&av);
         {
             // Send alice an amount and spend it. The deferredCredits will cause
@@ -380,7 +380,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         auto const usd = gw["USD"];
         Account const alice("alice");
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        ApplyViewImpl av(&*env.current(), ApplyFlags::None);
         PaymentSandbox sb(&av);
 
         // The currency we pass for the last argument mimics the currency that
@@ -412,7 +412,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, sponsor);
         env.close();
 
-        ApplyViewImpl av(&*env.current(), TapNone);
+        ApplyViewImpl av(&*env.current(), ApplyFlags::None);
         PaymentSandbox sb(&av);
 
         // Test basic owner count hook without sponsor

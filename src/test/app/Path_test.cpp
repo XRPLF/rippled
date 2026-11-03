@@ -1969,9 +1969,9 @@ public:
         auto const createPathElements = [](auto const& account1, auto const& account2) {
             auto base = STPath{};
             base.pushBack(
-                STPathElement{STPathElement::TypeAccount, account1, xrpCurrency(), account1});
+                STPathElement{STPathElementType::Account, account1, xrpCurrency(), account1});
             auto const tail =
-                STPathElement{STPathElement::TypeAccount, account2, xrpCurrency(), account2};
+                STPathElement{STPathElementType::Account, account2, xrpCurrency(), account2};
             return std::make_pair(base, tail);
         };
 
@@ -2055,7 +2055,7 @@ public:
 
         auto const makePath = [](AccountID const& account) {
             auto p = STPath{};
-            p.pushBack(STPathElement{STPathElement::TypeAccount, account, xrpCurrency(), account});
+            p.pushBack(STPathElement{STPathElementType::Account, account, xrpCurrency(), account});
             return p;
         };
 
@@ -2179,7 +2179,7 @@ public:
             },
             // An explicit type mask vs. one derived from the populated fields.
             {
-                STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
+                STPathElement{STPathElementType::Account, kAccount, xrpCurrency(), kIssuer},
                 STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
             },
         };

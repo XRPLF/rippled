@@ -113,7 +113,8 @@ TxTest::getRules() const
 [[nodiscard]] TxResult
 TxTest::submit(std::shared_ptr<STTx const> stx)
 {
-    auto result = apply(registry_, *openLedger_, *stx, TapNone, registry_.getJournal("apply"));
+    auto result =
+        apply(registry_, *openLedger_, *stx, ApplyFlags::None, registry_.getJournal("apply"));
 
     // Track successfully applied transactions for canonical reordering on close
     // We make a copy since the TransactionBase doesn't own the STTx
@@ -206,7 +207,7 @@ TxTest::close()
         for (auto const& [key, tx] : txSet)
         {
             auto const result =
-                apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
+                apply(registry_, accum, *tx, ApplyFlags::None, registry_.getJournal("apply"));
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");

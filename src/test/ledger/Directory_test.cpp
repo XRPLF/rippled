@@ -313,7 +313,7 @@ struct Directory_test : public beast::unit_test::Suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox const sb(env.closed().get(), TapNone);
+            Sandbox const sb(env.closed().get(), ApplyFlags::None);
             UInt256 const bookBase = getBookBase({xrpIssue(), usd, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
@@ -352,7 +352,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         {
             // Create a chain of three pages:
-            Sandbox sb(env.closed().get(), TapNone);
+            Sandbox sb(env.closed().get(), ApplyFlags::None);
             makePages(sb, kBase, 3);
 
             // Insert an item in the middle page:
@@ -376,7 +376,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         {
             // Create a chain of four pages:
-            Sandbox sb(env.closed().get(), TapNone);
+            Sandbox sb(env.closed().get(), ApplyFlags::None);
             makePages(sb, kBase, 4);
 
             // Now add items on pages 1 and 2:

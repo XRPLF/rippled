@@ -570,10 +570,10 @@ cpe(PathAsset const& pa)
 {
     return pa.visit(
         [](Currency const& currency) {
-            return STPathElement(STPathElement::TypeCurrency, xrpAccount(), currency, xrpAccount());
+            return STPathElement(STPathElementType::Currency, xrpAccount(), currency, xrpAccount());
         },
         [](MPTID const& mpt) {
-            return STPathElement(STPathElement::TypeMpt, xrpAccount(), mpt, xrpAccount());
+            return STPathElement(STPathElementType::Mpt, xrpAccount(), mpt, xrpAccount());
         });
 };
 
@@ -590,14 +590,14 @@ ipe(Asset const& asset)
     return asset.visit(
         [](Issue const& issue) {
             return STPathElement(
-                STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+                STPathElementType::Currency | STPathElementType::Issuer,
                 xrpAccount(),
                 issue.currency,
                 issue.account);
         },
         [](MPTIssue const& issue) {
             return STPathElement(
-                STPathElement::TypeMpt | STPathElement::TypeIssuer,
+                STPathElementType::Mpt | STPathElementType::Issuer,
                 xrpAccount(),
                 issue.getMptID(),
                 issue.getIssuer());
@@ -608,14 +608,14 @@ ipe(Asset const& asset)
 STPathElement
 iape(AccountID const& account)
 {
-    return STPathElement(STPathElement::TypeIssuer, xrpAccount(), xrpCurrency(), account);
+    return STPathElement(STPathElementType::Issuer, xrpAccount(), xrpCurrency(), account);
 };
 
 // Account path element
 STPathElement
 ape(AccountID const& a)
 {
-    return STPathElement(STPathElement::TypeAccount, a, xrpCurrency(), xrpAccount());
+    return STPathElement(STPathElementType::Account, a, xrpCurrency(), xrpAccount());
 };
 
 bool

@@ -433,7 +433,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const jtx = env.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
             PreflightContext const pfCtx(
-                env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
+                env.app(), *jtx.stx, env.current()->rules(), ApplyFlags::None, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -448,7 +448,7 @@ class Batch_test : public beast::unit_test::Suite
                 disabledEnv.app(),
                 *jtx.stx,
                 disabledEnv.current()->rules(),
-                TapNone,
+                ApplyFlags::None,
                 disabledEnv.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_FLAG);
@@ -459,7 +459,12 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext const pfCtx(
-                env.app(), *jtx.stx, UInt256{1}, env.current()->rules(), TapBatch, env.journal);
+                env.app(),
+                *jtx.stx,
+                UInt256{1},
+                env.current()->rules(),
+                ApplyFlags::Batch,
+                env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -1597,7 +1602,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
 
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, j);
+                auto const result = xrpl::apply(env.app(), view, *jt.stx, ApplyFlags::None, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
             });
@@ -4718,7 +4723,7 @@ class Batch_test : public beast::unit_test::Suite
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
+            auto const result = xrpl::apply(env.app(), view, stx, ApplyFlags::None, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;
         });
@@ -6024,7 +6029,7 @@ class Batch_test : public beast::unit_test::Suite
                     obj.setFieldU32(sfFlags, tfInnerBatchTxn);
                 });
 
-                auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
+                auto const result = xrpl::apply(env.app(), view, stx, ApplyFlags::None, j);
                 // Must NOT be applied — signature was never checked
                 BEAST_EXPECT(!result.applied);
                 return false;

@@ -655,7 +655,7 @@ RCLConsensus::Adaptor::doAccept(
             localTxs_.getTxSet(),
             anyDisputes,
             retriableTxs,
-            TapNone,
+            ApplyFlags::None,
             "consensus",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.
@@ -760,7 +760,7 @@ RCLConsensus::Adaptor::buildLCL(
             XRPL_ASSERT(
                 replayData->parent()->header().hash == previousLedger.id(),
                 "xrpl::RCLConsensus::Adaptor::buildLCL : parent hash match");
-            return buildLedger(*replayData, TapNone, app_, j_);
+            return buildLedger(*replayData, ApplyFlags::None, app_, j_);
         }
         return buildLedger(
             previousLedger.ledger,
