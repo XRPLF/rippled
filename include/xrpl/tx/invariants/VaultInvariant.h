@@ -114,6 +114,19 @@ private:
     std::vector<Shares> beforeMPTs_;
     std::unordered_map<UInt256, DeltaInfo> deltas_;
 
+    struct BalanceEntry final
+    {
+        bool isDelete;
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+    // Entries that hold a balance. Their deltas are only needed when the
+    // transaction modifies a vault, so finalize computes them on demand.
+    std::vector<BalanceEntry> balanceEntries_;
+
+    void
+    addDelta(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
+
     /**
      * @brief Compute the minimum STAmount scale for rounding invariant
      *        calculations.
@@ -132,7 +145,7 @@ private:
     /**
      * @brief Return the vault-asset balance-change delta for an account.
      *
-     * Looks up the ledger-entry delta recorded during @c visitEntry for the
+     * Looks up the ledger-entry delta computed by @c addDelta for the
      * account entry (XRP), trust line (IOU), or MPToken (MPT) that corresponds
      * to the vault asset held by @p id.
      *
