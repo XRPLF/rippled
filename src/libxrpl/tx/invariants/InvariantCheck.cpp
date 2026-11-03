@@ -1267,16 +1267,21 @@ findChangedImmutableField(STObject const& before, STObject const& after, SOTempl
         auto const& sf = elem.sField();
         auto const mutability = elem.mutability();
 
-        auto const* bField = before.peekAtPField(sf);
-        auto const* aField = after.peekAtPField(sf);
-        bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
-        bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
+        // nullptr if the field is absent
+        auto const presentField = [&sf](STObject const& obj) -> STBase const* {
+            auto const* field = obj.peekAtPField(sf);
+            return (field != nullptr && field->getSType() != STI_NOTPRESENT) ? field : nullptr;
+        };
+        auto const* bField = presentField(before);
+        auto const* aField = presentField(after);
+        bool const bPresent = bField != nullptr;
+        bool const aPresent = aField != nullptr;
 
         if (mutability == SoeImmutable)
         {
             // Field must not change at all, including transitions between
             // default (not-present) and explicit values.
-            if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+            if (bPresent != aPresent || (bPresent && *bField != *aField))
                 return &sf;
         }
         else if (mutability == SoeImmutableSetOnce)
@@ -1350,7 +1355,7 @@ NoModifiedImmutableFields::finalize(
         // always logged, but the transaction is only failed once the amendment
         // is enabled. Type-specific field lists may add their own gates (see
         // ltVAULT).
-        bool const enforce = useTemplate || view.rules().enabled(featureLendingProtocol);
+        bool const enforce = checkTemplate || view.rules().enabled(featureLendingProtocol);
         bool bad = kFieldChanged(before, after, sfLedgerEntryType) ||
             kFieldChanged(before, after, sfLedgerIndex);
         switch (type)

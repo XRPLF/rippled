@@ -1135,7 +1135,7 @@ class InvariantsMisc_test : public InvariantsBase
             doInvariantCheck(
                 {},
                 [&](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(a1.id()));
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->at(sfPreviousTxnID) = UInt256(42u);
@@ -1179,7 +1179,7 @@ class InvariantsMisc_test : public InvariantsBase
                 makeEnv(all_ - fixCleanup3_5_0),
                 {},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(a1.id()));
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
                     sle->at(sfAccount) = a2.id();
@@ -1193,7 +1193,7 @@ class InvariantsMisc_test : public InvariantsBase
 
         // Template-based checks: SoeImmutableSetOnce field on Oracle.
         {
-            Keylet oracleKeylet = keylet::amendments();
+            Keylet oracleKeylet{ltANY, beast::kZero};
             Preclose const createLegacyOracle = [this, &oracleKeylet](
                                                     Account const& a, Account const&, Env& env) {
                 jtx::oracle::Oracle const oracle{
@@ -1209,7 +1209,7 @@ class InvariantsMisc_test : public InvariantsBase
                 makeEnv(all_ - fixIncludeKeyletFields),
                 {},
                 [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(oracleKeylet);
+                    auto const sle = ac.view().peek(oracleKeylet);
                     if (!sle)
                         return false;
                     sle->at(sfOracleDocumentID) = std::uint32_t{1};
@@ -1223,7 +1223,7 @@ class InvariantsMisc_test : public InvariantsBase
         }
 
         {
-            Keylet oracleKeylet = keylet::amendments();
+            Keylet oracleKeylet{ltANY, beast::kZero};
             Preclose const createOracle = [this, &oracleKeylet](
                                               Account const& a, Account const&, Env& env) {
                 jtx::oracle::Oracle const oracle{
