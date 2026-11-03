@@ -2680,7 +2680,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         // this is a reply
         std::uint32_t pLSeq = 0;
         bool pLDo = true;
-        bool progress = false;
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
@@ -2703,10 +2702,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         {
                             JLOG(pJournal_.debug()) << "GetObj: Late fetch pack for " << pLSeq;
                         }
-                        else
-                        {
-                            progress = true;
-                        }
                     }
                 }
 
@@ -2725,7 +2720,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             JLOG(pJournal_.debug()) << "GetObj: Partial fetch pack for " << pLSeq;
         }
         if (packet.type() == protocol::TMGetObjectByHash::otFETCH_PACK)
-            app_.getLedgerMaster().gotFetchPack(progress, pLSeq);
+            app_.getLedgerMaster().gotFetchPack();
     }
 }
 
