@@ -217,7 +217,10 @@ public:
      *
      * @param isBranch bitset of non-empty children
      *
-     * @param i index of the requested child
+     * @param i index of the requested child, which must be below
+     *        SHAMapInnerNode::kBranchFactor
+     * @return the array index, or empty for an empty branch of sparse
+     *         children
      */
     [[nodiscard]] std::optional<unsigned int>
     getChildIndex(std::uint16_t isBranch, unsigned int i) const;
