@@ -62,7 +62,6 @@ target_link_libraries(
         absl::random_random
         date::date
         ed25519::ed25519
-        LibArchive::LibArchive
         OpenSSL::Crypto
         Xrpl::boost
         Xrpl::libs
