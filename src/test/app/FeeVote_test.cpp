@@ -44,10 +44,6 @@ namespace xrpl::test {
 
 struct FeeSettingsFields
 {
-    std::optional<std::uint64_t> baseFee = std::nullopt;
-    std::optional<std::uint32_t> reserveBase = std::nullopt;
-    std::optional<std::uint32_t> reserveIncrement = std::nullopt;
-    std::optional<std::uint32_t> referenceFeeUnits = std::nullopt;
     std::optional<XRPAmount> baseFeeDrops = std::nullopt;
     std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
     std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
@@ -67,28 +63,14 @@ createFeeTx(
         obj.setAccountID(sfAccount, AccountID());
         obj.setFieldU32(sfLedgerSequence, seq);
 
-        if (rules.enabled(featureXRPFees))
-        {
-            // New XRPFees format - all three fields are REQUIRED
-            obj.setFieldAmount(
-                sfBaseFeeDrops, fields.baseFeeDrops ? *fields.baseFeeDrops : XRPAmount{0});
-            obj.setFieldAmount(
-                sfReserveBaseDrops,
-                fields.reserveBaseDrops ? *fields.reserveBaseDrops : XRPAmount{0});
-            obj.setFieldAmount(
-                sfReserveIncrementDrops,
-                fields.reserveIncrementDrops ? *fields.reserveIncrementDrops : XRPAmount{0});
-        }
-        else
-        {
-            // Legacy format - all four fields are REQUIRED
-            obj.setFieldU64(sfBaseFee, fields.baseFee ? *fields.baseFee : 0);
-            obj.setFieldU32(sfReserveBase, fields.reserveBase ? *fields.reserveBase : 0);
-            obj.setFieldU32(
-                sfReserveIncrement, fields.reserveIncrement ? *fields.reserveIncrement : 0);
-            obj.setFieldU32(
-                sfReferenceFeeUnits, fields.referenceFeeUnits ? *fields.referenceFeeUnits : 0);
-        }
+        // XRPFees feature has been retired - all three fields are REQUIRED
+        obj.setFieldAmount(
+            sfBaseFeeDrops, fields.baseFeeDrops ? *fields.baseFeeDrops : XRPAmount{0});
+        obj.setFieldAmount(
+            sfReserveBaseDrops, fields.reserveBaseDrops ? *fields.reserveBaseDrops : XRPAmount{0});
+        obj.setFieldAmount(
+            sfReserveIncrementDrops,
+            fields.reserveIncrementDrops ? *fields.reserveIncrementDrops : XRPAmount{0});
         if (rules.enabled(featureSmartEscrow) || forceAllFields)
         {
             obj.setFieldU32(sfGasLimit, fields.gasLimit ? *fields.gasLimit : 0);
@@ -100,61 +82,35 @@ createFeeTx(
     return STTx(ttFEE, fill);
 }
 
+// A ttFEE transaction that omits the (now mandatory) *Drops fields.
 STTx
-createInvalidFeeTx(
-    Rules const& rules,
-    std::uint32_t seq,
-    bool missingRequiredFields = true,
-    bool wrongFeatureFields = false,
-    std::uint32_t uniqueValue = 42)
+createFeeTxMissingRequiredFields(std::uint32_t seq)
 {
-    auto const fill = [&](auto& obj) {
+    return STTx(ttFEE, [&](auto& obj) {
+        obj.setAccountID(sfAccount, AccountID());
+        obj.setFieldU32(sfLedgerSequence, seq);
+    });
+}
+
+// A ttFEE transaction that carries all the required *Drops fields, but also
+// the pre-XRPFees legacy fields, which are forbidden now that XRPFees has
+// been retired.
+STTx
+createFeeTxWithLegacyFields(std::uint32_t seq)
+{
+    return STTx(ttFEE, [&](auto& obj) {
         obj.setAccountID(sfAccount, AccountID());
         obj.setFieldU32(sfLedgerSequence, seq);
 
-        if (wrongFeatureFields)
-        {
-            if (rules.enabled(featureXRPFees))
-            {
-                obj.setFieldU64(sfBaseFee, 10 + uniqueValue);
-                obj.setFieldU32(sfReserveBase, 200000);
-                obj.setFieldU32(sfReserveIncrement, 50000);
-                obj.setFieldU32(sfReferenceFeeUnits, 10);
-            }
-            else
-            {
-                obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10 + uniqueValue});
-                obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
-                obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
-            }
-        }
-        else if (!missingRequiredFields)
-        {
-            // Create valid transaction (all required fields present)
-            if (rules.enabled(featureXRPFees))
-            {
-                obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10 + uniqueValue});
-                obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
-                obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
-            }
-            else
-            {
-                obj.setFieldU64(sfBaseFee, 10 + uniqueValue);
-                obj.setFieldU32(sfReserveBase, 200000);
-                obj.setFieldU32(sfReserveIncrement, 50000);
-                obj.setFieldU32(sfReferenceFeeUnits, 10);
-            }
-            if (rules.enabled(featureSmartEscrow))
-            {
-                obj.setFieldU32(sfGasLimit, 100 + uniqueValue);
-                obj.setFieldU32(sfBytecodeSizeLimit, 200 + uniqueValue);
-                obj.setFieldU32(sfGasPrice, 300 + uniqueValue);
-            }
-        }
-        // If missingRequiredFields is true, we don't add the required fields
-        // (default behavior)
-    };
-    return STTx(ttFEE, fill);
+        obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
+        obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
+        obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
+
+        obj.setFieldU64(sfBaseFee, 10);
+        obj.setFieldU32(sfReserveBase, 200000);
+        obj.setFieldU32(sfReserveIncrement, 50000);
+        obj.setFieldU32(sfReferenceFeeUnits, 10);
+    });
 }
 
 TER
@@ -180,38 +136,18 @@ verifyFeeObject(
         return feeObject->at(field) == expected;
     };
 
-    if (rules.enabled(featureXRPFees))
-    {
-        if (feeObject->isFieldPresent(sfBaseFee) || feeObject->isFieldPresent(sfReserveBase) ||
-            feeObject->isFieldPresent(sfReserveIncrement) ||
-            feeObject->isFieldPresent(sfReferenceFeeUnits))
-            return false;
+    if (feeObject->isFieldPresent(sfBaseFee) || feeObject->isFieldPresent(sfReserveBase) ||
+        feeObject->isFieldPresent(sfReserveIncrement) ||
+        feeObject->isFieldPresent(sfReferenceFeeUnits))
+        return false;
 
-        if (!checkEquality(sfBaseFeeDrops, expected.baseFeeDrops.value_or(XRPAmount{0})))
-            return false;
-        if (!checkEquality(sfReserveBaseDrops, expected.reserveBaseDrops.value_or(XRPAmount{0})))
-            return false;
-        if (!checkEquality(
-                sfReserveIncrementDrops, expected.reserveIncrementDrops.value_or(XRPAmount{0})))
-            return false;
-    }
-    else
-    {
-        if (feeObject->isFieldPresent(sfBaseFeeDrops) ||
-            feeObject->isFieldPresent(sfReserveBaseDrops) ||
-            feeObject->isFieldPresent(sfReserveIncrementDrops))
-            return false;
-
-        // Read sfBaseFee as a hex string and compare to expected.baseFee
-        if (!checkEquality(sfBaseFee, expected.baseFee))
-            return false;
-        if (!checkEquality(sfReserveBase, expected.reserveBase))
-            return false;
-        if (!checkEquality(sfReserveIncrement, expected.reserveIncrement))
-            return false;
-        if (!checkEquality(sfReferenceFeeUnits, expected.referenceFeeUnits))
-            return false;
-    }
+    if (!checkEquality(sfBaseFeeDrops, expected.baseFeeDrops.value_or(XRPAmount{0})))
+        return false;
+    if (!checkEquality(sfReserveBaseDrops, expected.reserveBaseDrops.value_or(XRPAmount{0})))
+        return false;
+    if (!checkEquality(
+            sfReserveIncrementDrops, expected.reserveIncrementDrops.value_or(XRPAmount{0})))
+        return false;
     if (rules.enabled(featureSmartEscrow))
     {
         if (!checkEquality(sfGasLimit, expected.gasLimit.value_or(0)))
@@ -381,38 +317,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Basic SetFee transaction");
 
-        // Test with XRPFees disabled (legacy format)
-        {
-            jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees - featureSmartEscrow);
-            auto ledger = std::make_shared<Ledger>(
-                kCreateGenesis,
-                Rules{env.app().config().features},
-                env.app().config().fees.toFees(),
-                std::vector<UInt256>{},
-                env.app().getNodeFamily());
-
-            // Create the next ledger to apply transaction to
-            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
-
-            // Test successful fee transaction with legacy fields
-
-            FeeSettingsFields const fields{
-                .baseFee = 10,
-                .reserveBase = 200000,
-                .reserveIncrement = 50000,
-                .referenceFeeUnits = 10,
-            };
-            auto const feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
-
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(isTesSuccess(applyFeeAndTestResult(env, accum, feeTx)));
-            accum.apply(*ledger);
-
-            // Verify fee object was created/updated correctly
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
-        }
-
-        // Test with XRPFees enabled (new format)
+        // Test without SmartEscrow
         {
             jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
@@ -441,7 +346,7 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
-        // Test with both XRPFees and SmartEscrow enabled
+        // Test with SmartEscrow enabled
         {
             jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
@@ -584,30 +489,6 @@ class FeeVote_test : public beast::unit_test::Suite
         testcase("Fee Transaction Validation");
 
         {
-            jtx::Env env(*this, jtx::testableAmendments() - featureXRPFees - featureSmartEscrow);
-            auto ledger = std::make_shared<Ledger>(
-                kCreateGenesis,
-                Rules{env.app().config().features},
-                env.app().config().fees.toFees(),
-                std::vector<UInt256>{},
-                env.app().getNodeFamily());
-
-            // Create the next ledger to apply transaction to
-            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
-
-            // Test transaction with missing required legacy fields
-            auto const invalidTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), true, false, 1);
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, invalidTx)));
-
-            // Test transaction with new format fields when XRPFees is disabled
-            auto const disallowedTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), false, true, 2);
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, disallowedTx)));
-        }
-
-        {
             jtx::Env env(*this, jtx::testableAmendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
@@ -619,20 +500,30 @@ class FeeVote_test : public beast::unit_test::Suite
             // Create the next ledger to apply transaction to
             ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-            // Test transaction with missing required new fields
-            auto const invalidTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), true, false, 3);
             OpenView accum(ledger.get());
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, invalidTx)));
 
-            // Test transaction with legacy fields when XRPFees is enabled
-            auto const disallowedTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), false, true, 4);
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, disallowedTx)));
+            // Test transaction with missing required new fields
+            auto const missingTx = createFeeTxMissingRequiredFields(ledger->seq());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temMALFORMED);
+
+            // Test transaction that has all the required fields but also carries
+            // the legacy fields. Now that XRPFees is retired those are forbidden,
+            // and rejected with temMALFORMED rather than the former temDISABLED.
+            auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temMALFORMED);
+
+            Serializer s;
+            disallowedTx.add(s);
+            SerialIter sit(s.slice());
+            STTx const parsedTx(sit);
+            BEAST_EXPECT(parsedTx.getFieldU64(sfBaseFee) == 10);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReferenceFeeUnits) == 10);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReserveBase) == 200000);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReserveIncrement) == 50000);
         }
 
         {
-            jtx::Env env(*this, jtx::testableAmendments() | featureXRPFees | featureSmartEscrow);
+            jtx::Env env(*this, jtx::testableAmendments());
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
@@ -643,16 +534,15 @@ class FeeVote_test : public beast::unit_test::Suite
             // Create the next ledger to apply transaction to
             ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-            // Test transaction with missing required new fields
-            auto const invalidTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), true, false, 5);
             OpenView accum(ledger.get());
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, invalidTx)));
 
-            // Test transaction with legacy fields when XRPFees is enabled
-            auto const disallowedTx =
-                createInvalidFeeTx(ledger->rules(), ledger->seq(), false, true, 6);
-            BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, disallowedTx)));
+            // Test transaction with missing required new fields
+            auto const missingTx = createFeeTxMissingRequiredFields(ledger->seq());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temMALFORMED);
+
+            // Test transaction with legacy fields
+            auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temMALFORMED);
 
             // Valid XRP fee fields, but none of the gas fields
             STTx const noGasTx(ttFEE, [&](auto& obj) {
@@ -881,7 +771,7 @@ class FeeVote_test : public beast::unit_test::Suite
         setup.accountReserve = 1234567;
         setup.ownerReserve = 7654321;
 
-        // Test with XRPFees enabled
+        // Test without SmartEscrow
         {
             Env env(*this, testableAmendments() - featureSmartEscrow);
             auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
@@ -909,35 +799,6 @@ class FeeVote_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
             BEAST_EXPECT(val->getFieldAmount(sfBaseFeeDrops) == XRPAmount(setup.referenceFee));
-        }
-
-        // Test with XRPFees disabled (legacy format)
-        {
-            Env env(*this, testableAmendments() - featureXRPFees - featureSmartEscrow);
-            auto feeVote = makeFeeVote(setup, env.app().getJournal("FeeVote"));
-
-            auto const ledger = std::make_shared<Ledger>(
-                kCreateGenesis,
-                Rules{env.app().config().features},
-                env.app().config().fees.toFees(),
-                std::vector<UInt256>{},
-                env.app().getNodeFamily());
-
-            auto const sec = randomSecretKey();
-            auto const pub = derivePublicKey(KeyType::Secp256k1, sec);
-
-            auto const val = std::make_shared<STValidation>(
-                env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [](STValidation& v) {
-                    v.setFieldU32(sfLedgerSequence, 12345);
-                });
-
-            auto const& currentFees = ledger->fees();
-
-            feeVote->doValidation(currentFees, ledger->rules(), *val);
-
-            // In legacy mode, should vote using legacy fields
-            BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.referenceFee);
         }
 
         // A local target of 0 is not emitted on the validation; the field is
@@ -1180,7 +1041,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
-        Env env(*this, testableAmendments() | featureXRPFees | featureSmartEscrow);
+        Env env(*this, testableAmendments());
 
         // establish what the current fees are
         BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
@@ -1503,7 +1364,7 @@ class FeeVote_test : public beast::unit_test::Suite
             }
 
             // Also pins that the amendment is seen before the fee fields are read.
-            ledger->setImmutable();
+            BEAST_EXPECT(ledger->setImmutable());
             BEAST_EXPECT(ledger->rules().enabled(featureSmartEscrow));
             BEAST_EXPECT(ledger->fees().gasLimit == kDefaultGasLimit);
             BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == kDefaultBytecodeSizeLimit);

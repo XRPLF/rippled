@@ -73,6 +73,54 @@ enum TxType : std::uint16_t
      * This transaction type installs a hook.
      */
     TtHookSet [[maybe_unused]] = 22,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCreateClaimID [[deprecated("This transaction type is not supported and should not be used.")]] = 41,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCommit [[deprecated("This transaction type is not supported and should not be used.")]] = 42,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainClaim [[deprecated("This transaction type is not supported and should not be used.")]] = 43,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAccountCreateCommit [[deprecated("This transaction type is not supported and should not be used.")]] = 44,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAddClaimAttestation [[deprecated("This transaction type is not supported and should not be used.")]] = 45,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainAddAccountCreateAttestation [[deprecated("This transaction type is not supported and should not be used.")]] = 46,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainModifyBridge [[deprecated("This transaction type is not supported and should not be used.")]] = 47,
+
+    /**
+     * This transaction type was removed with the XChainBridge amendment, which was never enabled
+     * on Mainnet. The value is reserved for historical purposes.
+     */
+    TtXChainCreateBridge [[deprecated("This transaction type is not supported and should not be used.")]] = 48,
 };
 // clang-format on
 

@@ -20,7 +20,7 @@ class AMMDepositBuilder;
  *
  * Type: ttAMM_DEPOSIT (36)
  * Delegable: Delegation::Delegable
- * Amendment: featureAMM
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

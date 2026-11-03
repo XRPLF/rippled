@@ -26,6 +26,11 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 Version 3.5.0 is not yet released.
 
+### Breaking changes in 3.5.0
+
+- The `XChainBridge` amendment and its ledger entries and transactions are removed. `XChainBridge` and `fixXChainRewardRounding` are now obsolete and can no longer be voted for; neither was ever enabled on Mainnet. `ledger_entry` no longer accepts `bridge`, `xchain_owned_claim_id`, or `xchain_owned_create_account_claim_id`; `account_objects` no longer accepts those values in `type`; and `server_definitions` no longer lists the removed ledger entry types, transaction types, fields, and the `XChainBridge` serialized type.
+- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions.
+
 ### Additions in 3.5.0
 
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive the same `transaction` message as the `transactions` stream for each validated transaction whose metadata affects a subscribed issuance. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
@@ -37,6 +42,9 @@ Version 3.5.0 is not yet released.
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `account_currencies`, `account_nfts`, `account_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before an invalid or missing `account`. An invalid `limit` or `marker` is reported before `lgrNotFound` or `actNotFound`, and for `account_offers` also before `actMalformed`. A request with a single problem returns the same error as before. [#8561](https://github.com/XRPLF/rippled/pull/8561)
 - `deposit_authorized`: A `credentials` entry that is all zeros (for example `"0"` or 64 `0` characters) now returns a `badCredentials` error instead of looking up a credential that can never exist.
+- `account_info`, `account_lines`, `account_channels`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before a missing or invalid `account`, or `ident` for `account_info`. For `account_lines`, a `peer` that is not a string, or an invalid `limit` or `marker`, is reported before `lgrNotFound`, `actNotFound` or a malformed `account`, and an invalid `limit` or `marker` also before a malformed `peer`. For `account_channels`, a malformed `account` is reported before `lgrNotFound`, and an invalid `destination_account`, `limit` or `marker` before `lgrNotFound` or `actNotFound`. A request with a single problem returns the same error as before. [#8573](https://github.com/XRPLF/rippled/pull/8573)
+- `deposit_authorized`, `nft_buy_offers`, `nft_sell_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before a missing or invalid `source_account`, `destination_account` or `nft_id`, and for `nft_buy_offers` / `nft_sell_offers` also before an invalid `limit`. For `deposit_authorized`, an invalid `credentials` array is reported before `lgrNotFound`, `srcActNotFound`, `dstActNotFound` or `badCredentials`. For `nft_buy_offers` and `nft_sell_offers`, an invalid `marker` is reported before `lgrNotFound` or `objectNotFound`. A request with a single problem returns the same error as before. [#8613](https://github.com/XRPLF/rippled/pull/8613)
+- `nft_buy_offers`, `nft_sell_offers`: An `nft_id` that is an array or an object now returns an `invalidParams` error instead of an `internal` error. [#8613](https://github.com/XRPLF/rippled/pull/8613)
 
 ### Bugfixes in 3.5.0
 

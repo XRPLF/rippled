@@ -65,11 +65,11 @@ is `Final`.
 
 ## AI coding agents
 
-[`AGENTS.md`](./AGENTS.md) (and its `CLAUDE.md` symlink, for Claude Code) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase; whenever you add one, also add a `CLAUDE.md` symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`) so Claude Code picks it up too.
+[`AGENTS.md`](./AGENTS.md) holds shared, checked-in guidance for AI coding agents working in this repository — build/test/lint commands and architecture notes. Additional `AGENTS.md` files may exist in subdirectories to give agents context specific to that part of the codebase. Claude Code reads `AGENTS.md` directly, so no `CLAUDE.md` symlink is needed.
 
 If you want to give an agent personal instructions that shouldn't be shared with other contributors (e.g. your own workflow preferences), those are gitignored, not checked in:
 
-- `CLAUDE.local.md` — read by Claude Code alongside `CLAUDE.md`.
+- `CLAUDE.local.md` — read by Claude Code alongside `AGENTS.md`.
 - `AGENTS.override.md` — read by AGENTS.md-compatible tools that support a personal override file layered on top of `AGENTS.md`.
 
 Likewise, `.claude/settings.local.json` is for personal, untracked Claude Code settings, while `.claude/settings.json` is shared.
@@ -365,14 +365,15 @@ With this set, the hook will run as part of `git commit` alongside the other pre
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build -allow-no-checks src tests
+run-clang-tidy -p build -allow-no-checks include src tests
 ```
 
-This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
+This will check all source files in the `include`, `src` and `tests` directories using the compile commands from your `build` directory.
+Headers are checked on their own, which requires the `verify_headers` CMake option (ON by default).
 If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
 
 ```
-run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks include src tests
 ```
 
 `-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.

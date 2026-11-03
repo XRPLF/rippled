@@ -7,6 +7,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -30,8 +31,10 @@ class TransactionHistory_test : public beast::unit_test::Suite
         {
             // no params
             auto const result = env.client().invoke("tx_history", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
@@ -39,8 +42,11 @@ class TransactionHistory_test : public beast::unit_test::Suite
             json::Value params{json::ValueType::Object};
             params[jss::start] = 10001;  // limited to <= 10000 for non admin
             auto const result = env.client().invoke("tx_history", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "noPermission");
+            BEAST_EXPECT(result[jss::error_code] == RpcNoPermission);
+            BEAST_EXPECT(
+                result[jss::error_message] == "You don't have permission for this command.");
         }
     }
 
@@ -54,8 +60,10 @@ class TransactionHistory_test : public beast::unit_test::Suite
         json::Value params{json::ValueType::Object};
         params[jss::api_version] = 2;
         auto const result = env.client().invoke("tx_history", params)[jss::result];
-        BEAST_EXPECT(result[jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result[jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::error_code] == RpcUnknownCommand);
+        BEAST_EXPECT(result[jss::error_message] == "Unknown method.");
     }
 
     void
