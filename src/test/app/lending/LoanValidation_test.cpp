@@ -52,7 +52,7 @@ private:
         // Single Asset Vault depends on MPTokensV1, but don't test every combo
         // of that.
         using namespace jtx;
-        auto failAll = [this](FeatureBitset features) {
+        auto const failAll = [this](FeatureBitset features) {
             Env env(*this, features);
 
             Account const alice{"alice"};
@@ -104,13 +104,14 @@ private:
         Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
-        auto testWrapper = [&](auto&& test) {
+        auto const testWrapper = [&](auto&& test) {
             Env env(*this);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{
-                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind}),
+            };
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -158,9 +159,9 @@ private:
             }
             // empty/zero broker ID
             {
-                auto jv = set(borrower, uint256{}, debtMaximumRequest);
+                auto jv = set(borrower, UInt256{}, debtMaximumRequest);
 
-                auto testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
+                auto const testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
                     // empty broker ID
                     jv[sfLoanBrokerID] = id;
                     env(jv,
@@ -174,7 +175,7 @@ private:
                 // zero broker ID
                 // needs a flag to distinguish the parsed STTx from the prior
                 // test
-                testZeroBrokerID(to_string(uint256{}), tfFullyCanonicalSig);
+                testZeroBrokerID(to_string(UInt256{}), tfFullyCanonicalSig);
             }
 
             // preflightCheckSigningKey() failure:
@@ -185,7 +186,7 @@ private:
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 Sig(sfCounterpartySignature, lender),
                 loanSetFee);
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             auto counterpartySig = local.getFieldObject(sfCounterpartySignature);
             auto badPubKey = counterpartySig.getFieldVL(sfSigningPubKey);
             badPubKey[20] ^= 0xAA;
@@ -195,7 +196,8 @@ private:
             jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
             auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
             BEAST_EXPECT(
-                res[jss::error] == "invalidTransaction" &&
+                res[jss::error] == "invalidTransaction" && !res.isMember(jss::error_code) &&
+                res[jss::error_message].isNull() &&
                 res[jss::error_exception] ==
                     "fails local checks: Counterparty: Invalid signature.");
         });
@@ -318,8 +320,8 @@ private:
         env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
-        auto const pseudoBroker = [&]() -> std::optional<Account> {
-            if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
+        auto const pseudoBroker = [&] -> std::optional<Account> {
+            if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
@@ -389,7 +391,7 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
 
-        auto forUnauthAuth = [&](auto&& doTx) {
+        auto const forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
             {
                 asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
@@ -435,7 +437,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -457,9 +460,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 

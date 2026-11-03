@@ -24,7 +24,7 @@
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoan::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // Classify here, but leave the decision about which checks apply to
     // finalize(), which is the only place that can see the Rules.
@@ -125,13 +125,14 @@ ValidLoan::finalize(
             return false;
         }
         // Must not be negative - STNumber
-        for (auto const field :
-             {&sfLoanServiceFee,
-              &sfLatePaymentFee,
-              &sfClosePaymentFee,
-              &sfPrincipalOutstanding,
-              &sfTotalValueOutstanding,
-              &sfManagementFeeOutstanding})
+        for (auto const field : {
+                 &sfLoanServiceFee,
+                 &sfLatePaymentFee,
+                 &sfClosePaymentFee,
+                 &sfPrincipalOutstanding,
+                 &sfTotalValueOutstanding,
+                 &sfManagementFeeOutstanding,
+             })
         {
             if (after->at(*field) < 0)
             {

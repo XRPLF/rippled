@@ -1,14 +1,14 @@
+#include <xrpld/rpc/handlers/account/AccountChannels.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -17,199 +17,175 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
 
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/account_channels/Types.hpp>
+
 #include <cstdint>
-#include <memory>
+#include <expected>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <utility>
-#include <vector>
 
-namespace xrpl {
+namespace xrpl::rpc {
+
+static_assert(::rpc::spec::handlers::account_channels::kLimitMin == tuning::kAccountChannels.rmin);
+static_assert(
+    ::rpc::spec::handlers::account_channels::kLimitDefault == tuning::kAccountChannels.rDefault);
+static_assert(::rpc::spec::handlers::account_channels::kLimitMax == tuning::kAccountChannels.rmax);
+
+namespace {
 
 void
-addChannel(json::Value& jsonLines, SLE const& line)
+appendChannelJson(SLE const& channel, json::Value& channels)
 {
-    json::Value& jDst(jsonLines.append(json::ValueType::Object));
-    jDst[jss::channel_id] = to_string(line.key());
-    jDst[jss::account] = to_string(line[sfAccount]);
-    jDst[jss::destination_account] = to_string(line[sfDestination]);
-    jDst[jss::amount] = line[sfAmount].getText();
-    jDst[jss::balance] = line[sfBalance].getText();
-    if (publicKeyType(line[sfPublicKey]))
+    json::Value& jDst(channels.append(json::ValueType::Object));
+    jDst[jss::channel_id] = to_string(channel.key());
+    jDst[jss::account] = to_string(channel[sfAccount]);
+    jDst[jss::destination_account] = to_string(channel[sfDestination]);
+    jDst[jss::amount] = channel[sfAmount].getText();
+    jDst[jss::balance] = channel[sfBalance].getText();
+    if (publicKeyType(channel[sfPublicKey]))
     {
-        PublicKey const pk(line[sfPublicKey]);
+        PublicKey const pk(channel[sfPublicKey]);
         jDst[jss::public_key] = toBase58(TokenType::AccountPublic, pk);
         jDst[jss::public_key_hex] = strHex(pk);
     }
-    jDst[jss::settle_delay] = line[sfSettleDelay];
-    if (auto const& v = line[~sfExpiration])
+    jDst[jss::settle_delay] = channel[sfSettleDelay];
+    if (auto const& v = channel[~sfExpiration])
         jDst[jss::expiration] = *v;
-    if (auto const& v = line[~sfCancelAfter])
+    if (auto const& v = channel[~sfCancelAfter])
         jDst[jss::cancel_after] = *v;
-    if (auto const& v = line[~sfSourceTag])
+    if (auto const& v = channel[~sfSourceTag])
         jDst[jss::source_tag] = *v;
-    if (auto const& v = line[~sfDestinationTag])
+    if (auto const& v = channel[~sfDestinationTag])
         jDst[jss::destination_tag] = *v;
 }
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-// }
-json::Value
-doAccountChannels(rpc::JsonContext& context)
+}  // namespace
+
+AccountChannelsHandler::AccountChannelsHandler(JsonContext& context) : context_(context)
 {
-    auto const& params(context.params);
-    if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+}
 
-    if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+std::expected<AccountChannelsHandler::Output, ::rpc::Status>
+AccountChannelsHandler::process(Input const& input) const
+{
+    auto& context = context_.get();
 
-    std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
-    if (!ledger)
-        return result;
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
+        return std::unexpected{status};
+    auto const& ledger = *output.ledger;
 
-    auto id = parseBase58<AccountID>(params[jss::account].asString());
-    if (!id)
+    auto const accountID = input.account;
+    output.account = accountID;
+
+    if (!ledger.exists(keylet::account(accountID)))
+        return std::unexpected{RpcActNotFound};
+
+    auto const& destination = input.destinationAccount;
+    auto const limit = clampLimit(input.limit, tuning::kAccountChannels, context.role);
+
+    auto const parsed = input.marker.has_value()
+        ? parseAccountMarker(*input.marker)
+        : std::optional{std::pair{uint256{beast::kZero}, std::uint64_t{0}}};
+    if (!parsed.has_value())
     {
-        return rpcError(RpcActMalformed);
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rpc::AccountChannelsHandler::process : marker validated by the spec");
+        return std::unexpected{RpcInvalidParams};
+        // LCOV_EXCL_STOP
     }
-    AccountID const accountID{id.value()};
+    auto const [startAfter, startHint] = *parsed;
 
-    if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(RpcActNotFound);
-
-    std::string strDst;
-    if (params.isMember(jss::destination_account))
+    if (input.marker.has_value())
     {
-        if (!params[jss::destination_account].isString())
-            return rpc::invalidFieldError(jss::destination_account);
-        strDst = params[jss::destination_account].asString();
-    }
-
-    auto const raDstAccount = [&]() -> std::optional<AccountID> {
-        return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
-    }();
-    if (!strDst.empty() && !raDstAccount)
-        return rpcError(RpcActMalformed);
-
-    unsigned int limit = 0;
-    if (auto err = readLimitField(limit, rpc::tuning::kAccountChannels, context))
-        return *err;
-
-    json::Value jsonChannels{json::ValueType::Array};
-    struct VisitData
-    {
-        std::vector<SLE::const_pointer> items;
-        AccountID const& accountID;
-        std::optional<AccountID> const& raDstAccount;
-    };
-    VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
-    visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZero;
-    std::uint64_t startHint = 0;
-
-    if (params.isMember(jss::marker))
-    {
-        if (!params[jss::marker].isString())
-            return rpc::expectedFieldError(jss::marker, "string");
-
-        // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter as a decimal integer.
-        std::stringstream marker(params[jss::marker].asString());
-        std::string value;
-        if (!std::getline(marker, value, ','))
-            return rpcError(RpcInvalidParams);
-
-        if (!startAfter.parseHex(value))
-            return rpcError(RpcInvalidParams);
-
-        if (!std::getline(marker, value, ','))
-            return rpcError(RpcInvalidParams);
-
-        auto const hint = toUInt64(value);
-        if (!hint.has_value())
-            return rpcError(RpcInvalidParams);
-        startHint = *hint;
-
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
-        auto const sle = ledger->read({ltANY, startAfter});
+        auto const sle = ledger.read({ltANY, startAfter});
 
         if (!sle)
-            return rpcError(RpcInvalidParams);
+            return std::unexpected{RpcInvalidParams};
 
-        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
-            return rpcError(RpcInvalidParams);
+        if (!isRelatedToAccount(ledger, sle, accountID))
+            return std::unexpected{RpcInvalidParams};
     }
 
-    auto count = 0;
-    std::optional<uint256> marker = {};
+    std::uint32_t count = 0;
+    std::optional<uint256> marker;
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
-            *ledger,
+            ledger,
             accountID,
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
-                if (!sleCur)
+            [&output, &accountID, &destination, &count, &limit, &marker, &nextHint](
+                SLE::ConstRef sle) {
+                if (!sle)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("xrpl::doAccountChannels : null SLE");
+                    UNREACHABLE("xrpl::rpc::AccountChannelsHandler::process : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
 
                 if (++count == limit)
                 {
-                    marker = sleCur->key();
-                    nextHint = rpc::getStartHint(sleCur, visitData.accountID);
+                    marker = sle->key();
+                    nextHint = getStartHint(sle, accountID);
                 }
 
-                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == accountID &&
-                    (!visitData.raDstAccount ||
-                     *visitData.raDstAccount == (*sleCur)[sfDestination]))
+                if (count <= limit && sle->getType() == ltPAYCHAN &&
+                    (*sle)[sfAccount] == accountID &&
+                    (!destination.has_value() || *destination == (*sle)[sfDestination]))
                 {
-                    visitData.items.emplace_back(sleCur);
+                    output.channels.emplace_back(sle);
                 }
 
                 return true;
             }))
     {
-        return rpcError(RpcInvalidParams);
+        return std::unexpected{RpcInvalidParams};
     }
 
     // Both conditions need to be checked because marker is set on the limit-th
     // item, but if there is no item on the limit + 1 iteration, then there is
     // no need to return a marker.
-    if (count == limit + 1 && marker)
+    if (count == limit + 1 && marker.has_value())
     {
-        result[jss::limit] = limit;
-        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
+        output.limit = limit;
+        output.marker = marker;
+        output.nextHint = nextHint;
     }
 
-    result[jss::account] = toBase58(accountID);
-
-    for (auto const& item : visitData.items)
-        addChannel(jsonChannels, *item);
-
     context.loadType = resource::kFeeMediumBurdenRpc;
-    result[jss::channels] = std::move(jsonChannels);
-    return result;
+    return output;
 }
 
-}  // namespace xrpl
+void
+AccountChannelsHandler::writeResult(json::Value& value, Output const& output) const
+{
+    injectLedgerFields(*output.ledger, context_.get(), value);
+
+    if (output.marker.has_value())
+    {
+        value[jss::limit] = output.limit;
+        value[jss::marker] = to_string(*output.marker) + "," + std::to_string(output.nextHint);
+    }
+
+    value[jss::account] = toBase58(output.account);
+
+    json::Value& channels(value[jss::channels] = json::ValueType::Array);
+    for (auto const& channel : output.channels)
+        appendChannelJson(*channel, channels);
+}
+
+}  // namespace xrpl::rpc

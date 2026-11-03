@@ -24,9 +24,9 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -520,7 +520,7 @@ parseLeaf(
                 return ret;
             }
 
-            uint128 num;
+            UInt128 num;
 
             if (auto const s = value.asString(); !num.parseHex(s))
             {
@@ -544,7 +544,7 @@ parseLeaf(
                 return ret;
             }
 
-            uint160 num;
+            UInt160 num;
 
             if (auto const s = value.asString(); !num.parseHex(s))
             {
@@ -568,7 +568,7 @@ parseLeaf(
                 return ret;
             }
 
-            uint192 num;
+            UInt192 num;
 
             if (auto const s = value.asString(); !num.parseHex(s))
             {
@@ -592,7 +592,7 @@ parseLeaf(
                 return ret;
             }
 
-            uint256 num;
+            UInt256 num;
 
             if (auto const s = value.asString(); !num.parseHex(s))
             {
@@ -720,7 +720,7 @@ parseLeaf(
                 STVector256 tail(field);
                 for (json::UInt i = 0; value.isValidIndex(i); ++i)
                 {
-                    uint256 s;
+                    UInt256 s;
                     if (!s.parseHex(value[i].asString()))
                         Throw<std::invalid_argument>("invalid data");
                     tail.pushBack(s);
@@ -948,18 +948,6 @@ parseLeaf(
             try
             {
                 ret = detail::makeStvar<STIssue>(issueFromJson(field, value));
-            }
-            catch (std::exception const&)
-            {
-                error = invalidData(jsonName, fieldName);
-                return ret;
-            }
-            break;
-
-        case STI_XCHAIN_BRIDGE:
-            try
-            {
-                ret = detail::makeStvar<STXChainBridge>(STXChainBridge(field, value));
             }
             catch (std::exception const&)
             {

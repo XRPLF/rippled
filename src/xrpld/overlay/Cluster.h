@@ -25,6 +25,7 @@ private:
     {
         explicit Comparator() = default;
 
+        // NOLINTNEXTLINE(readability-identifier-naming) -- std heterogeneous-lookup concept name
         using is_transparent = std::true_type;
 
         bool

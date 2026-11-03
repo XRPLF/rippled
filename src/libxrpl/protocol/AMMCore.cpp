@@ -6,10 +6,8 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
@@ -32,9 +30,9 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
     // AMM LPToken is 0x03 plus 19 bytes of the hash
     static constexpr std::int32_t kAmmCurrencyCode = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
-    uint256 const hash = std::visit(
+    UInt256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
-            auto fromIss = []<ValidIssueType T>(T const& issue) {
+            auto const fromIss = []<ValidIssueType T>(T const& issue) {
                 if constexpr (std::is_same_v<T, Issue>)
                     return issue.currency;
                 if constexpr (std::is_same_v<T, MPTIssue>)
@@ -123,12 +121,6 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
         }
     }
     return std::nullopt;
-}
-
-bool
-ammEnabled(Rules const& rules)
-{
-    return rules.enabled(featureAMM);
 }
 
 }  // namespace xrpl

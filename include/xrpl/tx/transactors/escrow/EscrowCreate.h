@@ -20,11 +20,14 @@ public:
     {
     }
 
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    static bool
-    checkExtraFeatures(PreflightContext const& ctx);
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -36,7 +39,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

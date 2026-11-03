@@ -2,7 +2,6 @@
 
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -12,6 +11,8 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <rpcspec/Errors.hpp>
 
 #include <span>
 #include <string_view>
@@ -47,7 +48,7 @@ struct Handler
     class Method
     {
     public:
-        using Function = Status (*)(JsonContext&, json::Value&);
+        using Function = ::rpc::Status (*)(JsonContext&, json::Value&);
 
         /**
          * Build a Method that calls a given function.
@@ -69,7 +70,7 @@ struct Handler
          * @param result The object the function writes its reply into.
          * @return The status the function returns.
          */
-        Status
+        ::rpc::Status
         operator()(JsonContext& context, json::Value& result) const
         {
             return fn_(context, result);

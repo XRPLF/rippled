@@ -31,7 +31,7 @@ public:
     fromId(std::uintptr_t id)
     {
         std::scoped_lock const l{mutex_};
-        auto it = checkpointers_.find(id);
+        auto const it = checkpointers_.find(id);
         if (it != checkpointers_.end())
             return it->second;
         return nullptr;

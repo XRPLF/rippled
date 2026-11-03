@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -18,6 +19,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -87,6 +89,11 @@ VaultCreate::preflight(PreflightContext const& ctx)
     {
         if (*assetMax < beast::kZero)
             return temMALFORMED;
+
+        // An AssetsMaximum out of range for the asset, e.g. XRP above
+        // STAmount::kMaxNativeN, would throw when rounded to the asset.
+        if (ctx.rules.enabled(fixCleanup3_5_0) && !isRepresentable(ctx.tx[sfAsset], *assetMax))
+            return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
@@ -101,7 +108,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVaultMaximumIouScale)
+        auto const maximumScale = getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision
+            ? kFixedPrecisionVaultMaximumIouScale
+            : kLegacyVaultMaximumIouScale;
+        if (scale > maximumScale)
             return temMALFORMED;
     }
 
@@ -168,6 +178,22 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
         return tecEXPIRED;
 
+    // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
+    // otherwise associateAsset would silently round the cap the owner asked for. Legacy and
+    // CashBasis Vaults keep their existing behavior.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && getVaultDefaultVersion(ctx.view.rules()) == VaultVersion::FixedPrecision)
+    {
+        int const baseScale =
+            vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
+        if (!isOnVaultBaseGrid(vaultAsset, *assetMax, baseScale))
+        {
+            JLOG(ctx.j.debug()) << "VaultCreate: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return tecPRECISION_LOSS;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -179,13 +205,13 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    auto const vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
@@ -223,7 +249,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<uint256> {
+    auto const referenceHolding = [&] -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -273,10 +299,20 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    if (view().rules().enabled(featureLendingProtocolV1_1))
+    VaultVersion const version = getVaultDefaultVersion(view().rules());
+    if (version == VaultVersion::FixedPrecision)
+    {
+        vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);
+        vault->at(sfYieldUnrealized) = Number(0);
+        vault->at(sfAssetsDeployed) = Number(0);
+    }
+    else if (version == VaultVersion::CashBasis)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
+    }
 
+    if (version != VaultVersion::Legacy)
+    {
         auto const kind = getVaultKind(tx);
         vault->at(sfVaultKind) = std::to_underlying(kind);
         if (kind == VaultKind::ClosedEnded)
@@ -314,7 +350,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

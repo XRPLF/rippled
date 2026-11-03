@@ -26,6 +26,7 @@ class STTx;
  * greater than the maximum value of uint16.
  */
 // Macro-generated, complex
+// NOLINTBEGIN(readability-trailing-comma) the macro supplies the trailing comma
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("GRANULAR_PERMISSION")
@@ -38,6 +39,7 @@ enum GranularPermissionType : std::uint32_t {
 #undef GRANULAR_PERMISSION
 #pragma pop_macro("GRANULAR_PERMISSION")
 };
+// NOLINTEND(readability-trailing-comma)
 
 class Permission
 {
@@ -60,7 +62,7 @@ private:
 
     struct TxDelegationEntry
     {
-        uint256 amendment;
+        UInt256 amendment;
         Delegation delegable{Delegation::NotDelegable};
     };
 
@@ -89,9 +91,9 @@ public:
     [[nodiscard]] std::optional<TxType>
     getGranularTxType(GranularPermissionType gpType) const;
 
-    // Returns a reference to avoid copying uint256 - 32 bytes. std::optional
+    // Returns a reference to avoid copying UInt256 - 32 bytes. std::optional
     // cannot hold references directly, so std::reference_wrapper is used.
-    [[nodiscard]] std::optional<std::reference_wrapper<uint256 const>>
+    [[nodiscard]] std::optional<std::reference_wrapper<UInt256 const>>
     getTxFeature(TxType txType) const;
 
     [[nodiscard]] bool

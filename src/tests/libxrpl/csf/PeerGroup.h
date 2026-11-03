@@ -28,14 +28,14 @@ namespace xrpl::test::csf {
  */
 class PeerGroup
 {
-    using peers_type = std::vector<Peer*>;
-    peers_type peers_;
+    using PeersType = std::vector<Peer*>;
+    PeersType peers_;
 
 public:
-    using iterator = peers_type::iterator;
-    using const_iterator = peers_type::const_iterator;
-    using reference = peers_type::reference;
-    using const_reference = peers_type::const_reference;
+    using iterator = PeersType::iterator;
+    using const_iterator = PeersType::const_iterator;
+    using reference = PeersType::reference;
+    using const_reference = PeersType::const_reference;
 
     PeerGroup() = default;
     PeerGroup(Peer* peer) : peers_{1, peer}
@@ -290,7 +290,7 @@ randomRankedGroups(
     std::vector<PeerGroup> groups;
     groups.reserve(numGroups);
     std::vector<Peer*> rawPeers(peers.begin(), peers.end());
-    std::generate_n(std::back_inserter(groups), numGroups, [&]() {
+    std::generate_n(std::back_inserter(groups), numGroups, [&] {
         std::vector<Peer*> res = randomWeightedShuffle(rawPeers, ranks, g);
         res.resize(sizeDist(g));
         return PeerGroup(std::move(res));

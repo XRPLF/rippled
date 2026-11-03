@@ -47,7 +47,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -57,6 +57,12 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
+    /**
+     * Inner transaction types that preflight rejects before LendingProtocolV1_2.
+     *
+     * Once the amendment is enabled the list only matters when replaying older
+     * ledgers. Remove it when LendingProtocolV1_2 is retired.
+     */
     static constexpr auto kDisabledTxTypes = std::to_array<TxType>({
         ttVAULT_CREATE,
         ttVAULT_SET,

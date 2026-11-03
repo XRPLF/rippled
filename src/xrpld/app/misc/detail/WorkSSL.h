@@ -19,10 +19,10 @@ class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<Wo
     friend class WorkBase<WorkSSL>;
 
 private:
-    using stream_type = boost::asio::ssl::stream<socket_type&>;
+    using StreamType = boost::asio::ssl::stream<SocketType&>;
 
     HTTPClientSSLContext context_;
-    stream_type stream_;
+    StreamType stream_;
 
 public:
     WorkSSL(
@@ -32,23 +32,23 @@ public:
         boost::asio::io_context& ios,
         beast::Journal j,
         Config const& config,
-        endpoint_type const& lastEndpoint,
+        EndpointType const& lastEndpoint,
         bool lastStatus,
-        callback_type cb);
+        CallbackType cb);
     ~WorkSSL() override = default;
 
 private:
-    stream_type&
+    StreamType&
     stream()
     {
         return stream_;
     }
 
     void
-    onConnect(error_code const& ec);
+    onConnect(ErrorCode const& ec);
 
     void
-    onHandshake(error_code const& ec);
+    onHandshake(ErrorCode const& ec);
 };
 
 }  // namespace xrpl::detail

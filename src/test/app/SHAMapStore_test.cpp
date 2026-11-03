@@ -265,7 +265,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static bool
     goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !rpc::containsError(json[jss::result]) &&
+        auto const good = json.isMember(jss::result) && !rpc::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
@@ -302,10 +302,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     }
 
     static bool
-    bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
+    bad(json::Value const& json,
+        std::string const& token,
+        ErrorCodeI error,
+        std::string const& message)
     {
-        return json.isMember(jss::result) && rpc::containsError(json[jss::result]) &&
-            json[jss::result][jss::error_code] == error;
+        return json.isMember(jss::result) && json[jss::result][jss::error] == token &&
+            json[jss::result][jss::error_code] == error &&
+            json[jss::result][jss::error_message] == message;
     }
 
     std::string
@@ -445,7 +449,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(syncStore(env));
 
-        auto ledger = env.rpc("ledger", "validated");
+        auto const ledger = env.rpc("ledger", "validated");
         BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
 
         BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
@@ -684,7 +688,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         LedgerIndex maxSeq = env.closed()->header().seq;
         // Close one ledger, carrying a transaction so that the sequence has rows
         // in all three of the tables clearSql() works through.
-        auto closeOne = [&]() -> bool {
+        auto const closeOne = [&] -> bool {
             env(noop(alice));
             env.close();
             ++maxSeq;
@@ -883,7 +887,7 @@ public:
         std::map<std::uint32_t, json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         ledgers.emplace(1, env.rpc("ledger", "1"));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
@@ -895,10 +899,10 @@ public:
         BEAST_EXPECT(goodLedger(env, ledgerTmp, "3"));
 
         ledgerTmp = env.rpc("ledger", "4");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         ledgerTmp = env.rpc("ledger", "100");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         auto const firstSeq = waitForReady(env);
         auto lastRotated = firstSeq - 1;
@@ -929,7 +933,7 @@ public:
             // Closing one more ledger triggers a rotate
             env.close();
 
-            auto ledger = env.rpc("ledger", "current");
+            auto const ledger = env.rpc("ledger", "current");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(kDeleteInterval + 4)));
         }
 
@@ -987,14 +991,14 @@ public:
         // Because advisory_delete is unset,
         // "can_delete" is disabled.
         auto const canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(bad(canDelete, RpcNotEnabled));
+        BEAST_EXPECT(bad(canDelete, "notEnabled", RpcNotEnabled, "Not enabled in configuration."));
 
         // Close ledgers without triggering a rotate
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1009,7 +1013,7 @@ public:
             // Closing one more ledger triggers a rotate
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
@@ -1025,7 +1029,7 @@ public:
         {
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1064,7 +1068,7 @@ public:
         {
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1087,7 +1091,7 @@ public:
             // This kicks off a cleanup, but it stays small.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
@@ -1103,7 +1107,7 @@ public:
             // No cleanups in this loop.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1115,7 +1119,7 @@ public:
             // This kicks off another cleanup.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
@@ -1137,7 +1141,7 @@ public:
             // No cleanups in this loop.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1149,7 +1153,7 @@ public:
             // This kicks off another cleanup.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
@@ -1170,7 +1174,7 @@ public:
             // No cleanups in this loop.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
@@ -1182,7 +1186,7 @@ public:
             // This kicks off another cleanup.
             env.close();
 
-            auto ledger = env.rpc("ledger", "validated");
+            auto const ledger = env.rpc("ledger", "validated");
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
@@ -1205,11 +1209,13 @@ public:
         newPath = path;
         section.set(Keys::kPath, newPath.string());
 
-        auto backend{node_store::Manager::instance().makeBackend(
-            section,
-            megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-            scheduler,
-            env.app().getJournal("NodeStoreTest"))};
+        auto backend{
+            node_store::Manager::instance().makeBackend(
+                section,
+                megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+                scheduler,
+                env.app().getJournal("NodeStoreTest")),
+        };
         backend->open();
         return backend;
     }
@@ -1382,7 +1388,7 @@ public:
                 std::stringstream expectedRange;
                 expectedRange << minSeq;
                 auto lastDelete = minSeq - 1;
-                for (auto deleteSeq : deleteSeqs)
+                for (auto const deleteSeq : deleteSeqs)
                 {
                     if (deleteSeq <= lastDelete)
                         continue;
@@ -1398,7 +1404,7 @@ public:
                 return expectedRange.str();
             };
 
-        auto deleteLedgerSeq =
+        auto const deleteLedgerSeq =
             [&lm, &store, &netOPs, &minSeq, &lastRotated, &expectedRange, &failureMessage, this](
                 Env& env,
                 LedgerIndex& maxSeq,
@@ -1777,7 +1783,7 @@ public:
 
         Env env{*this, envconfig(onlineDelete)};
 
-        auto& lm = env.app().getLedgerMaster();
+        auto const& lm = env.app().getLedgerMaster();
         auto& store = env.app().getSHAMapStore();
         auto& netOPs = env.app().getOPs();
 
@@ -1854,7 +1860,7 @@ public:
         auto* const log = logs.get();
         Env env{*this, envconfig(slowOnlineDelete), std::move(logs), beast::Severity::Trace};
 
-        auto& lm = env.app().getLedgerMaster();
+        auto const& lm = env.app().getLedgerMaster();
         auto& store = env.app().getSHAMapStore();
 
         auto const parked = parkMidRotation(env, *log);

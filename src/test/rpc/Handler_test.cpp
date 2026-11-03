@@ -43,7 +43,7 @@ class Handler_test : public beast::unit_test::Suite
     auto
     time(std::size_t n, auto f, auto prng) -> auto
     {
-        using clock = std::chrono::steady_clock;
+        using Clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
         double sumSquared = 0;
@@ -62,7 +62,7 @@ class Handler_test : public beast::unit_test::Suite
             std::array<long, 100> samples = {};
             for (std::size_t k = 0; k < 100; ++k)
             {
-                auto start = std::chrono::steady_clock::now();
+                auto const start = std::chrono::steady_clock::now();
                 f(inputs[k]);
                 samples[k] = (std::chrono::steady_clock::now() - start).count();
             }
@@ -78,8 +78,8 @@ class Handler_test : public beast::unit_test::Suite
 
         double const meanSquared = (sum * sum) / (j * j);
         return std::make_tuple(
-            clock::duration{static_cast<long>(sum / j)},
-            clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
+            Clock::duration{static_cast<long>(sum / j)},
+            Clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
             j);
     }
 
@@ -126,7 +126,7 @@ class Handler_test : public beast::unit_test::Suite
                 }
                 dummy = dummy + i + (int)d->role;
             },
-            [&]() -> std::size_t { return distr(prng); });
+            [&] -> std::size_t { return distr(prng); });
 
         std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 

@@ -244,7 +244,7 @@ ConfidentialMPTConvertBack::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto const sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -255,7 +255,7 @@ ConfidentialMPTConvertBack::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

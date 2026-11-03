@@ -55,7 +55,7 @@ namespace xrpl::test {
 using namespace xrpl::test;
 using namespace xrpl::test::jtx;
 
-static uint256
+static UInt256
 ledgerHash(LedgerHeader const& info)
 {
     return xrpl::sha512Half(
@@ -92,11 +92,11 @@ public:
         boost::beast::multi_buffer buffers;
 
         // simulate multi-buffer
-        auto sz = buffer.size() / nbuffers;
+        auto const sz = buffer.size() / nbuffers;
         for (int i = 0; i < nbuffers; i++)
         {
-            auto start = buffer.begin() + sz * i;
-            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
+            auto const start = buffer.begin() + sz * i;
+            auto const end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
             buffers.commit(
                 boost::asio::buffer_copy(
@@ -119,7 +119,7 @@ public:
         ZeroCopyInputStream stream(buffers.data());
         stream.Skip(header->headerSize);
 
-        auto decompressedSize = xrpl::compression::decompress(
+        auto const decompressedSize = xrpl::compression::decompress(
             stream, header->payloadWireSize, decompressed.data(), header->uncompressedSize);
         BEAST_EXPECT(decompressedSize == header->uncompressedSize);
         auto const proto1 = std::make_shared<T>();
@@ -186,7 +186,7 @@ public:
         env.trust(bob["USD"](fund), alice);
         env.close();
 
-        auto toBinary = [this](std::string const& text) {
+        auto const toBinary = [this](std::string const& text) {
             auto blob = strUnHex(text);
             BEAST_EXPECT(blob);
             return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
@@ -218,7 +218,7 @@ public:
         auto getLedger = std::make_shared<protocol::TMGetLedger>();
         getLedger->set_itype(protocol::liTS_CANDIDATE);
         getLedger->set_ltype(protocol::TMLedgerType::ltACCEPTED);
-        uint256 const hash(xrpl::sha512Half(123456789));
+        UInt256 const hash(xrpl::sha512Half(123456789));
         getLedger->set_ledgerhash(hash.begin(), hash.size());
         getLedger->set_ledgerseq(123456789);
         xrpl::SHAMapNodeID const sha(64, hash);
@@ -233,14 +233,14 @@ public:
     buildLedgerData(uint32_t n, Logs& logs)
     {
         auto ledgerData = std::make_shared<protocol::TMLedgerData>();
-        uint256 const hash(xrpl::sha512Half(12356789));
+        UInt256 const hash(xrpl::sha512Half(12356789));
         ledgerData->set_ledgerhash(hash.data(), hash.size());
         ledgerData->set_ledgerseq(123456789);
         ledgerData->set_type(protocol::TMLedgerInfoType::liAS_NODE);
         ledgerData->set_requestcookie(123456789);
         ledgerData->set_error(protocol::TMReplyError::reNO_LEDGER);
         ledgerData->mutable_nodes()->Reserve(n);
-        uint256 parentHash(0);
+        UInt256 parentHash(0);
 
         NetClock::duration const resolution{10};
         NetClock::time_point ct{resolution};
@@ -275,12 +275,12 @@ public:
         getObject->set_type(
             protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
-        uint256 hash(xrpl::sha512Half(123456789));
+        UInt256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
         getObject->set_fat(true);
         for (int i = 0; i < 100; i++)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            UInt256 hash(xrpl::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
             xrpl::SHAMapNodeID const sha(64, hash);
@@ -323,7 +323,7 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::Severity::Info;
+        auto const thresh = beast::Severity::Info;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;
@@ -382,7 +382,7 @@ public:
             env->app().config().vpReduceRelayBaseSquelchEnable = c.vpReduceRelayBaseSquelchEnable;
             return env;
         };
-        auto handshake = [&](int outboundEnable, int inboundEnable) {
+        auto const handshake = [&](int outboundEnable, int inboundEnable) {
             beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
@@ -392,7 +392,7 @@ public:
                 false,
                 env->app().config().txReduceRelayEnable,
                 env->app().config().vpReduceRelayBaseSquelchEnable);
-            http_request_type httpRequest;
+            HttpRequestType httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
             // feature enabled on the peer's connection only if both sides are
@@ -406,8 +406,8 @@ public:
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto httpResp = xrpl::makeResponse(
-                true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, env->app());
+            auto const httpResp = xrpl::makeResponse(
+                true, httpRequest, addr, addr, UInt256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =

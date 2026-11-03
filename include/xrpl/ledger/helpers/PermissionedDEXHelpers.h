@@ -16,7 +16,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
 [[nodiscard]] bool
 offerInDomain(
     ReadView const& view,
-    uint256 const& offerID,
+    UInt256 const& offerID,
     Domain const& domainID,
     beast::Journal j);
 

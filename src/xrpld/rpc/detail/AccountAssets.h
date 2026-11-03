@@ -10,13 +10,13 @@
 
 namespace xrpl {
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountDestAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& cache,
     bool includeXRP);
 
-hash_set<PathAsset>
+HashSet<PathAsset>
 accountSourceAssets(
     AccountID const& account,
     std::shared_ptr<AssetCache> const& lrLedger,

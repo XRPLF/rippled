@@ -181,7 +181,7 @@ PerfLogImp::Counters::countersJson() const
 json::Value
 PerfLogImp::Counters::currentJson() const
 {
-    auto const present = steady_clock::now();
+    auto const present = SteadyClock::now();
 
     json::Value jobsArray(json::ValueType::Array);
     auto const jobs = [this] {
@@ -196,7 +196,7 @@ PerfLogImp::Counters::currentJson() const
         json::Value jobj(json::ValueType::Object);
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] =
-            std::to_string(std::chrono::duration_cast<microseconds>(present - j.second).count());
+            std::to_string(std::chrono::duration_cast<Microseconds>(present - j.second).count());
         jobsArray.append(jobj);
     }
 
@@ -208,14 +208,14 @@ PerfLogImp::Counters::currentJson() const
         for (auto const& m : this->methods)
             methods.push_back(m.second);
     }
-    for (auto m : methods)
+    for (auto const& m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
         // A key of rpc, per methods' declaration, so borrowed as above.
         // NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage)
         methodobj[jss::method] = json::StaticString{m.first.data()};
         methodobj[jss::duration_us] =
-            std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
+            std::to_string(std::chrono::duration_cast<Microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
     }
 
@@ -236,7 +236,7 @@ PerfLogImp::openLog()
     if (logFile_.is_open())
         logFile_.close();
 
-    auto logDir = setup_.perfLog.parent_path();
+    auto const logDir = setup_.perfLog.parent_path();
     if (!std::filesystem::is_directory(logDir))
     {
         std::error_code ec;
@@ -264,7 +264,7 @@ void
 PerfLogImp::run()
 {
     beast::setCurrentThreadName("perflog");
-    lastLog_ = system_clock::now();
+    lastLog_ = SystemClock::now();
 
     while (true)
     {
@@ -293,13 +293,13 @@ PerfLogImp::report()
         return;
     }
 
-    auto const present = system_clock::now();
+    auto const present = SystemClock::now();
     if (present < lastLog_ + setup_.logInterval)
         return;
     lastLog_ = present;
 
     json::Value report(json::ValueType::Object);
-    report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
+    report[jss::time] = to_string(std::chrono::floor<Microseconds>(present));
     {
         std::scoped_lock const lock{counters_.jobsMutex};
         report[jss::workers] = static_cast<unsigned int>(counters_.jobs.size());
@@ -337,7 +337,7 @@ PerfLogImp::~PerfLogImp()
 void
 PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 {
-    auto counter = counters_.rpc.find(method);
+    auto const counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
@@ -352,13 +352,13 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
     }
     std::scoped_lock const lock(counters_.methodsMutex);
     // The key, not the method argument: what is stored has to outlive the call.
-    counters_.methods[requestId] = {counter->first, steady_clock::now()};
+    counters_.methods[requestId] = {counter->first, SteadyClock::now()};
 }
 
 void
 PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool finish)
 {
-    auto counter = counters_.rpc.find(method);
+    auto const counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
@@ -366,7 +366,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
         return;
         // LCOV_EXCL_STOP
     }
-    steady_time_point startTime;
+    SteadyTimePoint startTime;
     {
         std::scoped_lock const lock(counters_.methodsMutex);
         auto const e = counters_.methods.find(requestId);
@@ -392,13 +392,13 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
         ++counter->second.value.errored;
     }
     counter->second.value.duration +=
-        std::chrono::duration_cast<microseconds>(steady_clock::now() - startTime);
+        std::chrono::duration_cast<Microseconds>(SteadyClock::now() - startTime);
 }
 
 void
 PerfLogImp::jobQueue(JobType const type)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
@@ -411,13 +411,9 @@ PerfLogImp::jobQueue(JobType const type)
 }
 
 void
-PerfLogImp::jobStart(
-    JobType const type,
-    microseconds dur,
-    steady_time_point startTime,
-    int instance)
+PerfLogImp::jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
@@ -437,9 +433,9 @@ PerfLogImp::jobStart(
 }
 
 void
-PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
+PerfLogImp::jobFinish(JobType const type, Microseconds dur, int instance)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
@@ -455,7 +451,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     }
     std::scoped_lock const lock(counters_.jobsMutex);
     if (instance >= 0 && instance < counters_.jobs.size())
-        counters_.jobs[instance] = {JtInvalid, steady_time_point()};
+        counters_.jobs[instance] = {JtInvalid, SteadyTimePoint()};
 }
 
 void
@@ -463,7 +459,7 @@ PerfLogImp::resizeJobs(int const resize)
 {
     std::scoped_lock const lock(counters_.jobsMutex);
     if (resize > counters_.jobs.size())
-        counters_.jobs.resize(resize, {JtInvalid, steady_time_point()});
+        counters_.jobs.resize(resize, {JtInvalid, SteadyTimePoint()});
 }
 
 void

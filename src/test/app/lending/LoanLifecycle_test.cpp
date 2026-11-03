@@ -30,11 +30,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -193,6 +190,8 @@ private:
             BEAST_EXPECT(jr.isMember(jss::result));
             auto const jResult = jr[jss::result];
             BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jResult.isMember(jss::error_code));
+            BEAST_EXPECT(jResult[jss::error_message].isNull());
             BEAST_EXPECT(
                 jResult[jss::error_exception] ==
                 "fails local checks: Transaction has bad signature.");
@@ -236,7 +235,7 @@ private:
                 BEAST_EXPECT(types[type] == 1);
             }
         }
-        auto const loanID = [&]() {
+        auto const loanID = [&] {
             json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
@@ -274,7 +273,7 @@ private:
 
             return loan["index"].asString();
         }();
-        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
+        auto const loanKeylet{keylet::loan(UInt256{std::string_view(loanID)})};
 
         env.close(startDate);
 
@@ -331,7 +330,7 @@ private:
         Account const borrower{"borrower"};
         Account const depositor{"depositor"};
 
-        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+        auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
             Env env(*this);
             Vault const vault(env);
 
@@ -398,7 +397,7 @@ private:
                 env.close();
                 if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
                 {
-                    auto const expected = [&]() {
+                    auto const expected = [&] {
                         // The service fee is transferred to the broker if
                         // a borrower is not the broker
                         if (borrower != broker)
@@ -434,11 +433,12 @@ private:
                 borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    MPTTester const mpt(
-                        {.env = env,
-                         .issuer = issuer,
-                         .holders = {broker, depositor},
-                         .pay = 100'000'000});
+                    MPTTester const mpt({
+                        .env = env,
+                        .issuer = issuer,
+                        .holders = {broker, depositor},
+                        .pay = 100'000'000,
+                    });
                     return mpt(200'000);
                 },
                 borrowerAcct);
@@ -460,9 +460,13 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
-            .account = lender, .counter = issuer, .principalRequest = Number{10000}};
+            .account = lender,
+            .counter = issuer,
+            .principalRequest = Number{10000},
+        };
 
         auto const assetType = AssetType::IOU;
 
@@ -474,9 +478,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -498,8 +502,7 @@ private:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes, [](auto const& disabled) { return disabled == ttLOAN_SET; });
+        bool const lendingBatchEnabled = features[featureLendingProtocolV1_2];
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -595,7 +598,7 @@ private:
         env(pay(issuer, borrower, iouAsset(5'000'000'000LL)));
         env.close();
 
-        auto usdBalance = [&](Account const& a) {
+        auto const usdBalance = [&](Account const& a) {
             return env.balance(a, iouAsset.raw().get<Issue>()).value();
         };
         STAmount const borrowerStartBal = usdBalance(borrower);
@@ -606,7 +609,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         auto const vaultBefore = env.le(broker.vaultKeylet());

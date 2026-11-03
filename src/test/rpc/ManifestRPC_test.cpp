@@ -7,6 +7,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -27,6 +28,8 @@ public:
         {
             // manifest with no public key
             auto const info = env.rpc("json", "manifest", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'public_key'.");
         }
         {
@@ -36,6 +39,8 @@ public:
                 "manifest",
                 "{ \"public_key\": "
                 "\"abcdef12345\"}");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Invalid parameters.");
         }
     }

@@ -16,7 +16,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <stdexcept>
@@ -136,7 +135,7 @@ template <typename... Args>
 void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
-    auto constructWithDepth = [&]<typename T>() {
+    auto const constructWithDepth = [&]<typename T> {
         if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {
             construct<T>(std::forward<Args>(args)...);
@@ -216,9 +215,6 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
             return;
         case STI_ISSUE:
             construct<STIssue>(std::forward<Args>(args)...);
-            return;
-        case STI_XCHAIN_BRIDGE:
-            construct<STXChainBridge>(std::forward<Args>(args)...);
             return;
         case STI_CURRENCY:
             construct<STCurrency>(std::forward<Args>(args)...);

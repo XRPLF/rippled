@@ -5,8 +5,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -25,7 +25,7 @@
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoanBroker::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // Track LoanBroker deletions so finalize() can enforce:
     //   (a) only ttLOAN_BROKER_DELETE removes a broker
@@ -71,10 +71,7 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref
 }
 
 bool
-ValidLoanBroker::goodZeroDirectory(
-    ReadView const& view,
-    SLE::const_ref dir,
-    beast::Journal const& j)
+ValidLoanBroker::goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beast::Journal const& j)
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
@@ -84,7 +81,7 @@ ValidLoanBroker::goodZeroDirectory(
                            "OwnerCount has multiple directory pages";
         return false;
     }
-    auto indexes = dir->getFieldV256(sfIndexes);
+    auto const indexes = dir->getFieldV256(sfIndexes);
     if (indexes.size() > 1)
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
@@ -163,7 +160,7 @@ ValidLoanBroker::finalize(
                     roundToAsset(
                         Asset{vault->at(sfAsset)},
                         debtTotal,
-                        getAssetsTotalScale(vault),
+                        getVaultScale(vault),
                         Number::RoundingMode::TowardsZero) != beast::kZero)
                 {
                     JLOG(j.fatal())
@@ -222,6 +219,28 @@ ValidLoanBroker::finalize(
         }
 
         auto const& before = broker.brokerBefore;
+
+        if (view.rules().enabled(featureLendingProtocolV1_2))
+        {
+            auto const domainID = after->at(~sfDomainID);
+            if (domainID && !after->isFlag(lsfLoanBrokerPrivate))
+            {
+                JLOG(j.fatal()) << "Invariant failed: DomainID is set on public Loan Broker";
+                return false;
+            }
+            // LoanBrokerSet rejects a zero DomainID
+            if (domainID && *domainID == beast::kZero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker DomainID is zero";
+                return false;
+            }
+
+            if ((after->getFlags() & ~lsfLoanBrokerPrivate) != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker contains an unknown flag";
+                return false;
+            }
+        }
 
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`

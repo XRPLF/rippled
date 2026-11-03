@@ -36,6 +36,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <ranges>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -67,7 +68,7 @@ class InvariantsMPT_test : public InvariantsBase
         auto const negativeMPTAmount = [&](SField const& field) {
             return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
         };
-        auto const nonCanonicalMPTPayment = [&]() {
+        auto const nonCanonicalMPTPayment = [&] {
             return STTx{ttPAYMENT, [&](STObject& tx) {
                             tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
                         }};
@@ -88,7 +89,7 @@ class InvariantsMPT_test : public InvariantsBase
                 if (!sle)
                     return false;
 
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::check(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setAccountID(sfDestination, a2.id());
@@ -104,7 +105,7 @@ class InvariantsMPT_test : public InvariantsBase
                 if (!sle)
                     return false;
 
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::check(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setAccountID(sfDestination, a2.id());
@@ -123,7 +124,7 @@ class InvariantsMPT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -153,7 +154,7 @@ class InvariantsMPT_test : public InvariantsBase
             });
 
         // Overflow/Invalid balance on payment
-        auto testPayment = [&](std::string const& log, auto&& update) {
+        auto const testPayment = [&](std::string const& log, auto&& update) {
             MPTID id;
             doInvariantCheck(
                 {{log}},
@@ -175,7 +176,7 @@ class InvariantsMPT_test : public InvariantsBase
         testPayment(
             "invalid OutstandingAmount balance",
             [&](MPTID const& id, ApplyContext& ac, Account const& a1) {
-                auto sle = ac.view().peek(keylet::mptoken(id, a1));
+                auto const sle = ac.view().peek(keylet::mptoken(id, a1));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfMPTAmount, 101);
@@ -184,7 +185,7 @@ class InvariantsMPT_test : public InvariantsBase
             });
         testPayment(
             "OutstandingAmount overflow", [&](MPTID const& id, ApplyContext& ac, Account const&) {
-                auto sle = ac.view().peek(keylet::mptokenIssuance(id));
+                auto const sle = ac.view().peek(keylet::mptokenIssuance(id));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfOutstandingAmount, 101);
@@ -212,8 +213,8 @@ class InvariantsMPT_test : public InvariantsBase
             // Consistent mint: OutstandingAmount and A1's balance both grow by
             // 10, so conservation holds and only the on-failure check fires.
             Precheck const mint = [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
-                auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
+                auto const sleIss = ac.view().peek(keylet::mptokenIssuance(id));
+                auto const sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
                 if (!sleIss || !sleTok)
                     return false;
                 (*sleIss)[sfOutstandingAmount] = (*sleIss)[sfOutstandingAmount] + 10;
@@ -227,9 +228,9 @@ class InvariantsMPT_test : public InvariantsBase
             // unchanged, and CanTransfer keeps the ordinary transfer check
             // quiet, so only the on-failure check fires.
             Precheck const transfer = [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIss = ac.view().peek(keylet::mptokenIssuance(id));
-                auto sleA = ac.view().peek(keylet::mptoken(id, a1.id()));
-                auto sleB = ac.view().peek(keylet::mptoken(id, a2.id()));
+                auto const sleIss = ac.view().peek(keylet::mptokenIssuance(id));
+                auto const sleA = ac.view().peek(keylet::mptoken(id, a1.id()));
+                auto const sleB = ac.view().peek(keylet::mptoken(id, a2.id()));
                 if (!sleIss || !sleA || !sleB)
                     return false;
                 (*sleIss)[sfFlags] = (*sleIss)[sfFlags] | lsfMPTCanTransfer;
@@ -318,7 +319,7 @@ class InvariantsMPT_test : public InvariantsBase
             // OutstandingAmount and the holder total are unchanged, so the
             // balance check stays quiet.
             Precheck const lock = [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
+                auto const sleTok = ac.view().peek(keylet::mptoken(id, a1.id()));
                 if (!sleTok || (*sleTok)[sfMPTAmount] < 10)
                     return false;
                 // A fresh MPToken has no locked amount, so set it directly.
@@ -365,7 +366,7 @@ class InvariantsMPT_test : public InvariantsBase
                 return true;
             };
             Precheck const eraseToken = [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sleTok = ac.view().peek(keylet::mptoken(emptyId, a1.id()));
+                auto const sleTok = ac.view().peek(keylet::mptoken(emptyId, a1.id()));
                 if (!sleTok || (*sleTok)[sfMPTAmount] != 0)
                     return false;
                 ac.view().erase(sleTok);
@@ -403,7 +404,7 @@ class InvariantsMPT_test : public InvariantsBase
                 other,
                 {{"Invariant failed: trustline clawback balance change is invalid"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle =
+                    auto const sle =
                         ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
@@ -479,7 +480,7 @@ class InvariantsMPT_test : public InvariantsBase
                 other,
                 {{"Invariant failed: trustline clawback balance change is invalid"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle =
+                    auto const sle =
                         ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
@@ -610,7 +611,7 @@ class InvariantsMPT_test : public InvariantsBase
                 other,
                 {{"Invariant failed: trustline clawback changed the wrong line"}},
                 [issuer, eur](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle =
+                    auto const sle =
                         ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), eur.currency));
                     if (!sle)
                         return false;
@@ -649,7 +650,7 @@ class InvariantsMPT_test : public InvariantsBase
                 other,
                 {{"Invariant failed: trustline or MPT balance is negative"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle =
+                    auto const sle =
                         ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
@@ -728,7 +729,7 @@ class InvariantsMPT_test : public InvariantsBase
                 other,
                 {{"Invariant failed: trustline clawback amount is invalid"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle =
+                    auto const sle =
                         ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
@@ -831,12 +832,13 @@ class InvariantsMPT_test : public InvariantsBase
             Account const holder{"holder"};
             Account const other{"other"};
             env.fund(XRP(1'000), issuer, holder, other);
-            MPTTester const mpt(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {holder, other},
-                 .pay = 100,
-                 .maxAmt = 200});
+            MPTTester const mpt({
+                .env = env,
+                .issuer = issuer,
+                .holders = {holder, other},
+                .pay = 100,
+                .maxAmt = 200,
+            });
             auto const id = mpt.issuanceID();
 
             doInvariantCheck(
@@ -909,7 +911,8 @@ class InvariantsMPT_test : public InvariantsBase
             std::make_pair(ttAMM_WITHDRAW, 2),
             std::make_pair(ttAMM_CLAWBACK, 2),
             std::make_pair(ttAMM_CREATE, 3),
-            std::make_pair(ttCHECK_CASH, 2)};
+            std::make_pair(ttCHECK_CASH, 2),
+        };
         for (auto const& [tx, nTokens] : tests)
         {
             doInvariantCheck(
@@ -948,7 +951,7 @@ class InvariantsMPT_test : public InvariantsBase
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     for (auto const& a : {a1, a2, a3})
                     {
-                        auto sle = ac.view().peek(keylet::mptoken(id, a));
+                        auto const sle = ac.view().peek(keylet::mptoken(id, a));
                         if (!sle)
                             return false;
                         ac.view().erase(sle);
@@ -967,10 +970,11 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
-        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0):
-        // LoanSet allows at most two creates and no deletes; VaultWithdraw
-        // allows at most one of each. Fabricate one extra mutation so a
-        // too-loose cap would miss these.
+        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0) and
+        // the LoanBrokerDelete cap (fixCleanup3_5_0): LoanSet allows at most
+        // two creates and no deletes; VaultWithdraw and LoanBrokerDelete allow
+        // at most one of each. Fabricate one extra mutation so a too-loose cap
+        // would miss these.
         {
             auto const insertHolderTokens =
                 [](Account const& issuer, Account const& holder, ApplyContext& ac, int n) {
@@ -981,7 +985,7 @@ class InvariantsMPT_test : public InvariantsBase
                     for (int i = 0; i < n; ++i)
                     {
                         MPTIssue const mpt{makeMptID(seq + i, issuer)};
-                        auto sleNew =
+                        auto const sleNew =
                             std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), holder));
                         (*sleNew)[sfAccount] = holder.id();
                         (*sleNew)[sfMPTokenIssuanceID] = mpt.getMptID();
@@ -990,8 +994,9 @@ class InvariantsMPT_test : public InvariantsBase
                     return true;
                 };
 
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const createOverCap{
-                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}}};
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const createOverCap{
+                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}, {ttLOAN_BROKER_DELETE, 2}},
+            };
             for (auto const& [txnType, nTokens] : createOverCap)
             {
                 doInvariantCheck(
@@ -1012,8 +1017,9 @@ class InvariantsMPT_test : public InvariantsBase
                 id = mpt.issuanceID();
                 return true;
             };
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 2> const deleteOverCap{
-                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}}};
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const deleteOverCap{
+                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}, {ttLOAN_BROKER_DELETE, 2}},
+            };
             for (auto const& [txnType, nTokens] : deleteOverCap)
             {
                 doInvariantCheck(
@@ -1022,7 +1028,7 @@ class InvariantsMPT_test : public InvariantsBase
                         std::array const holders{a1, a2};
                         for (int i = 0; i < nTokens; ++i)
                         {
-                            auto sle = ac.view().peek(keylet::mptoken(id, holders[i]));
+                            auto const sle = ac.view().peek(keylet::mptoken(id, holders[i]));
                             if (!sle)
                                 return false;
                             ac.view().erase(sle);
@@ -1040,15 +1046,19 @@ class InvariantsMPT_test : public InvariantsBase
         // non-VaultCreate transaction that creates an MPTokenIssuance with
         // sfReferenceHolding present must trip the invariant.
         doInvariantCheck(
-            {{"sfReferenceHolding set on a new MPTokenIssuance by a "
-              "non-VaultCreate transaction"}},
+            {
+                {
+                    "sfReferenceHolding set on a new MPTokenIssuance by a "
+                    "non-VaultCreate transaction",
+                },
+            },
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
                 if (!sleAcct)
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
-                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                sleNew->setFieldH256(sfReferenceHolding, UInt256{1});
                 ac.view().insert(sleNew);
                 return true;
             },
@@ -1061,19 +1071,23 @@ class InvariantsMPT_test : public InvariantsBase
         // sfReferenceHolding), then mutate it in precheck to produce a
         // before/after pair.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
-                {{"sfReferenceHolding was modified on an existing "
-                  "MPTokenIssuance"}},
+                {
+                    {
+                        "sfReferenceHolding was modified on an existing "
+                        "MPTokenIssuance",
+                    },
+                },
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
                     if (!sleVault)
                         return false;
-                    auto sleIssuance =
+                    auto const sleIssuance =
                         ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
-                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    sleIssuance->setFieldH256(sfReferenceHolding, UInt256{2});
                     ac.view().update(sleIssuance);
                     return true;
                 },
@@ -1099,14 +1113,74 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // lsfMPTLocked is exempt because tfMPTUnlock clears it legitimately.
+        // Pre-fixCleanup3_5_0: clearing another issuance flag is allowed.
+        // Post-fixCleanup3_5_0: clearing another issuance flag trips the
+        // invariant.
+        {
+            std::uint32_t allFlags = 0;
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+                allFlags |= flag;
+            allFlags &= ~lsfMPTLocked;
+
+            MPTID id{};
+            Preclose const setup = [&](Account const&, Account const&, Env& env) {
+                Account const issuer{"issuer"};
+                env.fund(XRP(10'000), issuer);
+                env.close();
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = allFlags});
+                id = mptt.issuanceID();
+                env.close();
+                return true;
+            };
+            STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
+
+            for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
+            {
+                if (flag == lsfMPTLocked)
+                    continue;
+                Precheck const clearFlag = [&, flag](
+                                               Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldU32(sfFlags, sleIssuance->getFlags() & ~flag);
+                    ac.view().update(sleIssuance);
+                    return true;
+                };
+
+                doInvariantCheck(
+                    makeEnv(all_ - fixCleanup3_5_0),
+                    {},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tesSUCCESS, tesSUCCESS},
+                    setup);
+                doInvariantCheck(
+                    makeEnv(all_),
+                    {{"immutable MPTokenIssuance flag cleared"}},
+                    clearFlag,
+                    XRPAmount{},
+                    tx,
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    setup);
+            }
+        }
+
         // A vault pseudo-account's MPToken cannot be deleted by anything
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
         {
-            uint256 vaultKey;
+            UInt256 vaultKey;
             doInvariantCheck(
-                {{"vault pseudo-account holding deleted by a "
-                  "non-VaultDelete transaction"}},
+                {
+                    {
+                        "vault pseudo-account holding deleted by a "
+                        "non-VaultDelete transaction",
+                    },
+                },
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
                     if (!sleVault)
@@ -1115,7 +1189,7 @@ class InvariantsMPT_test : public InvariantsBase
                         ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                         return false;
-                    auto sleHolding = ac.view().peek(
+                    auto const sleHolding = ac.view().peek(
                         keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
                     if (!sleHolding)
                         return false;
@@ -1148,24 +1222,33 @@ class InvariantsMPT_test : public InvariantsBase
         std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
             std::make_pair(ttAMM_WITHDRAW, false),
             std::make_pair(ttPAYMENT, false),
-            std::make_pair(ttPAYMENT, true)};
+            std::make_pair(ttPAYMENT, true),
+        };
         // The two amendments that gate enforcement, in all four combinations.
         FeatureBitset const gatesEnabled{featureMPTokensV2, fixCleanup3_4_0};
-        for (auto const gates :
-             {gatesEnabled,
-              gatesEnabled - featureMPTokensV2,
-              gatesEnabled - fixCleanup3_4_0,
-              FeatureBitset{}})
+        for (auto const gates : {
+                 gatesEnabled,
+                 gatesEnabled - featureMPTokensV2,
+                 gatesEnabled - fixCleanup3_4_0,
+                 FeatureBitset{},
+             })
         {
             for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
             {
-                for (auto const flag :
-                     {static_cast<std::uint32_t>(lsfMPTLocked),
-                      ~lsfMPTCanTransfer,
-                      ~lsfMPTCanTrade,
-                      0u})
+                for (auto const flag : {
+                         static_cast<std::uint32_t>(lsfMPTLocked),
+                         ~lsfMPTCanTransfer,
+                         ~lsfMPTCanTrade,
+                         0u,
+                     })
                 {
                     MPTID id{};
+                    // Issuance flags cannot be cleared after creation (and
+                    // ValidMPTIssuance now rejects it), so the CanTransfer /
+                    // CanTrade rows create the issuance without the bit
+                    // instead of stripping it in precheck.
+                    std::uint32_t const createFlags =
+                        (flag == 0u || flag == lsfMPTLocked) ? kMptDexFlags : (kMptDexFlags & flag);
                     auto const isSuccess = !gates.any() || flag == 0 ||
                         (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
                         (tx == ttAMM_WITHDRAW &&
@@ -1176,25 +1259,20 @@ class InvariantsMPT_test : public InvariantsBase
                     doInvariantCheck(
                         {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
                         [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                            auto update = [&](AccountID const& a, std::uint64_t v) {
-                                auto sle = ac.view().peek(keylet::mptoken(id, a));
+                            auto const update = [&](AccountID const& a, std::uint64_t v) {
+                                auto const sle = ac.view().peek(keylet::mptoken(id, a));
                                 if (!sle)
                                     return false;
                                 sle->at(sfMPTAmount) = v;
                                 ac.view().update(sle);
                                 return true;
                             };
-                            auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
+                            auto const issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
                             if (!issuanceSle)
                                 return false;
-                            auto const flags = issuanceSle->at(sfFlags);
                             if (flag == lsfMPTLocked)
                             {
-                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
-                            }
-                            else if (flag != 0u)
-                            {
-                                issuanceSle->at(sfFlags) = flags & flag;
+                                issuanceSle->at(sfFlags) = issuanceSle->at(sfFlags) | lsfMPTLocked;
                             }
                             issuanceSle->at(sfOutstandingAmount) = 200;
                             ac.view().update(issuanceSle);
@@ -1214,8 +1292,13 @@ class InvariantsMPT_test : public InvariantsBase
                         [&](Account const& a1, Account const& a2, Env& env) {
                             Account const gw("gw");
                             env.fund(XRP(1'000), gw);
-                            MPTTester const usd(
-                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                            MPTTester const usd({
+                                .env = env,
+                                .issuer = gw,
+                                .holders = {a1, a2},
+                                .pay = 100,
+                                .flags = createFlags,
+                            });
                             id = usd.issuanceID();
                             // Either gate enforces, so both must be off to stay
                             // advisory. Disable after setting up the MPT; the
@@ -1249,7 +1332,7 @@ class InvariantsMPT_test : public InvariantsBase
             doInvariantCheck(
                 {{"orphaned MPToken balance changed"}},
                 [&](Account const&, Account const& a2, ApplyContext& ac) {
-                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    auto const sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
                     if (!sleTok || (*sleTok)[sfMPTAmount] != 0)
                         return false;
                     (*sleTok)[sfMPTAmount] = (*sleTok)[sfMPTAmount] + 10;
@@ -1264,7 +1347,7 @@ class InvariantsMPT_test : public InvariantsBase
             doInvariantCheck(
                 {},
                 [&](Account const&, Account const& a2, ApplyContext& ac) {
-                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    auto const sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
                     if (!sleTok)
                         return false;
                     ac.view().erase(sleTok);
@@ -1279,7 +1362,7 @@ class InvariantsMPT_test : public InvariantsBase
             doInvariantCheck(
                 {{"MPToken deleted on failure"}},
                 [&](Account const&, Account const& a2, ApplyContext& ac) {
-                    auto sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
+                    auto const sleTok = ac.view().peek(keylet::mptoken(orphanID, a2.id()));
                     if (!sleTok)
                         return false;
                     ac.view().erase(sleTok);
@@ -1329,8 +1412,8 @@ class InvariantsMPT_test : public InvariantsBase
             // Simulate a vault-share transfer: a1 sends 10 shares to a2.
             auto const precheck =
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) -> bool {
-                auto sle1 = ac.view().peek(keylet::mptoken(shareID, a1.id()));
-                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
+                auto const sle1 = ac.view().peek(keylet::mptoken(shareID, a1.id()));
+                auto const sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
                 if (!sle1 || !sle2)
                     return false;
                 (*sle1)[sfMPTAmount] -= 10;
@@ -1417,7 +1500,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {"MPToken deleted with encrypted fields while COA > 0"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Force an erase of the object while the COA remains 100
@@ -1433,7 +1516,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {"MPToken encrypted field existence inconsistency"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Remove one of the required encrypted fields to create a mismatch
@@ -1449,7 +1532,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {"MPToken encrypted field existence inconsistency"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
@@ -1477,11 +1560,13 @@ class InvariantsMPT_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            {"MPToken has encrypted fields but Issuance does not have "
-             "lsfMPTCanHoldConfidentialBalance "
-             "set"},
+            {
+                "MPToken has encrypted fields but Issuance does not have "
+                "lsfMPTCanHoldConfidentialBalance "
+                "set",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Inject all three encrypted fields consistently (inbox+spending+issuer must be
@@ -1501,7 +1586,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {"Confidential outstanding amount exceeds total outstanding amount"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
                 // Total outstanding is natively 100; bloat the COA over 100
@@ -1518,7 +1603,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {"Token conservation violation for MPT"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
 
@@ -1536,11 +1621,13 @@ class InvariantsMPT_test : public InvariantsBase
 
         // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
         doInvariantCheck(
-            {"Invariant failed: OutstandingAmount changed "
-             "by confidential transaction that should not "
-             "modify it for MPT"},
+            {
+                "Invariant failed: OutstandingAmount changed "
+                "by confidential transaction that should not "
+                "modify it for MPT",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
                 sleIssuance->setFieldU64(
@@ -1556,10 +1643,12 @@ class InvariantsMPT_test : public InvariantsBase
         // Send/MergeInbox and zero-COA-delta confidential transactions must not
         // change public holder MPTAmount.
         doInvariantCheck(
-            {"Invariant failed: MPTAmount changed by confidential "
-             "transaction that should not modify this field."},
+            {
+                "Invariant failed: MPTAmount changed by confidential "
+                "transaction that should not modify this field.",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 sleToken->setFieldU64(sfMPTAmount, sleToken->getFieldU64(sfMPTAmount) + 1);
@@ -1575,11 +1664,14 @@ class InvariantsMPT_test : public InvariantsBase
 
         // badVersion
         doInvariantCheck(
-            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
-             "changed"},
+            {
+                "MPToken sfConfidentialBalanceVersion not updated when "
+                "sfConfidentialBalanceSpending "
+                "changed",
+            },
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Blob const kChangedConfidentialSpending = {0xBA, 0xDD};
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 sleToken->setFieldVL(sfConfidentialBalanceSpending, kChangedConfidentialSpending);
@@ -1619,7 +1711,7 @@ class InvariantsMPT_test : public InvariantsBase
         doInvariantCheck(
             {},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                auto const sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
                 // Safely able to erase the deleted token.
@@ -1632,12 +1724,121 @@ class InvariantsMPT_test : public InvariantsBase
             precloseOrphan);
     }
 
+    // deletedHoldings_ in ValidMPTIssuance captures every erased MPToken
+    // per-holder, so finalize()'s fixCleanup3_5_0 balance check must reject
+    // a funded MPToken erased alongside an empty sibling regardless of the
+    // order the two are visited in.
+    void
+    testDeleteWithBalanceTwoHolders()
+    {
+        using namespace test::jtx;
+        testcase << "MPToken deleted with non-zero balance, two holders";
+
+        MPTID mptID;
+        Account const carol{"carol"};
+
+        // Single-holder setup used by the baseline and the amendment-gate
+        // cases.
+        auto const setupSingle = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            return true;
+        };
+
+        Precheck const eraseSingle = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto const sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            if (!sleA2)
+                return false;
+            ac.view().erase(sleA2);
+            return true;
+        };
+
+        Precheck const eraseBoth = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            auto const sleA2 = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+            auto const sleCarol = ac.view().peek(keylet::mptoken(mptID, carol.id()));
+            if (!sleA2 || !sleCarol)
+                return false;
+            ac.view().erase(sleA2);
+            ac.view().erase(sleCarol);
+            return true;
+        };
+
+        // Cases below expecting `tecINVARIANT_FAILED` use ttACCOUNT_SET; the
+        // success case (fixCleanup3_5_0 disabled) uses ttMPTOKEN_AUTHORIZE
+        // to sidestep unrelated invariants that would otherwise mask the
+        // tesSUCCESS signal.
+
+        // Baseline: a single funded MPToken erased on its own.
+        doInvariantCheck(
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // Two-holder erase: whichever key sorts last is visited last, so
+        // funding each holder in turn guarantees one run where the funded
+        // MPToken is visited first and an empty sibling follows it.
+        for (bool const fundCarol : {false, true})
+        {
+            auto const setupTwo = [&, fundCarol](
+                                      Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), carol);
+                MPTTester mpt(env, a1, {.holders = {a2, carol}, .fund = false});
+                mpt.create({.flags = tfMPTCanTransfer});
+                mptID = mpt.issuanceID();
+                mpt.authorize({.account = a2});
+                mpt.authorize({.account = carol});
+                mpt.pay(a1, fundCarol ? carol : a2, 100);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"MPToken deleted with non-zero balance"}},
+                eraseBoth,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                setupTwo);
+        }
+
+        // fixCleanup3_5_0 enabled, fixCleanup3_2_0 disabled: the two
+        // amendments are independent, so this is the only configuration in
+        // which the `|| isFeatureEnabled(fixCleanup3_5_0)` half of the
+        // deletedHoldings_ capture gate in ValidMPTIssuance::visitEntry is
+        // load-bearing.
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_2_0),
+            {{"MPToken deleted with non-zero balance"}},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setupSingle);
+
+        // fixCleanup3_5_0 disabled: erasing a funded MPToken must not trip
+        // the new check. This pins the fixCleanup3_5_0 gate in finalize().
+        doInvariantCheck(
+            makeEnv(all_ - fixCleanup3_5_0),
+            {},
+            eraseSingle,
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            setupSingle);
+    }
+
 public:
     void
     run() override
     {
         testConfidentialMPTTransfer();
         testMPT();
+        testDeleteWithBalanceTwoHolders();
     }
 };
 

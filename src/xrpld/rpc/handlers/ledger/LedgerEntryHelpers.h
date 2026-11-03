@@ -10,8 +10,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
@@ -176,10 +174,10 @@ requiredUInt32(
 }
 
 template <>
-inline std::optional<uint256>
+inline std::optional<UInt256>
 parse(json::Value const& param)
 {
-    uint256 uNodeIndex;
+    UInt256 uNodeIndex;
     if (!param.isString() || !uNodeIndex.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -188,20 +186,20 @@ parse(json::Value const& param)
     return uNodeIndex;
 }
 
-inline std::expected<uint256, json::Value>
+inline std::expected<UInt256, json::Value>
 requiredUInt256(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint256>(params, fieldName, err, "Hash256");
+    return required<UInt256>(params, fieldName, err, "Hash256");
 }
 
 template <>
-inline std::optional<uint192>
+inline std::optional<UInt192>
 parse(json::Value const& param)
 {
-    uint192 field;
+    UInt192 field;
     if (!param.isString() || !field.parseHex(param.asString()))
     {
         return std::nullopt;
@@ -210,13 +208,13 @@ parse(json::Value const& param)
     return field;
 }
 
-inline std::expected<uint192, json::Value>
+inline std::expected<UInt192, json::Value>
 requiredUInt192(
     json::Value const& params,
     json::StaticString const fieldName,
     std::string const& err)
 {
-    return required<uint192>(params, fieldName, err, "Hash192");
+    return required<UInt192>(params, fieldName, err, "Hash192");
 }
 
 template <>
@@ -237,58 +235,6 @@ inline std::expected<Asset, json::Value>
 requiredAsset(json::Value const& params, json::StaticString const fieldName, std::string const& err)
 {
     return required<Asset>(params, fieldName, err, "Asset");
-}
-
-inline std::expected<STXChainBridge, json::Value>
-parseBridgeFields(json::Value const& params)
-{
-    if (auto const value = hasRequired(
-            params,
-            {jss::LockingChainDoor,
-             jss::LockingChainIssue,
-             jss::IssuingChainDoor,
-             jss::IssuingChainIssue});
-        !value)
-    {
-        return std::unexpected(value.error());
-    }
-
-    auto const lockingChainDoor =
-        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
-    if (!lockingChainDoor)
-    {
-        return std::unexpected(lockingChainDoor.error());
-    }
-
-    auto const issuingChainDoor =
-        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
-    if (!issuingChainDoor)
-    {
-        return std::unexpected(issuingChainDoor.error());
-    }
-
-    Issue lockingChainIssue;
-    try
-    {
-        lockingChainIssue = issueFromJson(params[jss::LockingChainIssue]);
-    }
-    catch (std::runtime_error const& ex)
-    {
-        return invalidFieldError("malformedIssue", jss::LockingChainIssue, "Issue");
-    }
-
-    Issue issuingChainIssue;
-    try
-    {
-        issuingChainIssue = issueFromJson(params[jss::IssuingChainIssue]);
-    }
-    catch (std::runtime_error const& ex)
-    {
-        return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
-    }
-
-    return STXChainBridge(
-        *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
 }  // namespace xrpl::ledger_entry_helpers

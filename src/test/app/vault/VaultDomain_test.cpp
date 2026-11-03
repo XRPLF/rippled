@@ -79,13 +79,14 @@ private:
 
         {
             testcase("private vault owner can deposit");
-            auto tx = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            auto const tx =
+                vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx);
         }
 
         {
             testcase("private vault depositor not authorized yet");
-            auto tx =
+            auto const tx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             env(tx, Ter{tecNO_AUTH});
         }
@@ -102,11 +103,12 @@ private:
 
             {
                 pdomain::Credentials const credentials1{
-                    {.issuer = credIssuer1, .credType = credType}};
+                    {.issuer = credIssuer1, .credType = credType},
+                };
 
                 env(pdomain::setTx(pdOwner, credentials1));
-                auto const domainId1 = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
+                auto const domainId1 = [&] {
+                    auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -123,11 +125,12 @@ private:
             {
                 pdomain::Credentials const credentials{
                     {.issuer = credIssuer1, .credType = credType},
-                    {.issuer = credIssuer2, .credType = credType}};
+                    {.issuer = credIssuer2, .credType = credType},
+                };
 
                 env(pdomain::setTx(pdOwner, credentials));
-                auto const domainId = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
+                auto const domainId = [&] {
+                    auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -146,7 +149,7 @@ private:
 
         {
             testcase("private vault depositor still not authorized");
-            auto tx =
+            auto const tx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             env(tx, Ter{tecNO_AUTH});
             env.close();
@@ -160,7 +163,7 @@ private:
             env(credentials::create(charlie, credIssuer1, credType));
             // charlie's credential not accepted
             env.close();
-            auto credSle = env.le(credKeylet);
+            auto const credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle != nullptr);
 
             auto tx =
@@ -178,16 +181,16 @@ private:
             env(credentials::deleteCred(credIssuer1, depositor, credIssuer1, credType));
             env(credentials::deleteCred(credIssuer1, charlie, credIssuer1, credType));
             env.close();
-            auto credSle = env.le(credKeylet);
+            auto const credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle == nullptr);
 
-            auto tx =
+            auto const tx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             env(tx, Ter{tecNO_AUTH});
             env.close();
         }
 
-        auto const shares = [&env, keylet = keylet, this]() -> Asset {
+        auto const shares = [&env, keylet = keylet, this] -> Asset {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return MPTIssue(vault->at(sfShareMPTID));
@@ -212,7 +215,7 @@ private:
             }
 
             {
-                auto tx1 =
+                auto const tx1 =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx1);
                 env.close();
@@ -231,7 +234,7 @@ private:
                 auto const credsKeylet = credentials::keylet(depositor, credIssuer2, credType);
                 BEAST_EXPECT(env.le(credsKeylet) != nullptr);
 
-                auto tx2 =
+                auto const tx2 =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1)});
                 env(tx2, Ter{tecEXPIRED});
                 env.close();
@@ -246,7 +249,7 @@ private:
                     keylet::mptoken(shares.get<MPTIssue>().getMptID(), charlie.id());
                 BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
 
-                auto tx3 =
+                auto const tx3 =
                     vault.deposit({.depositor = charlie, .id = keylet.key, .amount = asset(2)});
                 env(tx3, Ter{tecEXPIRED});
 
@@ -338,8 +341,8 @@ private:
 
         pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(pdOwner, credentials));
-        auto const domainId = [&]() {
-            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+        auto const domainId = [&] {
+            auto const tx = env.tx()->getJson(JsonOptions::Values::None);
             return pdomain::getNewDomain(env.meta());
         }();
         {
@@ -361,7 +364,7 @@ private:
         env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+        auto const shares = [&env, keylet = keylet, this] -> PrettyAsset {
             auto const sle = env.le(keylet);
             BEAST_EXPECT(sle != nullptr);
             return MPTIssue(sle->at(sfShareMPTID));
@@ -380,7 +383,7 @@ private:
             Account const charlie{"charlie"};
             env.fund(XRP(1000), charlie);
             env.close();
-            auto depTx =
+            auto const depTx =
                 vault.deposit({.depositor = charlie, .id = keylet.key, .amount = asset(1)});
             env(depTx, Ter{tecNO_AUTH});
         }
@@ -434,8 +437,8 @@ private:
 
         pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
         env(pdomain::setTx(pdOwner, credentials));
-        auto const domainId = [&]() {
-            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+        auto const domainId = [&] {
+            auto const tx = env.tx()->getJson(JsonOptions::Values::None);
             return pdomain::getNewDomain(env.meta());
         }();
         {
@@ -452,7 +455,7 @@ private:
         env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto const shares = [&env, keylet = keylet, this]() -> PrettyAsset {
+        auto const shares = [&env, keylet = keylet, this] -> PrettyAsset {
             auto const sle = env.le(keylet);
             BEAST_EXPECT(sle != nullptr);
             return MPTIssue(sle->at(sfShareMPTID));
@@ -496,7 +499,7 @@ private:
         env.close();
 
         auto const [vaultAccount, issuanceId] =
-            [&env, keylet = keylet, this]() -> std::tuple<AccountID, uint192> {
+            [&env, keylet = keylet, this] -> std::tuple<AccountID, UInt192> {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};
@@ -507,7 +510,8 @@ private:
 
         {
             testcase("private XRP vault owner can deposit");
-            auto tx = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            auto const tx =
+                vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx);
             env.close();
         }
@@ -519,7 +523,7 @@ private:
 
         {
             testcase("private XRP vault depositor not authorized yet");
-            auto tx =
+            auto const tx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             env(tx, Ter{tecNO_AUTH});
         }
@@ -529,8 +533,8 @@ private:
             pdomain::Credentials const credentials{{.issuer = owner, .credType = credType}};
 
             env(pdomain::setTx(owner, credentials));
-            auto const domainId = [&]() {
-                auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            auto const domainId = [&] {
+                auto const tx = env.tx()->getJson(JsonOptions::Values::None);
                 return pdomain::getNewDomain(env.meta());
             }();
 
@@ -548,7 +552,7 @@ private:
             env.close();
 
             BEAST_EXPECT(env.le(credKeylet));
-            auto tx =
+            auto const tx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             env(tx);
             env.close();
@@ -613,7 +617,7 @@ private:
         }
         env.close();
 
-        auto const domainId = [&]() {
+        auto const domainId = [&] {
             pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
             env(pdomain::setTx(pdOwner, credentials));
             env.close();
@@ -793,7 +797,7 @@ private:
         env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
         env.close();
 
-        auto withdrawToDest = [&]() {
+        auto const withdrawToDest = [&] {
             auto wtx =
                 vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
             wtx[sfDestination] = dest.human();
