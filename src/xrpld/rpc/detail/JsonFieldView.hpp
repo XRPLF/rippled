@@ -62,6 +62,12 @@ public:
         return readValue_ != nullptr;
     }
 
+    [[nodiscard]] bool
+    isNull() const noexcept
+    {
+        return readValue_ != nullptr && readValue_->isNull();
+    }
+
     // Not json::Value::isIntegral(), which is also true for a boolean: boost's is_int64()
     // is not, and a spec must not accept `true` as a number on one server only.
     [[nodiscard]] bool

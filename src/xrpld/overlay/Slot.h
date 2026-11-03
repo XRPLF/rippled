@@ -277,11 +277,11 @@ void
 Slot<ClockType>::deleteIdlePeer(PublicKey const& validator)
 {
     using namespace std::chrono;
-    auto now = ClockType::now();
+    auto const now = ClockType::now();
     for (auto it = peers_.begin(); it != peers_.end();)
     {
-        auto& peer = it->second;
-        auto id = it->first;
+        auto const& peer = it->second;
+        auto const id = it->first;
         ++it;
         if (now - peer.lastMessage > kIdled)
         {
@@ -303,8 +303,8 @@ Slot<ClockType>::update(
     IgnoredSquelchCallback callback)
 {
     using namespace std::chrono;
-    auto now = ClockType::now();
-    auto it = peers_.find(id);
+    auto const now = ClockType::now();
+    auto const it = peers_.find(id);
     // First message from this peer
     if (it == peers_.end())
     {
@@ -366,9 +366,9 @@ Slot<ClockType>::update(
         auto const consideredPoolSize = considered_.size();
         while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
-            auto i = considered_.size() == 1 ? 0 : randInt(considered_.size() - 1);
-            auto it = std::next(considered_.begin(), i);
-            auto id = *it;
+            auto const i = considered_.size() == 1 ? 0 : randInt(considered_.size() - 1);
+            auto const it = std::next(considered_.begin(), i);
+            auto const id = *it;
             considered_.erase(it);
             auto const& itPeers = peers_.find(id);
             if (itPeers == peers_.end())
@@ -390,7 +390,7 @@ Slot<ClockType>::update(
 
         lastSelected_ = now;
 
-        auto s = selected.begin();
+        auto const s = selected.begin();
         JLOG(journal_.trace()) << "update: " << Slice(validator) << " " << id << " pool size "
                                << consideredPoolSize << " selected " << *s << " "
                                << *std::next(s, 1) << " " << *std::next(s, 2);
@@ -446,7 +446,7 @@ template <typename ClockType>
 void
 Slot<ClockType>::deletePeer(PublicKey const& validator, ID id, bool erase)
 {
-    auto it = peers_.find(id);
+    auto const it = peers_.find(id);
     if (it != peers_.end())
     {
         std::vector<Peer::ID> toUnsquelch;
@@ -454,7 +454,7 @@ Slot<ClockType>::deletePeer(PublicKey const& validator, ID id, bool erase)
         JLOG(journal_.trace()) << "deletePeer: " << Slice(validator) << " " << id << " selected "
                                << (it->second.state == PeerState::Selected) << " considered "
                                << considered_.contains(id) << " erase " << erase;
-        auto now = ClockType::now();
+        auto const now = ClockType::now();
         if (it->second.state == PeerState::Selected)
         {
             for (auto& [k, v] : peers_)
@@ -777,7 +777,7 @@ Slots<ClockType>::addPeerMessage(UInt256 const& key, ID id)
 
     if (key.isNonZero())
     {
-        auto it = peersWithMessage.find(key);
+        auto const it = peersWithMessage.find(key);
         if (it == peersWithMessage.end())
         {
             JLOG(journal_.trace()) << "addPeerMessage: new " << to_string(key) << " " << id;
@@ -812,16 +812,17 @@ Slots<ClockType>::updateSlotAndSquelch(
     if (!addPeerMessage(key, id))
         return;
 
-    auto it = slots_.find(validator);
+    auto const it = slots_.find(validator);
     if (it == slots_.end())
     {
         JLOG(journal_.trace()) << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(
-                          std::make_pair(
-                              validator,
-                              Slot<ClockType>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
-                      .first;
+        auto const it =
+            slots_
+                .emplace(
+                    std::make_pair(
+                        validator,
+                        Slot<ClockType>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
+                .first;
         it->second.update(validator, id, type, callback);
     }
     else
@@ -842,7 +843,7 @@ template <typename ClockType>
 void
 Slots<ClockType>::deleteIdlePeers()
 {
-    auto now = ClockType::now();
+    auto const now = ClockType::now();
 
     for (auto it = slots_.begin(); it != slots_.end();)
     {

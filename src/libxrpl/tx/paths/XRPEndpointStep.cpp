@@ -269,7 +269,7 @@ XRPEndpointStep<TDerived>::revImp(
 
     auto& sender = isLast_ ? xrpAccount() : acc_;
     auto& receiver = isLast_ ? acc_ : xrpAccount();
-    auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
+    auto const ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
         return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
@@ -292,7 +292,7 @@ XRPEndpointStep<TDerived>::fwdImp(
 
     auto& sender = isLast_ ? xrpAccount() : acc_;
     auto& receiver = isLast_ ? acc_ : xrpAccount();
-    auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
+    auto const ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
         return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
@@ -342,7 +342,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto sleAcc = ctx.view.read(keylet::account(acc_));
+    auto const sleAcc = ctx.view.read(keylet::account(acc_));
     if (!sleAcc)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "

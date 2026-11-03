@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -551,6 +552,22 @@ transferRate(ReadView const& view, STAmount const& amount)
     return transferRate(view, amount.asset());
 }
 
+STAmount
+addTransferFee(STAmount const& amount, Rate const& rate)
+{
+    if (rate == kParityRate)
+        return amount;
+    return mulRatio(amount, rate.value, QUALITY_ONE, Number::RoundingMode::Upward);
+}
+
+STAmount
+subtractTransferFee(STAmount const& amount, Rate const& rate)
+{
+    if (rate == kParityRate)
+        return amount;
+    return mulRatio(amount, QUALITY_ONE, rate.value, Number::RoundingMode::Downward);
+}
+
 //------------------------------------------------------------------------------
 //
 // Holding operations
@@ -973,19 +990,11 @@ accountSendIOU(
     SLE::Ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
-    if (view.rules().enabled(fixAMMv1_1))
-    {
-        if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
-        {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-    }
-    else
+    if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
     {
         // LCOV_EXCL_START
-        XRPL_ASSERT(
-            saAmount >= beast::kZero && !saAmount.holds<MPTIssue>(),
-            "xrpl::accountSendIOU : minimum amount and not MPT");
+        JLOG(j.fatal()) << "accountSendIOU: negative amount or invalid asset";
+        return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
 
@@ -1018,7 +1027,7 @@ accountSendIOU(
     SLE::pointer const receiver =
         uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
         std::string receiverBal("-");
@@ -1064,7 +1073,7 @@ accountSendIOU(
         view.update(receiver);
     }
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
         std::string receiverBal("-");
@@ -1112,7 +1121,7 @@ accountSendMultiIOU(
     SLE::pointer const sender =
         senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer();
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
 
@@ -1144,7 +1153,7 @@ accountSendMultiIOU(
         SLE::pointer const receiver =
             receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
 
-        if (auto stream = j.trace())
+        if (auto const stream = j.trace())
         {
             std::string receiverBal("-");
 
@@ -1173,7 +1182,7 @@ accountSendMultiIOU(
             takeFromSender += amount;
         }
 
-        if (auto stream = j.trace())
+        if (auto const stream = j.trace())
         {
             std::string receiverBal("-");
 
@@ -1200,7 +1209,7 @@ accountSendMultiIOU(
         view.update(sender);
     }
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
 
@@ -1224,7 +1233,7 @@ directSendNoFeeMPT(
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
-    auto sleIssuance = view.peek(mptID);
+    auto const sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -1246,7 +1255,7 @@ directSendNoFeeMPT(
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
-        if (auto sle = view.peek(mptokenID))
+        if (auto const sle = view.peek(mptokenID))
         {
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
@@ -1276,7 +1285,7 @@ directSendNoFeeMPT(
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
-        if (auto sle = view.peek(mptokenID))
+        if (auto const sle = view.peek(mptokenID))
         {
             if (view.rules().enabled(featureMPTokensV2))
             {
@@ -1355,9 +1364,8 @@ directSendNoLimitMPT(
         {
             // Number math loses precision on large MPT amounts, which can
             // overcharge the sender. MPTs are integral, so compute the cost
-            // exactly and round it up, matching the payment engine.
-            auto const cost = mulRatio(saAmount.mpt(), rate.value, QUALITY_ONE, true);
-            saActual = STAmount(saAmount.asset(), cost.value());
+            // exactly, matching the payment engine.
+            saActual = addTransferFee(saAmount, rate);
         }
         else
         {
@@ -1482,9 +1490,8 @@ directSendNoLimitMultiMPT(
             {
                 // Number math loses precision on large MPT amounts, which can
                 // overcharge the sender. MPTs are integral, so compute the
-                // cost exactly and round it up, matching the payment engine.
-                auto const cost = mulRatio(amount.mpt(), rate.value, QUALITY_ONE, true);
-                actualSend = STAmount(amount.asset(), cost.value());
+                // cost exactly, matching the payment engine.
+                actualSend = addTransferFee(amount, rate);
             }
             else
             {

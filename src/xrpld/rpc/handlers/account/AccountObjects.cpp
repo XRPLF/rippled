@@ -55,17 +55,18 @@ getAccountObjects(
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
         return false;
 
-    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
-                                LedgerEntryType ledgerType) {
-        auto it = std::ranges::find(typeFilter, ledgerType);
+    auto const typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                      LedgerEntryType ledgerType) {
+        auto const it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
     };
 
-    auto sponsoredMatchesFilter = [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
-        if (!sponsoredFilter.has_value())
-            return true;
-        return sponsor.has_value() == *sponsoredFilter;
-    };
+    auto const sponsoredMatchesFilter =
+        [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
+            if (!sponsoredFilter.has_value())
+                return true;
+            return sponsor.has_value() == *sponsoredFilter;
+        };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
     // iterate NFT pages if the filter says so AND dirIndex == 0
@@ -306,10 +307,6 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::nft_page, .type = ltNFTOKEN_PAGE},
             {.name = jss::payment_channel, .type = ltPAYCHAN},
             {.name = jss::state, .type = ltRIPPLE_STATE},
-            {.name = jss::xchain_owned_claim_id, .type = ltXCHAIN_OWNED_CLAIM_ID},
-            {.name = jss::xchain_owned_create_account_claim_id,
-             .type = ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {.name = jss::bridge, .type = ltBRIDGE},
             {.name = jss::mpt_issuance, .type = ltMPTOKEN_ISSUANCE},
             {.name = jss::mptoken, .type = ltMPTOKEN},
             {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},

@@ -1,6 +1,7 @@
 { pkgs, customGlibc, ... }:
 let
   inherit (import ./packages.nix { inherit pkgs; })
+    cacert
     commonPackages
     gccPackage
     gccVersion
@@ -51,6 +52,17 @@ let
       fi
     fi
     unset _xrpl_conan_stamp
+  '';
+
+  # Nix's Python certifi (used by Conan) reads only NIX_SSL_CERT_FILE. Swap
+  # Nix's default profile bundle, frozen at install time, for the patched cacert,
+  # but leave a bundle the user chose (e.g. with a proxy CA) alone.
+  caHook = ''
+    case "''${NIX_SSL_CERT_FILE:-}" in
+      "" | /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt | "$HOME/.nix-profile/etc/ssl/certs/ca-bundle.crt")
+        export NIX_SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
+        ;;
+    esac
   '';
 
   # Not sdkEnv: a shell's stdenv already sets that up. Prepended so the stub
@@ -122,6 +134,7 @@ let
           echo "Welcome to xrpld development shell";
           ${compilerVersionHook}
           ${darwinLibresolvHook}
+          ${caHook}
           ${conanHook}
           ${pkgs.lib.optionalString plain plainWarningHook}
         '';

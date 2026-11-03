@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
@@ -148,7 +149,7 @@ std::optional<RCLCxLedger>
 RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
     // we need to switch the ledger we're working from
-    auto built = ledgerMaster_.getLedgerByHash(hash);
+    auto const built = ledgerMaster_.getLedgerByHash(hash);
     if (!built)
     {
         if (acquiringLedger_ != hash)
@@ -338,7 +339,7 @@ RCLConsensus::Adaptor::onClose(
     // Tell the ledger master not to acquire the ledger we're probably building
     ledgerMaster_.setBuildingLedger(prevLedger->header().seq + 1);
 
-    auto initialLedger = app_.getOpenLedger().current();
+    auto const initialLedger = app_.getOpenLedger().current();
 
     auto initialSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, app_.getNodeFamily());
     initialSet->setUnbacked();
@@ -347,6 +348,11 @@ RCLConsensus::Adaptor::onClose(
     for (auto const& tx : initialLedger->txs)
     {
         JLOG(j_.trace()) << "Adding open ledger TX " << tx.first->getTransactionID();
+        // Inner batch txns are applied only when building from the agreed set, never to the open
+        // ledger, so they cannot leak into the proposal.
+        XRPL_ASSERT(
+            !tx.first->isFlag(tfInnerBatchTxn),
+            "xrpl::RCLConsensus::Adaptor::onClose : no inner batch txn in open ledger");
         Serializer s(2048);
         tx.first->add(s);
         initialSet->addItem(
@@ -361,7 +367,7 @@ RCLConsensus::Adaptor::onClose(
         {
             // previous ledger was flag ledger, add fee and amendment
             // pseudo-transactions
-            auto validations =
+            auto const validations =
                 app_.getValidators().negativeUNLFilter(app_.getValidations().getTrustedForLedger(
                     prevLedger->header().parentHash, prevLedger->seq() - 1));
             if (validations.size() >= app_.getValidators().quorum())
@@ -517,7 +523,7 @@ RCLConsensus::Adaptor::doAccept(
         }
     }
 
-    auto built = buildLCL(
+    auto const built = buildLCL(
         prevLedger,
         retriableTxs,
         consensusCloseTime,
@@ -613,7 +619,7 @@ RCLConsensus::Adaptor::doAccept(
                                      << " not get in " << dispute.tx().id();
 
                     SerialIter sit(dispute.tx().tx->slice());
-                    auto txn = std::make_shared<STTx const>(sit);
+                    auto const txn = std::make_shared<STTx const>(sit);
 
                     // Disputed pseudo-transactions that were not accepted
                     // can't be successfully applied in the next ledger
@@ -812,7 +818,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
     auto const& keys = *validatorKeys_.keys;
 
-    auto v = std::make_shared<STValidation>(
+    auto const v = std::make_shared<STValidation>(
         lastValidationTime_,
         keys.publicKey,
         keys.secretKey,

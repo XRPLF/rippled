@@ -7,19 +7,7 @@
 namespace xrpl {
 
 json::Value
-doAccountCurrencies(rpc::JsonContext&);
-json::Value
-doAccountInfo(rpc::JsonContext&);
-json::Value
-doAccountLines(rpc::JsonContext&);
-json::Value
-doAccountChannels(rpc::JsonContext&);
-json::Value
-doAccountNFTs(rpc::JsonContext&);
-json::Value
 doAccountObjects(rpc::JsonContext&);
-json::Value
-doAccountOffers(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);
 json::Value
@@ -38,8 +26,6 @@ json::Value
 doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);
-json::Value
-doDepositAuthorized(rpc::JsonContext&);
 json::Value
 doFeature(rpc::JsonContext&);
 json::Value
@@ -75,10 +61,6 @@ doLogRotate(rpc::JsonContext&);
 json::Value
 doManifest(rpc::JsonContext&);
 json::Value
-doNFTBuyOffers(rpc::JsonContext&);
-json::Value
-doNFTSellOffers(rpc::JsonContext&);
-json::Value
 doNoRippleCheck(rpc::JsonContext&);
 json::Value
 doOwnerInfo(rpc::JsonContext&);
@@ -89,11 +71,11 @@ doPause(rpc::JsonContext&);
 json::Value
 doPeers(rpc::JsonContext&);
 json::Value
-doPing(rpc::JsonContext&);
+doPing(rpc::JsonContext const&);
 json::Value
 doPrint(rpc::JsonContext&);
 json::Value
-doRandom(rpc::JsonContext&);
+doRandom(rpc::JsonContext const&);
 json::Value
 doResume(rpc::JsonContext&);
 json::Value
@@ -135,9 +117,9 @@ doUnlList(rpc::JsonContext&);
 json::Value
 doUnsubscribe(rpc::JsonContext&);
 json::Value
-doValidationCreate(rpc::JsonContext&);
+doValidationCreate(rpc::JsonContext const&);
 json::Value
-doWalletPropose(rpc::JsonContext&);
+doWalletPropose(rpc::JsonContext const&);
 json::Value
 doValidators(rpc::JsonContext&);
 json::Value
@@ -145,5 +127,5 @@ doValidatorListSites(rpc::JsonContext&);
 json::Value
 doValidatorInfo(rpc::JsonContext&);
 json::Value
-doVaultInfo(rpc::JsonContext&);
+doVaultInfo(rpc::JsonContext const&);
 }  // namespace xrpl

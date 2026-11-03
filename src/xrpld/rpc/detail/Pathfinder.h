@@ -80,12 +80,12 @@ public:
         std::function<bool()> const& continueCallback = {});
 
     enum class NodeType {
-        Source,      // The source account: with an issuer account, if needed.
-        Accounts,    // Accounts that connect from this source/currency.
-        Books,       // Order books that connect to this currency.
-        XrpBook,     // The order book from this currency to XRP.
-        DestBook,    // The order book to the destination currency/issuer.
-        Destination  // The destination account only.
+        Source,       // The source account: with an issuer account, if needed.
+        Accounts,     // Accounts that connect from this source/currency.
+        Books,        // Order books that connect to this currency.
+        XrpBook,      // The order book from this currency to XRP.
+        DestBook,     // The order book to the destination currency/issuer.
+        Destination,  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
@@ -97,8 +97,8 @@ public:
         XrpToXrp,
         XrpToNonXrp,
         NonXrpToXrp,
-        NonXrpToSame,   // Destination currency is the same as source.
-        NonXrpToNonXrp  // Destination currency is NOT the same as source.
+        NonXrpToSame,    // Destination currency is the same as source.
+        NonXrpToNonXrp,  // Destination currency is NOT the same as source.
     };
 
     struct PathRank

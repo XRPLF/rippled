@@ -252,7 +252,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
     {
-        auto cur = context.ledgerMaster.getCurrentLedger();
+        auto const cur = context.ledgerMaster.getCurrentLedger();
         if (cur->header().seq == ledgerIndex)
         {
             ledger = cur;
@@ -422,7 +422,7 @@ json::Value
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context)
 {
     json::Value result;
-    if (auto status = lookupLedger(ledger, context, result))
+    if (auto const status = lookupLedger(ledger, context, result))
         injectSpecError(result, status);
 
     return result;
@@ -493,7 +493,7 @@ getOrAcquireLedger(rpc::JsonContext const& context)
                 // We don't have the ledger we need to figure out which
                 // ledger they want. Try to get it.
 
-                if (auto il = context.app.getInboundLedgers().acquire(
+                if (auto const il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
                     json::Value jvResult = rpc::makeError(
@@ -502,7 +502,7 @@ getOrAcquireLedger(rpc::JsonContext const& context)
                     return std::unexpected(jvResult);
                 }
 
-                if (auto il = context.app.getInboundLedgers().find(*refHash))
+                if (auto const il = context.app.getInboundLedgers().find(*refHash))
                 // NOLINTEND(bugprone-unchecked-optional-access)
                 {
                     json::Value jvResult = rpc::makeError(
@@ -533,7 +533,7 @@ getOrAcquireLedger(rpc::JsonContext const& context)
     if (ledger)
         return ledger;
 
-    if (auto il = context.app.getInboundLedgers().find(ledgerHash))
+    if (auto const il = context.app.getInboundLedgers().find(ledgerHash))
         return std::unexpected(il->getJson(0));
 
     return std::unexpected(

@@ -31,7 +31,8 @@ std::expected<TransactionEntryHandler::Output, ::rpc::Status>
 TransactionEntryHandler::process(Input const& input) const
 {
     Output output;
-    if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get());
+        status != ::rpc::Status::kOK)
         return std::unexpected{status};
 
     if (!input.txHash &&

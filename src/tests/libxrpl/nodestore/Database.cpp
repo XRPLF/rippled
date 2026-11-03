@@ -175,7 +175,7 @@ TEST(NodeStoreDatabase, memory_earliest_seq)
         nodeParams.set("earliest_seq", "0");
         try
         {
-            auto db =
+            auto const db =
                 Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
             FAIL() << "expected runtime_error for earliest_seq=0";
         }

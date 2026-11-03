@@ -359,7 +359,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         return std::unexpected(TokenCodecErrc::InputTooLarge);
     };
 
-    auto countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
+    auto const countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -459,7 +459,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
                 return std::unexpected(TokenCodecErrc::OutputTooSmall);
             }
         }
-        for (auto b58Coeff : b58BeS.subspan(toSkip))
+        for (auto const b58Coeff : b58BeS.subspan(toSkip))
         {
             out[outIndex] = ::xrpl::kAlphabetForward[b58Coeff];
             outIndex += 1;
@@ -486,7 +486,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         return std::unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
-    auto countLeadingZeros = [&](auto const& col) -> std::size_t {
+    auto const countLeadingZeros = [&](auto const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -513,7 +513,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char const c : input.substr(0, partialCoeffLen))
     {
-        auto curVal = ::xrpl::kAlphabetReverse[c];
+        auto const curVal = ::xrpl::kAlphabetReverse[c];
         if (curVal < 0)
         {
             return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
@@ -526,7 +526,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         for (int j = 0; j < numFullCoeffs; ++j)
         {
             unsigned char const c = input[partialCoeffLen + (j * 10) + i];
-            auto curVal = ::xrpl::kAlphabetReverse[c];
+            auto const curVal = ::xrpl::kAlphabetReverse[c];
             if (curVal < 0)
             {
                 return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
@@ -547,7 +547,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b5810Coeff[i];
 
         {
-            auto code = xrpl::b58_fast::detail::inplaceBigintMul(
+            auto const code = xrpl::b58_fast::detail::inplaceBigintMul(
                 std::span(&result[0], curResultSize + 1), kB5810);
             if (code != TokenCodecErrc::Success)
             {
@@ -555,7 +555,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
             }
         }
         {
-            auto code = xrpl::b58_fast::detail::inplaceBigintAdd(
+            auto const code = xrpl::b58_fast::detail::inplaceBigintAdd(
                 std::span(&result[0], curResultSize + 1), c);
             if (code != TokenCodecErrc::Success)
             {

@@ -12,6 +12,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -131,8 +132,8 @@ kSizedItems
     {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
     {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
     {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
-    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
-}};
+    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}},
+},};
 // clang-format on
 
 // Ensure that the order of entries in the table corresponds to the
@@ -210,7 +211,7 @@ parseIniFile(std::string const& strInput, bool const bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
-    if (auto it = secSource.find(strSection); it != secSource.end())
+    if (auto const it = secSource.find(strSection); it != secSource.end())
         return &it->second;
 
     return nullptr;
@@ -478,7 +479,7 @@ Config::loadFromString(std::string const& fileContents)
 
     // if the user has specified ip:port then replace : with a space.
     {
-        auto replaceColons = [](std::vector<std::string>& strVec) {
+        auto const replaceColons = [](std::vector<std::string>& strVec) {
             static std::regex const kE(":([0-9]+)$");
             for (auto& line : strVec)
             {
@@ -785,7 +786,7 @@ Config::loadFromString(std::string const& fileContents)
 
     if (exists(Sections::kReduceRelay))
     {
-        auto sec = section(Sections::kReduceRelay);
+        auto const sec = section(Sections::kReduceRelay);
 
         /**
          * //////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
@@ -918,7 +919,7 @@ Config::loadFromString(std::string const& fileContents)
         // Both manifest counts parse and validate identically, so read them
         // the same way. Returns nullopt when the key is absent, leaving the
         // built-in default in effect at the use site.
-        auto manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
+        auto const manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
             std::optional<std::size_t> count;
 
             try
@@ -1114,7 +1115,7 @@ Config::loadFromString(std::string const& fileContents)
             }
             if (listThreshold.values().size() == 1)
             {
-                auto strTemp = listThreshold.values()[0];
+                auto const strTemp = listThreshold.values()[0];
                 auto const listThreshold = beast::lexicalCastThrow<std::size_t>(strTemp);
                 if (listThreshold == 0)
                 {
@@ -1193,7 +1194,7 @@ Config::getDebugLogFile() const
 
     if (!logFile.empty())
     {
-        auto logDir = logFile.parent_path();
+        auto const logDir = logFile.parent_path();
 
         if (!std::filesystem::is_directory(logDir))
         {
@@ -1238,6 +1239,18 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
+    }
+    {
+        // Signed, so a negative value is refused rather than wrapping.
+        std::int64_t temp = 0;
+        if (set(temp, Keys::kGasLimit, section) && temp >= 0 && temp <= kMaxGasLimit)
+            setup.gasLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp >= 0 &&
+            temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice &&
+            temp <= std::numeric_limits<std::uint32_t>::max())
+            setup.gasPrice = static_cast<std::uint32_t>(temp);
     }
     return setup;
 }
@@ -1366,7 +1379,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
     }
     setup.useGlobalPragma = true;
 
-    auto setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
+    auto const setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
         pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
     };
 

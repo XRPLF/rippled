@@ -30,13 +30,17 @@ public:
     static constexpr size_t kInitialBufferSize = kilobytes(256);
 
     RawStateTable()
-        : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kInitialBufferSize)}
+        : monotonicResource_{
+              std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+                  kInitialBufferSize),
+          }
         , items_{monotonicResource_.get()} {};
 
     RawStateTable(RawStateTable const& rhs)
-        : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kInitialBufferSize)}
+        : monotonicResource_{
+              std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+                  kInitialBufferSize),
+          }
         , items_{rhs.items_, monotonicResource_.get()}
         , dropsDestroyed_{rhs.dropsDestroyed_} {};
 

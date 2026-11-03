@@ -329,11 +329,11 @@ SignerListSet::replaceSignerList()
         return ret;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    auto signerList = std::make_shared<SLE>(signerListKeylet);
+    auto const signerList = std::make_shared<SLE>(signerListKeylet);
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));

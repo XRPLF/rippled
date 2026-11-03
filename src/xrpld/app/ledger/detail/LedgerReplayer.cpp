@@ -82,7 +82,7 @@ LedgerReplayer::replay(
         JLOG(j_.info()) << "Replay " << totalNumLedgers << " ledgers. Finish ledger hash "
                         << parameter.finishHash;
 
-        auto i = skipLists_.find(parameter.finishHash);
+        auto const i = skipLists_.find(parameter.finishHash);
         if (i != skipLists_.end())
             skipList = i->second.lock();
 
@@ -142,7 +142,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
                 std::scoped_lock const lock(mtx_);
                 if (app_.isStopping())
                     return;
-                auto i = deltas_.find(*skipListItem);
+                auto const i = deltas_.find(*skipListItem);
                 if (i != deltas_.end())
                     delta = i->second.lock();
 
@@ -170,7 +170,7 @@ LedgerReplayer::gotSkipList(
     std::shared_ptr<SkipListAcquire> skipList = {};
     {
         std::scoped_lock const lock(mtx_);
-        auto i = skipLists_.find(info.hash);
+        auto const i = skipLists_.find(info.hash);
         if (i == skipLists_.end())
             return;
         skipList = i->second.lock();
@@ -193,7 +193,7 @@ LedgerReplayer::gotReplayDelta(
     std::shared_ptr<LedgerDeltaAcquire> delta = {};
     {
         std::scoped_lock const lock(mtx_);
-        auto i = deltas_.find(info.hash);
+        auto const i = deltas_.find(info.hash);
         if (i == deltas_.end())
             return;
         delta = i->second.lock();
@@ -232,10 +232,10 @@ LedgerReplayer::sweep()
                 .begin(),
             tasks_.end());
 
-        auto removeCannotLocked = [](auto& subTasks) {
+        auto const removeCannotLocked = [](auto& subTasks) {
             for (auto it = subTasks.begin(); it != subTasks.end();)
             {
-                if (auto item = it->second.lock(); !item)
+                if (auto const item = it->second.lock(); !item)
                 {
                     it = subTasks.erase(it);
                 }
@@ -263,8 +263,8 @@ LedgerReplayer::stop()
         std::scoped_lock const lock(mtx_);
         std::ranges::for_each(tasks_, [](auto& i) { i->cancel(); });
         tasks_.clear();
-        auto lockAndCancel = [](auto& i) {
-            if (auto sptr = i.second.lock(); sptr)
+        auto const lockAndCancel = [](auto& i) {
+            if (auto const sptr = i.second.lock(); sptr)
             {
                 sptr->cancel();
             }

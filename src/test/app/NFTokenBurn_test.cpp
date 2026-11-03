@@ -235,7 +235,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             while (becky.nfts.size() < 70)
             {
                 // We do the same work on alice and minter, so make a lambda.
-                auto xferNFT = [&env, &becky](AcctStat& acct, auto& iter) {
+                auto const xferNFT = [&env, &becky](AcctStat& acct, auto& iter) {
                     UInt256 const offerIndex =
                         keylet::nftokenOffer(acct.acct, SeqProxy::rawSequence(env.seq(acct.acct)))
                             .key;
@@ -261,7 +261,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // Next we'll create offers for all of those NFTs.  This calls for
         // another lambda.
-        auto addOffers = [&env](AcctStat& owner, AcctStat& other1, AcctStat& other2) {
+        auto const addOffers = [&env](AcctStat& owner, AcctStat& other1, AcctStat& other2) {
             for (UInt256 const nft : owner.nfts)
             {
                 // Create sell offers for owner.
@@ -307,7 +307,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
             // Pick one of the nfts.
             std::uniform_int_distribution<std::size_t> nftDist(0lu, owner.nfts.size() - 1);
-            auto nftIter = owner.nfts.begin() + nftDist(engine);
+            auto const nftIter = owner.nfts.begin() + nftDist(engine);
             UInt256 const nft = *nftIter;
             owner.nfts.erase(nftIter);
 
@@ -365,7 +365,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
-        auto genPackedTokens = [this, &env, &alice] {
+        auto const genPackedTokens = [this, &env, &alice] {
             std::vector<UInt256> nfts;
             nfts.reserve(96);
 
@@ -377,7 +377,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // creation of NFT pages that are completely full.  This lambda
             // tells us the taxon value we should pass in in order for the
             // internal representation to match the passed in value.
-            auto internalTaxon = [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
+            auto const internalTaxon =
+                [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
                 std::uint32_t tokenSeq = env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
                 // We must add FirstNFTokenSequence.
@@ -448,7 +449,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         }
 
         // A lambda verifies that the ledger no longer contains any NFT pages.
-        auto checkNoTokenPages = [this, &env] {
+        auto const checkNoTokenPages = [this, &env] {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "current";
             jvParams[jss::binary] = false;
@@ -779,7 +780,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
                 // Verify that the last page is present and contains one NFT.
-                auto lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));
+                auto const lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));
                 if (!BEAST_EXPECT(lastNFTokenPage))
                     return;
                 BEAST_EXPECT(lastNFTokenPage->getFieldArray(sfNFTokens).size() == 1);
@@ -811,8 +812,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
                 // Verify that the middle  page is present.
-                auto lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));
-                auto middleNFTokenPage = ac.view().peek(
+                auto const lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));
+                auto const middleNFTokenPage = ac.view().peek(
                     keylet::nftokenPage(
                         keylet::nftokenPageMin(alice),
                         lastNFTokenPage->getFieldH256(sfPreviousPageMin)));
@@ -1011,7 +1012,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
 
         // A lambda that generates 96 nfts packed into three pages of 32 each.
         // Returns a sorted vector of the NFTokenIDs packed into the pages.
-        auto genPackedTokens = [this, &env, &alice, &minter] {
+        auto const genPackedTokens = [this, &env, &alice, &minter] {
             std::vector<UInt256> nfts;
             nfts.reserve(96);
 
@@ -1023,7 +1024,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // creation of NFT pages that are completely full.  This lambda
             // tells us the taxon value we should pass in in order for the
             // internal representation to match the passed in value.
-            auto internalTaxon = [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
+            auto const internalTaxon =
+                [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
                 std::uint32_t tokenSeq = env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
                 // We must add FirstNFTokenSequence.
@@ -1105,7 +1107,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             return;
 
         UInt256 const firstNFTokenPageIndex = middleNFTokenPage->at(sfPreviousPageMin);
-        auto firstNFTokenPage =
+        auto const firstNFTokenPage =
             env.le(keylet::nftokenPage(keylet::nftokenPageMin(alice), firstNFTokenPageIndex));
         if (!BEAST_EXPECT(firstNFTokenPage))
             return;

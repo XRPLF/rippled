@@ -412,7 +412,7 @@ public:
     {
         std::scoped_lock const sl(recentLock_);
 
-        auto iter = publisherListSequences_.find(pubKey);
+        auto const iter = publisherListSequences_.find(pubKey);
         if (iter != publisherListSequences_.end())
             return iter->second;
         return {};

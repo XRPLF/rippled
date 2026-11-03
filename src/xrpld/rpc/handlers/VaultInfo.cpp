@@ -75,7 +75,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
 }
 
 json::Value
-doVaultInfo(rpc::JsonContext& context)
+doVaultInfo(rpc::JsonContext const& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = rpc::lookupLedger(lpLedger, context);

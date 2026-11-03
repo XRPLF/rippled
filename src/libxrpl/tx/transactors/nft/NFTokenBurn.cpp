@@ -68,7 +68,7 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (auto issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
+    if (auto const issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
         (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].valueOr(0) + 1;
         view().update(issuer);

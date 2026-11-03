@@ -227,7 +227,7 @@ public:
         submit(T&& builder, Account const& signer)
     {
         auto const& obj = builder.getSTObject();
-        auto accountId = obj[sfAccount];
+        auto const accountId = obj[sfAccount];
         // Only set sequence if not using a ticket (ticket sets sequence to 0)
         if (!obj.isFieldPresent(sfTicketSequence))
         {

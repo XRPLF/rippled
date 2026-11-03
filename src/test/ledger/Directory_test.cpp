@@ -73,7 +73,7 @@ struct Directory_test : public beast::unit_test::Suite
     {
         for (std::uint64_t i = 0; i < n; ++i)
         {
-            auto p = std::make_shared<SLE>(keylet::page(base, i));
+            auto const p = std::make_shared<SLE>(keylet::page(base, i));
 
             p->setFieldV256(sfIndexes, STVector256{});
 
@@ -104,10 +104,10 @@ struct Directory_test : public beast::unit_test::Suite
     {
         using namespace jtx;
 
-        auto gw = Account("gw");
-        auto usd = gw["USD"];
-        auto alice = Account("alice");
-        auto bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
 
         testcase("Directory Ordering (with 'SortedDirectories' amendment)");
 
@@ -129,7 +129,7 @@ struct Directory_test : public beast::unit_test::Suite
 
             do
             {
-                auto p = view->read(keylet::page(keylet::ownerDir(alice), page));
+                auto const p = view->read(keylet::page(keylet::ownerDir(alice), page));
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
@@ -142,7 +142,7 @@ struct Directory_test : public beast::unit_test::Suite
 
                 for (auto const& e : v)
                 {
-                    auto c = view->read(keylet::child(e));
+                    auto const c = view->read(keylet::child(e));
                     BEAST_EXPECT(c);
                     BEAST_EXPECT(c->getFieldU32(sfSequence) >= minSeq);
                     BEAST_EXPECT(c->getFieldU32(sfSequence) < maxSeq);
@@ -154,7 +154,7 @@ struct Directory_test : public beast::unit_test::Suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(*env.current(), Book({xrpIssue(), usd, std::nullopt}));
+        auto const book = BookDirs(*env.current(), Book({xrpIssue(), usd, std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
@@ -301,7 +301,7 @@ struct Directory_test : public beast::unit_test::Suite
         env.close();
 
         // remove all the offers. Remove the middle page last
-        for (auto page : {0, 2, 1})
+        for (auto const page : {0, 2, 1})
         {
             for (int i = 0; i < kDirNodeMaxEntries; ++i)
             {
@@ -357,7 +357,7 @@ struct Directory_test : public beast::unit_test::Suite
 
             // Insert an item in the middle page:
             {
-                auto p = sb.peek(keylet::page(kBase, 1));
+                auto const p = sb.peek(keylet::page(kBase, 1));
                 BEAST_EXPECT(p);
 
                 STVector256 v;
@@ -381,7 +381,7 @@ struct Directory_test : public beast::unit_test::Suite
 
             // Now add items on pages 1 and 2:
             {
-                auto p1 = sb.peek(keylet::page(kBase, 1));
+                auto const p1 = sb.peek(keylet::page(kBase, 1));
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
@@ -389,7 +389,7 @@ struct Directory_test : public beast::unit_test::Suite
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
-                auto p2 = sb.peek(keylet::page(kBase, 2));
+                auto const p2 = sb.peek(keylet::page(kBase, 2));
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
@@ -405,12 +405,12 @@ struct Directory_test : public beast::unit_test::Suite
             BEAST_EXPECT(!sb.peek(keylet::page(kBase, 3)));
             BEAST_EXPECT(!sb.peek(keylet::page(kBase, 2)));
 
-            auto p1 = sb.peek(keylet::page(kBase, 1));
+            auto const p1 = sb.peek(keylet::page(kBase, 1));
             BEAST_EXPECT(p1);
             BEAST_EXPECT(p1->getFieldU64(sfIndexNext) == 0);
             BEAST_EXPECT(p1->getFieldU64(sfIndexPrevious) == 0);
 
-            auto p0 = sb.peek(keylet::page(kBase, 0));
+            auto const p0 = sb.peek(keylet::page(kBase, 0));
             BEAST_EXPECT(p0);
             BEAST_EXPECT(p0->getFieldU64(sfIndexNext) == 1);
             BEAST_EXPECT(p0->getFieldU64(sfIndexPrevious) == 1);
@@ -427,7 +427,7 @@ struct Directory_test : public beast::unit_test::Suite
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        auto ledgerData = [this](Env& env) {
+        auto const ledgerData = [this](Env& env) {
             json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
@@ -531,7 +531,7 @@ struct Directory_test : public beast::unit_test::Suite
                 lastPage,
                 keylet::ownerDir(alice.id()),
                 [lastPage, this](ApplyView& view, UInt256 key, std::uint64_t page) {
-                    auto sle = view.peek({ltCREDENTIAL, key});
+                    auto const sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;
 

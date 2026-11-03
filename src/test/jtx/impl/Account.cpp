@@ -43,7 +43,7 @@ Account::Account(
 Account
 Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 {
-    auto p = std::make_pair(name, type);  // non-const so it can be moved from
+    auto p = std::make_pair(name, type);  // NOLINT(misc-const-correctness) moved from below
     auto const iter = cache.find(p);
     if (iter != cache.end())
         return iter->second;
@@ -60,7 +60,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
         }
         return generateKeyPair(type, generateSeed(name));
     }();
-    auto r = cache.emplace(
+    auto const r = cache.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
         std::forward_as_tuple(std::move(name), keys, PrivateCtorTag{}));

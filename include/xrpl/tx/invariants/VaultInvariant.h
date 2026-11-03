@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -29,7 +30,7 @@ namespace xrpl {
  * - vault must have MPTokenIssuance for shares
  * - vault without shares outstanding must have no shares
  * - loss unrealized does not exceed the difference between assets total and
- *   assets available
+ *   assets available (Legacy/CashBasis), or AssetsDeployed (FixedPrecision)
  * - assets available do not exceed assets total
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
@@ -46,6 +47,14 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
+ * - FixedPrecision only: AssetsDeployed is non-negative and exactly
+ *   representable at the asset's precision; AssetsDeployed changes only for
+ *   ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE; AssetsDeployed is zero right
+ *   after ttVAULT_CREATE and whenever shares outstanding return to zero; the
+ *   stored AssetsTotal cache equals AssetsAvailable + AssetsDeployed, rounded
+ *   Downward to the asset's precision
+ * - FixedPrecision only: YieldUnrealized is non-negative; YieldUnrealized
+ *   changes only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -68,6 +77,9 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number assetsDeployed = 0;
+        Number yieldUnrealized = 0;
+        VaultVersion version = VaultVersion::Legacy;
         std::optional<std::uint8_t> vaultKind;
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;
@@ -216,6 +228,39 @@ private:
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Check that a vault's AssetsTotal and AssetsAvailable deltas add
+     *        up against the real transfer, for deposit/withdraw/clawback.
+     *
+     * Shared body of the ttVAULT_DEPOSIT, ttVAULT_WITHDRAW and
+     * ttVAULT_CLAWBACK "assets outstanding"/"assets available" add-up checks,
+     * which differ only in the rounded/exact deltas plugged in and the verb
+     * used in the log message.
+     *
+     * @param afterVault Snapshot of the vault after the transaction.
+     * @param beforeVault Snapshot of the vault before the transaction.
+     * @param vaultAsset The vault's underlying asset.
+     * @param fix340Enabled Whether fixCleanup3_4_0 is enabled.
+     * @param minScale The posterior scale computed by computeVaultMinScale.
+     * @param roundedVaultDelta The real transfer's delta, rounded to minScale.
+     * @param exactVaultDelta The real transfer's exact (unrounded) delta.
+     * @param verb The transaction name used in the log message ("deposit",
+     *             "withdrawal" or "clawback").
+     * @param j Journal for logging.
+     * @return false if either add-up check fails.
+     */
+    [[nodiscard]] static bool
+    checkTotalsAddUp(
+        Vault const& afterVault,
+        Vault const& beforeVault,
+        Asset const& vaultAsset,
+        bool fix340Enabled,
+        std::int32_t minScale,
+        Number const& roundedVaultDelta,
+        Number const& exactVaultDelta,
+        char const* verb,
+        beast::Journal const& j);
 
 public:
     // Compute the coarsest scale required to represent all numbers

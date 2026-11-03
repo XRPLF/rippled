@@ -48,6 +48,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -190,6 +191,8 @@ class Simulate_test : public beast::unit_test::Suite
             // No params
             json::Value const params = json::ValueType::Object;
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Neither `tx_blob` nor `tx_json` included.");
@@ -201,6 +204,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_blob] = "1200";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Can only include one of `tx_blob` and `tx_json`.");
@@ -211,6 +216,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_blob] = "1200";
             params[jss::binary] = "100";
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'binary'.");
         }
         {
@@ -219,6 +226,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_blob] = "12";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx_blob'.");
         }
         {
@@ -227,6 +236,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = json::ValueType::Object;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Missing field 'tx.TransactionType'.");
         }
@@ -238,6 +249,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'tx.Account'.");
         }
         {
@@ -246,6 +259,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_blob] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx_blob'.");
         }
         {
@@ -254,6 +269,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_blob] = 1.1;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx_blob'.");
         }
         {
@@ -262,6 +279,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = "";
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'tx_json', not object.");
         }
@@ -274,6 +293,8 @@ class Simulate_test : public beast::unit_test::Suite
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'seed'.");
         }
         {
@@ -285,6 +306,8 @@ class Simulate_test : public beast::unit_test::Suite
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'secret'.");
         }
         {
@@ -296,6 +319,8 @@ class Simulate_test : public beast::unit_test::Suite
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'seed_hex'.");
         }
         {
@@ -307,6 +332,8 @@ class Simulate_test : public beast::unit_test::Suite
             txJson[jss::Account] = env.master.human();
             params[jss::tx_json] = txJson;
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'passphrase'.");
         }
         {
@@ -318,6 +345,9 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(resp[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 resp[jss::result][jss::error_exception] ==
                 "Field 'Destination' is required but missing.");
@@ -334,6 +364,7 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECTS(
                 resp[jss::result][jss::error] == "srcActMalformed",
                 resp[jss::result][jss::error].toStyledString());
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcSrcActMalformed);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Account'.");
         }
         {
@@ -345,6 +376,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "srcActNotFound");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcSrcActNotFound);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Source account not found.");
         }
         {
@@ -357,6 +390,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Signers'.");
         }
         {
@@ -370,6 +405,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Signers[0]'.");
         }
         {
@@ -382,6 +419,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'SponsorSignature', not object.");
@@ -398,6 +437,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECTS(
                 resp[jss::result][jss::error_message] ==
                     "Invalid field 'tx.SponsorSignature.Signers'.",
@@ -413,6 +454,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Field 'tx_json.foo' is unknown.");
         }
@@ -422,6 +465,8 @@ class Simulate_test : public beast::unit_test::Suite
             txJson[jss::TransactionType] = jss::AccountSet;
             txJson[jss::Account] = alice.human();
             auto const resp = env.rpc("simulate", to_string(txJson), "1");
+            BEAST_EXPECT(resp[jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::error_message] == "Invalid parameters.");
         }
         {
@@ -434,6 +479,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "transactionSigned");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcTxSigned);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Transaction should not be signed.");
         }
@@ -456,6 +503,8 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "transactionSigned");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcTxSigned);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Transaction should not be signed.");
         }
@@ -469,9 +518,96 @@ class Simulate_test : public beast::unit_test::Suite
             params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+        }
+    }
+
+    void
+    testWasmAdminOnly()
+    {
+        testcase("WASM transactions require admin");
+
+        using namespace jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        auto const escrowCreate = [&alice, &bob] {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowCreate;
+            tx[jss::Account] = alice.human();
+            tx[jss::Destination] = bob.human();
+            tx[jss::Amount] = "1000000";
+            tx[sfCancelAfter.jsonName] = 1'000'000'000;
+            return tx;
+        };
+
+        auto const escrowFinish = [&alice, &bob] {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowFinish;
+            tx[jss::Account] = bob.human();
+            tx[jss::Owner] = alice.human();
+            tx[sfOfferSequence.jsonName] = 1;
+            return tx;
+        };
+
+        std::vector<json::Value> wasmTxs;
+        {
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "0061736D01000000";
+            wasmTxs.push_back(tx);
+        }
+        {
+            // Checked on shape, even if the bytecode is not valid WASM.
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "DEADBEEF";
+            wasmTxs.push_back(tx);
+        }
+        {
+            auto tx = escrowFinish();
+            tx[sfGas.jsonName] = 10'000;
+            wasmTxs.push_back(tx);
+        }
+
+        auto const simulate = [](Env& env, json::Value const& tx) {
+            json::Value params;
+            params[jss::tx_json] = tx;
+            return env.rpc("json", "simulate", to_string(params))[jss::result];
+        };
+
+        {
+            // `env.close()` is admin-only, so the accounts stay in the open ledger.
+            Env env(*this, envconfig(noAdmin));
+            env.fund(XRP(10000), alice, bob);
+
+            for (auto const& tx : wasmTxs)
+            {
+                auto const resp = simulate(env, tx);
+                BEAST_EXPECT(resp[jss::error] == "noPermission");
+                BEAST_EXPECT(resp[jss::error_code] == RpcNoPermission);
+                BEAST_EXPECT(
+                    resp[jss::error_message] ==
+                    "WASM transactions are only supported in admin mode.");
+            }
+
+            // Without these fields, simulate runs as usual.
+            BEAST_EXPECT(!simulate(env, escrowCreate()).isMember(jss::error));
+            BEAST_EXPECT(!simulate(env, escrowFinish()).isMember(jss::error));
+        }
+
+        {
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            for (auto const& tx : wasmTxs)
+            {
+                BEAST_EXPECT(!simulate(env, tx).isMember(jss::error));
+            }
         }
     }
 
@@ -482,7 +618,10 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
+        // Pin the reference fee so the asserted error message doesn't depend on
+        // UNIT_TEST_REFERENCE_FEE.
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->fees.referenceFee = 10;
             cfg->section(Sections::kTransactionQueue).set(Keys::kMinimumTxnInLedgerStandalone, "3");
             return cfg;
         }));
@@ -492,7 +631,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         // fill queue
-        auto metrics = env.app().getTxQ().getMetrics(*env.current());
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
         for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
             env(noop(alice));
 
@@ -502,11 +641,10 @@ class Simulate_test : public beast::unit_test::Suite
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             auto const result = resp[jss::result];
-            if (BEAST_EXPECT(result.isMember(jss::error)))
-            {
-                BEAST_EXPECT(result[jss::error] == "highFee");
-                BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
-            }
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 8889 exceeds the requested tx limit of 100");
         }
     }
 
@@ -536,6 +674,7 @@ class Simulate_test : public beast::unit_test::Suite
         params[jss::tx_json] = jt.jv;
         auto const resp = env.rpc("json", "simulate", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::error] == "notImpl");
+        BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcNotImpl);
         BEAST_EXPECT(resp[jss::result][jss::error_message] == "Not implemented.");
     }
 
@@ -552,7 +691,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNewDomain = "123ABC";
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -604,7 +743,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // autofill sponsor signature
 
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, env.seq(env.master), env.current()->fees().base);
@@ -628,7 +767,7 @@ class Simulate_test : public beast::unit_test::Suite
                         {
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
-                            auto previousFields = modifiedNode[sfPreviousFields];
+                            auto const previousFields = modifiedNode[sfPreviousFields];
                             BEAST_EXPECT(!previousFields.isMember(sfBalance.jsonName));
                         }
 
@@ -638,7 +777,7 @@ class Simulate_test : public beast::unit_test::Suite
                             auto modifiedNode = node2[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
 
-                            auto previousFields = modifiedNode[sfPreviousFields];
+                            auto const previousFields = modifiedNode[sfPreviousFields];
                             BEAST_EXPECT(previousFields.isMember(sfBalance.jsonName));
                         }
                     }
@@ -801,7 +940,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result,
@@ -886,7 +1025,7 @@ class Simulate_test : public beast::unit_test::Suite
         env(signers(sponsor, 1, {{signer, 1}}));
         env.close();
 
-        auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+        auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
             auto const result = resp[jss::result];
             // Verifies Fee autofill counts nested sponsor-signature signers.
             auto const expectedFee = env.current()->fees().base * 2;
@@ -1054,7 +1193,7 @@ class Simulate_test : public beast::unit_test::Suite
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, env.seq(alice), env.current()->fees().base * 2);
@@ -1125,7 +1264,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, env.seq(subject), env.current()->fees().base);
 
@@ -1213,7 +1352,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNewDomain = "123ABC";
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -1286,10 +1425,10 @@ class Simulate_test : public beast::unit_test::Suite
         env.close(NetClock::time_point{446000000s});
 
         {
-            auto validateOutput = [&](json::Value const& resp,
-                                      json::Value const& tx,
-                                      json::Value const& expectedMetadataKey,
-                                      json::Value const& expectedMetadataValue) {
+            auto const validateOutput = [&](json::Value const& resp,
+                                            json::Value const& tx,
+                                            json::Value const& expectedMetadataKey,
+                                            json::Value const& expectedMetadataValue) {
                 auto result = resp[jss::result];
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
@@ -1415,6 +1554,7 @@ public:
     {
         testParamErrors();
         testFeeError();
+        testWasmAdminOnly();
         testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();

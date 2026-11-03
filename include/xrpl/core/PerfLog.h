@@ -177,12 +177,13 @@ measureDurationAndLog(
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {
-    auto startTime = std::chrono::high_resolution_clock::now();
+    auto const startTime = std::chrono::high_resolution_clock::now();
 
     auto result = func();
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     if (duration > maxDelay)
     {
         JLOG(journal.warn()) << actionDescription << " took " << duration.count() << " ms";

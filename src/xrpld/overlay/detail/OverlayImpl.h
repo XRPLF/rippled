@@ -294,8 +294,9 @@ public:
                 wp.push_back(x.second);
         }
 
-        for (auto& w : wp)
+        for (auto const& w : wp)
         {
+            // NOLINTNEXTLINE(misc-const-correctness) moved into f
             if (auto p = w.lock())
                 f(std::move(p));
         }
@@ -618,7 +619,7 @@ private:
     void
     collectMetrics()
     {
-        auto counts = traffic_.getCounts();
+        auto const counts = traffic_.getCounts();
         std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(
             counts.size() == stats_.trafficGauges.size(),
@@ -626,11 +627,11 @@ private:
 
         for (auto const& [key, value] : counts)
         {
-            auto it = stats_.trafficGauges.find(key);
+            auto const it = stats_.trafficGauges.find(key);
             if (it == stats_.trafficGauges.end())
                 continue;
 
-            auto& gauge = it->second;
+            auto const& gauge = it->second;
 
             XRPL_ASSERT(
                 gauge.name == value.name,

@@ -57,7 +57,7 @@ outputJson(Value const& value, Writer& writer)
 
         case ValueType::Object: {
             writer.startRoot(Writer::CollectionType::Object);
-            auto members = value.getMemberNames();
+            auto const members = value.getMemberNames();
             for (auto const& tag : members)
             {
                 writer.rawSet(tag);

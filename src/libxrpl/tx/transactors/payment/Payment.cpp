@@ -49,7 +49,7 @@ namespace xrpl {
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
+    auto const calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         STAmount const maxAmount = tx.isFieldPresent(sfSendMax) ? tx[sfSendMax] : tx[sfAmount];
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
@@ -195,7 +195,7 @@ Payment::preflight(PreflightContext const& ctx)
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    auto bad = [&](auto const& asset) {
+    auto const bad = [&](auto const& asset) {
         if (ctx.rules.enabled(featureMPTokensV2))
             return badAsset() == asset;
         return badCurrency() == asset;

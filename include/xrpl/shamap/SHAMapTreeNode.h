@@ -31,7 +31,7 @@ enum class SHAMapNodeType {
     TnInner = 1,
     TnTransactionNm = 2,  // transaction, no metadata
     TnTransactionMd = 3,  // transaction, with metadata
-    TnAccountState = 4
+    TnAccountState = 4,
 };
 
 class SHAMapTreeNode : public IntrusiveRefCounts

@@ -9,12 +9,14 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
@@ -222,10 +224,17 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
 
     // Check that relevant values can be represented as the vault asset
-    // type. This is mostly only relevant for integral (non-IOU) types
+    // type. This is mostly only relevant for integral (non-IOU) types.
+    // fixCleanup3_5_0 also rejects out-of-range values, e.g. XRP above
+    // STAmount::kMaxNativeN, which would otherwise throw.
+    bool const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value &&
+            ((fix350Enabled && !isRepresentable(asset, *value)) ||
+             STAmount{asset, *value} != *value ||
+             (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
+              !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault)))))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";
@@ -245,7 +254,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanBroker(*brokerID));
+        auto const broker = view.peek(keylet::loanBroker(*brokerID));
         if (!broker)
         {
             // This should be impossible
@@ -299,7 +308,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqProxy();
 
-        auto owner = view.peek(keylet::account(accountID_));
+        auto const owner = view.peek(keylet::account(accountID_));
         if (!owner)
         {
             // This should be impossible
@@ -308,7 +317,7 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
+        auto const broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
 
         if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
@@ -324,8 +333,8 @@ LoanBrokerSet::doApply()
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
             return maybePseudo.error();  // LCOV_EXCL_LINE
-        auto& pseudo = *maybePseudo;
-        auto pseudoId = pseudo->at(sfAccount);
+        auto const& pseudo = *maybePseudo;
+        AccountID const pseudoId = pseudo->at(sfAccount);
 
         if (auto ter = addEmptyHolding(
                 ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
