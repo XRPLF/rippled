@@ -103,17 +103,25 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
     if (before)
     {
         if (before->getType() == ltVAULT)
+        {
             beforeVault_.push_back(Vault::make(*before));
+        }
         else if (before->getType() == ltMPTOKEN_ISSUANCE)
+        {
             beforeMPTs_.push_back(Shares::make(*before));
+        }
     }
 
     if (!isDelete && after)
     {
         if (after->getType() == ltVAULT)
+        {
             afterVault_.push_back(Vault::make(*after));
+        }
         else if (after->getType() == ltMPTOKEN_ISSUANCE)
+        {
             afterMPTs_.push_back(Shares::make(*after));
+        }
     }
 
     switch ((before ? before : after)->getType())
