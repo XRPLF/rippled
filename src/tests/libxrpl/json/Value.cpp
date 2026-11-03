@@ -1194,7 +1194,8 @@ TEST(JsonValue, as_bool)
         json::Value arr(json::ValueType::Array);
         arr.append(1);
         EXPECT_TRUE(arr.asBool());
-
+    }
+    {
         json::Value obj(json::ValueType::Object);
         obj["key"] = 1;
         EXPECT_TRUE(obj.asBool());
