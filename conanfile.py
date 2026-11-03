@@ -216,7 +216,6 @@ class Xrpl(ConanFile):
             "ed25519::ed25519",
             "fast_float::fast_float",
             "grpc::grpc++",
-            "libarchive::libarchive",
             "lz4::lz4",
             "mpt-crypto::mpt-crypto",
             "nudb::nudb",
