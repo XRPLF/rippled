@@ -20,7 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
-#include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
@@ -576,7 +575,6 @@ public:
  * @param sendMaxST If present, the maximum STAmount to send
  * @param j Journal to write journal messages to
  * @param ammContext counts iterations with AMM offers
- * @param flowDebugInfo If pointer is non-null, write flow debug info here
  * @return Actual amount in and out from the strands, errors, and payment
  * sandbox
  */
@@ -591,8 +589,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
-    AMMContext& ammContext,
-    path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
+    AMMContext& ammContext)
 {
     // Used to track the strand that offers the best quality (output/input
     // ratio)
@@ -691,8 +688,6 @@ flow(
 
         boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
-        if (flowDebugInfo)
-            flowDebugInfo->newLiquidityPass();
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -720,9 +715,6 @@ flow(
 
             if (!f.success || f.out == beast::kZero)
                 continue;
-
-            if (flowDebugInfo)
-                flowDebugInfo->pushLiquiditySrc(EitherAmount(f.in), EitherAmount(f.out));
 
             XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox && (!remainingIn || f.in <= *remainingIn),
@@ -768,12 +760,6 @@ flow(
                 if (!sumIn)
                     return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
                 remainingIn = *sendMax - *sumIn;
-            }
-
-            if (flowDebugInfo)
-            {
-                flowDebugInfo->pushPass(
-                    EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
             }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
