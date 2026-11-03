@@ -93,7 +93,7 @@ public:
 /**
  * Get the next NFTokenID that will be issued.
  */
-uint256
+UInt256
 getNextID(
     jtx::Env const& env,
     jtx::Account const& account,
@@ -104,7 +104,7 @@ getNextID(
 /**
  * Get the NFTokenID for a particular nftSequence.
  */
-uint256
+UInt256
 getID(
     jtx::Env const& env,
     jtx::Account const& account,
@@ -117,13 +117,13 @@ getID(
  * Burn an NFToken.
  */
 json::Value
-burn(jtx::Account const& account, uint256 const& nftokenID);
+burn(jtx::Account const& account, UInt256 const& nftokenID);
 
 /**
  * Create an NFTokenOffer.
  */
 json::Value
-createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount);
+createOffer(jtx::Account const& account, UInt256 const& nftokenID, STAmount const& amount);
 
 /**
  * Sets the optional Owner on an NFTokenOffer.
@@ -180,10 +180,10 @@ public:
  * Cancel NFTokenOffers.
  */
 json::Value
-cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers = {});
+cancelOffer(jtx::Account const& account, std::initializer_list<UInt256> const& nftokenOffers = {});
 
 json::Value
-cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers);
+cancelOffer(jtx::Account const& account, std::vector<UInt256> const& nftokenOffers);
 
 /**
  * Sets the optional RootIndex field when canceling NFTokenOffers.
@@ -194,7 +194,7 @@ private:
     std::string rootIndex_;
 
 public:
-    explicit RootIndex(uint256 const& index) : rootIndex_(to_string(index))
+    explicit RootIndex(UInt256 const& index) : rootIndex_(to_string(index))
     {
     }
 
@@ -206,13 +206,13 @@ public:
  * Accept an NFToken buy offer.
  */
 json::Value
-acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex);
+acceptBuyOffer(jtx::Account const& account, UInt256 const& offerIndex);
 
 /**
  * Accept an NFToken sell offer.
  */
 json::Value
-acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
+acceptSellOffer(jtx::Account const& account, UInt256 const& offerIndex);
 
 /**
  * Broker two NFToken offers.
@@ -220,8 +220,8 @@ acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 json::Value
 brokerOffers(
     jtx::Account const& account,
-    uint256 const& buyOfferIndex,
-    uint256 const& sellOfferIndex);
+    UInt256 const& buyOfferIndex,
+    UInt256 const& sellOfferIndex);
 
 /**
  * Sets the optional NFTokenBrokerFee field in a brokerOffer transaction.
@@ -256,6 +256,6 @@ clearMinter(jtx::Account const& account);
  * Modify an NFToken.
  */
 json::Value
-modify(jtx::Account const& account, uint256 const& nftokenID);
+modify(jtx::Account const& account, UInt256 const& nftokenID);
 
 }  // namespace xrpl::test::jtx::token

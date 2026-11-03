@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <limits>
 #include <optional>
@@ -105,8 +106,8 @@ Permission::Permission()
         if (type <= UINT16_MAX)
         {
             // LCOV_EXCL_START
-            Throw<std::logic_error>(
-                "Granular permission value must exceed the maximum uint16_t value: " + name);
+            Throw<std::logic_error>(std::format(
+                "Granular permission value must exceed the maximum uint16_t value: {}", name));
             // LCOV_EXCL_STOP
         }
     }
@@ -208,7 +209,7 @@ Permission::hasGranularPermissions(TxType txType) const
     return granularTxTypes_.contains(txType);
 }
 
-std::optional<std::reference_wrapper<uint256 const>>
+std::optional<std::reference_wrapper<UInt256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const it = txDelegationMap_.find(txType);
@@ -216,7 +217,7 @@ Permission::getTxFeature(TxType txType) const
         it != txDelegationMap_.end(),
         "xrpl::Permission::getTxFeature : tx exists in txDelegationMap_");
 
-    if (it->second.amendment == uint256{})
+    if (it->second.amendment == UInt256{})
         return std::nullopt;
 
     return std::optional{std::cref(it->second.amendment)};
@@ -229,7 +230,7 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
         return false;  // LCOV_EXCL_LINE
 
     auto const amendmentEnabled = [&rules](TxDelegationEntry const& entry) {
-        return entry.amendment == uint256{} || rules.enabled(entry.amendment);
+        return entry.amendment == UInt256{} || rules.enabled(entry.amendment);
     };
 
     // Granular permissions may authorize a limited subset of a tx type even

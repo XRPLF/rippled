@@ -26,7 +26,7 @@ public:
     preCompute() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -51,6 +51,13 @@ private:
 
     TER
     applyFee();
+
+    /**
+     * Write the default Feature Extension fee settings into FeeSettings on
+     * `featureSmartEscrow` activation.
+     */
+    void
+    initializeVMFees();
 
     TER
     applyUNLModify();

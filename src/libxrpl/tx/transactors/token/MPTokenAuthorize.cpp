@@ -150,7 +150,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // always authorized. No need to amendment gate since Vault and LoanBroker
     // can only be created if the Vault amendment is enabled; AMM with MPToken asset
     // can only be created if MPTokensV2 is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+    if (isPseudoAccount(ctx.view, *holderID))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -171,7 +171,7 @@ MPTokenAuthorize::doApply()
 }
 
 void
-MPTokenAuthorize::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenAuthorize::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

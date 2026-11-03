@@ -233,7 +233,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     PermissionedDomain
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return PermissionedDomain{std::make_shared<SLE>(std::move(object_), index)};
     }

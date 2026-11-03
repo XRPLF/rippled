@@ -147,8 +147,8 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
+    UInt256 const& uIndex,      // --> ripple state entry
+    SLE::Ref sleAccount,        // --> the account being set.
     bool const bAuth,           // --> authorize account.
     bool const bNoRipple,       // --> others cannot ripple through
     bool const bFreeze,         // --> funds cannot leave
@@ -159,13 +159,13 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    SLE::ref sleRippleState,
+    SLE::Ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
@@ -182,7 +182,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -239,8 +239,13 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //------------------------------------------------------------------------------
 
 /**
- * Any transactors that call addEmptyHolding() in doApply must call
- * canAddHolding() in preflight with the same View and Asset
+ * XRP and the issuer itself are always tesSUCCESS. Otherwise, after
+ * fixCleanup3_4_0, an existing trust line returns tecDUPLICATE without
+ * consulting issuer freeze or DefaultRipple; both still apply on the create
+ * path (DefaultRipple off is terNO_RIPPLE). canAddHolding() ignores existing
+ * holdings, so transactors that may create a holding in doApply should gate
+ * their preclaim call on it: after the amendment only when no holding
+ * exists, before it always.
  */
 [[nodiscard]] TER
 addEmptyHolding(

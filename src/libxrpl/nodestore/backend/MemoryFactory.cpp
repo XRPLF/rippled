@@ -32,7 +32,7 @@ struct MemoryDB
 
     std::mutex mutex;
     bool open = false;
-    std::map<uint256 const, std::shared_ptr<NodeObject>> table;
+    std::map<UInt256 const, std::shared_ptr<NodeObject>> table;
 };
 
 class MemoryFactory : public Factory
@@ -83,7 +83,7 @@ registerMemoryFactory(Manager& manager)
 class MemoryBackend : public Backend
 {
 private:
-    using Map = std::map<uint256 const, std::shared_ptr<NodeObject>>;
+    using Map = std::map<UInt256 const, std::shared_ptr<NodeObject>>;
 
     std::string name_;
     beast::Journal const journal_;
@@ -130,7 +130,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
+    fetch(UInt256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(db_, "xrpl::node_store::MemoryBackend::fetch : non-null database");
 

@@ -94,6 +94,7 @@ struct Keys
     static constexpr auto kBbtOptions = "bbt_options";
     static constexpr auto kBgThreads = "bg_threads";
     static constexpr auto kBlockSize = "block_size";
+    static constexpr auto kBytecodeSizeLimit = "bytecode_size_limit";
     static constexpr auto kCacheAge = "cache_age";
     static constexpr auto kCacheMb = "cache_mb";
     static constexpr auto kCacheSize = "cache_size";
@@ -108,6 +109,8 @@ struct Keys
     static constexpr auto kFileSizeMult = "file_size_mult";
     static constexpr auto kFilterBits = "filter_bits";
     static constexpr auto kFilterFull = "filter_full";
+    static constexpr auto kGasLimit = "gas_limit";
+    static constexpr auto kGasPrice = "gas_price";
     static constexpr auto kHardSet = "hard_set";
     static constexpr auto kHighThreads = "high_threads";
     static constexpr auto kHoldTime = "hold_time";
@@ -125,6 +128,7 @@ struct Keys
     static constexpr auto kMaximumTxnInLedger = "maximum_txn_in_ledger";
     static constexpr auto kMaximumTxnPerAccount = "maximum_txn_per_account";
     static constexpr auto kMemoryLevel = "memory_level";
+    static constexpr auto kMaxWaitingLedgers = "max_waiting_ledgers";
     static constexpr auto kMinLedgersToComputeSizeLimit = "min_ledgers_to_compute_size_limit";
     static constexpr auto kMinimumEscalationMultiplier = "minimum_escalation_multiplier";
     static constexpr auto kMinimumLastLedgerBuffer = "minimum_last_ledger_buffer";

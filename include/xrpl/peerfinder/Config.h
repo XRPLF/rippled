@@ -26,7 +26,8 @@ struct Config
     /**
      * The largest number of public peer slots to allow.
      * This includes both inbound and outbound, but does not include
-     * fixed peers.
+     * fixed peers. A configuration built by `makeConfig` always holds
+     * `maxPeers == inPeers + outPeers`.
      */
     std::size_t maxPeers{tuning::kDefaultMaxPeers};
 

@@ -20,7 +20,7 @@ class SetRegularKeyBuilder;
  *
  * Type: ttREGULAR_KEY_SET (5)
  * Delegable: Delegation::NotDelegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

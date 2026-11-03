@@ -37,6 +37,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -68,12 +69,20 @@ private:
             return sleIssuance->at(sfOutstandingAmount);
         };
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults, so build vaults in this suite as
+        // closed-ended and advance past SubscriptionDate before creating
+        // brokers/loans. VaultClawback itself is not phase-gated. The
+        // subscription offset must be large enough that the deposit
+        // ledger close does not accidentally push us past SubscriptionDate
+        // (which would land the deposit in Investment phase and fail).
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -87,16 +96,21 @@ private:
                 Ter(tesSUCCESS));
             env.close();
 
+            // Move past SubscriptionDate so LoanBrokerSet/LoanSet run in
+            // the Investment phase.
+            vault.closePastSubscription(subscriptionDate);
+
             auto const& [availablePreDefault, totalPreDefault] = vaultAssetBalance(vaultKeylet);
             BEAST_EXPECT(availablePreDefault == totalPreDefault);
             BEAST_EXPECT(availablePreDefault == asset(100).value());
 
             // attempt to clawback shares while there are assets fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 
@@ -122,11 +136,12 @@ private:
 
             // attempt to clawback shares while there assetsAvailable == 0 and
             // assetsTotal > 0 fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 
@@ -153,7 +168,7 @@ private:
                 // when asset is XRP or owner is not issuer clawback fail
                 // when owner is issuer precision loss occurs as vault is
                 // empty
-                auto const expectedTer = [&]() {
+                auto const expectedTer = [&] {
                     if (asset.native())
                         return Ter(temMALFORMED);
                     if (asset.raw().getIssuer() != owner.id())
@@ -313,13 +328,21 @@ private:
         Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
 
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+        // accepts closed-ended vaults; some tests using this helper later
+        // attach loan brokers to the vault. Build it as closed-ended and
+        // advance past SubscriptionDate so subsequent broker/loan setup
+        // runs in the Investment phase. VaultClawback itself is not
+        // phase-gated. See the other setupVault (share tests) for why the
+        // subscription offset must be generous.
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
                                     Account const& depositor,
                                     Account const& issuer) -> std::pair<Vault, Keylet> {
             Vault const vault{env};
 
-            auto const& [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = asset, .subscriptionOffset = std::chrono::seconds{60}});
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -330,6 +353,8 @@ private:
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
                 Ter(tesSUCCESS));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             return std::make_pair(vault, vaultKeylet);
         };
@@ -804,17 +829,48 @@ private:
         testCase(mpt, "MPT", owner, depositor, issuer);
 
         // Test pre-fixCleanup3_1_3 legacy path: zero-amount clawback
-        // returns early without clamping to assetsAvailable.
+        // returns early without clamping to assetsAvailable. This needs a
+        // Legacy/CashBasis Vault, so it runs against its own Env with
+        // featureLendingProtocolV1_2 disabled. The FixedPrecision version of
+        // this scenario is LoanSetFixedPrecision_test's
+        // testLendingFullClawbackClampsInsteadOfHasObligations.
         {
             testcase(
                 "VaultClawback (asset) - IOU pre-fixCleanup3_1_3"
                 " zero-amount clawback unclamped with outstanding loan");
 
-            env.disableFeature(fixCleanup3_1_3);
+            Env legacyEnv(*this, all_);
+            legacyEnv.disableFeature(fixCleanup3_1_3);
+            legacyEnv.disableFeature(featureLendingProtocolV1_2);
+            legacyEnv.fund(XRP(10000), issuer, owner, depositor);
+            legacyEnv.close();
 
-            auto [vault, vaultKeylet] = setupVault(iou, owner, depositor, issuer);
+            legacyEnv(fset(issuer, asfAllowTrustLineClawback));
+            legacyEnv.close();
+            legacyEnv.trust(iou(2000), owner);
+            legacyEnv.trust(iou(2000), depositor);
+            legacyEnv(pay(issuer, owner, iou(2000)));
+            legacyEnv(pay(issuer, depositor, iou(2000)));
+            legacyEnv.close();
 
-            auto const vaultSle = env.le(vaultKeylet);
+            Vault const vault{legacyEnv};
+            auto const& [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
+                {.owner = owner, .asset = iou, .subscriptionOffset = std::chrono::seconds{60}});
+            legacyEnv(tx, Ter(tesSUCCESS));
+            legacyEnv.close();
+
+            auto const vaultSleCreate = legacyEnv.le(vaultKeylet);
+            BEAST_EXPECT(vaultSleCreate != nullptr);
+            if (!vaultSleCreate)
+                return;
+            legacyEnv.memoize(Account("vault", vaultSleCreate->at(sfAccount)));
+            legacyEnv(
+                vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = iou(100)}),
+                Ter(tesSUCCESS));
+            legacyEnv.close();
+            vault.closePastSubscription(subscriptionDate);
+
+            auto const vaultSle = legacyEnv.le(vaultKeylet);
             BEAST_EXPECT(vaultSle != nullptr);
             if (!vaultSle)
                 return;
@@ -823,53 +879,53 @@ private:
 
             // Create a loan broker backed by this vault
             auto const brokerKeylet =
-                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
-            env(set(owner, vaultKeylet.key));
-            env.close();
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(legacyEnv.seq(owner)));
+            legacyEnv(set(owner, vaultKeylet.key));
+            legacyEnv.close();
 
             // Depositor borrows 40 units, reducing assetsAvailable to 60
             // while assetsTotal stays at 100
-            env(set(depositor, brokerKeylet.key, iou(40).value()),
+            legacyEnv(
+                set(depositor, brokerKeylet.key, iou(40).value()),
                 loan::kInterestRate(TenthBips32(0)),
                 kGracePeriod(60),
                 kPaymentInterval(120),
                 kPaymentTotal(10),
                 Sig(sfCounterpartySignature, owner),
-                Fee(env.current()->fees().base * 2),
+                Fee(legacyEnv.current()->fees().base * 2),
                 Ter(tesSUCCESS));
-            env.close();
+            legacyEnv.close();
 
             {
-                auto const sle = env.le(vaultKeylet);
+                auto const sle = legacyEnv.le(vaultKeylet);
                 BEAST_EXPECT(sle->at(sfAssetsAvailable) == iou(60).value());
                 BEAST_EXPECT(sle->at(sfAssetsTotal) == iou(100).value());
             }
 
-            auto const sharesBefore = env.balance(depositor, shares);
+            auto const sharesBefore = legacyEnv.balance(depositor, shares);
 
-            // Legacy: zero-amount clawback tries to recover the full
-            // share value (100) without clamping to assetsAvailable (60).
-            // This causes the vault balance to go negative, triggering
-            // the sanity check in doApply → tefINTERNAL.
-            env(vault.clawback({
+            // Legacy: zero-amount clawback tries to recover the full share
+            // value (100) without clamping to assetsAvailable (60). This
+            // causes the vault balance to go negative, triggering the
+            // sanity check in doApply -> tefINTERNAL.
+            legacyEnv(
+                vault.clawback({
                     .issuer = issuer,
                     .id = vaultKeylet.key,
                     .holder = depositor,
                 }),
                 Ter(tefINTERNAL));
-            env.close();
+            legacyEnv.close();
 
             {
-                // Transaction rolled back — vault and shares unchanged
-                auto const sle = env.le(vaultKeylet);
+                // Transaction rolled back -- vault and shares unchanged
+                auto const sle = legacyEnv.le(vaultKeylet);
                 BEAST_EXPECT(sle != nullptr);
                 BEAST_EXPECT(sle->at(sfAssetsAvailable) == iou(60).value());
                 BEAST_EXPECT(sle->at(sfAssetsTotal) == iou(100).value());
-                auto const sharesAfter = env.balance(depositor, shares);
+                auto const sharesAfter = legacyEnv.balance(depositor, shares);
                 BEAST_EXPECT(sharesAfter == sharesBefore);
             }
-
-            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
@@ -1107,12 +1163,132 @@ private:
         }
     }
 
+    // A clawback naming a holder that cannot hold vault shares must leave the vault untouched,
+    // whether it is refused in preclaim (with the fix) or fails later (without it).
+    void
+    testClawbackInvalidHolder()
+    {
+        using namespace test::jtx;
+
+        struct Case
+        {
+            std::string name;
+            bool pseudoAccount;  // otherwise the holder has no AccountRoot
+            uint256 fix;
+            TER guarded;
+            TER legacyImplicit;
+            TER legacyExplicit;
+        };
+
+        // Pre-fixCleanup3_4_0 an explicit amount from a pseudo-account debits the vault and trips
+        // the "shares must move" invariant. Pre-fixCleanup3_5_0 a missing holder fails in doApply.
+        std::vector<Case> const cases{
+            {
+                .name = "pseudo-account",
+                .pseudoAccount = true,
+                .fix = fixCleanup3_4_0,
+                .guarded = tecPSEUDO_ACCOUNT,
+                .legacyImplicit = tecPRECISION_LOSS,
+                .legacyExplicit = tecINVARIANT_FAILED,
+            },
+            {
+                .name = "nonexistent",
+                .pseudoAccount = false,
+                .fix = fixCleanup3_5_0,
+                .guarded = terNO_ACCOUNT,
+                .legacyImplicit = tecPRECISION_LOSS,
+                .legacyExplicit = tecNO_AUTH,
+            },
+        };
+
+        auto const runScenario = [this](
+                                     Case const& c,
+                                     FeatureBitset features,
+                                     std::string const& prefix) {
+            bool const guarded = features[c.fix];
+            Env env{*this, features};
+
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+
+            env.fund(XRP(1'000), owner, depositor, issuer);
+            env.close();
+
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000), owner);
+            env.trust(asset(1'000), depositor);
+            env(pay(issuer, depositor, asset(200)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            Account const holder = c.pseudoAccount
+                ? Account{"vault pseudo-account", vaultSle->at(sfAccount)}
+                : Account{"ghost"};
+            env.memoize(holder);
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto const assetsBefore = [&] -> Number {
+                auto const sle = env.le(keylet);
+                if (!BEAST_EXPECT(sle))
+                    return Number{};
+                return sle->at(sfAssetsTotal);
+            }();
+
+            {
+                testcase("VaultClawback - " + prefix + " " + c.name + " holder, implicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = holder,
+                    }),
+                    Ter(guarded ? c.guarded : c.legacyImplicit));
+                env.close();
+            }
+
+            {
+                testcase("VaultClawback - " + prefix + " " + c.name + " holder, explicit amount");
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = holder,
+                        .amount = asset(10).value(),
+                    }),
+                    Ter(guarded ? c.guarded : c.legacyExplicit));
+                env.close();
+            }
+
+            // Neither attempt may touch the vault, whichever way it was refused.
+            auto const sleAfter = env.le(keylet);
+            BEAST_EXPECT(sleAfter && sleAfter->at(sfAssetsTotal) == assetsBefore);
+        };
+
+        for (auto const& c : cases)
+        {
+            runScenario(c, all_, "post-rule");
+            runScenario(c, all_ - c.fix, "pre-rule");
+        }
+    }
+
 public:
     void
     run() override
     {
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
+        testClawbackInvalidHolder();
         testVaultEscrowedMPT();
     }
 };

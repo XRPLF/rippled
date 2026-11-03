@@ -9,6 +9,10 @@
 # - `pre-commit run <hook_id> --all-files`
 # To run the hooks against only the staged files, use:
 # - `pre-commit run`
+# nodeenv<1.12 resolves the default `latest` to Node pre-releases and crashes parsing them.
+default_language_version:
+  node: lts
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
@@ -53,9 +57,14 @@ repos:
         entry: ./bin/pre-commit/check_doxygen_style.py
         language: python
         types_or: [c++, c]
+      - id: fix-gtest-names
+        name: "fix gtest names: CamelCase suite, snake_case test case"
+        entry: ./bin/pre-commit/fix_gtest_names.py
+        language: python
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
+    rev: 98ad4ddb9c057de2f5b9e93e44e6db959807d68c # frozen: v23.1.3
     hooks:
       - id: clang-format
         args: [--style=file]
@@ -70,25 +79,47 @@ repos:
         language: system
         types: [rust]
         pass_filenames: false # rustfmt formats the whole workspace
+      - id: check-coverage-attrs
+        name: check Rust coverage attributes
+        entry: ./bin/pre-commit/check_rust_coverage_attrs.py
+        language: python
+        files: ^crates/.*\.rs$
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
+    rev: 28010ddd6016e1a0f7bd232acb6536ef996ae897 # frozen: 0.29.2
     hooks:
       - id: gersemi
+        args: [-i, --warnings-as-errors]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
+    rev: 331f33fa4dfbcbca7c3da3620c137fde0faab273 # frozen: v3.9.10
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
 
+  # Scoped to package/: the rest of the repo's Python has pre-existing findings,
+  # so widening these is its own change.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
+    rev: a5439e9af2ff9371297bb1a76a01b8ad17989b88 # frozen: 26.10.1
     hooks:
       - id: black
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: ad26ebfa797fcb9b8f83275937c1c1d6e126719c # frozen: v2.4.1
+    hooks:
+      - id: mypy
+        args: [--strict]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
+    rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1
     hooks:
       - id: shfmt
         args: [--write, --indent=4, --case-indent=true]
@@ -107,7 +138,7 @@ repos:
         files: \.md$
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
+    rev: f6467e1f1ebecf5020560405c7b26e01786a43c8 # frozen: v10.4.0
     hooks:
       - id: cspell
         name: check changed files spelling

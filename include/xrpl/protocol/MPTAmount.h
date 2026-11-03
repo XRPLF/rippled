@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -172,6 +173,19 @@ mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     if (r > std::numeric_limits<MPTAmount::value_type>::max())
         Throw<std::overflow_error>("MPT mulRatio overflow");
     return MPTAmount(r.convert_to<MPTAmount::value_type>());
+}
+
+inline std::optional<MPTAmount>
+tryMulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
+{
+    try
+    {
+        return mulRatio(amt, num, den, roundUp);
+    }
+    catch (std::overflow_error const&)
+    {
+        return std::nullopt;
+    }
 }
 
 }  // namespace xrpl

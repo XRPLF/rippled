@@ -28,14 +28,14 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> std::expected<void, Error>
+    std::function<bool(ApplyView&, UInt256, std::uint64_t)> adjust) -> std::expected<void, Error>
 {
     std::expected<void, Error> res{};
     env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
         Sandbox sb(&view, TapNone);
 
         // Find the root page
-        auto sleRoot = sb.peek(directory);
+        auto const sleRoot = sb.peek(directory);
         if (!sleRoot)
         {
             res = std::unexpected<Error>(Error::DirectoryRootNotFound);
@@ -62,7 +62,7 @@ bumpLastPage(
             return false;
         }
 
-        auto slePage = sb.peek(keylet::page(directory, lastIndex));
+        auto const slePage = sb.peek(keylet::page(directory, lastIndex));
         if (!slePage)
         {
             res = std::unexpected<Error>(Error::DirectoryPageNotFound);
@@ -70,13 +70,13 @@ bumpLastPage(
         }
 
         // Copy its data and delete the page
-        auto indexes = slePage->getFieldV256(sfIndexes);
-        auto prevIndex = slePage->at(~sfIndexPrevious);
-        auto owner = slePage->at(~sfOwner);
+        auto const indexes = slePage->getFieldV256(sfIndexes);
+        auto const prevIndex = slePage->at(~sfIndexPrevious);
+        auto const owner = slePage->at(~sfOwner);
         sb.erase(slePage);
 
         // Create new page to replace slePage
-        auto sleNew = std::make_shared<SLE>(keylet::page(directory, newLastPage));
+        auto const sleNew = std::make_shared<SLE>(keylet::page(directory, newLastPage));
         sleNew->setFieldH256(sfRootIndex, directory.key);
         sleNew->setFieldV256(sfIndexes, indexes);
         if (owner)
@@ -93,7 +93,7 @@ bumpLastPage(
         }
         else
         {
-            auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
+            auto const slePrev = sb.peek(keylet::page(directory, *prevIndex));
             if (!slePrev)
             {
                 res = std::unexpected<Error>(Error::DirectoryPageNotFound);
@@ -125,9 +125,9 @@ bumpLastPage(
 }
 
 bool
-adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
+adjustOwnerNode(ApplyView& view, UInt256 key, std::uint64_t page)
 {
-    auto sle = view.peek({ltANY, key});
+    auto const sle = view.peek({ltANY, key});
     if (sle && sle->isFieldPresent(sfOwnerNode))
     {
         sle->setFieldU64(sfOwnerNode, page);

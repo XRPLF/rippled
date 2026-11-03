@@ -46,7 +46,7 @@ public:
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
-    TrustLineBase(SLE::const_ref sle, AccountID const& viewAccount);
+    TrustLineBase(SLE::ConstRef sle, AccountID const& viewAccount);
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
@@ -56,7 +56,7 @@ public:
     /**
      * Returns the state map key for the ledger entry.
      */
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     key() const
     {
         return key_;
@@ -171,7 +171,7 @@ public:
     getJson(int);
 
 protected:
-    uint256 key_;
+    UInt256 key_;
 
     STAmount const lowLimit_;
     STAmount const highLimit_;
@@ -192,7 +192,7 @@ public:
     PathFindTrustLine() = delete;
 
     static std::optional<PathFindTrustLine>
-    makeItem(AccountID const& accountID, SLE::const_ref sle);
+    makeItem(AccountID const& accountID, SLE::ConstRef sle);
 
     static std::vector<PathFindTrustLine>
     getItems(AccountID const& accountID, ReadView const& view, LineDirection direction);
@@ -207,7 +207,7 @@ class RPCTrustLine final : public TrustLineBase, public CountedObject<RPCTrustLi
 public:
     RPCTrustLine() = delete;
 
-    RPCTrustLine(SLE::const_ref sle, AccountID const& viewAccount);
+    RPCTrustLine(SLE::ConstRef sle, AccountID const& viewAccount);
 
     [[nodiscard]] Rate const&
     getQualityIn() const
@@ -222,7 +222,7 @@ public:
     }
 
     static std::optional<RPCTrustLine>
-    makeItem(AccountID const& accountID, SLE::const_ref sle);
+    makeItem(AccountID const& accountID, SLE::ConstRef sle);
 
     static std::vector<RPCTrustLine>
     getItems(AccountID const& accountID, ReadView const& view);

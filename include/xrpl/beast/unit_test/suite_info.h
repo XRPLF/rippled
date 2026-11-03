@@ -18,14 +18,14 @@ class Runner;
  */
 class SuiteInfo
 {
-    using run_type = std::function<void(Runner&)>;
+    using RunType = std::function<void(Runner&)>;
 
     std::string name_;
     std::string module_;
     std::string library_;
     bool manual_;
     int priority_;
-    run_type run_;
+    RunType run_;
 
 public:
     SuiteInfo(
@@ -34,7 +34,7 @@ public:
         std::string library,
         bool manual,
         int priority,
-        run_type run)
+        RunType run)
         : name_(std::move(name))
         , module_(std::move(module))
         , library_(std::move(library))

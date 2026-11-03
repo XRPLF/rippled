@@ -96,7 +96,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
+                        auto const obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -176,7 +176,7 @@ Database::stop()
 
 void
 Database::asyncFetch(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
@@ -194,7 +194,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
     batch.reserve(kBatchWritePreallocationSize);
-    auto storeBatch = [&, fname = __func__]() {
+    auto storeBatch = [&, fname = __func__] {
         try
         {
             dstBackend.storeBatch(batch);
@@ -229,7 +229,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 // Perform a fetch and report the time it took
 std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t ledgerSeq,
     FetchType fetchType,
     bool duplicate)
@@ -240,7 +240,7 @@ Database::fetchNodeObject(
     auto const begin{steady_clock::now()};
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
-    auto dur = steady_clock::now() - begin;
+    auto const dur = steady_clock::now() - begin;
     fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {

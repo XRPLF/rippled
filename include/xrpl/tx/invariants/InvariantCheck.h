@@ -1,12 +1,15 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/CosignerInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
@@ -18,7 +21,10 @@
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <cstdint>
+#include <map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -85,7 +91,7 @@ public:
      *  preferred for new invariants.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
 
     /**
      * @brief called after all ledger entries have been visited to determine
@@ -123,7 +129,7 @@ class TransactionFeeCheck
 {
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     static bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -139,11 +145,11 @@ public:
  */
 class XRPNotCreated
 {
-    std::int64_t drops_ = 0;
+    boost::multiprecision::int128_t drops_ = 0;
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -163,7 +169,7 @@ class AccountRootsNotDeleted
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -190,7 +196,7 @@ class AccountRootsDeletedClean
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -209,7 +215,7 @@ class XRPBalanceChecks
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -226,7 +232,7 @@ class LedgerEntryTypesMatch
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -244,7 +250,7 @@ class NoXRPTrustLines
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -263,7 +269,7 @@ class NoDeepFreezeTrustLinesWithoutFreeze
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -282,7 +288,7 @@ class NoBadOffers
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -298,7 +304,7 @@ class NoZeroEscrow
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -318,7 +324,7 @@ class ValidNewAccountRoot
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -348,7 +354,7 @@ class ValidClawback
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -361,14 +367,30 @@ public:
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the
  * rules, and that only pseudo-accounts look like pseudo-accounts.
  *
+ * Post-fixCleanup3_5_0, a pseudo-account also owns only entries that belong
+ * to its own AMM, Vault or LoanBroker:
+ * - AMM: its AMM entry, its holdings of the two pool assets, and the trust
+ *   lines of its LP token,
+ * - Vault: its share MPTokenIssuance, its holding of the vault asset, and the
+ *   LoanBrokers operating on this vault,
+ * - LoanBroker: its Loans and its holding of the vault asset (the cover).
+ *
+ * A pseudo-account cannot sign transactions, so it could never accept or
+ * remove any other object linked into its owner directory. Such an object
+ * would pin the directory and block deletion of the owning object.
  */
 class ValidPseudoAccounts
 {
     std::vector<std::string> errors_;
 
+    // Entries newly linked into owner directories, keyed by the directory
+    // owner. Whether an owner is a pseudo-account is decided in finalize,
+    // where the view is available.
+    std::map<AccountID, std::vector<uint256>> ownerDirAdditions_;
+
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -388,7 +410,7 @@ class NoModifiedUnmodifiableFields
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -404,7 +426,7 @@ class ValidAmounts
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -421,7 +443,7 @@ class ObjectHasPseudoAccount
 {
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -462,6 +484,7 @@ using InvariantChecks = std::tuple<
     ValidAmounts,
     ValidMPTTransfer,
     ObjectHasPseudoAccount,
+    ValidTransactionProposal,
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField>;
 

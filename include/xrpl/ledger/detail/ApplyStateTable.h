@@ -37,9 +37,9 @@ private:
         Modify,
     };
 
-    using items_t = std::map<key_type, std::pair<Action, SLE::pointer>>;
+    using ItemsT = std::map<key_type, std::pair<Action, SLE::pointer>>;
 
-    items_t items_;
+    ItemsT items_;
     XRPAmount dropsDestroyed_{0};
 
 public:
@@ -61,7 +61,7 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<UInt256 const> const& parentBatchId,
         bool isDryRun,
         beast::Journal j);
 
@@ -84,25 +84,25 @@ public:
     visit(
         ReadView const& base,
         std::function<void(
-            uint256 const& key,
+            UInt256 const& key,
             bool isDelete,
-            SLE::const_ref before,
-            SLE::const_ref after)> const& func) const;
+            SLE::ConstRef before,
+            SLE::ConstRef after)> const& func) const;
 
     void
-    erase(ReadView const& base, SLE::ref sle);
+    erase(ReadView const& base, SLE::Ref sle);
 
     void
-    rawErase(ReadView const& base, SLE::ref sle);
+    rawErase(ReadView const& base, SLE::Ref sle);
 
     void
-    insert(ReadView const& base, SLE::ref sle);
+    insert(ReadView const& base, SLE::Ref sle);
 
     void
-    update(ReadView const& base, SLE::ref sle);
+    update(ReadView const& base, SLE::Ref sle);
 
     void
-    replace(ReadView const& base, SLE::ref sle);
+    replace(ReadView const& base, SLE::Ref sle);
 
     void
     destroyXRP(XRPAmount const& fee);
@@ -115,10 +115,10 @@ public:
     }
 
 private:
-    using Mods = hash_map<key_type, SLE::pointer>;
+    using Mods = HashMap<key_type, SLE::pointer>;
 
     static void
-    threadItem(TxMeta& meta, SLE::ref to);
+    threadItem(TxMeta& meta, SLE::Ref to);
 
     SLE::pointer
     getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j);
@@ -130,7 +130,7 @@ private:
     threadOwners(
         ReadView const& base,
         TxMeta& meta,
-        SLE::const_ref sle,
+        SLE::ConstRef sle,
         Mods& mods,
         beast::Journal j);
 };

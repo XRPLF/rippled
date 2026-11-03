@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -21,17 +22,17 @@ namespace perf {
 class PerfLogTest : public PerfLog
 {
     void
-    rpcStart(std::string const& method, std::uint64_t requestId) override
+    rpcStart(std::string_view method, std::uint64_t requestId) override
     {
     }
 
     void
-    rpcFinish(std::string const& method, std::uint64_t requestId) override
+    rpcFinish(std::string_view method, std::uint64_t requestId) override
     {
     }
 
     void
-    rpcError(std::string const& method, std::uint64_t dur) override
+    rpcError(std::string_view method, std::uint64_t requestId) override
     {
     }
 
@@ -112,7 +113,7 @@ public:
         Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
-        auto testForThreadCount = [this, &cb, &w](int const threadCount) {
+        auto const testForThreadCount = [this, &cb, &w](int const threadCount) {
             // Prepare the callback.
             cb.count = threadCount;
 

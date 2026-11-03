@@ -49,7 +49,7 @@ del(jtx::Account const& account)
 }
 
 json::Value
-transfer(jtx::Account const& account, uint32_t flags, std::optional<uint256> const& index)
+transfer(jtx::Account const& account, uint32_t flags, std::optional<UInt256> const& index)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipTransfer;
@@ -90,7 +90,7 @@ ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& spon
 }
 
 STAmount
-sponsorshipFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
+sponsorshipFeeBalance(jtx::Env const& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
 {
     return env.le(keylet::sponsorship(sponsor, sponsee))->getFieldAmount(sfFeeAmount).xrp();
 }

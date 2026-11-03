@@ -2,25 +2,76 @@
 
 export DH_VERBOSE = 1
 
+# The glibc the Nix toolchain builds against, and so the real floor for the
+# binaries. dpkg-shlibdeps would instead derive libc6 (>= 2.34) from the build
+# host's symbols file, where sysconf carries that minver, locking out distros
+# the binaries actually run on.
+LIBC_MIN = 2.31
+
+# The binary package's name, which a variant build changes to e.g. xrpld-assert,
+# and the directory debhelper expects its files staged in.
+PKG := $(firstword $(shell dh_listpackages))
+PKG_DIR = debian/$(PKG)
+
+# The base name, which every package ships under whatever it is called itself.
+BASE_NAME = xrpld
+
+# What build_pkg.py stages beside this directory, each installed under its own
+# name. The binaries are also the ones checked against LIBC_MIN below.
+BINARIES = $(BASE_NAME) validator-keys
+CONFIGS = $(BASE_NAME).cfg validators.txt
+
 %:
 	dh $@
 
 override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
 	@:
 
+# The unit, sysusers, tmpfiles and logrotate files are named after the daemon
+# rather than after the package, so a variant still ships xrpld.service and
+# /etc/logrotate.d/xrpld. debhelper only reads debian/$(PKG).$(BASE_NAME).* when told
+# the name.
 override_dh_installsystemd:
-	dh_installsystemd --no-stop-on-upgrade xrpld.service
+	dh_installsystemd --no-stop-on-upgrade --name $(BASE_NAME)
 
+# The tmpfiles snippet sets ownership to the xrpld user, so the sysusers snippet
+# has to be emitted first: run it early and make its own sequence slot a no-op.
 execute_before_dh_installtmpfiles:
-	dh_installsysusers
+	dh_installsysusers --name $(BASE_NAME)
 
 override_dh_installsysusers:
 
+override_dh_installtmpfiles:
+	dh_installtmpfiles --name $(BASE_NAME)
+
+override_dh_installlogrotate:
+	dh_installlogrotate --name $(BASE_NAME)
+
 override_dh_install:
-	install -D -m 0755 xrpld            debian/xrpld/usr/bin/xrpld
-	install -D -m 0755 validator-keys   debian/xrpld/usr/bin/validator-keys
-	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
-	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
+	for binary in $(BINARIES); do \
+		install -D -m 0755 "$$binary" "$(PKG_DIR)/usr/bin/$$binary"; \
+	done
+	for config in $(CONFIGS); do \
+		install -D -m 0644 "$$config" "$(PKG_DIR)/etc/$(BASE_NAME)/$$config"; \
+	done
+
+override_dh_shlibdeps:
+	dh_shlibdeps
+	# Guards against the toolchain moving past LIBC_MIN and the packages then
+	# claiming a floor they do not meet.
+	for binary in $(BINARIES); do \
+		needed=$$(readelf --dyn-syms --wide $$binary \
+			| grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -1); \
+		if [ -z "$$needed" ]; then \
+			echo "$$binary: no GLIBC_ symbol versions read, cannot check LIBC_MIN" >&2; \
+			exit 1; \
+		fi; \
+		if dpkg --compare-versions "$$needed" gt "$(LIBC_MIN)"; then \
+			echo "$$binary needs glibc $$needed, above LIBC_MIN $(LIBC_MIN)" >&2; \
+			exit 1; \
+		fi; \
+	done
+	sed -i 's/libc6 (>= [0-9.]*)/libc6 (>= $(LIBC_MIN))/' debian/$(PKG).substvars
 
 override_dh_dwz:
 	@:

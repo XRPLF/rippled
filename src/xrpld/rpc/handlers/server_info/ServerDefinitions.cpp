@@ -36,14 +36,14 @@ private:
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 
-    uint256 defsHash_;
+    UInt256 defsHash_;
     json::Value defs_;
 
 public:
     ServerDefinitions();
 
     [[nodiscard]] bool
-    hashMatches(uint256 hash) const
+    hashMatches(UInt256 hash) const
     {
         return defsHash_ == hash;
     }
@@ -58,13 +58,13 @@ public:
 std::string
 ServerDefinitions::translate(std::string const& inp)
 {
-    auto replace = [&](std::string_view oldStr, std::string_view newStr) -> std::string {
+    auto const replace = [&](std::string_view oldStr, std::string_view newStr) -> std::string {
         std::string out = inp;
         boost::replace_all(out, oldStr, newStr);
         return out;
     };
 
-    auto contains = [&](std::string_view s) -> bool { return inp.contains(s); };
+    auto const contains = [&](std::string_view s) -> bool { return inp.contains(s); };
 
     if (contains("UINT"))
     {
@@ -85,7 +85,6 @@ ServerDefinitions::translate(std::string const& inp)
         {"NOTPRESENT", "NotPresent"},
         {"PATHSET", "PathSet"},
         {"VL", "Blob"},
-        {"XCHAIN_BRIDGE", "XChainBridge"},
     };
 
     if (auto const& it = kReplacements.find(inp); it != kReplacements.end())
@@ -385,7 +384,7 @@ doServerDefinitions(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
-    uint256 hash;
+    UInt256 hash;
     if (params.isMember(jss::hash))
     {
         if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))

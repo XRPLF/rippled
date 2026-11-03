@@ -61,7 +61,7 @@ isMulticast(Address const& addr)
 inline bool
 isPrivate(Address const& addr)
 {
-    return (addr.is_v4()) ? isPrivate(addr.to_v4()) : isPrivate(addr.to_v6());
+    return addr.is_v4() ? isPrivate(addr.to_v4()) : isPrivate(addr.to_v6());
 }
 
 /**
@@ -70,7 +70,7 @@ isPrivate(Address const& addr)
 inline bool
 isPublic(Address const& addr)
 {
-    return (addr.is_v4()) ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
+    return addr.is_v4() ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
 }
 
 }  // namespace ip
@@ -103,7 +103,7 @@ namespace boost {
 template <>
 struct hash<::beast::ip::Address>
 {
-    explicit hash() = default;
+    hash() = default;
 
     std::size_t
     operator()(::beast::ip::Address const& addr) const

@@ -36,7 +36,7 @@ canHaveNFTokenOfferID(
     return true;
 }
 
-std::optional<uint256>
+std::optional<UInt256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
@@ -59,7 +59,7 @@ insertNFTokenOfferID(
     if (!canHaveNFTokenOfferID(transaction, transactionMeta))
         return;
 
-    std::optional<uint256> result = getOfferIDFromCreatedOffer(transactionMeta);
+    std::optional<UInt256> result = getOfferIDFromCreatedOffer(transactionMeta);
 
     if (result.has_value())
         response[jss::offer_id] = to_string(result.value());

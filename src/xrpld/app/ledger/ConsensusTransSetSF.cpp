@@ -42,7 +42,7 @@ ConsensusTransSetSF::gotNode(
 
     nodeCache_.insert(nodeHash, nodeData);
 
-    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() > 16))
+    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() >= kMinTxNodeBytesToParse))
     {
         // this is a transaction, and we didn't have it
         JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
@@ -52,14 +52,14 @@ ConsensusTransSetSF::gotNode(
             // skip prefix
             Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
-            auto stx = std::make_shared<STTx const>(std::ref(sit));
+            auto const stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(
                 stx->getTransactionID() == nodeHash.asUInt256(),
                 "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
             app_.getJobQueue().addJob(
-                JtTransaction, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
+                JtTransaction, "TxsToTxn", [pap, stx] { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {
@@ -76,7 +76,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     if (nodeCache_.retrieve(nodeHash, nodeData))
         return nodeData;
 
-    auto txn = app_.getMasterTransaction().fetchFromCache(nodeHash.asUInt256());
+    auto const txn = app_.getMasterTransaction().fetchFromCache(nodeHash.asUInt256());
 
     if (txn)
     {

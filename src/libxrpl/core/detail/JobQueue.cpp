@@ -23,7 +23,7 @@ namespace xrpl {
 
 JobQueue::JobQueue(
     int threadCount,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     beast::Journal journal,
     Logs& logs,
     perf::PerfLog& perfLog)
@@ -74,7 +74,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 {
     XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
-    auto iter(jobData_.find(type));
+    auto const iter(jobData_.find(type));
     XRPL_ASSERT(
         iter != jobData_.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
     if (iter == jobData_.end())
@@ -92,7 +92,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 
     {
         std::scoped_lock const lock(mutex_);
-        auto result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
+        auto const result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
         auto const& job = *result.first;
 
         JobType const type(job.getType());
@@ -345,7 +345,7 @@ JobQueue::processTask(int instance)
 
     {
         using namespace std::chrono;
-        Job::clock_type::time_point const startTime(Job::clock_type::now());
+        Job::ClockType::time_point const startTime(Job::ClockType::now());
         {
             Job job;
             {
@@ -364,7 +364,7 @@ JobQueue::processTask(int instance)
             job.doJob();
 
             // The amount of time it took to execute the job
-            auto const xTime = ceil<microseconds>(Job::clock_type::now() - startTime);
+            auto const xTime = ceil<microseconds>(Job::ClockType::now() - startTime);
 
             if (xTime >= 10ms || qTime >= 10ms)
             {

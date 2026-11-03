@@ -151,7 +151,7 @@ namespace std {
 template <>
 struct hash<xrpl::MPTID> : xrpl::MPTID::hasher
 {
-    explicit hash() = default;
+    hash() = default;
 };
 
 }  // namespace std

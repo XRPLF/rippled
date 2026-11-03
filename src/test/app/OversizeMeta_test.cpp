@@ -124,7 +124,7 @@ public:
         auto len = hi - lo;
         while (len != 0)
         {
-            auto l2 = len / 2;
+            auto const l2 = len / 2;
             auto m = lo + l2;
             if (!f(m))
             {

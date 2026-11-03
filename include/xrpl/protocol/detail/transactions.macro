@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
+ *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
  *     };
  *
@@ -66,11 +66,13 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegable}), ({
     {sfDestination, SoeRequired},
+    {sfDestinationTag, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfCondition, SoeOptional},
     {sfCancelAfter, SoeOptional},
     {sfFinishAfter, SoeOptional},
-    {sfDestinationTag, SoeOptional},
+    {sfBytecode, SoeOptional},
+    {sfData, SoeOptional},
 }))
 
 /** This transaction type completes an existing escrow. */
@@ -83,6 +85,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegab
     {sfFulfillment, SoeOptional},
     {sfCondition, SoeOptional},
     {sfCredentialIDs, SoeOptional},
+    {sfGas, SoeOptional},
 }))
 
 
@@ -369,7 +372,6 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayCreateMpt,
     }),
     ({
@@ -383,7 +385,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 #   include <xrpl/tx/transactors/dex/AMMDeposit.h>
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -401,7 +403,6 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
@@ -418,7 +419,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 #   include <xrpl/tx/transactors/dex/AMMVote.h>
 #endif
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -430,7 +431,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 #   include <xrpl/tx/transactors/dex/AMMBid.h>
 #endif
 TRANSACTION(ttAMM_BID, 39, AMMBid,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -446,7 +447,6 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     ({
         .delegable = Delegation::Delegable,
-        .amendment = featureAMM,
         .privileges = Privilege::MustDeleteAcct | Privilege::MayDeleteMpt,
     }),
     ({
@@ -454,111 +454,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     {sfAsset2, SoeRequired, SoeMptSupported},
 }))
 
-/** This transactions creates a crosschain sequence number */
-#if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/bridge/XChainBridge.h>
-#endif
-TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfSignatureReward, SoeRequired},
-    {sfOtherChainSource, SoeRequired},
-}))
-
-/** This transactions initiates a crosschain transaction */
-TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfXChainClaimID, SoeRequired},
-    {sfAmount, SoeRequired},
-    {sfOtherChainDestination, SoeOptional},
-}))
-
-/** This transaction completes a crosschain transaction */
-TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfXChainClaimID, SoeRequired},
-    {sfDestination, SoeRequired},
-    {sfDestinationTag, SoeOptional},
-    {sfAmount, SoeRequired},
-}))
-
-/** This transaction initiates a crosschain account create transaction */
-TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfDestination, SoeRequired},
-    {sfAmount, SoeRequired},
-    {sfSignatureReward, SoeRequired},
-}))
-
-/** This transaction adds an attestation to a claim */
-TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
-    ({
-        .delegable = Delegation::Delegable,
-        .amendment = featureXChainBridge,
-        .privileges = Privilege::CreateAcct,
-    }),
-    ({
-    {sfXChainBridge, SoeRequired},
-
-    {sfAttestationSignerAccount, SoeRequired},
-    {sfPublicKey, SoeRequired},
-    {sfSignature, SoeRequired},
-    {sfOtherChainSource, SoeRequired},
-    {sfAmount, SoeRequired},
-    {sfAttestationRewardAccount, SoeRequired},
-    {sfWasLockingChainSend, SoeRequired},
-
-    {sfXChainClaimID, SoeRequired},
-    {sfDestination, SoeOptional},
-}))
-
-/** This transaction adds an attestation to an account */
-TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateAttestation,
-    ({
-        .delegable = Delegation::Delegable,
-        .amendment = featureXChainBridge,
-        .privileges = Privilege::CreateAcct,
-    }),
-    ({
-    {sfXChainBridge, SoeRequired},
-
-    {sfAttestationSignerAccount, SoeRequired},
-    {sfPublicKey, SoeRequired},
-    {sfSignature, SoeRequired},
-    {sfOtherChainSource, SoeRequired},
-    {sfAmount, SoeRequired},
-    {sfAttestationRewardAccount, SoeRequired},
-    {sfWasLockingChainSend, SoeRequired},
-
-    {sfXChainAccountCreateCount, SoeRequired},
-    {sfDestination, SoeRequired},
-    {sfSignatureReward, SoeRequired},
-}))
-
-/** This transaction modifies a sidechain */
-TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfSignatureReward, SoeOptional},
-    {sfMinAccountCreateAmount, SoeOptional},
-}))
-
-/** This transactions creates a sidechain */
-TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
-    ({
-    {sfXChainBridge, SoeRequired},
-    {sfSignatureReward, SoeRequired},
-    {sfMinAccountCreateAmount, SoeOptional},
-}))
+// 41 to 48 deprecated
 
 /** This transaction type creates or updates a DID */
 #if TRANSACTION_INCLUDE
@@ -897,6 +793,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     {sfDebtMaximum, SoeOptional},
     {sfCoverRateMinimum, SoeOptional},
     {sfCoverRateLiquidation, SoeOptional},
+    {sfDomainID,             SoeOptional},
 }))
 
 /** This transaction deletes a Loan Broker */
@@ -1131,6 +1028,60 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeOptional},
+    {sfIssuerEncryptedAmount, SoeOptional},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+}))
+
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
+    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
+/** This transaction posts an unsigned transaction on-ledger as a
+    TransactionProposal, pending multi-signature collection. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
+    ({.amendment = featureCosign}),
+    ({
+    {sfProposedTransaction, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+
+// ttTRANSACTION_PROPOSAL_SIGN arrives in a later PR and takes the next unassigned type.
+
+/** This transaction deletes a TransactionProposal, releasing its owner's
+    reserve. While the proposal is live only its Owner or its target account
+    may cancel; once it is terminal anyone may (On-Chain Cosigner spec §7). */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCancel.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
+    ({.amendment = featureCosign}),
+    ({
+    {sfProposalID, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
@@ -1161,6 +1112,10 @@ TRANSACTION(ttFEE, 101, SetFee,
     {sfBaseFeeDrops, SoeOptional},
     {sfReserveBaseDrops, SoeOptional},
     {sfReserveIncrementDrops, SoeOptional},
+    // Smart Escrow fields
+    {sfGasLimit, SoeOptional},
+    {sfBytecodeSizeLimit, SoeOptional},
+    {sfGasPrice, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the network's negative UNL

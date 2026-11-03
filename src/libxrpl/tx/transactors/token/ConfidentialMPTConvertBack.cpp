@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -197,6 +198,14 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // Converting back homomorphically subtracts from the holder's mirrors, so
+    // those mirrors must be current.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        !areMirrorsCurrent(*sleIssuance, *sleMptoken))
+    {
+        return tecNO_PERMISSION;
+    }
+
     // Sanity check: holder's MPToken must have auditor balance field if auditing
     // is enabled
     if (requiresAuditor && !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
@@ -235,7 +244,7 @@ ConfidentialMPTConvertBack::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto const sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -246,7 +255,7 @@ ConfidentialMPTConvertBack::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

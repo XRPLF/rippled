@@ -519,15 +519,16 @@ AMM::deposit(
 {
     auto const acct = account ? account : creatorAccount_;
     auto const lpTokens = getLPTokensBalance(acct);
-    json::Value jv = depositJv(
-        {.account = acct,
-         .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
-         .asset1In = asset1In,
-         .asset2In = asset2In,
-         .maxEP = maxEP,
-         .flags = flags,
-         .assets = assets ? assets : std::make_pair(asset1_.asset(), asset2_.asset()),
-         .tfee = tfee});
+    json::Value jv = depositJv({
+        .account = acct,
+        .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
+        .asset1In = asset1In,
+        .asset2In = asset2In,
+        .maxEP = maxEP,
+        .flags = flags,
+        .assets = assets ? assets : std::make_pair(asset1_.asset(), asset2_.asset()),
+        .tfee = tfee,
+    });
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
@@ -750,7 +751,7 @@ AMM::bid(BidArg const& arg)
     json::Value jv;
     jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
     setTokens(jv, arg.assets);
-    auto getBid = [&](auto const& bid) {
+    auto const getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
         {
             return STAmount{lptIssue_, std::get<int>(bid)};
@@ -798,7 +799,7 @@ AMM::bid(BidArg const& arg)
 void
 AMM::clawback(ClawbackArg const& arg)
 {
-    auto const& [asset, asset2] = [&]() {
+    auto const& [asset, asset2] = [&] {
         if (arg.assets)
             return *arg.assets;
         return std::make_pair(asset1_.asset(), asset2_.asset());

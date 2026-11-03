@@ -102,7 +102,7 @@ public:
         CreateGenesisT,
         Rules rules,
         Fees const& fees,
-        std::vector<uint256> const& amendments,
+        std::vector<UInt256> const& amendments,
         Family& family);
 
     Ledger(LedgerHeader const& info, Rules rules, Family& family);
@@ -181,40 +181,40 @@ public:
     exists(Keylet const& k) const override;
 
     bool
-    exists(uint256 const& key) const;
+    exists(UInt256 const& key) const;
 
-    std::optional<uint256>
-    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt) const override;
+    std::optional<UInt256>
+    succ(UInt256 const& key, std::optional<UInt256> const& last = std::nullopt) const override;
 
     SLE::const_pointer
     read(Keylet const& k) const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesBegin() const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesEnd() const override;
 
-    std::unique_ptr<SlesType::iter_base>
-    slesUpperBound(uint256 const& key) const override;
+    std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsBegin() const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsEnd() const override;
 
     bool
-    txExists(uint256 const& key) const override;
+    txExists(UInt256 const& key) const override;
 
-    tx_type
+    TxType
     txRead(key_type const& key) const override;
 
     //
     // DigestAwareReadView
     //
 
-    std::optional<digest_type>
+    std::optional<DigestType>
     digest(key_type const& key) const override;
 
     //
@@ -222,16 +222,16 @@ public:
     //
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(SLE::Ref sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(SLE::Ref sle) override;
 
     void
-    rawErase(uint256 const& key);
+    rawErase(UInt256 const& key);
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(SLE::Ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override
@@ -245,7 +245,7 @@ public:
 
     void
     rawTxInsert(
-        uint256 const& key,
+        UInt256 const& key,
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
@@ -257,13 +257,42 @@ public:
         header_.validated = true;
     }
 
-    void
+    /**
+     * Mark this ledger as accepted and attempt to make it immutable.
+     *
+     * The close-time fields are recorded first, since the ledger hash covers
+     * them.
+     *
+     * @param closeTime The consensus-agreed close time.
+     * @param closeResolution The close time resolution.
+     * @param correctCloseTime Whether consensus agreed on the close time. If
+     *        false, kSLcfNoConsensusTime is recorded in closeFlags instead.
+     * @return What setImmutable() returned.
+     */
+    [[nodiscard]] bool
     setAccepted(
         NetClock::time_point closeTime,
         NetClock::duration closeResolution,
         bool correctCloseTime);
 
-    void
+    /**
+     * Mark this ledger as immutable, so it can no longer be modified.
+     *
+     * A ledger built or loaded locally cannot have an invalid map, since only
+     * a map syncing against hashes from outside can be proven impossible (see
+     * SHAMap::addKnownNode), so a caller on such a path may treat a false
+     * return as a broken internal invariant. A caller assembling a ledger from
+     * peer data may not: for it, false is an outcome a peer can produce.
+     *
+     * @param rehash Whether to recompute the ledger hash from the header
+     *        fields. The transaction and account hashes are recomputed from the
+     *        maps too, but only the first time.
+     * @return false if either map is Invalid, leaving the immutable flag as it
+     *         was and the header untouched. A map invalidated partway through can
+     *         still leave the other one immutable, so a false return means the
+     *         ledger must be discarded rather than retried.
+     */
+    [[nodiscard]] bool
     setImmutable(bool rehash = true);
 
     bool
@@ -272,23 +301,28 @@ public:
         return immutable_;
     }
 
-    /*  Mark this ledger as "should be full".
+    /**
+     * @return Whether both maps can still be the maps the header names. See
+     *         SHAMap::isValid().
+     */
+    [[nodiscard]] bool
+    mapsValid() const
+    {
+        return txMap_.isValid() && stateMap_.isValid();
+    }
 
-        "Full" is metadata property of the ledger, it indicates
-        that the local server wants all the corresponding nodes
-        in durable storage.
-
-        This is marked `const` because it reflects metadata
-        and not data that is in common with other nodes on the
-        network.
-    */
+    /**
+     * Mark this ledger as "should be full", indicating that the local server
+     * wants all the corresponding nodes in durable storage.
+     *
+     * Const because it reflects metadata, not data this ledger shares with
+     * other nodes on the network.
+     */
     void
     setFull() const
     {
-        txMap_.setFull();
-        txMap_.setLedgerSeq(header_.seq);
-        stateMap_.setFull();
-        stateMap_.setLedgerSeq(header_.seq);
+        txMap_.setFull(header_.seq);
+        stateMap_.setFull(header_.seq);
     }
 
     void
@@ -346,7 +380,7 @@ public:
      *
      * @return the public keys
      */
-    hash_set<PublicKey>
+    HashSet<PublicKey>
     negativeUNL() const;
 
     /**
@@ -417,6 +451,22 @@ private:
      */
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
+
+    /**
+     * Make both maps immutable.
+     *
+     * Each map is settled on its own, so neither is left mid-sync because the
+     * other refused.
+     *
+     * @return Whether both maps are immutable.
+     */
+    [[nodiscard]] bool
+    setMapsImmutable()
+    {
+        bool const txImmutable = txMap_.setImmutable();
+        bool const stateImmutable = stateMap_.setImmutable();
+        return txImmutable && stateImmutable;
+    }
 
     bool immutable_;
 

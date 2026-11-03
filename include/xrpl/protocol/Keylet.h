@@ -18,10 +18,10 @@ class STLedgerEntry;
  */
 struct Keylet
 {
-    uint256 key;
+    UInt256 key;
     LedgerEntryType type;
 
-    Keylet(LedgerEntryType type, uint256 const& key) : key(key), type(type)
+    Keylet(LedgerEntryType type, UInt256 const& key) : key(key), type(type)
     {
     }
 
