@@ -1214,7 +1214,7 @@ private:
                     Ter(expected));
                 env.close();
             };
-            auto const brokerSeq = [&]() -> std::uint32_t {
+            auto const brokerSeq = [&] -> std::uint32_t {
                 if (auto const sle = env.le(broker.brokerKeylet()); BEAST_EXPECT(sle))
                     return sle->at(sfLoanSequence);
                 return 0;
