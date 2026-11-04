@@ -35,6 +35,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -2788,6 +2789,31 @@ class Coupon_test : public beast::unit_test::Suite
         BEAST_EXPECT(issuance && !issuance->isFlag(lsfMPTCanHoldConfidentialBalance));
     }
 
+    void
+    testKeyletNamespace()
+    {
+        testcase("schedule keylet uses namespace j");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        env.fund(XRP(10'000), gw, alice);
+        env.close();
+
+        MPTTester mpt{env, alice, {.fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        auto const id = mpt.issuanceID();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(scheduleCreate(alice, id, gw["USD"]), Ter(tesSUCCESS));
+        env.close();
+
+        // The schedule lives at sha512Half('j', issuance ID).
+        uint256 const expected = sha512Half(std::uint16_t('j'), id);
+        BEAST_EXPECT(keylet::couponSchedule(id).key == expected);
+        BEAST_EXPECT(env.le(Keylet{ltCOUPON_SCHEDULE, expected}) != nullptr);
+    }
+
 public:
     void
     run() override
@@ -2837,6 +2863,7 @@ public:
         testPayFeeAboveReserve();
         testForfeit();
         testConfidentialRefused();
+        testKeyletNamespace();
     }
 };
 
