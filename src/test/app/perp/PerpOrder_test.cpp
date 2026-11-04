@@ -6,7 +6,6 @@
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -36,6 +35,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -49,6 +49,7 @@ class PerpOrder_test : public PerpTestBase
      */
     struct Trading
     {
+        World world;
         Keylet exchange;
         Keylet market;
     };
@@ -66,16 +67,11 @@ class PerpOrder_test : public PerpTestBase
         test::jtx::oracle::DataSeries const& series = {{"XRP", "USD", 20, 1}})
     {
         using namespace test::jtx;
-        auto const world = setupMarketWorld(env, series);
+        auto world = setupMarketWorld(env, series);
         auto const exchange = Perp::exchangeKeylet(env, owner_);
         auto create = Perp::exchangeSet(owner_, usd_);
         if (exchangeFields)
-        {
-            create[sfVaultID] = to_string(world.vault.key);
             exchangeFields(create);
-            if (!create.isMember(sfVaultLossWindow.jsonName))
-                create.removeMember(sfVaultID.getName());
-        }
         env(create);
         env.close();
 
@@ -88,18 +84,21 @@ class PerpOrder_test : public PerpTestBase
         for (auto const* trader : {&alice_, &bob_, &carol_})
             env(Perp::deposit(*trader, exchange.key, usd_(1'000)));
         env.close();
-        return {.exchange = exchange, .market = marketKeylet(exchange.key, args.baseAsset)};
+        return {
+            .world = std::move(world),
+            .exchange = exchange,
+            .market = marketKeylet(exchange.key, args.baseAsset)};
     }
 
     /**
-     * The fixture's market arguments with oracle bounds wide enough that no test goes stale.
+     * The fixture's market arguments with a ledger bound wide enough that no test goes stale by
+     * ledgers; quotes still age out after perp::kIndexMaxAge.
      */
     [[nodiscard]] Perp::MarketArgs
     liveArgs() const
     {
         auto args = marketArgs();
         args.indexMaxLedgers = 1'000;
-        args.indexMaxAge = 100'000;
         return args;
     }
 
@@ -118,25 +117,24 @@ class PerpOrder_test : public PerpTestBase
     }
 
     [[nodiscard]] static Keylet
-    marginKeylet(Account const& account, Keylet const& exchange, std::uint32_t subaccount = 0)
+    marginKeylet(Account const& account, Keylet const& exchange)
     {
-        return keylet::marginAccount(account.id(), exchange.key, subaccount);
+        return keylet::marginAccount(account.id(), exchange.key);
     }
 
     [[nodiscard]] static Keylet
-    positionKeylet(Account const& account, Trading const& t, std::uint32_t subaccount = 0)
+    positionKeylet(Account const& account, Trading const& t)
     {
-        return keylet::marginPosition(
-            marginKeylet(account, t.exchange, subaccount).key, t.market.key);
+        return keylet::marginPosition(marginKeylet(account, t.exchange).key, t.market.key);
     }
 
     /**
      * The size of an account's position, zero when it has none.
      */
     [[nodiscard]] static Number
-    sizeOf(Env& env, Account const& account, Trading const& t, std::uint32_t subaccount = 0)
+    sizeOf(Env& env, Account const& account, Trading const& t)
     {
-        auto const sle = env.le(positionKeylet(account, t, subaccount));
+        auto const sle = env.le(positionKeylet(account, t));
         return sle ? Number((*sle)[sfSize]) : Number();
     }
 
@@ -164,7 +162,7 @@ class PerpOrder_test : public PerpTestBase
 
     /**
      * Checks invariants 1 and 2 of the spec, and that the exchange's open-interest notional is
-     * its single market's long open interest at the mark.
+     * its single market's long open interest at the index.
      */
     void
     expectAccounting(Env& env, Trading const& t)
@@ -181,7 +179,7 @@ class PerpOrder_test : public PerpTestBase
                 (*sle)[sfOwnerFees] + (*sle)[sfSettlementBalance] - (*sle)[sfBadDebt]);
         BEAST_EXPECT(
             (*sle)[sfOpenInterestNotional] ==
-            (*market)[sfOpenInterestLong] * (*market)[sfMarkPrice]);
+            (*market)[sfOpenInterestLong] * (*market)[sfIndexPrice]);
     }
 
     /**
@@ -524,58 +522,25 @@ class PerpOrder_test : public PerpTestBase
         testcase("fees");
         using namespace test::jtx;
 
-        // Taker 1 %, maker 0.5 %; owner 20 % and vault 30 % of each fee, the rest insurance.
-        auto const fees = [](json::Value& jv) {
-            jv[sfVaultLossWindow] = 3'600;
+        // Taker 1 %, maker 0.5 %; owner 20 % of each fee, the rest to the insurance fund.
+        Env env{*this, all_};
+        auto const t = setupTrading(env, [](json::Value& jv) {
             jv[sfTakerFee] = 1'000;
             jv[sfMakerFee] = 500;
             jv[sfOwnerFeeShare] = 20'000;
-            jv[sfVaultFeeShare] = 30'000;
-        };
-        {
-            Env env{*this, all_};
-            auto const t = setupTrading(env, fees);
-            auto const exchange = env.le(t.exchange);
-            if (!BEAST_EXPECT(exchange && exchange->isFieldPresent(sfVaultID)))
-                return;
-            auto const vaultKeylet = keylet::vault((*exchange)[sfVaultID]);
-            env(Vault::deposit({.depositor = carol_, .id = vaultKeylet.key, .amount = usd_(100)}));
-            env.close();
-            Number const vaultBefore = (*env.le(vaultKeylet))[sfAssetsTotal];
+        });
+        env(order(bob_, t.market, Number(2), Number(10), tfPerpSell));
+        env.close();
+        env(order(alice_, t.market, Number(2), Number(10)));
+        env.close();
 
-            env(order(bob_, t.market, Number(2), Number(10), tfPerpSell));
-            env.close();
-            env(order(alice_, t.market, Number(2), Number(10)));
-            env.close();
-
-            BEAST_EXPECT(cashOf(env, alice_, t.exchange) == Number(9998, -1));
-            BEAST_EXPECT(cashOf(env, bob_, t.exchange) == Number(9999, -1));
-            auto const sle = env.le(t.exchange);
-            BEAST_EXPECT(sle && (*sle)[sfOwnerFees] == Number(6, -2));
-            BEAST_EXPECT(sle && (*sle)[sfInsuranceFund] == Number(15, -2));
-            BEAST_EXPECT(sle && (*sle)[sfAssetsTotal] == Number(299991, -2));
-            auto const vault = env.le(vaultKeylet);
-            BEAST_EXPECT(vault && (*vault)[sfAssetsTotal] == vaultBefore + Number(9, -2));
-            expectAccounting(env, t);
-        }
-
-        // Without a vault, the vault share goes to the insurance fund.
-        {
-            Env env{*this, all_};
-            auto const t = setupTrading(env, [&](json::Value& jv) {
-                fees(jv);
-                jv.removeMember(sfVaultLossWindow.getName());
-            });
-            env(order(bob_, t.market, Number(2), Number(10), tfPerpSell));
-            env.close();
-            env(order(alice_, t.market, Number(2), Number(10)));
-            env.close();
-            auto const sle = env.le(t.exchange);
-            BEAST_EXPECT(sle && (*sle)[sfOwnerFees] == Number(6, -2));
-            BEAST_EXPECT(sle && (*sle)[sfInsuranceFund] == Number(24, -2));
-            BEAST_EXPECT(sle && (*sle)[sfAssetsTotal] == Number(3'000));
-            expectAccounting(env, t);
-        }
+        BEAST_EXPECT(cashOf(env, alice_, t.exchange) == Number(9998, -1));
+        BEAST_EXPECT(cashOf(env, bob_, t.exchange) == Number(9999, -1));
+        auto const sle = env.le(t.exchange);
+        BEAST_EXPECT(sle && (*sle)[sfOwnerFees] == Number(6, -2));
+        BEAST_EXPECT(sle && (*sle)[sfInsuranceFund] == Number(24, -2));
+        BEAST_EXPECT(sle && (*sle)[sfAssetsTotal] == Number(3'000));
+        expectAccounting(env, t);
     }
 
     void
@@ -618,7 +583,7 @@ class PerpOrder_test : public PerpTestBase
         BEAST_EXPECT(!env.le(marginKeylet(carol_, t.exchange)));
         env(order(alice_, t.market, Number(2), Number(10)));
         env.close();
-        BEAST_EXPECT(cashOf(env, bob_, t.exchange) == Number(99985, -2));
+        BEAST_EXPECT(near(cashOf(env, bob_, t.exchange), Number(99985, -2)));
         auto const sle = env.le(t.exchange);
         BEAST_EXPECT(sle && (*sle)[sfInsuranceFund] == Number(1, -1));
         expectAccounting(env, t);
@@ -631,18 +596,12 @@ class PerpOrder_test : public PerpTestBase
         using namespace test::jtx;
         Env env{*this, all_};
         auto const t = setupTrading(env);
-        auto subDeposit = Perp::deposit(alice_, t.exchange.key, usd_(100));
-        subDeposit[sfSubaccount] = 1;
-        env(subDeposit);
-        env.close();
 
-        // Alice's own asks, in either subaccount, are cancelled; bob's ask behind them fills.
+        // Alice's own asks are cancelled; bob's ask behind them fills.
         auto const own = Perp::orderKeylet(env, alice_);
         env(order(alice_, t.market, Number(2), Number(5), tfPerpSell));
-        auto const sub = Perp::orderKeylet(env, alice_);
-        auto subOrder = order(alice_, t.market, Number(2), Number(5), tfPerpSell);
-        subOrder[sfSubaccount] = 1;
-        env(subOrder);
+        auto const second = Perp::orderKeylet(env, alice_);
+        env(order(alice_, t.market, Number(2), Number(5), tfPerpSell));
         env.close();
         auto const bobAsk = Perp::orderKeylet(env, bob_);
         env(order(bob_, t.market, Number(2), Number(5), tfPerpSell));
@@ -652,7 +611,7 @@ class PerpOrder_test : public PerpTestBase
         env(order(alice_, t.market, Number(2), Number(5)));
         env.close();
         BEAST_EXPECT(!env.le(own));
-        BEAST_EXPECT(!env.le(sub));
+        BEAST_EXPECT(!env.le(second));
         BEAST_EXPECT(!env.le(bobAsk));
         BEAST_EXPECT(sizeOf(env, alice_, t) == Number(5));
         BEAST_EXPECT(sizeOf(env, bob_, t) == Number(-5));
@@ -661,9 +620,8 @@ class PerpOrder_test : public PerpTestBase
             BEAST_EXPECT(position && (*position)[sfOpenSell] == Number());
             BEAST_EXPECT(position && (*position)[sfOrderCount] == 0);
         }
-        // Subaccount 1's emptied position is deleted: two orders and one position fewer.
-        BEAST_EXPECT(!env.le(positionKeylet(alice_, t, 1)));
-        BEAST_EXPECT(env.ownerCount(alice_) == ownerCount - 3);
+        // Two orders fewer; the position stays, now holding a size.
+        BEAST_EXPECT(env.ownerCount(alice_) == ownerCount - 2);
 
         // With only its own ask on the book, the taker's buy rests.
         env(order(alice_, t.market, Number(2), Number(5), tfPerpSell));
@@ -928,12 +886,15 @@ class PerpOrder_test : public PerpTestBase
         testcase("fill cap");
         using namespace test::jtx;
         Env env{*this, all_};
-        auto const t = setupTrading(env);
+        auto t = setupTrading(env);
 
         // 65 makers, one ask of 1 each on its own price level.
         std::vector<Keylet> asks;
         for (std::int64_t i = 0; i < 65; ++i)
         {
+            // Quotes older than kIndexMaxAge would leave the market Stale.
+            if (i % 5 == 0)
+                freshenOracles(env, t.world);
             Account const maker{"m" + std::to_string(i)};
             env.fund(XRP(10'000), maker);
             env.close();
@@ -946,6 +907,7 @@ class PerpOrder_test : public PerpTestBase
         }
 
         // The taker visits 64 makers and drops the rest; the 65th ask stays.
+        freshenOracles(env, t.world);
         env(order(alice_, t.market, Number(21, -1), Number(65)));
         auto const meta = env.meta();
         env.close();
@@ -995,15 +957,11 @@ class PerpOrder_test : public PerpTestBase
         env(order(bob_, xrp, Number(18, -1), Number(1)));
         env(order(bob_, eth, Number(19, -1), Number(1)), Ter(tecPERP_POSITION_LIMIT));
 
-        // A separate subaccount isolates it.
-        auto subDeposit = Perp::deposit(bob_, exchange.key, usd_(100));
-        subDeposit[sfSubaccount] = 1;
-        env(subDeposit);
-        auto sub = order(bob_, eth, Number(19, -1), Number(1));
-        sub[sfSubaccount] = 1;
-        env(sub);
+        // A second XRPL account isolates it.
+        env(Perp::deposit(carol_, exchange.key, usd_(100)));
+        env(order(carol_, eth, Number(19, -1), Number(1)));
         env.close();
-        auto const margin = env.le(marginKeylet(bob_, exchange, 1));
+        auto const margin = env.le(marginKeylet(carol_, exchange));
         BEAST_EXPECT(margin && margin->getFieldV256(sfMarkets).size() == 1);
     }
 

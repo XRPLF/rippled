@@ -52,7 +52,6 @@ struct Perp
         std::vector<OracleRef> oracles;
         std::string baseAsset{"XRP"};
         std::string quoteAsset{"USD"};
-        std::uint32_t indexMaxAge{300};
         std::uint32_t indexMaxLedgers{10};
         Number priceTick{1, -4};
         Number lotSize{1};
@@ -65,19 +64,11 @@ struct Perp
              .maintenanceMarginRate = 10'000}};
         Number openInterestMax{1'000'000};
         std::uint32_t orderPriceBand{10'000};
-        std::uint32_t midSpreadMax{1'000};
-        std::uint32_t markBand{5'000};
-        std::uint32_t markMoveMax{10'000};
-        std::uint32_t basisWindow{3'600};
-        std::uint32_t fundingCap{4'000};
-        std::uint32_t liquidationPenalty{1'000};
-        std::uint32_t liquidationRewardShare{50'000};
-        Number liquidationChunkMin{10'000};
-        std::uint32_t settleStaleAfter{3'600};
     };
 
     /**
-     * PerpExchangeSet creating an exchange in asset, with the minimum parameter delay.
+     * PerpExchangeSet creating an exchange in asset, with a liquidation penalty of 1 % and a
+     * liquidation chunk minimum of 10 000.
      */
     static json::Value
     exchangeSet(Account const& owner, Asset const& asset);
@@ -107,19 +98,19 @@ struct Perp
     marketDelete(Account const& owner, uint256 const& marketID);
 
     /**
-     * MarginDeposit into subaccount 0 of account on exchangeID.
+     * MarginDeposit into account's margin account on exchangeID.
      */
     static json::Value
     deposit(Account const& account, uint256 const& exchangeID, STAmount const& amount);
 
     /**
-     * MarginWithdraw from subaccount 0 of account on exchangeID.
+     * MarginWithdraw from account's margin account on exchangeID.
      */
     static json::Value
     withdraw(Account const& account, uint256 const& exchangeID, STAmount const& amount);
 
     /**
-     * PerpOrderCreate buying size at price from subaccount 0; tfPerpSell makes it a sell.
+     * PerpOrderCreate buying size at price; tfPerpSell makes it a sell.
      */
     static json::Value
     order(Account const& account, uint256 const& marketID, Number const& price, Number const& size);

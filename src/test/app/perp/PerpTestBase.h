@@ -6,8 +6,8 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/perp.h>
-#include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -54,12 +54,12 @@ protected:
     test::jtx::IOU const usd_{gw_["USD"]};
 
     /**
-     * The oracles and the backstop vault that setupMarketWorld creates.
+     * The oracles that setupMarketWorld creates and the series they quote.
      */
     struct World
     {
         std::vector<Oracle> oracles;
-        Keylet vault;
+        test::jtx::oracle::DataSeries series;
     };
 
     /**
@@ -81,8 +81,8 @@ protected:
     }
 
     /**
-     * Funds the accounts, writes oracles o1, o2 and o3 quoting series (XRP/USD at 2.0 by
-     * default), and creates the owner's USD vault.
+     * Funds the accounts and writes oracles o1, o2 and o3 quoting series (XRP/USD at 2.0 by
+     * default).
      */
     World
     setupMarketWorld(
@@ -92,24 +92,41 @@ protected:
         using namespace test::jtx;
         fundAccounts(env);
 
-        World world{.oracles = {}, .vault = keylet::unchecked(uint256{})};
+        World world{.oracles = {}, .series = series};
         for (auto const& provider : {o1_, o2_, o3_})
         {
             world.oracles.emplace_back(
                 env, oracle::CreateArg{.owner = provider.id(), .documentID = 1, .series = series});
         }
         env.close();
-
-        Vault const vault{.env = env};
-        auto [tx, keylet] = vault.create({.owner = owner_, .asset = usd_});
-        env(tx);
-        env.close();
-        world.vault = keylet;
         return world;
     }
 
     /**
-     * Creates the owner's exchange in asset with the minimum parameter delay; closes the ledger.
+     * Rewrites every oracle of world with its series at the current close time, so that quotes
+     * older than perp::kIndexMaxAge are fresh again; closes the ledger.
+     */
+    static void
+    freshenOracles(Env& env, World& world)
+    {
+        for (auto& oracle : world.oracles)
+            oracle.set(test::jtx::oracle::UpdateArg{.series = world.series});
+        env.close();
+    }
+
+    /**
+     * Whether two collateral amounts are within 0.01 of each other. Funding at
+     * perp::kFundingInterestRate accrues on every open position from one ledger to the next, so
+     * an amount settled across ledgers differs from its funding-free value by that much at most.
+     */
+    [[nodiscard]] static bool
+    near(Number const& actual, Number const& expected)
+    {
+        return abs(actual - expected) < Number{1, -2};
+    }
+
+    /**
+     * Creates the owner's exchange in asset; closes the ledger.
      */
     static Keylet
     createExchange(Env& env, Account const& owner, Asset const& asset)

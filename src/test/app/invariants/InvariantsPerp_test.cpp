@@ -15,13 +15,13 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
@@ -66,8 +66,8 @@ class InvariantsPerp_test : public InvariantsBase
 
     /**
      * The entries setup creates: alice long 10 and bob short 10 in XRP/USD, alice's resting bid
-     * of 5, carol's resting bid of 1 in the isolated-only ETH/USD market, and dave's flat
-     * account.
+     * of 5, carol's resting bid of 1 in the isolated-only ETH/USD market, dave's flat account,
+     * and the owner's USD vault, which no perp transaction may write.
      */
     struct World
     {
@@ -75,7 +75,6 @@ class InvariantsPerp_test : public InvariantsBase
         Keylet xrp;
         Keylet eth;
         Keylet vault;
-        Keylet spareVault;
         Keylet aliceOrder;
         Keylet carolOrder;
     };
@@ -92,7 +91,6 @@ class InvariantsPerp_test : public InvariantsBase
             {.owner = o3_.id(), .documentID = 1}};
         args.baseAsset = base;
         args.indexMaxLedgers = 1'000;
-        args.indexMaxAge = 100'000;
         args.tiers = {
             {.notionalMax = Number{1'000'000},
              .initialMarginRate = 4'000,
@@ -141,19 +139,12 @@ class InvariantsPerp_test : public InvariantsBase
         Vault const vault{.env = env};
         auto [vaultTx, vaultKeylet] = vault.create({.owner = owner_, .asset = usd_});
         env(vaultTx);
-        auto [spareTx, spareKeylet] = vault.create({.owner = owner_, .asset = usd_});
-        env(spareTx);
         env.close();
         env(vault.deposit({.depositor = owner_, .id = vaultKeylet.key, .amount = usd_(1'000)}));
-        env(vault.deposit({.depositor = owner_, .id = spareKeylet.key, .amount = usd_(1'000)}));
         env.close();
 
         auto const exchange = Perp::exchangeKeylet(env, owner_);
-        auto create = Perp::exchangeSet(owner_, usd_);
-        create[sfVaultID] = to_string(vaultKeylet.key);
-        create[sfVaultLossWindow] = 86'400;
-        create[sfVaultLossLimit] = 100'000;
-        env(create);
+        env(Perp::exchangeSet(owner_, usd_));
         env.close();
 
         auto const xrp = keylet::perpMarket(exchange.key, toCurrency("XRP"), toCurrency("USD"));
@@ -186,7 +177,6 @@ class InvariantsPerp_test : public InvariantsBase
             .xrp = xrp,
             .eth = eth,
             .vault = vaultKeylet,
-            .spareVault = spareKeylet,
             .aliceOrder = aliceOrder,
             .carolOrder = carolOrder};
     }
@@ -194,7 +184,7 @@ class InvariantsPerp_test : public InvariantsBase
     [[nodiscard]] static Keylet
     margin(World const& w, Account const& account)
     {
-        return keylet::marginAccount(account.id(), w.exchange.key, 0);
+        return keylet::marginAccount(account.id(), w.exchange.key);
     }
 
     [[nodiscard]] static Keylet
@@ -545,20 +535,36 @@ class InvariantsPerp_test : public InvariantsBase
     testUnmodifiableFields()
     {
         std::vector<std::pair<std::string, Change>> const changes{
-            {"exchange ParameterDelay",
+            {"exchange LiquidationChunkMin",
              [](World const& w, ApplyContext& ac) {
-                 return edit(ac, w.exchange, [](SLE& sle) {
-                     sle.setFieldU32(sfParameterDelay, sle.getFieldU32(sfParameterDelay) + 1);
-                 });
+                 return edit(
+                     ac, w.exchange, [](SLE& sle) { sle[sfLiquidationChunkMin] = Number{1}; });
+             }},
+            {"exchange LiquidationRewardMin",
+             [](World const& w, ApplyContext& ac) {
+                 return edit(
+                     ac, w.exchange, [](SLE& sle) { sle[sfLiquidationRewardMin] = Number{1}; });
              }},
             {"market LotSize",
              [](World const& w, ApplyContext& ac) {
                  return edit(ac, w.xrp, [](SLE& sle) { sle[sfLotSize] = Number{2}; });
              }},
-            {"margin account Subaccount",
+            {"market IndexMaxLedgers",
+             [](World const& w, ApplyContext& ac) {
+                 return edit(ac, w.xrp, [](SLE& sle) { sle[sfIndexMaxLedgers] = 5; });
+             }},
+            {"market IndexOracles",
+             [](World const& w, ApplyContext& ac) {
+                 return edit(ac, w.xrp, [](SLE& sle) {
+                     STArray oracles = sle.getFieldArray(sfIndexOracles);
+                     oracles.pop_back();
+                     sle.setFieldArray(sfIndexOracles, oracles);
+                 });
+             }},
+            {"margin account ExchangeID",
              [&](World const& w, ApplyContext& ac) {
                  return edit(
-                     ac, margin(w, alice_), [](SLE& sle) { sle.setFieldU32(sfSubaccount, 7); });
+                     ac, margin(w, alice_), [](SLE& sle) { sle[sfExchangeID] = uint256{7}; });
              }},
             {"position OwnerNode",
              [&](World const& w, ApplyContext& ac) {
@@ -578,105 +584,27 @@ class InvariantsPerp_test : public InvariantsBase
         }
     }
 
-    /**
-     * Moves amount from the bound vault to the exchange as a waterfall draw credited to alice.
-     */
-    [[nodiscard]] bool
-    drawVault(World const& w, ApplyContext& ac, STAmount const& amount) const
-    {
-        auto const vault = ac.view().peek(w.vault);
-        auto const exchange = ac.view().peek(w.exchange);
-        if (!vault || !exchange)
-            return false;
-        if (!isTesSuccess(accountSend(
-                ac.view(),
-                (*vault)[sfAccount],
-                (*exchange)[sfAccount],
-                amount,
-                ac.journal,
-                {},
-                WaiveTransferFee::Yes)) ||
-            !isTesSuccess(adjustVaultCash(vault, -amount, ac.journal)))
-            return false;
-        ac.view().update(vault);
-        Number const value = amount;
-        add(*exchange, sfAssetsTotal, value);
-        add(*exchange, sfCashTotal, value);
-        ac.view().update(exchange);
-        return edit(ac, margin(w, alice_), [&](SLE& sle) {
-            add(sle, sfCash, value);
-            add(sle, sfWaterfallCredit, value);
-        });
-    }
-
-    /**
-     * Moves amount of alice's cash to the bound vault as a fee share.
-     */
-    [[nodiscard]] bool
-    payVault(World const& w, ApplyContext& ac, STAmount const& amount) const
-    {
-        auto const vault = ac.view().peek(w.vault);
-        auto const exchange = ac.view().peek(w.exchange);
-        if (!vault || !exchange)
-            return false;
-        if (!isTesSuccess(accountSend(
-                ac.view(),
-                (*exchange)[sfAccount],
-                (*vault)[sfAccount],
-                amount,
-                ac.journal,
-                {},
-                WaiveTransferFee::Yes)) ||
-            !isTesSuccess(adjustVaultCash(vault, amount, ac.journal)))
-            return false;
-        ac.view().update(vault);
-        Number const value = amount;
-        add(*exchange, sfAssetsTotal, -value);
-        add(*exchange, sfCashTotal, -value);
-        ac.view().update(exchange);
-        return edit(ac, margin(w, alice_), [&](SLE& sle) { add(sle, sfCash, -value); });
-    }
-
     void
-    testVaultWriters()
+    testVaultWritesRefused()
     {
-        testcase("perp vault writes pass ValidVault");
-        std::initializer_list<TER> const pass{tesSUCCESS, tesSUCCESS};
-
-        check(
-            {},
-            [](World const& w, ApplyContext& ac) {
-                return edit(ac, w.spareVault, [&](SLE& sle) {
-                    sle.setFieldH256(sfPerpExchangeID, w.exchange.key);
-                });
-            },
-            ttPERP_EXCHANGE_SET,
-            pass);
-
-        for (auto const type : {ttPERP_ORDER_CREATE, ttPERP_LIQUIDATE})
-        {
-            testcase("vault fee share paid by " + std::to_string(static_cast<int>(type)));
-            check(
-                {},
-                [&](World const& w, ApplyContext& ac) { return payVault(w, ac, usd_(10)); },
-                type,
-                pass);
-        }
-
-        // Every transaction that settles an account may draw the vault in the waterfall.
+        // No perp transaction carries a vault privilege, so none may write a vault.
         for (auto const type :
-             {ttMARGIN_DEPOSIT,
-              ttPERP_LIQUIDATE,
-              ttPERP_REFRESH,
+             {ttPERP_EXCHANGE_SET,
+              ttPERP_EXCHANGE_DELETE,
+              ttMARGIN_DEPOSIT,
+              ttMARGIN_WITHDRAW,
               ttPERP_ORDER_CREATE,
-              ttMARGIN_WITHDRAW})
+              ttPERP_LIQUIDATE,
+              ttPERP_REFRESH})
         {
-            testcase("vault draw by " + std::to_string(static_cast<int>(type)));
+            testcase("vault written by " + std::to_string(static_cast<int>(type)));
             check(
-                {},
-                [&](World const& w, ApplyContext& ac) { return drawVault(w, ac, usd_(10)); },
-                type,
-                pass);
+                {"vault updated by a wrong transaction type"},
+                [](World const& w, ApplyContext& ac) {
+                    return edit(
+                        ac, w.vault, [](SLE& sle) { sle[sfAssetsMaximum] = Number{5'000}; });
+                },
+                type);
         }
     }
 
@@ -696,7 +624,7 @@ public:
         testBoundedLists();
         testPseudoAccountOwnership();
         testUnmodifiableFields();
-        testVaultWriters();
+        testVaultWritesRefused();
     }
 };
 

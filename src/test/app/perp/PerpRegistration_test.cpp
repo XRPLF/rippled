@@ -5,6 +5,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -18,6 +19,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -54,7 +56,7 @@ class PerpRegistration_test : public PerpTestBase
         using namespace test::jtx;
         auto const exchangeID = keylet::perpExchange(owner_.id(), SeqProxy::rawSequence(5)).key;
         auto const marketID = keylet::perpMarket(exchangeID, xrpCurrency(), toCurrency("USD")).key;
-        auto const marginAccountID = keylet::marginAccount(alice_.id(), exchangeID, 0).key;
+        auto const marginAccountID = keylet::marginAccount(alice_.id(), exchangeID).key;
 
         Perp::MarketArgs const market{
             .oracles =
@@ -99,16 +101,12 @@ class PerpRegistration_test : public PerpTestBase
         testcase("amendment gate");
         using namespace test::jtx;
 
-        for (auto const& features :
-             {all_ - featurePerpetualFutures, all_ - featureSingleAssetVault})
+        Env env{*this, all_ - featurePerpetualFutures};
+        fundAccounts(env);
+        for (auto const& [name, jv, ownerTx] : allTransactions())
         {
-            Env env{*this, features};
-            fundAccounts(env);
-            for (auto const& [name, jv, ownerTx] : allTransactions())
-            {
-                testcase << "amendment gate: " << name;
-                env(jv, Ter(temDISABLED));
-            }
+            testcase << "amendment gate: " << name;
+            env(jv, Ter(temDISABLED));
         }
     }
 
@@ -196,7 +194,7 @@ class PerpRegistration_test : public PerpTestBase
         auto const exchange = keylet::perpExchange(owner_.id(), SeqProxy::rawSequence(7));
         auto const usd = toCurrency("USD");
         auto const market = keylet::perpMarket(exchange.key, xrpCurrency(), usd);
-        auto const marginAccount = keylet::marginAccount(alice_.id(), exchange.key, 3);
+        auto const marginAccount = keylet::marginAccount(alice_.id(), exchange.key);
         auto const position = keylet::marginPosition(marginAccount.key, market.key);
         auto const order = keylet::perpOrder(alice_.id(), SeqProxy::rawSequence(9));
 
@@ -240,7 +238,6 @@ class PerpRegistration_test : public PerpTestBase
             json::Value object;
             object[jss::account] = alice_.human();
             object[jss::exchange_id] = to_string(exchange.key);
-            object[jss::subaccount] = 3;
             check(jss::margin_account, object, marginAccount, "MarginAccount");
         }
         {
@@ -257,6 +254,127 @@ class PerpRegistration_test : public PerpTestBase
         }
     }
 
+    /**
+     * The amendments that switch on 19-digit Number other than PerpetualFutures.
+     */
+    [[nodiscard]] FeatureBitset
+    withoutVault() const
+    {
+        return all_ - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2;
+    }
+
+    void
+    testLargeNumbersWithoutVault()
+    {
+        testcase("large numbers without vault");
+        using namespace test::jtx;
+
+        // 2^63 - 1 has 19 significant digits; the 16-digit regime rounds it.
+        auto const holds19Digits = [] {
+            Number const probe{9'223'372'036'854'775'807LL, 0};
+            return probe.mantissa() == 9'223'372'036'854'775'807LL && probe.exponent() == 0;
+        };
+
+        // PerpetualFutures alone switches the transaction rules to 19-digit Number.
+        {
+            Env env{*this, withoutVault()};
+            auto const& rules = env.current()->rules();
+            BEAST_EXPECT(useRulesGuards(rules));
+            CurrentTransactionRulesGuard const guard(rules);
+            BEAST_EXPECT(Number::getMantissaScale() != MantissaRange::MantissaScale::Small);
+            BEAST_EXPECT(holds19Digits());
+        }
+        {
+            Env env{*this, withoutVault() - featurePerpetualFutures};
+            CurrentTransactionRulesGuard const guard(env.current()->rules());
+            BEAST_EXPECT(Number::getMantissaScale() == MantissaRange::MantissaScale::Small);
+            BEAST_EXPECT(!holds19Digits());
+        }
+
+        // A fill of 123 at 2.000000000000001 keeps its 18-digit notional exactly.
+        Env env{*this, withoutVault()};
+        setupMarketWorld(env);
+        auto const exchange = createExchange(env, owner_, usd_);
+        auto args = marketArgs();
+        args.priceTick = Number{1, -15};
+        env(Perp::marketSet(owner_, exchange.key, args));
+        env.close();
+        auto const market = marketKeylet(exchange.key);
+        for (auto const* trader : {&alice_, &bob_})
+            env(Perp::deposit(*trader, exchange.key, usd_(1'000)));
+        env.close();
+        Number const price{2'000'000'000'000'001, -15};
+        auto ask = Perp::order(bob_, market.key, price, Number{123});
+        ask[jss::Flags] = tfPerpSell;
+        env(ask);
+        env(Perp::order(alice_, market.key, price, Number{123}));
+        auto const position = env.le(
+            keylet::marginPosition(
+                keylet::marginAccount(alice_.id(), exchange.key).key, market.key));
+        BEAST_EXPECT(
+            position && (*position)[sfEntryNotional] == Number(246'000'000'000'000'123, -15));
+    }
+
+    void
+    testNoVaultDependency()
+    {
+        testcase("no vault dependency");
+        using namespace test::jtx;
+
+        // Every transaction type applies with SingleAssetVault, LendingProtocol and MPTokensV2
+        // disabled.
+        Env env{*this, withoutVault()};
+        BEAST_EXPECT(!env.current()->rules().enabled(featureSingleAssetVault));
+        setupMarketWorld(env);
+        auto const exchange = createExchange(env, owner_, usd_);
+        env(Perp::marketSet(owner_, exchange.key, marketArgs()));
+        env.close();
+        auto const market = marketKeylet(exchange.key);
+        BEAST_EXPECT(env.le(market));
+
+        env(Perp::deposit(owner_, exchange.key, usd_(100)), Txflags(tfPerpCover));
+        for (auto const* trader : {&alice_, &bob_, &liq_})
+            env(Perp::deposit(*trader, exchange.key, usd_(1'000)));
+        env.close();
+
+        auto ask = Perp::order(bob_, market.key, Number{2}, Number{10});
+        ask[jss::Flags] = tfPerpSell;
+        env(ask);
+        env(Perp::order(alice_, market.key, Number{2}, Number{10}));
+        auto const restingSeq = env.seq(alice_);
+        env(Perp::order(alice_, market.key, Number{19, -1}, Number{1}));
+        env.close();
+        auto const alicePosition = keylet::marginPosition(
+            keylet::marginAccount(alice_.id(), exchange.key).key, market.key);
+        auto const position = env.le(alicePosition);
+        BEAST_EXPECT(position && (*position)[sfSize] == Number(10));
+
+        env(Perp::cancel(alice_, restingSeq));
+        env(Perp::refresh(liq_, market.key));
+        env(Perp::refreshAccount(liq_, keylet::marginAccount(bob_.id(), exchange.key).key));
+        env(Perp::liquidate(
+                liq_,
+                keylet::marginAccount(alice_.id(), exchange.key).key,
+                market.key,
+                tfPerpLiquidateToBook),
+            Ter(tecPERP_HEALTHY));
+        env(Perp::withdraw(liq_, exchange.key, usd_(1'000)), Txflags(tfPerpDeleteAccount));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::marginAccount(liq_.id(), exchange.key)));
+
+        auto settle = Perp::marketUpdate(owner_, market.key);
+        settle[jss::Flags] = tfPerpMarketSettle;
+        env(settle);
+        env.close();
+        env(Perp::refreshAccount(liq_, keylet::marginAccount(alice_.id(), exchange.key).key));
+        env(Perp::refreshAccount(liq_, keylet::marginAccount(bob_.id(), exchange.key).key));
+        env.close();
+        BEAST_EXPECT(!env.le(alicePosition));
+        env(Perp::marketDelete(owner_, market.key));
+        env.close();
+        BEAST_EXPECT(!env.le(market));
+    }
+
 public:
     void
     run() override
@@ -265,6 +383,8 @@ public:
         testInnerBatchRefused();
         testFlagsMasks();
         testLedgerEntryRpc();
+        testLargeNumbersWithoutVault();
+        testNoVaultDependency();
     }
 };
 

@@ -6,7 +6,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -39,7 +38,8 @@ Perp::exchangeSet(Account const& owner, Asset const& asset)
 {
     auto jv = base(jss::PerpExchangeSet, owner);
     jv[jss::Asset] = toJson(asset);
-    jv[sfParameterDelay] = static_cast<std::uint32_t>(perp::kMinParameterDelay.count());
+    jv[sfLiquidationPenalty] = 1'000;
+    jv[sfLiquidationChunkMin] = "10000";
     return jv;
 }
 
@@ -88,21 +88,11 @@ Perp::marketSet(Account const& owner, uint256 const& exchangeID, MarketArgs cons
     }
     jv[sfMarginTiers] = tiers;
 
-    jv[sfIndexMaxAge] = args.indexMaxAge;
     jv[sfIndexMaxLedgers] = args.indexMaxLedgers;
     jv[sfPriceTick] = to_string(args.priceTick);
     jv[sfLotSize] = to_string(args.lotSize);
     jv[sfOpenInterestMax] = to_string(args.openInterestMax);
     jv[sfOrderPriceBand] = args.orderPriceBand;
-    jv[sfMidSpreadMax] = args.midSpreadMax;
-    jv[sfMarkBand] = args.markBand;
-    jv[sfMarkMoveMax] = args.markMoveMax;
-    jv[sfBasisWindow] = args.basisWindow;
-    jv[sfFundingCap] = args.fundingCap;
-    jv[sfLiquidationPenalty] = args.liquidationPenalty;
-    jv[sfLiquidationRewardShare] = args.liquidationRewardShare;
-    jv[sfLiquidationChunkMin] = to_string(args.liquidationChunkMin);
-    jv[sfSettleStaleAfter] = args.settleStaleAfter;
     return jv;
 }
 

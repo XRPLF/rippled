@@ -11,6 +11,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -24,6 +25,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -94,8 +96,12 @@ class PerpMarket_test : public PerpTestBase
         BEAST_EXPECT(env.le(exchange) && (*env.le(exchange))[sfMarketCount] == 1);
         BEAST_EXPECT((*market)[sfExchangeID] == exchange.key);
         BEAST_EXPECT((*market)[sfIndexPrice] == Number(22, -1));
-        BEAST_EXPECT((*market)[sfMarkPrice] == Number(22, -1));
+        BEAST_EXPECT((*market)[sfBasisEMA] == Number(0));
+        BEAST_EXPECT(
+            (*market)[sfFundingRate] ==
+            Number{perp::kFundingInterestRate} / Number{perp::kRateUnity});
         BEAST_EXPECT((*market)[sfMarketStatus] == perp::kMarketLive);
+        BEAST_EXPECT((*market)[sfStatusTime] == t);
         BEAST_EXPECT((*market)[sfLastRefreshTime] == t);
         BEAST_EXPECT((*market)[sfRefreshLedger] == seq);
         BEAST_EXPECT((*market)[sfOpenInterestLong] == Number(0));
@@ -204,150 +210,131 @@ class PerpMarket_test : public PerpTestBase
     }
 
     void
-    testMidSpreadBelowBand()
+    testTightenOnly()
     {
-        testcase("mid spread below band");
+        testcase("tighten only");
         using namespace test::jtx;
         Env env{*this, all_};
         setupMarketWorld(env);
         auto const exchange = createExchange(env, owner_, usd_);
-
-        auto args = marketArgs();
-        args.midSpreadMax = args.orderPriceBand;
-        env(Perp::marketSet(owner_, exchange.key, args), Ter(temMALFORMED));
         env(Perp::marketSet(owner_, exchange.key, marketArgs()));
         env.close();
         auto const market = marketKeylet(exchange.key);
+        auto const defaults = marketArgs().tiers;
 
-        auto update = [&](SF_UINT32 const& field, std::uint32_t value) {
+        // An update naming a fixed field, or the isolation flag, is malformed.
+        auto fixedField = [&](json::StaticString const& name, json::Value const& value) {
             auto jv = Perp::marketUpdate(owner_, market.key);
-            jv[field] = value;
-            return jv;
+            jv[name] = value;
+            env(jv, Ter(temMALFORMED));
         };
-
-        // A queued raise of the spread is checked against the band it will meet.
-        env(update(sfMidSpreadMax, 10'000), Ter(tecLIMIT_EXCEEDED));
-
-        // An immediate narrowing of the band is checked against the current spread.
-        env(update(sfOrderPriceBand, 1'000), Ter(tecLIMIT_EXCEEDED));
-
-        // ...and against the queued spread.
-        env(update(sfMidSpreadMax, 5'000));
-        env.close();
-        env(update(sfOrderPriceBand, 4'000), Ter(tecLIMIT_EXCEEDED));
-        env(update(sfOrderPriceBand, 6'000));
-        env.close();
-        auto const sle = env.le(market);
-        if (!BEAST_EXPECT(sle))
-            return;
-        BEAST_EXPECT((*sle)[sfOrderPriceBand] == 6'000);
-        BEAST_EXPECT((*sle)[sfMidSpreadMax] == 1'000);
-        BEAST_EXPECT(sle->getFieldObject(sfPendingParameters)[~sfMidSpreadMax] == 5'000u);
-    }
-
-    void
-    testChangeClasses()
-    {
-        testcase("change classes");
-        using namespace test::jtx;
-        Env env{*this, all_};
-        setupMarketWorld(env);
-        auto const exchange = createExchange(env, owner_, usd_);
-        env(Perp::marketSet(owner_, exchange.key, marketArgs()));
-        env.close();
-        auto const market = marketKeylet(exchange.key);
-
-        // Fixed: the tick, the lot and the isolation flag cannot change.
-        auto fixed = Perp::marketUpdate(owner_, market.key);
-        fixed[sfPriceTick] = "0.01";
-        env(fixed, Ter(temMALFORMED));
+        fixedField(sfExchangeID.getJsonName(), to_string(exchange.key));
+        fixedField(sfBaseAsset.getJsonName(), "XRP");
+        fixedField(sfQuoteAsset.getJsonName(), "USD");
+        fixedField(sfPriceTick.getJsonName(), "0.0001");
+        fixedField(sfLotSize.getJsonName(), "1");
+        fixedField(sfIndexMaxLedgers.getJsonName(), 10);
+        fixedField(
+            sfIndexOracles.getJsonName(),
+            Perp::marketSet(owner_, exchange.key, marketArgs())[sfIndexOracles.getJsonName()]);
         auto isolate = Perp::marketUpdate(owner_, market.key);
         isolate[jss::Flags] = tfPerpIsolatedOnly;
         env(isolate, Ter(temMALFORMED));
+        env.close();
 
-        // Tightening changes apply at once: a lower OI cap (delayed up), a longer settle wait
-        // (delayed down) and higher margin rates (delayed loosen).
+        auto stored = [&]() { return env.le(market); };
+        auto expectUnchanged = [&]() {
+            auto const sle = stored();
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT((*sle)[sfOpenInterestMax] == Number(1'000'000));
+            BEAST_EXPECT((*sle)[sfOrderPriceBand] == 10'000);
+            auto const& tiers = sle->getFieldArray(sfMarginTiers);
+            BEAST_EXPECT(tiers.size() == 2);
+            BEAST_EXPECT(initialRate(tiers, 0) == 10'000);
+            BEAST_EXPECT(tiers[1][sfNotionalMax] == Number(1'000'000));
+        };
+
+        // Each loosening is refused and changes nothing: a higher open-interest cap, a wider
+        // price band, a lower margin rate in any tier, a higher notional bound, or another tier
+        // count.
+        auto loosen = [&](std::function<void(json::Value&)> const& change) {
+            auto jv = Perp::marketUpdate(owner_, market.key);
+            change(jv);
+            env(jv, Ter(tecNO_PERMISSION));
+        };
+        loosen([](json::Value& jv) { jv[sfOpenInterestMax] = "1000001"; });
+        loosen([](json::Value& jv) { jv[sfOrderPriceBand] = 10'001; });
+        loosen([&](json::Value& jv) {
+            auto tiers = defaults;
+            tiers[0].initialMarginRate = 9'000;
+            jv[sfMarginTiers] = tiersJson(tiers);
+        });
+        loosen([&](json::Value& jv) {
+            auto tiers = defaults;
+            tiers[1].maintenanceMarginRate = 9'000;
+            jv[sfMarginTiers] = tiersJson(tiers);
+        });
+        loosen([&](json::Value& jv) {
+            auto tiers = defaults;
+            tiers[1].notionalMax = Number{2'000'000};
+            jv[sfMarginTiers] = tiersJson(tiers);
+        });
+        loosen([&](json::Value& jv) { jv[sfMarginTiers] = tiersJson({defaults[0]}); });
+        loosen([&](json::Value& jv) {
+            auto tiers = defaults;
+            tiers.push_back(
+                {.notionalMax = Number{2'000'000},
+                 .initialMarginRate = 50'000,
+                 .maintenanceMarginRate = 25'000});
+            jv[sfMarginTiers] = tiersJson(tiers);
+        });
+
+        // One loosening field refuses the whole update.
+        loosen([](json::Value& jv) {
+            jv[sfOpenInterestMax] = "500000";
+            jv[sfOrderPriceBand] = 20'000;
+        });
+        env.close();
+        expectUnchanged();
+
+        // Each tightening applies at once: a lower cap, a narrower band, higher rates and a lower
+        // notional bound in the same number of tiers.
         std::vector<Perp::Tier> const tighter{
-            {.notionalMax = Number{100'000},
+            {.notionalMax = Number{80'000},
              .initialMarginRate = 12'000,
              .maintenanceMarginRate = 6'000},
-            {.notionalMax = Number{1'000'000},
+            {.notionalMax = Number{900'000},
              .initialMarginRate = 22'000,
              .maintenanceMarginRate = 11'000}};
         auto tighten = Perp::marketUpdate(owner_, market.key);
         tighten[sfOpenInterestMax] = "500000";
-        tighten[sfSettleStaleAfter] = 7'200;
+        tighten[sfOrderPriceBand] = 5'000;
         tighten[sfMarginTiers] = tiersJson(tighter);
         env(tighten);
-        env.close();
         {
-            auto const sle = env.le(market);
+            auto const sle = stored();
             if (!BEAST_EXPECT(sle))
                 return;
             BEAST_EXPECT((*sle)[sfOpenInterestMax] == Number(500'000));
-            BEAST_EXPECT((*sle)[sfSettleStaleAfter] == 7'200);
-            BEAST_EXPECT(initialRate(sle->getFieldArray(sfMarginTiers), 0) == 12'000);
-            BEAST_EXPECT(!sle->isFieldPresent(sfPendingParameters));
+            BEAST_EXPECT((*sle)[sfOrderPriceBand] == 5'000);
+            auto const& tiers = sle->getFieldArray(sfMarginTiers);
+            BEAST_EXPECT(tiers.size() == 2);
+            BEAST_EXPECT(initialRate(tiers, 0) == 12'000);
+            BEAST_EXPECT(tiers[0][sfNotionalMax] == Number(80'000));
+            BEAST_EXPECT(tiers[1][sfMaintenanceMarginRate] == 11'000);
         }
-
-        // Loosening changes are queued: any change of a delayed field, a higher OI cap, a
-        // shorter settle wait and lower margin rates.
-        auto const t = perp::refreshTime(*env.current());
-        auto loosen = Perp::marketUpdate(owner_, market.key);
-        loosen[sfBasisWindow] = 1'800;
-        loosen[sfOpenInterestMax] = "2000000";
-        loosen[sfSettleStaleAfter] = 3'600;
-        loosen[sfMarginTiers] = tiersJson(marketArgs().tiers);
-        env(loosen);
         env.close();
-        {
-            auto const sle = env.le(market);
-            if (!BEAST_EXPECT(sle && sle->isFieldPresent(sfPendingParameters)))
-                return;
-            BEAST_EXPECT((*sle)[sfBasisWindow] == 3'600);
-            BEAST_EXPECT((*sle)[sfOpenInterestMax] == Number(500'000));
-            BEAST_EXPECT((*sle)[sfSettleStaleAfter] == 7'200);
-            BEAST_EXPECT(initialRate(sle->getFieldArray(sfMarginTiers), 0) == 12'000);
-            BEAST_EXPECT((*sle)[~sfParameterEffectiveTime] == t + perp::kMinParameterDelay.count());
-            auto const& pending = sle->getFieldObject(sfPendingParameters);
-            BEAST_EXPECT(pending[~sfBasisWindow] == 1'800u);
-            BEAST_EXPECT(pending[~sfOpenInterestMax] == Number(2'000'000));
-            BEAST_EXPECT(pending[~sfSettleStaleAfter] == 3'600u);
-            BEAST_EXPECT(pending.isFieldPresent(sfMarginTiers));
-        }
 
-        // A raised notional bound alone loosens the tiers too.
-        auto wider = Perp::marketUpdate(owner_, market.key);
-        auto widerTiers = tighter;
-        widerTiers[1].notionalMax = Number{2'000'000};
-        wider[sfMarginTiers] = tiersJson(widerTiers);
-        wider[sfBasisWindow] = 1'800;
-        wider[sfOpenInterestMax] = "2000000";
-        wider[sfSettleStaleAfter] = 3'600;
-        env(wider);
+        // Unchanged values are accepted; the previous values would now loosen.
+        auto same = Perp::marketUpdate(owner_, market.key);
+        same[sfOpenInterestMax] = "500000";
+        same[sfMarginTiers] = tiersJson(tighter);
+        env(same);
+        loosen([](json::Value& jv) { jv[sfOpenInterestMax] = "1000000"; });
+        loosen([](json::Value& jv) { jv[sfOrderPriceBand] = 10'000; });
+        loosen([&](json::Value& jv) { jv[sfMarginTiers] = tiersJson(defaults); });
         env.close();
-        {
-            auto const sle = env.le(market);
-            if (!BEAST_EXPECT(sle && sle->isFieldPresent(sfPendingParameters)))
-                return;
-            BEAST_EXPECT(sle->getFieldArray(sfMarginTiers)[1][sfNotionalMax] == Number(1'000'000));
-        }
-
-        // The first refresh after the delay applies the queued change.
-        env.close(env.now() + perp::kMinParameterDelay);
-        env(Perp::marketUpdate(owner_, market.key));
-        env.close();
-        {
-            auto const sle = env.le(market);
-            if (!BEAST_EXPECT(sle))
-                return;
-            BEAST_EXPECT((*sle)[sfBasisWindow] == 1'800);
-            BEAST_EXPECT((*sle)[sfOpenInterestMax] == Number(2'000'000));
-            BEAST_EXPECT((*sle)[sfSettleStaleAfter] == 3'600);
-            BEAST_EXPECT(sle->getFieldArray(sfMarginTiers)[1][sfNotionalMax] == Number(2'000'000));
-            BEAST_EXPECT(!sle->isFieldPresent(sfPendingParameters));
-            BEAST_EXPECT(!sle->isFieldPresent(sfParameterEffectiveTime));
-        }
 
         // Only the owner updates a market, and the market must exist.
         auto other = Perp::marketUpdate(alice_, market.key);
@@ -385,7 +372,7 @@ class PerpMarket_test : public PerpTestBase
         onCreate[jss::Flags] = tfPerpMarketSettle;
         env(onCreate, Ter(temMALFORMED));
 
-        // A Live market settles at its current mark.
+        // A Live market settles at its current index, which is frozen from then on.
         auto const t = perp::refreshTime(*env.current());
         env(settle(owner_, liveMarket));
         env.close();
@@ -394,9 +381,9 @@ class PerpMarket_test : public PerpTestBase
             if (!BEAST_EXPECT(sle))
                 return;
             BEAST_EXPECT((*sle)[sfMarketStatus] == perp::kMarketSettled);
-            BEAST_EXPECT((*sle)[~sfSettlementPrice] == Number(2));
-            BEAST_EXPECT((*sle)[~sfSettlementPrice] == (*sle)[sfMarkPrice]);
-            BEAST_EXPECT((*sle)[~sfSettledAt] == t);
+            BEAST_EXPECT((*sle)[sfIndexPrice] == Number(2));
+            BEAST_EXPECT((*sle)[sfStatusTime] == t);
+            BEAST_EXPECT((*sle)[sfFundingRate] == Number(0));
         }
         env(settle(owner_, liveMarket), Ter(tecPERP_MARKET_SETTLED));
 
@@ -407,7 +394,6 @@ class PerpMarket_test : public PerpTestBase
         env.close();
         auto const sle = env.le(staleMarket);
         BEAST_EXPECT(sle && (*sle)[sfMarketStatus] == perp::kMarketLive);
-        BEAST_EXPECT(sle && !sle->isFieldPresent(sfSettlementPrice));
     }
 
     void
@@ -503,7 +489,6 @@ class PerpMarket_test : public PerpTestBase
             args.oracles = {{.owner = o1_.id(), .documentID = document(i)}};
             args.quoteAsset = quote(i);
             args.indexMaxLedgers = 100;
-            args.indexMaxAge = 3'600;
             return args;
         };
         for (std::size_t i = 0; i < perp::kMaxPerpMarkets; ++i)
@@ -531,8 +516,7 @@ public:
     {
         testCreateNeedsQuorum();
         testTierValidation();
-        testMidSpreadBelowBand();
-        testChangeClasses();
+        testTightenOnly();
         testSettleLive();
         testDeleteRequirements();
         testMarketLimit();

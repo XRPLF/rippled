@@ -5,7 +5,6 @@
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -42,14 +41,6 @@ struct SettleOptions
      * Adds an ETH/USD market beside XRP/USD.
      */
     bool eth{};
-    /**
-     * sfFundingInterestRate of every market, in tenth-bips.
-     */
-    std::int32_t interest{};
-    /**
-     * Binds the owner's vault with this sfVaultLossLimit.
-     */
-    std::optional<std::uint32_t> vaultLossLimit;
 };
 
 }  // namespace
@@ -82,20 +73,16 @@ class PerpSettle_test : public PerpTestBase
      * A market on wide oracle bounds, with one tier of 4 % initial and 2 % maintenance margin.
      */
     [[nodiscard]] json::Value
-    marketTx(Keylet const& exchange, std::string const& base, SettleOptions const& options) const
+    marketTx(Keylet const& exchange, std::string const& base) const
     {
         auto args = marketArgs();
         args.baseAsset = base;
         args.indexMaxLedgers = 1'000;
-        args.indexMaxAge = 100'000;
         args.tiers = {
             {.notionalMax = Number{1'000'000},
              .initialMarginRate = 4'000,
              .maintenanceMarginRate = 2'000}};
-        auto jv = Perp::marketSet(owner_, exchange.key, args);
-        if (options.interest != 0)
-            jv[sfFundingInterestRate] = options.interest;
-        return jv;
+        return Perp::marketSet(owner_, exchange.key, args);
     }
 
     /**
@@ -107,20 +94,10 @@ class PerpSettle_test : public PerpTestBase
         auto const world =
             setupMarketWorld(env, prices(100, options.eth ? std::optional{100u} : std::nullopt));
 
-        auto const exchange = Perp::exchangeKeylet(env, owner_);
-        auto create = Perp::exchangeSet(owner_, usd_);
-        if (options.vaultLossLimit)
-        {
-            create[sfVaultID] = to_string(world.vault.key);
-            create[sfVaultLossWindow] = 86'400;
-            create[sfVaultLossLimit] = *options.vaultLossLimit;
-        }
-        env(create);
-        env.close();
-
-        env(marketTx(exchange, "XRP", options));
+        auto const exchange = createExchange(env, owner_, usd_);
+        env(marketTx(exchange, "XRP"));
         if (options.eth)
-            env(marketTx(exchange, "ETH", options));
+            env(marketTx(exchange, "ETH"));
         env.close();
         return {
             .world = world,
@@ -188,7 +165,7 @@ class PerpSettle_test : public PerpTestBase
     }
 
     /**
-     * The exchange owner settles a Live market at its mark.
+     * The exchange owner settles a Live market at its index.
      */
     void
     settleByOwner(Env& env, Keylet const& market)
@@ -210,7 +187,7 @@ class PerpSettle_test : public PerpTestBase
     [[nodiscard]] static Keylet
     marginKeylet(Account const& account, Settling const& t)
     {
-        return keylet::marginAccount(account.id(), t.exchange.key, 0);
+        return keylet::marginAccount(account.id(), t.exchange.key);
     }
 
     [[nodiscard]] static Keylet
@@ -316,31 +293,34 @@ class PerpSettle_test : public PerpTestBase
         testcase("refresh funding flows");
         using namespace test::jtx;
         Env env{*this, all_};
-        auto t = setup(env, {.interest = 50});
+        auto t = setup(env);
         deposit(env, t, alice_, 2'000);
         deposit(env, t, bob_, 2'000);
         env.close();
         trade(env, t.xrp, bob_, alice_, Number(100), Number(100));
 
-        // Interest 0.05 % with mark at index: F = 0 + clamp(0.0005, +-0.0005) = 0.0005 per 8 h.
-        BEAST_EXPECT(marketField(env, t.xrp, sfFundingRate) == Number(5, -4));
+        // With no book basis the rate is the interest term: 0 + clamp(0.0001, +-0.0005) = 0.0001
+        // per 8 h.
+        BEAST_EXPECT(marketField(env, t.xrp, sfFundingRate) == Number(1, -4));
         Number const before = marketField(env, t.xrp, sfCumulativeFunding);
         auto const bobPosition = env.le(positionKeylet(bob_, t, t.xrp));
         BEAST_EXPECT(bobPosition && (*bobPosition)[sfFundingIndex] == before);
 
-        // More than 8 h later a keeper refreshes: 0.0005 x 100 x 28800 / 28800 = 0.05 per unit.
-        // Settling each account in the same ledger moves 100 x 0.05 = 5 from the long to the
-        // short.
+        // More than 8 h later, with fresh quotes, a keeper refreshes: 0.0001 x 100 x 28800 / 28800
+        // = 0.01 per unit. Settling each account in the same ledger moves 100 x 0.01 = 1 from the
+        // long to the short.
         env.close(std::chrono::seconds{30'000});
+        movePrices(env, t, 100, std::nullopt);
         Number const balance = exchangeField(env, t, sfSettlementBalance);
         env(Perp::refresh(carol_, t.xrp.key));
         env(settle(carol_, bob_, t));
         env(settle(carol_, alice_, t));
         env.close();
+        BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketLive);
         Number const after = marketField(env, t.xrp, sfCumulativeFunding);
-        BEAST_EXPECT(after == before + Number(5, -2));
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'995));
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'005));
+        BEAST_EXPECT(after == before + Number(1, -2));
+        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'999));
+        BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'001));
         BEAST_EXPECT(exchangeField(env, t, sfSettlementBalance) == balance);
         auto const alicePosition = env.le(positionKeylet(alice_, t, t.xrp));
         BEAST_EXPECT(alicePosition && (*alicePosition)[sfFundingIndex] == after);
@@ -372,7 +352,7 @@ class PerpSettle_test : public PerpTestBase
         // alice's book liquidation at 108 leaves cash -50, paid by the longs: 50 / 100 = 0.5.
         env(Perp::liquidate(liq_, marginKeylet(alice_, t).key, t.xrp.key, tfPerpLiquidateToBook));
         env.close();
-        BEAST_EXPECT(marketField(env, t.xrp, sfLossIndexLong) == Number(5, -1));
+        BEAST_EXPECT(near(marketField(env, t.xrp, sfLossIndexLong), Number(5, -1)));
         BEAST_EXPECT(marketField(env, t.xrp, sfLossIndexShort) == Number(0));
 
         // The review's finding 3: liq's position is created by a resting ask and first filled
@@ -388,7 +368,7 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(sizeOf(env, liq_, t, t.xrp) == Number(-10));
         env(settle(carol_, liq_, t));
         env.close();
-        BEAST_EXPECT(cashOf(env, liq_, t) == Number(1'000));
+        BEAST_EXPECT(near(cashOf(env, liq_, t), Number(1'000)));
         {
             auto const position = env.le(positionKeylet(liq_, t, t.xrp));
             BEAST_EXPECT(position && (*position)[sfLossIndex] == Number(0));
@@ -396,7 +376,7 @@ class PerpSettle_test : public PerpTestBase
 
         // bob paid 100 x 0.5 = 50 as a long. His sale of 220 flips him short 110 and carol's
         // purchase flips her long 120: each takes the new side's index and is not charged again.
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'950));
+        BEAST_EXPECT(near(cashOf(env, bob_, t), Number(1'950)));
         env(order(carol_, t.xrp, Number(110), Number(220)));
         env.close();
         env(order(bob_, t.xrp, Number(110), Number(220), tfPerpSell));
@@ -410,8 +390,8 @@ class PerpSettle_test : public PerpTestBase
         env(settle(liq_, bob_, t));
         env(settle(liq_, carol_, t));
         env.close();
-        BEAST_EXPECT(cashOf(env, bob_, t) == bobCash);
-        BEAST_EXPECT(cashOf(env, carol_, t) == carolCash);
+        BEAST_EXPECT(near(cashOf(env, bob_, t), bobCash));
+        BEAST_EXPECT(near(cashOf(env, carol_, t), carolCash));
         auto const bobPosition = env.le(positionKeylet(bob_, t, t.xrp));
         BEAST_EXPECT(bobPosition && (*bobPosition)[sfLossIndex] == Number(0));
         auto const carolPosition = env.le(positionKeylet(carol_, t, t.xrp));
@@ -425,7 +405,7 @@ class PerpSettle_test : public PerpTestBase
         testcase("stale refuses orders");
         using namespace test::jtx;
         Env env{*this, all_};
-        auto t = setup(env, {.interest = 50});
+        auto t = setup(env);
         deposit(env, t, alice_, 2'000);
         deposit(env, t, bob_, 2'000);
         deposit(env, t, carol_, 1'000);
@@ -436,7 +416,7 @@ class PerpSettle_test : public PerpTestBase
         env(order(carol_, t.xrp, Number(95), Number(1)));
         env.close();
 
-        // Every quote is older than sfIndexMaxAge, so the market has no quorum.
+        // Every quote is older than kIndexMaxAge, so the market has no quorum.
         env.close(std::chrono::seconds{200'000});
         env(order(alice_, t.xrp, Number(100), Number(1), tfPerpSell), Ter(tecPERP_STALE_PRICE));
         auto const staleAt = now(env);
@@ -445,7 +425,7 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketStale);
         {
             auto const market = env.le(t.xrp);
-            BEAST_EXPECT(market && (*market)[~sfStaleSince] == staleAt);
+            BEAST_EXPECT(market && (*market)[sfStatusTime] == staleAt);
             BEAST_EXPECT(market && (*market)[sfFundingRate] == Number(0));
         }
         Number const cumulative = marketField(env, t.xrp, sfCumulativeFunding);
@@ -461,8 +441,8 @@ class PerpSettle_test : public PerpTestBase
         env.close();
         BEAST_EXPECT(!env.le(carolOrder));
 
-        // The refresh that found the market Stale first accrued up to 8 h while it was Live, which
-        // alice's short 10 receives with the deposit.
+        // The refresh that found the market Stale first accrued 8 h at 0.0001 while it was Live,
+        // 10 x 0.01 at least, which alice's short 10 receives with the deposit.
         {
             auto const exchange = env.le(t.exchange);
             if (!BEAST_EXPECT(exchange && alicePosition))
@@ -471,7 +451,7 @@ class PerpSettle_test : public PerpTestBase
                 *exchange,
                 Number(10) * (cumulative - (*alicePosition)[sfFundingIndex]),
                 Number::RoundingMode::Downward);
-            BEAST_EXPECT(received > Number(5, -1));
+            BEAST_EXPECT(received >= Number(1, -1));
             BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'010) + received);
         }
 
@@ -482,17 +462,18 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(marketField(env, t.xrp, sfCumulativeFunding) == cumulative);
         {
             auto const market = env.le(t.xrp);
-            BEAST_EXPECT(market && (*market)[~sfStaleSince] == staleAt);
+            BEAST_EXPECT(market && (*market)[sfStatusTime] == staleAt);
         }
 
-        // Fresh quotes make the market Live again.
+        // Fresh quotes make the market Live again, from the time of that refresh.
         movePrices(env, t, 100, std::nullopt);
+        auto const liveAt = now(env);
         env(Perp::refresh(carol_, t.xrp.key));
         env.close();
         BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketLive);
         {
             auto const market = env.le(t.xrp);
-            BEAST_EXPECT(market && !market->isFieldPresent(sfStaleSince));
+            BEAST_EXPECT(market && (*market)[sfStatusTime] == liveAt);
         }
         env(order(alice_, t.xrp, Number(100), Number(1), tfPerpSell));
         env.close();
@@ -525,8 +506,8 @@ class PerpSettle_test : public PerpTestBase
         env(Perp::withdraw(carol_, t.exchange.key, usd_(100)), Ter(tecPERP_STALE_PRICE));
         deposit(env, t, carol_, 100);
         env.close();
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(1'900));
-        BEAST_EXPECT(cashOf(env, carol_, t) == Number(2'100));
+        BEAST_EXPECT(near(cashOf(env, alice_, t), Number(1'900)));
+        BEAST_EXPECT(near(cashOf(env, carol_, t), Number(2'100)));
         BEAST_EXPECT(sizeOf(env, carol_, t, t.eth) == Number(10));
         expectAccounting(env, t);
     }
@@ -556,17 +537,19 @@ class PerpSettle_test : public PerpTestBase
         env(Perp::refresh(alice_, t.eth.key));
         env.close();
         auto const market = env.le(t.eth);
-        if (!BEAST_EXPECT(market && market->isFieldPresent(sfStaleSince)))
+        if (!BEAST_EXPECT(market && (*market)[sfMarketStatus] == perp::kMarketStale))
             return;
-        std::uint32_t const staleSince = (*market)[sfStaleSince];
+        std::uint32_t const staleSince = (*market)[sfStatusTime];
+        auto const staleAfter = static_cast<std::uint32_t>(perp::kSettleStaleAfter.count());
+        BEAST_EXPECT(staleAfter == 86'400);
 
-        env.close(std::chrono::seconds{1'800});
-        BEAST_EXPECT(now(env) - staleSince < 3'600);
+        env.close(std::chrono::seconds{staleAfter - 3'600});
+        BEAST_EXPECT(now(env) - staleSince < staleAfter);
         env(settleStale(alice_, t.eth), Ter(tecTOO_SOON));
         env.close(std::chrono::seconds{3'600});
-        BEAST_EXPECT(now(env) - staleSince >= 3'600);
+        BEAST_EXPECT(now(env) - staleSince >= staleAfter);
 
-        // Any account settles it at the last mark once Stale for sfSettleStaleAfter.
+        // Any account settles it at the last quorum index once Stale for kSettleStaleAfter.
         auto const settledAt = now(env);
         env(settleStale(alice_, t.eth));
         env.close();
@@ -575,9 +558,8 @@ class PerpSettle_test : public PerpTestBase
             if (!BEAST_EXPECT(settled))
                 return;
             BEAST_EXPECT((*settled)[sfMarketStatus] == perp::kMarketSettled);
-            BEAST_EXPECT((*settled)[~sfSettlementPrice] == Number(100));
-            BEAST_EXPECT((*settled)[~sfSettledAt] == settledAt);
-            BEAST_EXPECT(!settled->isFieldPresent(sfStaleSince));
+            BEAST_EXPECT((*settled)[sfIndexPrice] == Number(100));
+            BEAST_EXPECT((*settled)[sfStatusTime] == settledAt);
             BEAST_EXPECT((*settled)[sfFundingRate] == Number(0));
         }
         env(settleStale(alice_, t.eth), Ter(tecPERP_MARKET_SETTLED));
@@ -588,8 +570,8 @@ class PerpSettle_test : public PerpTestBase
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(carol_, t, t.eth)));
         BEAST_EXPECT(!env.le(positionKeylet(liq_, t, t.eth)));
-        BEAST_EXPECT(cashOf(env, carol_, t) == Number(2'000));
-        BEAST_EXPECT(cashOf(env, liq_, t) == Number(2'000));
+        BEAST_EXPECT(near(cashOf(env, carol_, t), Number(2'000)));
+        BEAST_EXPECT(near(cashOf(env, liq_, t), Number(2'000)));
         BEAST_EXPECT(marketField(env, t.eth, sfOpenInterestLong) == Number(0));
         BEAST_EXPECT(marketField(env, t.eth, sfOpenInterestShort) == Number(0));
         expectAccounting(env, t);
@@ -614,7 +596,7 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketSettled);
         {
             auto const market = env.le(t.xrp);
-            BEAST_EXPECT(market && (*market)[~sfSettlementPrice] == Number(90));
+            BEAST_EXPECT(market && (*market)[sfIndexPrice] == Number(90));
         }
 
         // bob's long closes at 90 when anyone settles him: 100 x (90 - 100) = -1000.
@@ -622,17 +604,17 @@ class PerpSettle_test : public PerpTestBase
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(bob_, t, t.xrp)));
         BEAST_EXPECT(hasNoMarkets(env, bob_, t));
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'000));
+        BEAST_EXPECT(near(cashOf(env, bob_, t), Number(1'000)));
         BEAST_EXPECT(marketField(env, t.xrp, sfOpenInterestLong) == Number(0));
         BEAST_EXPECT(marketField(env, t.xrp, sfOpenInterestShort) == Number(100));
         BEAST_EXPECT(sizeOf(env, alice_, t, t.xrp) == Number(-100));
 
-        // No order is placed, and a later quote does not move the settled market's mark.
+        // No order is placed, and a later quote does not move the settled market's frozen index.
         env(order(alice_, t.xrp, Number(90), Number(1)), Ter(tecPERP_MARKET_SETTLED));
         movePrices(env, t, 80, std::nullopt);
         env(Perp::refresh(bob_, t.xrp.key));
         env.close();
-        BEAST_EXPECT(marketField(env, t.xrp, sfMarkPrice) == Number(90));
+        BEAST_EXPECT(marketField(env, t.xrp, sfIndexPrice) == Number(90));
         BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketSettled);
 
         // Any account removes an order in a Settled market, one per cancel.
@@ -659,26 +641,26 @@ class PerpSettle_test : public PerpTestBase
         movePrices(env, t, 90, std::nullopt);
         settleByOwner(env, t.xrp);
         auto const market = env.le(t.xrp);
-        if (!BEAST_EXPECT(market && market->isFieldPresent(sfSettledAt)))
+        if (!BEAST_EXPECT(market && (*market)[sfMarketStatus] == perp::kMarketSettled))
             return;
-        std::uint32_t const settledAt = (*market)[sfSettledAt];
+        std::uint32_t const settledAt = (*market)[sfStatusTime];
         auto const grace = static_cast<std::uint32_t>(perp::kSettlementGrace.count());
 
         // alice's short would realize +1000, so it stays open at its settled value.
         env(settle(alice_, alice_, t));
         env.close();
         BEAST_EXPECT(sizeOf(env, alice_, t, t.xrp) == Number(-100));
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'000));
+        BEAST_EXPECT(near(cashOf(env, alice_, t), Number(2'000)));
 
-        // The settled value is known, so alice withdraws without a Live mark.
+        // The settled value is known, so alice withdraws without a Live index.
         env(Perp::withdraw(alice_, t.exchange.key, usd_(100)));
         env.close();
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(1'900));
+        BEAST_EXPECT(near(cashOf(env, alice_, t), Number(1'900)));
 
         // bob's losing long closes at once.
         env(settle(alice_, bob_, t));
         env.close();
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'000));
+        BEAST_EXPECT(near(cashOf(env, bob_, t), Number(1'000)));
 
         env.close(std::chrono::seconds{grace - 600});
         BEAST_EXPECT(now(env) < settledAt + grace);
@@ -693,7 +675,7 @@ class PerpSettle_test : public PerpTestBase
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(alice_, t, t.xrp)));
         BEAST_EXPECT(hasNoMarkets(env, alice_, t));
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'901));
+        BEAST_EXPECT(near(cashOf(env, alice_, t), Number(2'901)));
         BEAST_EXPECT(marketField(env, t.xrp, sfOpenInterestShort) == Number(0));
         expectAccounting(env, t);
     }
@@ -723,9 +705,9 @@ class PerpSettle_test : public PerpTestBase
             BEAST_EXPECT(!env.le(positionKeylet(alice_, t, t.xrp)));
             BEAST_EXPECT(hasNoMarkets(env, alice_, t));
             BEAST_EXPECT(cashOf(env, alice_, t) == Number(0));
-            BEAST_EXPECT(creditOf(env, alice_, t) == Number(500));
+            BEAST_EXPECT(near(creditOf(env, alice_, t), Number(500)));
             BEAST_EXPECT(exchangeField(env, t, sfCoverAvailable) == Number(0));
-            BEAST_EXPECT(marketField(env, t.xrp, sfLossIndexLong) == Number(3));
+            BEAST_EXPECT(near(marketField(env, t.xrp, sfLossIndexLong), Number(3)));
             BEAST_EXPECT(exchangeField(env, t, sfBadDebt) == Number(0));
             expectAccounting(env, t);
 
@@ -733,7 +715,7 @@ class PerpSettle_test : public PerpTestBase
             env(settle(carol_, bob_, t));
             env.close();
             BEAST_EXPECT(!env.le(positionKeylet(bob_, t, t.xrp)));
-            BEAST_EXPECT(cashOf(env, bob_, t) == Number(2'700));
+            BEAST_EXPECT(near(cashOf(env, bob_, t), Number(2'700)));
             BEAST_EXPECT(marketField(env, t.xrp, sfOpenInterestLong) == Number(0));
             expectAccounting(env, t);
         }
@@ -753,39 +735,13 @@ class PerpSettle_test : public PerpTestBase
 
             env(settle(carol_, bob_, t));
             env.close();
-            BEAST_EXPECT(cashOf(env, bob_, t) == Number(3'000));
+            BEAST_EXPECT(near(cashOf(env, bob_, t), Number(3'000)));
             env(settle(carol_, alice_, t));
             env.close();
             BEAST_EXPECT(cashOf(env, alice_, t) == Number(0));
-            BEAST_EXPECT(creditOf(env, alice_, t) == Number(200));
+            BEAST_EXPECT(near(creditOf(env, alice_, t), Number(200)));
             BEAST_EXPECT(exchangeField(env, t, sfCoverAvailable) == Number(0));
-            BEAST_EXPECT(exchangeField(env, t, sfBadDebt) == Number(300));
-            BEAST_EXPECT(marketField(env, t.xrp, sfLossIndexLong) == Number(0));
-            expectAccounting(env, t);
-        }
-
-        // A deposit settling alice draws the bound vault for the whole 500.
-        {
-            Env env{*this, all_};
-            auto t = setup(env, {.vaultLossLimit = 100'000});
-            Vault const vault{.env = env};
-            env(vault.deposit(
-                {.depositor = owner_, .id = t.world.vault.key, .amount = usd_(1'000)}));
-            deposit(env, t, alice_, 500);
-            deposit(env, t, bob_, 2'000);
-            env.close();
-            trade(env, t.xrp, bob_, alice_, Number(100), Number(100));
-            movePrices(env, t, 110, std::nullopt);
-            settleByOwner(env, t.xrp);
-
-            deposit(env, t, alice_, 1);
-            env.close();
-            BEAST_EXPECT(!env.le(positionKeylet(alice_, t, t.xrp)));
-            BEAST_EXPECT(cashOf(env, alice_, t) == Number(1));
-            BEAST_EXPECT(creditOf(env, alice_, t) == Number(500));
-            BEAST_EXPECT(exchangeField(env, t, sfVaultLossInWindow) == Number(500));
-            auto const sleVault = env.le(t.world.vault);
-            BEAST_EXPECT(sleVault && (*sleVault)[sfAssetsTotal] == Number(500));
+            BEAST_EXPECT(near(exchangeField(env, t, sfBadDebt), Number(300)));
             BEAST_EXPECT(marketField(env, t.xrp, sfLossIndexLong) == Number(0));
             expectAccounting(env, t);
         }

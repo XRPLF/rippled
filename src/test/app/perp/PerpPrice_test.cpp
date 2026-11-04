@@ -13,6 +13,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -41,7 +42,6 @@ class PerpPrice_test : public PerpTestBase
     {
         std::vector<AccountID> oracles;
         std::string quoteAsset{"USD"};
-        std::uint32_t indexMaxAge{300};
         std::uint32_t indexMaxLedgers{10};
     };
 
@@ -59,13 +59,14 @@ class PerpPrice_test : public PerpTestBase
     {
         auto sle = std::make_shared<SLE>(exchangeKeylet());
         (*sle)[sfOwner] = owner_.id();
-        (*sle)[sfParameterDelay] = 86'400;
+        (*sle)[sfLiquidationPenalty] = 1'000;
+        (*sle)[sfLiquidationChunkMin] = Number{10'000};
         return sle;
     }
 
     /**
      * An ltPERP_MARKET entry on XRP/<quote> reading document 1 of each oracle owner, with the
-     * band, EMA and funding parameters of the default jtx market. It is not yet in any view.
+     * tick, lot, cap and band of the default jtx market. It is not yet in any view.
      */
     [[nodiscard]] std::shared_ptr<SLE>
     makeMarket(MarketParams const& params) const
@@ -95,21 +96,11 @@ class PerpPrice_test : public PerpTestBase
         tiers.push_back(std::move(tier));
         sle->setFieldArray(sfMarginTiers, tiers);
 
-        (*sle)[sfIndexMaxAge] = params.indexMaxAge;
         (*sle)[sfIndexMaxLedgers] = params.indexMaxLedgers;
         (*sle)[sfPriceTick] = Number{1, -4};
         (*sle)[sfLotSize] = Number{1};
         (*sle)[sfOpenInterestMax] = Number{1'000'000};
         (*sle)[sfOrderPriceBand] = 10'000;
-        (*sle)[sfMidSpreadMax] = 1'000;
-        (*sle)[sfMarkBand] = 5'000;
-        (*sle)[sfMarkMoveMax] = 10'000;
-        (*sle)[sfBasisWindow] = 3'600;
-        (*sle)[sfFundingCap] = 4'000;
-        (*sle)[sfLiquidationPenalty] = 1'000;
-        (*sle)[sfLiquidationRewardShare] = 50'000;
-        (*sle)[sfLiquidationChunkMin] = Number{10'000};
-        (*sle)[sfSettleStaleAfter] = 3'600;
         return sle;
     }
 
@@ -172,37 +163,27 @@ class PerpPrice_test : public PerpTestBase
         fundAccounts(env);
         auto const oracle = makeOracle(env, o1_.id(), 20);
         env.close();
-        env.close();
 
         auto const oracleKeylet = keylet::oracle(o1_.id(), oracle.documentID());
-        auto const oracleSle = env.le(oracleKeylet);
-        if (!BEAST_EXPECT(oracleSle))
-            return;
-        auto const age = unixParentClose(*env.current()) - (*oracleSle)[sfLastUpdateTime];
-        BEAST_EXPECT(age > 0);
+        auto const market = makeMarket({.oracles = {o1_.id()}, .indexMaxLedgers = 100});
+        auto const quoteAt = [&](std::int64_t offset) {
+            Sandbox sb{env.current().get(), TapNone};
+            auto const sle = sb.peek(oracleKeylet);
+            if (!BEAST_EXPECT(sle))
+                return std::optional<Number>{};
+            (*sle)[sfLastUpdateTime] = static_cast<std::uint32_t>(unixParentClose(sb) + offset);
+            sb.update(sle);
+            return firstQuote(sb, *market);
+        };
 
-        auto const stale = makeMarket(
-            {.oracles = {o1_.id()},
-             .indexMaxAge = static_cast<std::uint32_t>(age - 1),
-             .indexMaxLedgers = 100});
-        BEAST_EXPECT(!firstQuote(*env.current(), *stale));
-
-        auto const fresh = makeMarket(
-            {.oracles = {o1_.id()},
-             .indexMaxAge = static_cast<std::uint32_t>(age),
-             .indexMaxLedgers = 100});
-        BEAST_EXPECT(firstQuote(*env.current(), *fresh) == Number(2));
+        // A quote is fresh up to kIndexMaxAge seconds old, measured from the parent close.
+        auto const maxAge = static_cast<std::int64_t>(perp::kIndexMaxAge.count());
+        BEAST_EXPECT(maxAge == static_cast<std::int64_t>(kMaxLastUpdateTimeDelta));
+        BEAST_EXPECT(quoteAt(-maxAge) == Number(2));
+        BEAST_EXPECT(!quoteAt(-maxAge - 1));
 
         // A provider timestamp ahead of the close gives a negative age, which is fresh.
-        Sandbox sb{env.current().get(), TapNone};
-        auto const future = sb.peek(oracleKeylet);
-        if (!BEAST_EXPECT(future))
-            return;
-        (*future)[sfLastUpdateTime] = static_cast<std::uint32_t>(unixParentClose(sb) + 200);
-        sb.update(future);
-        auto const tight =
-            makeMarket({.oracles = {o1_.id()}, .indexMaxAge = 1, .indexMaxLedgers = 100});
-        BEAST_EXPECT(firstQuote(sb, *tight) == Number(2));
+        BEAST_EXPECT(quoteAt(200) == Number(2));
     }
 
     void
@@ -284,9 +265,16 @@ class PerpPrice_test : public PerpTestBase
             perp::refreshMarket(sb, market, exchange, env.journal);
             auto const t = static_cast<std::uint32_t>(unixParentClose(sb));
             BEAST_EXPECT((*market)[sfMarketStatus] == perp::kMarketStale);
-            BEAST_EXPECT((*market)[~sfStaleSince] == t);
+            BEAST_EXPECT((*market)[sfStatusTime] == t);
             BEAST_EXPECT((*market)[sfFundingRate] == Number(0));
             BEAST_EXPECT((*market)[sfRefreshLedger] == sb.seq());
+
+            // A market already Stale keeps the time it turned Stale.
+            (*market)[sfStatusTime] = 1;
+            (*market)[sfRefreshLedger] = 0;
+            sb.update(market);
+            perp::refreshMarket(sb, market, exchange, env.journal);
+            BEAST_EXPECT((*market)[sfStatusTime] == 1);
         }
 
         q2.set(oracle::UpdateArg{.series = {{"XRP", "USD", 23, 1}}});
@@ -299,139 +287,109 @@ class PerpPrice_test : public PerpTestBase
             auto const exchange = makeExchange();
             sb.insert(exchange);
             (*market)[sfMarketStatus] = perp::kMarketStale;
-            (*market)[sfStaleSince] = 1;
+            (*market)[sfStatusTime] = 1;
             sb.insert(market);
             perp::refreshMarket(sb, market, exchange, env.journal);
             BEAST_EXPECT((*market)[sfMarketStatus] == perp::kMarketLive);
-            BEAST_EXPECT(!market->isFieldPresent(sfStaleSince));
+            BEAST_EXPECT(
+                (*market)[sfStatusTime] == static_cast<std::uint32_t>(unixParentClose(sb)));
             BEAST_EXPECT((*market)[sfIndexPrice] == Number(22, -1));
-            BEAST_EXPECT((*market)[sfMarkPrice] == Number(22, -1));
         }
     }
 
     void
-    testMarkClamps()
+    testBasisEma()
     {
-        testcase("mark clamps");
-        perp::MarkInput const base{
+        testcase("basis EMA");
+        // Window 150 s: alpha = min(elapsed, 75) / 150, at most one half.
+        BEAST_EXPECT(perp::kBasisWindow.count() == 150);
+        perp::BasisInput const base{
             .index = Number{2},
-            .prevMark = Number{2},
             .basisEMA = Number{0},
-            .elapsed = 1'800,
-            .bid = Number{2'595, -3},
-            .ask = Number{2'605, -3},
-            .basisWindow = 3'600,
-            .midSpreadMax = 1'000,
-            .markMoveMax = 10'000,
-            .markBand = 5'000};
+            .elapsed = 75,
+            .bid = Number{2'095, -3},
+            .ask = Number{2'105, -3},
+            .orderPriceBand = 10'000};
 
-        // EMA 0.3, raw median(2.0, 2.3, 2.6) = 2.3, moved 2.2, banded 2.1.
-        auto const banded = perp::computeMark(base);
-        BEAST_EXPECT(banded.basisEMA == Number(3, -1));
-        BEAST_EXPECT(banded.mark == Number(21, -1));
-
-        // Raw median(2.0, 2.2, 2.2) = 2.2 moves at most 1 % from 2.0.
-        auto moveCapped = base;
-        moveCapped.basisEMA = Number{2, -1};
-        moveCapped.bid = Number{2'199, -3};
-        moveCapped.ask = Number{2'201, -3};
-        moveCapped.markMoveMax = 1'000;
-        auto const moved = perp::computeMark(moveCapped);
-        BEAST_EXPECT(moved.basisEMA == Number(2, -1));
-        BEAST_EXPECT(moved.mark == Number(202, -2));
-
-        // An index crash from 2.0 to 1.0 pulls the mark into the 5 % band at once.
-        auto crash = base;
-        crash.index = Number{1};
-        crash.bid = std::nullopt;
-        crash.ask = std::nullopt;
-        auto const crashed = perp::computeMark(crash);
-        BEAST_EXPECT(crashed.mark <= Number(105, -2));
-        BEAST_EXPECT(crashed.mark == Number(105, -2));
-
-        // The first refresh of a market has no previous mark to cap the move from.
-        auto first = base;
-        first.prevMark = Number{0};
-        first.bid = std::nullopt;
-        first.ask = std::nullopt;
-        BEAST_EXPECT(perp::computeMark(first).mark == Number(2));
-    }
-
-    void
-    testEmaHalfCap()
-    {
-        testcase("EMA half cap");
-        perp::MarkInput const base{
-            .index = Number{2},
-            .prevMark = Number{2},
-            .basisEMA = Number{0},
-            .elapsed = 36'000,
-            .bid = Number{2'595, -3},
-            .ask = Number{2'605, -3},
-            .basisWindow = 3'600,
-            .midSpreadMax = 1'000,
-            .markMoveMax = 10'000,
-            .markBand = 5'000};
-        BEAST_EXPECT(perp::computeMark(base).basisEMA == Number(3, -1));
-
-        auto quarter = base;
-        quarter.elapsed = 900;
-        BEAST_EXPECT(perp::computeMark(quarter).basisEMA == Number(15, -2));
-
+        // Mid 2.1 against index 2.0 samples a basis of 0.1, taken half at most.
+        BEAST_EXPECT(perp::computeBasisEMA(base) == Number(5, -2));
+        auto idle = base;
+        idle.elapsed = 36'000;
+        BEAST_EXPECT(perp::computeBasisEMA(idle) == Number(5, -2));
+        auto partial = base;
+        partial.elapsed = 30;
+        BEAST_EXPECT(perp::computeBasisEMA(partial) == Number(2, -2));
         auto none = base;
         none.elapsed = 0;
-        BEAST_EXPECT(perp::computeMark(none).basisEMA == Number(0));
+        BEAST_EXPECT(perp::computeBasisEMA(none) == Number(0));
+
+        // The EMA moves from its previous value toward the sample.
+        auto previous = base;
+        previous.basisEMA = Number{3, -1};
+        BEAST_EXPECT(perp::computeBasisEMA(previous) == Number(2, -1));
     }
 
     void
     testMidSpreadFilter()
     {
         testcase("mid spread filter");
-        perp::MarkInput const wide{
+        // A mid counts only when the spread is within half the 10 % order band.
+        perp::BasisInput const wide{
             .index = Number{2},
-            .prevMark = Number{2},
-            .basisEMA = Number{0},
-            .elapsed = 1'800,
-            .bid = Number{25, -1},
-            .ask = Number{27, -1},
-            .basisWindow = 3'600,
-            .midSpreadMax = 1'000,
-            .markMoveMax = 10'000,
-            .markBand = 5'000};
-        auto const result = perp::computeMark(wide);
-        BEAST_EXPECT(result.basisEMA == Number(0));
-        BEAST_EXPECT(result.mark == Number(2));
+            .basisEMA = Number{2, -1},
+            .elapsed = 75,
+            .bid = Number{2},
+            .ask = Number{23, -1},
+            .orderPriceBand = 10'000};
+
+        // Without a valid mid the sample is zero, so the EMA decays toward it.
+        BEAST_EXPECT(perp::computeBasisEMA(wide) == Number(1, -1));
+
+        // A spread of exactly half the band counts: mid 2.0 samples zero basis too.
+        auto edge = wide;
+        edge.bid = Number{195, -2};
+        edge.ask = Number{205, -2};
+        BEAST_EXPECT(perp::computeBasisEMA(edge) == Number(1, -1));
+        auto inside = wide;
+        inside.bid = Number{205, -2};
+        inside.ask = Number{215, -2};
+        BEAST_EXPECT(perp::computeBasisEMA(inside) == Number(15, -2));
 
         auto crossed = wide;
-        crossed.bid = Number{2'605, -3};
-        crossed.ask = Number{2'595, -3};
-        BEAST_EXPECT(perp::computeMark(crossed).basisEMA == Number(0));
+        crossed.bid = Number{2'105, -3};
+        crossed.ask = Number{2'095, -3};
+        BEAST_EXPECT(perp::computeBasisEMA(crossed) == Number(1, -1));
 
         auto oneSided = wide;
         oneSided.ask = std::nullopt;
-        BEAST_EXPECT(perp::computeMark(oneSided).basisEMA == Number(0));
+        BEAST_EXPECT(perp::computeBasisEMA(oneSided) == Number(1, -1));
     }
 
     void
     testFundingRate()
     {
         testcase("funding rate");
+        BEAST_EXPECT(perp::kFundingInterestRate == 10);
+        BEAST_EXPECT(perp::kFundingCap == 4'000);
+
         // P 0.001 and interest 0.0001: 0.001 + clamp(-0.0009, +-0.0005) = 0.0005.
-        BEAST_EXPECT(
-            perp::computeFundingRate(Number{2'002, -3}, Number{2}, 10, 4'000) == Number(5, -4));
+        BEAST_EXPECT(perp::computeFundingRate(Number{2, -3}, Number{2}) == Number(5, -4));
 
         // P 0.0001 equal to the interest rate adds nothing.
-        BEAST_EXPECT(
-            perp::computeFundingRate(Number{20'002, -4}, Number{2}, 10, 4'000) == Number(1, -4));
+        BEAST_EXPECT(perp::computeFundingRate(Number{2, -4}, Number{2}) == Number(1, -4));
+
+        // A flat book pays the interest rate.
+        BEAST_EXPECT(perp::computeFundingRate(Number{0}, Number{2}) == Number(1, -4));
+
+        // P -0.001: -0.001 + clamp(0.0011, +-0.0005) = -0.0005.
+        BEAST_EXPECT(perp::computeFundingRate(Number{-2, -3}, Number{2}) == Number(-5, -4));
 
         // P +-0.1 is capped at +-4 %.
-        BEAST_EXPECT(
-            perp::computeFundingRate(Number{22, -1}, Number{2}, 0, 4'000) == Number(4, -2));
-        BEAST_EXPECT(
-            perp::computeFundingRate(Number{18, -1}, Number{2}, 0, 4'000) == Number(-4, -2));
+        BEAST_EXPECT(perp::computeFundingRate(Number{2, -1}, Number{2}) == Number(4, -2));
+        BEAST_EXPECT(perp::computeFundingRate(Number{-2, -1}, Number{2}) == Number(-4, -2));
 
-        // A negative interest rate pulls a flat market's rate down by at most the clamp.
-        BEAST_EXPECT(perp::computeFundingRate(Number{2}, Number{2}, -100, 4'000) == Number(-5, -4));
+        // Without an index there is no rate.
+        BEAST_EXPECT(perp::computeFundingRate(Number{2, -1}, Number{0}) == Number(0));
     }
 
     void
@@ -460,7 +418,6 @@ class PerpPrice_test : public PerpTestBase
             (*market)[sfMarketStatus] = status;
             (*market)[sfFundingRate] = Number{8, -4};
             (*market)[sfIndexPrice] = Number{2};
-            (*market)[sfMarkPrice] = Number{2};
             (*market)[sfCumulativeFunding] = Number{1, -4};
             (*market)[sfLastRefreshTime] = t - 3'600;
             sb.insert(market);
@@ -491,7 +448,8 @@ class PerpPrice_test : public PerpTestBase
         BEAST_EXPECT((*market)[sfRefreshLedger] == sb.seq());
         BEAST_EXPECT((*market)[sfLastRefreshTime] == t);
         BEAST_EXPECT((*market)[sfIndexPrice] == Number(2));
-        BEAST_EXPECT((*market)[sfMarkPrice] == Number(2));
+        BEAST_EXPECT((*market)[sfBasisEMA] == Number(0));
+        BEAST_EXPECT((*market)[sfFundingRate] == Number(1, -4));
         BEAST_EXPECT((*market)[sfMarketStatus] == perp::kMarketLive);
 
         // A second refresh in the same ledger changes nothing, even with funding due.
@@ -517,63 +475,81 @@ class PerpPrice_test : public PerpTestBase
         (*exchange)[sfOpenInterestNotional] = Number{19};
         sb.insert(exchange);
         auto const market = makeMarket({.oracles = {o1_.id(), o2_.id(), o3_.id()}});
-        (*market)[sfMarkPrice] = Number{19, -1};
+        (*market)[sfIndexPrice] = Number{19, -1};
         (*market)[sfOpenInterestLong] = Number{10};
         sb.insert(market);
 
-        // Mark 1.9 moves to the index 2.0 within the 10 % move cap and the 5 % band.
+        // The index moves from 1.9 to 2.0, and the notional with it: 10 x 0.1 = 1.
         perp::refreshMarket(sb, market, exchange, env.journal);
-        BEAST_EXPECT((*market)[sfMarkPrice] == Number(2));
+        BEAST_EXPECT((*market)[sfIndexPrice] == Number(2));
         BEAST_EXPECT((*exchange)[sfOpenInterestNotional] == Number(20));
     }
 
-    void
-    testPendingParameters()
+    /**
+     * An sfMarginTiers array of the given (notional bound, initial rate, maintenance rate) tiers.
+     */
+    [[nodiscard]] static STArray
+    makeTiers(std::vector<std::tuple<Number, std::uint32_t, std::uint32_t>> const& tiers)
     {
-        testcase("pending parameters");
-        using namespace test::jtx;
-        Env env{*this, all_};
-        setupMarketWorld(env);
+        STArray array{sfMarginTiers};
+        for (auto const& [notionalMax, initial, maintenance] : tiers)
+        {
+            STObject tier = STObject::makeInnerObject(sfMarginTier);
+            tier[sfNotionalMax] = notionalMax;
+            tier[sfInitialMarginRate] = initial;
+            tier[sfMaintenanceMarginRate] = maintenance;
+            array.push_back(std::move(tier));
+        }
+        return array;
+    }
 
-        auto const market = makeMarket({.oracles = {o1_.id(), o2_.id(), o3_.id()}});
-        (*market)[sfFundingInterestRate] = 10;
-        STObject pending = STObject::makeInnerObject(sfPendingParameters);
-        pending[sfMarkBand] = 6'000;
-        pending[sfFundingInterestRate] = 0;
-        market->setFieldObject(sfPendingParameters, pending);
-        (*market)[sfParameterEffectiveTime] = 1'000;
+    void
+    testTierTightenRule()
+    {
+        testcase("tier tighten rule");
+        auto const current =
+            makeTiers({{Number{100'000}, 10'000u, 5'000u}, {Number{1'000'000}, 20'000u, 10'000u}});
 
-        BEAST_EXPECT(!perp::applyPendingParameters(*market, 999));
-        BEAST_EXPECT((*market)[sfMarkBand] == 5'000);
-        BEAST_EXPECT(market->isFieldPresent(sfPendingParameters));
+        // Unchanged, higher rates and lower bounds tighten.
+        BEAST_EXPECT(perp::tiersTighten(current, current));
+        BEAST_EXPECT(
+            perp::tiersTighten(
+                current,
+                makeTiers(
+                    {{Number{50'000}, 11'000u, 5'000u}, {Number{900'000}, 20'000u, 12'000u}})));
 
-        BEAST_EXPECT(perp::applyPendingParameters(*market, 1'000));
-        BEAST_EXPECT((*market)[sfMarkBand] == 6'000);
-        BEAST_EXPECT((*market)[sfFundingInterestRate] == 0);
-        BEAST_EXPECT(!market->isFieldPresent(sfFundingInterestRate));
-        BEAST_EXPECT(!market->isFieldPresent(sfPendingParameters));
-        BEAST_EXPECT(!market->isFieldPresent(sfParameterEffectiveTime));
-        BEAST_EXPECT(!perp::applyPendingParameters(*market, 2'000));
+        // Any lower rate, any higher bound, or another tier count loosens.
+        BEAST_EXPECT(!perp::tiersTighten(
+            current,
+            makeTiers({{Number{100'000}, 9'999u, 5'000u}, {Number{1'000'000}, 20'000u, 10'000u}})));
+        BEAST_EXPECT(!perp::tiersTighten(
+            current,
+            makeTiers({{Number{100'000}, 10'000u, 5'000u}, {Number{1'000'000}, 20'000u, 9'999u}})));
+        BEAST_EXPECT(!perp::tiersTighten(
+            current,
+            makeTiers(
+                {{Number{100'001}, 10'000u, 5'000u}, {Number{1'000'000}, 20'000u, 10'000u}})));
+        BEAST_EXPECT(!perp::tiersTighten(current, makeTiers({{Number{100'000}, 10'000u, 5'000u}})));
+        BEAST_EXPECT(!perp::tiersTighten(
+            current,
+            makeTiers(
+                {{Number{100'000}, 10'000u, 5'000u},
+                 {Number{1'000'000}, 20'000u, 10'000u},
+                 {Number{2'000'000}, 30'000u, 15'000u}})));
 
-        // A refresh at or after the effective time applies the market's and the exchange's.
-        auto const t = static_cast<std::uint32_t>(unixParentClose(*env.current()));
-        Sandbox sb{env.current().get(), TapNone};
-        auto const exchange = makeExchange();
-        STObject exchangePending = STObject::makeInnerObject(sfPendingParameters);
-        exchangePending[sfTakerFee] = 100;
-        exchange->setFieldObject(sfPendingParameters, exchangePending);
-        (*exchange)[sfParameterEffectiveTime] = t;
-        sb.insert(exchange);
-        auto const refreshed = makeMarket({.oracles = {o1_.id(), o2_.id(), o3_.id()}});
-        STObject marketPending = STObject::makeInnerObject(sfPendingParameters);
-        marketPending[sfMarkBand] = 7'000;
-        refreshed->setFieldObject(sfPendingParameters, marketPending);
-        (*refreshed)[sfParameterEffectiveTime] = t;
-        sb.insert(refreshed);
-        perp::refreshMarket(sb, refreshed, exchange, env.journal);
-        BEAST_EXPECT((*refreshed)[sfMarkBand] == 7'000);
-        BEAST_EXPECT((*exchange)[sfTakerFee] == 100);
-        BEAST_EXPECT(!exchange->isFieldPresent(sfPendingParameters));
+        // A tightened requirement is never lower at any notional both allow.
+        auto const tighter =
+            makeTiers({{Number{50'000}, 11'000u, 5'000u}, {Number{900'000}, 20'000u, 12'000u}});
+        for (auto const& notional :
+             {Number{10'000}, Number{50'000}, Number{75'000}, Number{100'000}, Number{900'000}})
+        {
+            for (bool const initial : {true, false})
+            {
+                auto const before = perp::tierRequirement(notional, current, initial);
+                auto const after = perp::tierRequirement(notional, tighter, initial);
+                BEAST_EXPECT(before && after && *after >= *before);
+            }
+        }
     }
 
     void
@@ -614,15 +590,14 @@ public:
         testMissingPair();
         testIndexMedian();
         testQuorum();
-        testMarkClamps();
-        testEmaHalfCap();
+        testBasisEma();
         testMidSpreadFilter();
         testFundingRate();
         testFundingAccrual();
         testRefreshOncePerLedger();
         testRefreshOpenInterest();
-        testPendingParameters();
         testTierRequirement();
+        testTierTightenRule();
     }
 };
 

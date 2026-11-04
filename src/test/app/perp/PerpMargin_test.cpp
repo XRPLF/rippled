@@ -13,6 +13,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -55,7 +56,6 @@ class PerpMargin_test : public PerpTestBase
         auto const exchange = createExchange(env, owner_, usd_);
         auto args = marketArgs();
         args.indexMaxLedgers = 20;
-        args.indexMaxAge = 3'600;
         env(Perp::marketSet(owner_, exchange.key, args));
         args.baseAsset = "ETH";
         env(Perp::marketSet(owner_, exchange.key, args));
@@ -67,9 +67,9 @@ class PerpMargin_test : public PerpTestBase
     }
 
     [[nodiscard]] static Keylet
-    marginKeylet(Account const& account, Keylet const& exchange, std::uint32_t subaccount = 0)
+    marginKeylet(Account const& account, Keylet const& exchange)
     {
-        return keylet::marginAccount(account.id(), exchange.key, subaccount);
+        return keylet::marginAccount(account.id(), exchange.key);
     }
 
     /**
@@ -86,8 +86,9 @@ class PerpMargin_test : public PerpTestBase
     };
 
     /**
-     * Writes positions into a market for subaccount 0 of each account, with the market's open
-     * interest and order count and the exchange's open-interest notional moved to match.
+     * Writes positions into a market for each account, with the market's open interest and order
+     * count and the exchange's open-interest notional moved to match. The market's last refresh
+     * moves to the open ledger's time, so no funding accrues before the transaction under test.
      */
     void
     seedPositions(
@@ -132,12 +133,13 @@ class PerpMargin_test : public PerpTestBase
             (*sle)[sfOpenInterestLong] = (*sle)[sfOpenInterestLong] + oiLong;
             (*sle)[sfOpenInterestShort] = (*sle)[sfOpenInterestShort] + oiShort;
             (*sle)[sfOrderCount] = (*sle)[sfOrderCount] + orders;
+            (*sle)[sfLastRefreshTime] = perp::refreshTime(view);
 
             auto const sleExchange = view.peek(exchange);
             if (!BEAST_EXPECT(sleExchange))
                 return;
             (*sleExchange)[sfOpenInterestNotional] =
-                (*sleExchange)[sfOpenInterestNotional] + (oiLong * (*sle)[sfMarkPrice]);
+                (*sleExchange)[sfOpenInterestNotional] + (oiLong * (*sle)[sfIndexPrice]);
             view.update(sleExchange);
         });
     }
@@ -215,7 +217,6 @@ class PerpMargin_test : public PerpTestBase
                 return;
             BEAST_EXPECT((*account)[sfAccount] == alice_.id());
             BEAST_EXPECT((*account)[sfExchangeID] == exchange.key);
-            BEAST_EXPECT((*account)[sfSubaccount] == 0);
             BEAST_EXPECT((*account)[sfCash] == Number(100));
             BEAST_EXPECT(account->getFieldV256(sfMarkets).empty());
             BEAST_EXPECT(env.ownerCount(alice_) == ownerCount + 1);
@@ -227,19 +228,17 @@ class PerpMargin_test : public PerpTestBase
             expectAccounting(env, exchange);
         }
 
-        // A second deposit to the same subaccount adds to it.
+        // A second deposit to the same margin account adds to it.
         env(Perp::deposit(alice_, exchange.key, usd_(50)));
         env.close();
         BEAST_EXPECT(cashOf(env, margin) == Number(150));
         BEAST_EXPECT(env.ownerCount(alice_) == ownerCount + 1);
 
-        // Another subaccount is another margin account.
-        auto sub = Perp::deposit(alice_, exchange.key, usd_(25));
-        sub[sfSubaccount] = 2;
-        env(sub);
+        // Another account's deposit is another margin account.
+        env(Perp::deposit(bob_, exchange.key, usd_(25)));
         env.close();
-        BEAST_EXPECT(cashOf(env, marginKeylet(alice_, exchange, 2)) == Number(25));
-        BEAST_EXPECT(env.ownerCount(alice_) == ownerCount + 2);
+        BEAST_EXPECT(cashOf(env, marginKeylet(bob_, exchange)) == Number(25));
+        BEAST_EXPECT(env.ownerCount(alice_) == ownerCount + 1);
         {
             auto const sle = env.le(exchange);
             BEAST_EXPECT(sle && (*sle)[sfMarginAccountCount] == 2);
@@ -351,11 +350,6 @@ class PerpMargin_test : public PerpTestBase
         }
         expectAccounting(env, exchange);
         BEAST_EXPECT(!env.le(marginKeylet(owner_, exchange)));
-
-        // A cover deposit names no subaccount.
-        auto withSub = Perp::deposit(owner_, exchange.key, usd_(1));
-        withSub[sfSubaccount] = 0;
-        env(withSub, Txflags(tfPerpCover), Ter(temMALFORMED));
     }
 
     void
@@ -702,11 +696,6 @@ class PerpMargin_test : public PerpTestBase
         auto const sle = env.le(exchange);
         BEAST_EXPECT(sle && (*sle)[sfOwnerFees] == Number(30));
         expectAccounting(env, exchange);
-
-        // Fee withdrawals name no subaccount.
-        auto withSub = Perp::withdraw(owner_, exchange.key, usd_(1));
-        withSub[sfSubaccount] = 0;
-        env(withSub, Txflags(tfPerpOwnerFees), Ter(temMALFORMED));
     }
 
     void

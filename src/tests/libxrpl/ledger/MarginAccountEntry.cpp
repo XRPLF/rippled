@@ -5,8 +5,6 @@
 #include <gtest/gtest.h>
 #include <ledger/EntryTestHelpers.h>
 
-#include <cstdint>
-
 namespace xrpl::test {
 
 TEST(MarginAccountEntryTests, constructors)
@@ -15,11 +13,10 @@ TEST(MarginAccountEntryTests, constructors)
 
     expectKeylet<MarginAccountEntry>(
         e,
-        keylet::marginAccount(e.alice.id(), e.someID(), 3u),
-        "marginAccount(account, exchangeID, subaccount)",
+        keylet::marginAccount(e.alice.id(), e.someID()),
+        "marginAccount(account, exchangeID)",
         e.alice.id(),
-        e.someID(),
-        std::uint32_t{3});
+        e.someID());
 
     expectKeylet<MarginAccountEntry>(
         e, keylet::marginAccount(e.someID()), "marginAccount(UInt256)", e.someID());

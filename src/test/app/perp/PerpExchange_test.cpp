@@ -4,11 +4,12 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
@@ -26,8 +27,8 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
-#include <chrono>
 #include <cstdint>
 
 namespace xrpl {
@@ -69,7 +70,7 @@ class PerpExchange_test : public PerpTestBase
         Env env{*this, all_};
         fundAccounts(env);
 
-        // XRP collateral: no scale and no holding; fees and data are stored.
+        // XRP collateral: no scale and no holding; fees, liquidation policy and data are stored.
         {
             auto const ownerCount = env.ownerCount(owner_);
             auto const sequence = env.seq(owner_);
@@ -78,7 +79,9 @@ class PerpExchange_test : public PerpTestBase
             jv[sfMakerFee] = 200;
             jv[sfTakerFee] = 500;
             jv[sfOwnerFeeShare] = 30'000;
-            jv[sfVaultFeeShare] = 20'000;
+            jv[sfLiquidationPenalty] = 2'000;
+            jv[sfLiquidationRewardMin] = "1234567";
+            jv[sfLiquidationChunkMin] = "50000";
             jv[sfData] = "ABCD";
             env(jv);
             env.close();
@@ -94,23 +97,28 @@ class PerpExchange_test : public PerpTestBase
             BEAST_EXPECT((*exchange)[sfMakerFee] == 200);
             BEAST_EXPECT((*exchange)[sfTakerFee] == 500);
             BEAST_EXPECT((*exchange)[sfOwnerFeeShare] == 30'000);
-            BEAST_EXPECT((*exchange)[sfVaultFeeShare] == 20'000);
-            BEAST_EXPECT((*exchange)[sfParameterDelay] == perp::kMinParameterDelay.count());
+            BEAST_EXPECT((*exchange)[sfLiquidationPenalty] == 2'000);
+            BEAST_EXPECT((*exchange)[sfLiquidationRewardMin] == Number(1'234'567));
+            BEAST_EXPECT((*exchange)[sfLiquidationChunkMin] == Number(50'000));
             BEAST_EXPECT(strHex((*exchange)[sfData]) == "ABCD");
-            BEAST_EXPECT(!exchange->isFieldPresent(sfVaultID));
-            BEAST_EXPECT(!exchange->isFieldPresent(sfPendingParameters));
             expectPseudoAccount(env, *exchange, xrpIssue());
         }
 
-        // IOU collateral: a trust line for the pseudo-account and the default scale of 6.
+        // IOU collateral: a trust line for the pseudo-account and the default scale of 6; the
+        // liquidation reward floor is rounded down onto the collateral grid.
         {
             auto const ownerCount = env.ownerCount(owner_);
-            auto const keylet = createExchange(env, owner_, usd_);
+            auto const keylet = Perp::exchangeKeylet(env, owner_);
+            auto jv = Perp::exchangeSet(owner_, usd_);
+            jv[sfLiquidationRewardMin] = "5.0000009";
+            env(jv);
+            env.close();
             BEAST_EXPECT(env.ownerCount(owner_) == ownerCount + 2);
             auto const exchange = env.le(keylet);
             if (!BEAST_EXPECT(exchange))
                 return;
             BEAST_EXPECT((*exchange)[sfScale] == kVaultDefaultIouScale);
+            BEAST_EXPECT((*exchange)[sfLiquidationRewardMin] == Number(5));
             expectPseudoAccount(env, *exchange, usd_);
         }
 
@@ -138,6 +146,34 @@ class PerpExchange_test : public PerpTestBase
             expectPseudoAccount(env, *exchange, asset);
         }
 
+        // Creation carries the asset and the liquidation policy, within its bounds.
+        {
+            auto const ownerCount = env.ownerCount(owner_);
+            for (auto const* field : {&sfLiquidationPenalty, &sfLiquidationChunkMin})
+            {
+                auto jv = Perp::exchangeSet(owner_, usd_);
+                jv.removeMember(field->getName());
+                env(jv, Ter(temMALFORMED));
+            }
+            auto noAsset = Perp::exchangeSet(owner_, usd_);
+            noAsset.removeMember(jss::Asset);
+            env(noAsset, Ter(temMALFORMED));
+            auto penalty = Perp::exchangeSet(owner_, usd_);
+            penalty[sfLiquidationPenalty] = perp::kRateUnity + 1;
+            env(penalty, Ter(temMALFORMED));
+            auto chunk = Perp::exchangeSet(owner_, usd_);
+            chunk[sfLiquidationChunkMin] = "0";
+            env(chunk, Ter(temMALFORMED));
+            auto reward = Perp::exchangeSet(owner_, usd_);
+            reward[sfLiquidationRewardMin] = "-1";
+            env(reward, Ter(temMALFORMED));
+            auto fee = Perp::exchangeSet(owner_, usd_);
+            fee[sfTakerFee] = perp::kMaxTradingFee + 1;
+            env(fee, Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(owner_) == ownerCount);
+        }
+
         // An owner that cannot cover two more reserves.
         {
             Account const poor{"poor"};
@@ -160,54 +196,12 @@ class PerpExchange_test : public PerpTestBase
         {
             auto const keylet = createExchange(env, owner_, xrpIssue());
             auto update = Perp::exchangeUpdate(alice_, keylet.key);
-            update[sfTakerFee] = 1;
+            update[sfTakerFee] = 0;
             env(update, Ter(tecNO_PERMISSION));
             auto missing = Perp::exchangeUpdate(owner_, uint256{7});
-            missing[sfTakerFee] = 1;
+            missing[sfTakerFee] = 0;
             env(missing, Ter(tecNO_ENTRY));
         }
-    }
-
-    void
-    testCreateVaultBinding()
-    {
-        testcase("create vault binding");
-        using namespace test::jtx;
-        Env env{*this, all_};
-        auto const world = setupMarketWorld(env);
-        Vault const vault{.env = env};
-
-        auto bound = [&](Account const& owner, Asset const& asset, uint256 const& vaultID) {
-            auto jv = Perp::exchangeSet(owner, asset);
-            jv[sfVaultID] = to_string(vaultID);
-            jv[sfVaultLossWindow] = 3'600;
-            return jv;
-        };
-
-        // The vault must exist, belong to the account and hold the collateral asset.
-        env(bound(owner_, usd_, uint256{9}), Ter(tecNO_ENTRY));
-        env(bound(alice_, usd_, world.vault.key), Ter(tecNO_PERMISSION));
-        env(bound(owner_, xrpIssue(), world.vault.key), Ter(tecNO_PERMISSION));
-        env.close();
-
-        auto const keylet = Perp::exchangeKeylet(env, owner_);
-        env(bound(owner_, usd_, world.vault.key));
-        env.close();
-        auto const exchange = env.le(keylet);
-        auto const sleVault = env.le(world.vault);
-        if (!BEAST_EXPECT(exchange && sleVault))
-            return;
-        BEAST_EXPECT((*exchange)[~sfVaultID] == world.vault.key);
-        BEAST_EXPECT((*exchange)[~sfVaultLossWindow] == 3'600u);
-        BEAST_EXPECT((*sleVault)[~sfPerpExchangeID] == keylet.key);
-
-        // A vault backs at most one exchange.
-        env(bound(owner_, usd_, world.vault.key), Ter(tecNO_PERMISSION));
-
-        // A bound vault cannot be deleted.
-        env(vault.del({.owner = owner_, .id = world.vault.key}), Ter(tecHAS_OBLIGATIONS));
-        env.close();
-        BEAST_EXPECT(env.le(world.vault));
     }
 
     void
@@ -228,107 +222,108 @@ class PerpExchange_test : public PerpTestBase
     }
 
     void
-    testUpdateDelayed()
+    testTightenOnly()
     {
-        testcase("update delayed");
+        testcase("tighten only");
         using namespace test::jtx;
         Env env{*this, all_};
-        setupMarketWorld(env);
+        fundAccounts(env);
 
         auto const keylet = Perp::exchangeKeylet(env, owner_);
         auto create = Perp::exchangeSet(owner_, usd_);
-        create[sfTakerFee] = 500;
         create[sfMakerFee] = 300;
+        create[sfTakerFee] = 500;
+        create[sfOwnerFeeShare] = 40'000;
+        create[sfBuilderFeeMax] = 100;
         create[sfCoverRateMinimum] = 1'000;
+        create[sfData] = "AA";
         env(create);
         env.close();
-        auto const market = marketKeylet(keylet.key);
-        env(Perp::marketSet(owner_, keylet.key, marketArgs()));
+
+        auto update = [&](SF_UINT32 const& field, std::uint32_t value) {
+            auto jv = Perp::exchangeUpdate(owner_, keylet.key);
+            jv[field] = value;
+            return jv;
+        };
+        auto u32 = [&](SF_UINT32 const& field) {
+            auto const sle = env.le(keylet);
+            return sle ? std::uint32_t{(*sle)[field]} : std::uint32_t{0xFFFF'FFFF};
+        };
+
+        // Each loosening is refused and changes nothing: a fee, share or cap up, the cover
+        // minimum or the penalty down.
+        env(update(sfMakerFee, 301), Ter(tecNO_PERMISSION));
+        env(update(sfTakerFee, 501), Ter(tecNO_PERMISSION));
+        env(update(sfOwnerFeeShare, 40'001), Ter(tecNO_PERMISSION));
+        env(update(sfBuilderFeeMax, 101), Ter(tecNO_PERMISSION));
+        env(update(sfCoverRateMinimum, 999), Ter(tecNO_PERMISSION));
+        env(update(sfLiquidationPenalty, 999), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(u32(sfMakerFee) == 300);
+        BEAST_EXPECT(u32(sfTakerFee) == 500);
+        BEAST_EXPECT(u32(sfOwnerFeeShare) == 40'000);
+        BEAST_EXPECT(u32(sfBuilderFeeMax) == 100);
+        BEAST_EXPECT(u32(sfCoverRateMinimum) == 1'000);
+        BEAST_EXPECT(u32(sfLiquidationPenalty) == 1'000);
+
+        // One loosening field refuses the whole update, tightening fields included.
+        auto mixed = update(sfMakerFee, 100);
+        mixed[sfTakerFee] = 600;
+        env(mixed, Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(u32(sfMakerFee) == 300);
+
+        // Each tightening applies at once, in the same transaction.
+        auto tighten = Perp::exchangeUpdate(owner_, keylet.key);
+        tighten[sfMakerFee] = 100;
+        tighten[sfTakerFee] = 400;
+        tighten[sfOwnerFeeShare] = 0;
+        tighten[sfBuilderFeeMax] = 50;
+        tighten[sfCoverRateMinimum] = 2'000;
+        tighten[sfLiquidationPenalty] = 3'000;
+        env(tighten);
+        BEAST_EXPECT(u32(sfMakerFee) == 100);
+        BEAST_EXPECT(u32(sfTakerFee) == 400);
+        BEAST_EXPECT(u32(sfOwnerFeeShare) == 0);
+        BEAST_EXPECT(u32(sfBuilderFeeMax) == 50);
+        BEAST_EXPECT(u32(sfCoverRateMinimum) == 2'000);
+        BEAST_EXPECT(u32(sfLiquidationPenalty) == 3'000);
         env.close();
 
-        // Raising the taker fee and lowering the cover minimum are queued; lowering the maker
-        // fee and the data apply at once.
-        auto const t = perp::refreshTime(*env.current());
-        auto update = Perp::exchangeUpdate(owner_, keylet.key);
-        update[sfTakerFee] = 800;
-        update[sfMakerFee] = 100;
-        update[sfCoverRateMinimum] = 500;
-        update[sfData] = "01";
-        env(update);
+        // An unchanged value is a tightening; data changes either way.
+        auto same = update(sfTakerFee, 400);
+        same[sfData] = "0102";
+        env(same);
         env.close();
         {
-            auto const exchange = env.le(keylet);
-            if (!BEAST_EXPECT(exchange && exchange->isFieldPresent(sfPendingParameters)))
-                return;
-            BEAST_EXPECT((*exchange)[sfTakerFee] == 500);
-            BEAST_EXPECT((*exchange)[sfMakerFee] == 100);
-            BEAST_EXPECT((*exchange)[sfCoverRateMinimum] == 1'000);
-            BEAST_EXPECT(strHex((*exchange)[sfData]) == "01");
-            BEAST_EXPECT(
-                (*exchange)[~sfParameterEffectiveTime] == t + perp::kMinParameterDelay.count());
-            auto const& pending = exchange->getFieldObject(sfPendingParameters);
-            BEAST_EXPECT(pending[~sfTakerFee] == 800u);
-            BEAST_EXPECT(pending[~sfCoverRateMinimum] == 500u);
-            BEAST_EXPECT(!pending.isFieldPresent(sfMakerFee));
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle && strHex((*sle)[sfData]) == "0102");
+            BEAST_EXPECT(u32(sfTakerFee) == 400);
         }
-
-        // A refresh before the delay leaves the change pending.
-        env(Perp::marketUpdate(owner_, market.key));
+        auto clear = Perp::exchangeUpdate(owner_, keylet.key);
+        clear[sfData] = "";
+        env(clear);
         env.close();
         {
-            auto const exchange = env.le(keylet);
-            BEAST_EXPECT(exchange && exchange->isFieldPresent(sfPendingParameters));
-            BEAST_EXPECT(exchange && (*exchange)[sfTakerFee] == 500);
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle && !sle->isFieldPresent(sfData));
         }
 
-        // The first refresh after the delay applies it.
-        env.close(env.now() + perp::kMinParameterDelay);
-        env(Perp::marketUpdate(owner_, market.key));
+        // An update naming a fixed field is malformed, whatever its value.
+        auto fixedField = [&](json::StaticString const& name, json::Value const& value) {
+            auto jv = Perp::exchangeUpdate(owner_, keylet.key);
+            jv[name] = value;
+            env(jv, Ter(temMALFORMED));
+        };
+        fixedField(jss::Asset, toJson(Asset{usd_}));
+        fixedField(sfScale.getJsonName(), 6);
+        fixedField(sfDomainID.getJsonName(), to_string(uint256{1}));
+        fixedField(sfLiquidationRewardMin.getJsonName(), "0");
+        fixedField(sfLiquidationChunkMin.getJsonName(), "10000");
         env.close();
-        {
-            auto const exchange = env.le(keylet);
-            if (!BEAST_EXPECT(exchange))
-                return;
-            BEAST_EXPECT((*exchange)[sfTakerFee] == 800);
-            BEAST_EXPECT((*exchange)[sfCoverRateMinimum] == 500);
-            BEAST_EXPECT(!exchange->isFieldPresent(sfPendingParameters));
-            BEAST_EXPECT(!exchange->isFieldPresent(sfParameterEffectiveTime));
-        }
 
-        // A new queued change replaces the pending one.
-        auto raise = Perp::exchangeUpdate(owner_, keylet.key);
-        raise[sfMakerFee] = 400;
-        env(raise);
-        env.close();
-        auto again = Perp::exchangeUpdate(owner_, keylet.key);
-        again[sfBuilderFeeMax] = 50;
-        env(again);
-        env.close();
-        {
-            auto const exchange = env.le(keylet);
-            if (!BEAST_EXPECT(exchange && exchange->isFieldPresent(sfPendingParameters)))
-                return;
-            auto const& pending = exchange->getFieldObject(sfPendingParameters);
-            BEAST_EXPECT(pending[~sfBuilderFeeMax] == 50u);
-            BEAST_EXPECT(!pending.isFieldPresent(sfMakerFee));
-        }
-
-        // The owner and vault fee shares may not sum above one once the change applies.
-        auto const shared = Perp::exchangeKeylet(env, owner_);
-        auto withShare = Perp::exchangeSet(owner_, usd_);
-        withShare[sfOwnerFeeShare] = 60'000;
-        env(withShare);
-        env.close();
-        auto vaultShare = Perp::exchangeUpdate(owner_, shared.key);
-        vaultShare[sfVaultFeeShare] = 50'000;
-        env(vaultShare, Ter(tecLIMIT_EXCEEDED));
-        vaultShare[sfVaultFeeShare] = 40'000;
-        env(vaultShare);
-        env.close();
-        auto const sharedExchange = env.le(shared);
-        BEAST_EXPECT(
-            sharedExchange && sharedExchange->isFieldPresent(sfPendingParameters) &&
-            sharedExchange->getFieldObject(sfPendingParameters)[~sfVaultFeeShare] == 40'000u);
+        // Rates keep their bounds on update.
+        env(update(sfLiquidationPenalty, perp::kRateUnity + 1), Ter(temMALFORMED));
     }
 
     void
@@ -337,18 +332,12 @@ class PerpExchange_test : public PerpTestBase
         testcase("delete");
         using namespace test::jtx;
 
-        // Refused while a market is listed; succeeds once empty and clears the vault binding.
+        // Refused while a market is listed; succeeds once empty.
         {
             Env env{*this, all_};
-            auto const world = setupMarketWorld(env);
-            Vault const vault{.env = env};
+            setupMarketWorld(env);
             auto const ownerCount = env.ownerCount(owner_);
-            auto const keylet = Perp::exchangeKeylet(env, owner_);
-            auto create = Perp::exchangeSet(owner_, usd_);
-            create[sfVaultID] = to_string(world.vault.key);
-            create[sfVaultLossWindow] = 3'600;
-            env(create);
-            env.close();
+            auto const keylet = createExchange(env, owner_, usd_);
             auto const created = env.le(keylet);
             if (!BEAST_EXPECT(created))
                 return;
@@ -369,14 +358,7 @@ class PerpExchange_test : public PerpTestBase
             BEAST_EXPECT(!env.le(keylet::account(pseudoID)));
             BEAST_EXPECT(!env.le(keylet::trustLine(pseudoID, usd_)));
             BEAST_EXPECT(env.ownerCount(owner_) == ownerCount);
-            auto const sleVault = env.le(world.vault);
-            BEAST_EXPECT(sleVault && !sleVault->isFieldPresent(sfPerpExchangeID));
             env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecNO_ENTRY));
-
-            // The unbound vault can be deleted.
-            env(vault.del({.owner = owner_, .id = world.vault.key}));
-            env.close();
-            BEAST_EXPECT(!env.le(world.vault));
         }
 
         // Every asset the pseudo-account holds goes back to the owner.
@@ -462,9 +444,8 @@ public:
     run() override
     {
         testCreate();
-        testCreateVaultBinding();
         testMptWithoutCanTransfer();
-        testUpdateDelayed();
+        testTightenOnly();
         testDelete();
         testDeleteWithBadDebt();
     }
