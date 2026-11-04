@@ -93,7 +93,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
             };
         }
         case STI_UINT128: {
-            uint128 const data = funcParam.getFieldH128();
+            UInt128 const data = funcParam.getFieldH128();
             return Bytes{data.begin(), data.end()};
         }
         case STI_UINT160: {

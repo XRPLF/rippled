@@ -121,18 +121,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
         json::Value result;
         Gate g;
         // Test rpc::tuning::max_src_cur source currencies.
@@ -164,7 +168,7 @@ public:
         numSrc.clear();
         for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
         {
-            auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+            auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
         }
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
@@ -177,7 +181,7 @@ public:
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than rpc::tuning::max_auto_src_cur source currencies.
-        auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+        auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
@@ -198,7 +202,7 @@ public:
 
         env.fund(XRP(10'000), "alice", "bob");
 
-        auto usdm = MPTTester({.env = env, .issuer = "bob"});
+        auto const usdm = MPTTester({.env = env, .issuer = "bob"});
 
         auto const result = findPaths(env, "alice", "bob", usdm(5));
         BEAST_EXPECT(std::get<0>(result).empty());
@@ -280,7 +284,7 @@ public:
         testcase("maxed-out MPT pathfinding");
         using namespace jtx;
 
-        auto hasMPT = [](auto const& assets, MPT const& mpt) {
+        auto const hasMPT = [](auto const& assets, MPT const& mpt) {
             return std::ranges::any_of(assets, [&](auto const& asset) {
                 return asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt();
             });
@@ -344,7 +348,7 @@ public:
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
@@ -374,7 +378,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"bob", "carol"}});
             MPT const aud(makeMptID(0, gw));
             env(pay(gw, "carol", usd(100)));
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
@@ -449,7 +453,7 @@ public:
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
         MPT const gw2Usd = MPTTester(
             {.env = env, .issuer = gw2, .holders = {"alice", "bob"}, .transferFee = 1'000});
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -486,7 +490,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, charlie, usd(10)));
             env.close();
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -517,7 +521,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, alice, usd(10)));
             env.close();
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});

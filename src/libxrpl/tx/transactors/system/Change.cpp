@@ -8,9 +8,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
+#include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -26,7 +28,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 
@@ -42,7 +43,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
             preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
         return ret;
 
-    auto account = ctx.tx.getAccountID(sfAccount);
+    auto const account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
@@ -131,7 +132,8 @@ Change::preclaim(PreclaimContext const& ctx)
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
                 if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
-                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
                     return temBAD_FEE;
             }
             else
@@ -174,19 +176,39 @@ Change::preCompute()
     XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
+void
+Change::initializeVMFees()
+{
+    FeeSettingsEntryW feeObject(view());
+
+    if (!feeObject)
+    {
+        feeObject.newSLE();
+        feeObject.insert();
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    feeObject.update();
+
+    JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
+}
+
 TER
 Change::applyAmendment()
 {
-    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
+    UInt256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
-    auto const k = keylet::amendments();
-
-    SLE::pointer amendmentObject = view().peek(k);
+    AmendmentsEntryW amendmentObject(view(), j_);
 
     if (!amendmentObject)
     {
-        amendmentObject = std::make_shared<SLE>(k);
-        view().insert(amendmentObject);
+        amendmentObject.newSLE();
+        amendmentObject.insert();
     }
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
@@ -252,6 +274,9 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
+
+        if (amendment == featureSmartEscrow)
+            initializeVMFees();
     }
 
     if (newMajorities.empty())
@@ -263,7 +288,7 @@ Change::applyAmendment()
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
     }
 
-    view().update(amendmentObject);
+    amendmentObject.update();
 
     return tesSUCCESS;
 }
@@ -271,16 +296,14 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::feeSettings();
-
-    SLE::pointer feeObject = view().peek(k);
+    FeeSettingsEntryW feeObject(view());
 
     if (!feeObject)
     {
-        feeObject = std::make_shared<SLE>(k);
-        view().insert(feeObject);
+        feeObject.newSLE();
+        feeObject.insert();
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
     if (view().rules().enabled(featureXRPFees))
@@ -308,7 +331,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfGasPrice);
     }
 
-    view().update(feeObject);
+    feeObject.update();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
@@ -349,12 +372,11 @@ Change::applyUNLModify()
     JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq << " validator data:" << strHex(validator);
 
-    auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    NegativeUNLEntryW negUnlObject(view(), j_);
     if (!negUnlObject)
     {
-        negUnlObject = std::make_shared<SLE>(k);
-        view().insert(negUnlObject);
+        negUnlObject.newSLE();
+        negUnlObject.insert();
     }
 
     bool const found = [&] {
@@ -427,12 +449,12 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    view().update(negUnlObject);
+    negUnlObject.update();
     return tesSUCCESS;
 }
 
 void
-Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Change::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

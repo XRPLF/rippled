@@ -8,8 +8,10 @@
 #include <tx/wasm/fixtures/WasmFixture.h>
 
 #include <cstdint>
+#include <expected>
 #include <format>
 #include <string>
+#include <string_view>
 
 // What a contract's `host_calls` tests share: the guest-side bytes each call carries.
 //
@@ -18,8 +20,33 @@
 
 namespace xrpl::test {
 
-struct ContractCallTest : HostCallTest
+struct ContractCallTest : MockVmTest
 {
+    // The module under test. One import, one entry point that calls it.
+    [[nodiscard]] virtual std::string
+    wat() const = 0;
+
+    std::expected<EscrowResult, WasmTER>
+    callHost(std::string_view entryPoint = escrowFunctionName)
+    {
+        return run(wat(), kAmpleGas, entryPoint);
+    }
+
+    // The contract's return value, which for these modules is what the host answered — or
+    // its negative error code. Fails the test if the run did not complete.
+    std::int32_t
+    hostAnswer(std::string_view entryPoint = escrowFunctionName)
+    {
+        auto const outcome = callHost(entryPoint);
+        if (!outcome)
+        {
+            ADD_FAILURE() << "the run did not complete: " << transToken(outcome.error().ter)
+                          << "; logged: " << logged();
+            return 0;
+        }
+        return outcome->result;
+    }
+
     // A 20-byte account the guest holds as bytes. Distinctive at both ends, so a region read
     // at the wrong offset or the wrong length cannot match it.
     static AccountID

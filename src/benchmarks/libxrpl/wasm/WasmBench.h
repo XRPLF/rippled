@@ -16,7 +16,7 @@
 #include <string_view>
 #include <type_traits>
 
-// The gas-calibration harness. What the numbers mean and how to read a report are in ../README.md.
+// The gas-calibration harness. What the numbers mean and how to read a report are in README.md.
 
 namespace xrpl::test::bench {
 

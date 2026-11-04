@@ -13,7 +13,7 @@ struct PaychannelKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(PaychannelKeyletImpl, MatchesPaychannelFunction)
+TEST_F(PaychannelKeyletImpl, matches_paychannel_function)
 {
     auto const owner = fund("owner");
     auto const destination = fund("destination");
@@ -23,7 +23,7 @@ TEST_F(PaychannelKeyletImpl, MatchesPaychannelFunction)
         keylet::payChannel(owner.id(), destination.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(PaychannelKeyletImpl, CantUseSelf)
+TEST_F(PaychannelKeyletImpl, cant_use_self)
 {
     auto const owner = fund("owner");
 
@@ -31,7 +31,7 @@ TEST_F(PaychannelKeyletImpl, CantUseSelf)
         makeHost()->paychannelKeylet(owner.id(), owner.id(), 1u), HostFunctionError::InvalidParams);
 }
 
-TEST_F(PaychannelKeyletImpl, InvalidAccount)
+TEST_F(PaychannelKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

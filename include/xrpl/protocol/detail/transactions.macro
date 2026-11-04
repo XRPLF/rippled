@@ -21,7 +21,7 @@
  *     struct TxSettings
  *     {
  *         Delegation delegable{Delegation::NotDelegable};
- *         uint256 amendment{};
+ *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
  *         Emittance emittance{Emittance::Emitable};
  *     };
@@ -907,6 +907,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     {sfDebtMaximum, SoeOptional},
     {sfCoverRateMinimum, SoeOptional},
     {sfCoverRateLiquidation, SoeOptional},
+    {sfDomainID,             SoeOptional},
 }))
 
 /** This transaction deletes a Loan Broker */
@@ -1142,11 +1143,51 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolder, SoeOptional},
+    {sfIssuerEncryptedAmount, SoeOptional},
+    {sfAuditorEncryptedAmount, SoeOptional},
+    {sfZKProof, SoeRequired},
+}))
+
+/** This transaction rotates or recovers a confidential MPT holder's ElGamal encryption key,
+    or cancels a recovery. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
+#endif
+TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
+    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfHolderEncryptionKey, SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceInbox, SoeOptional},
+    {sfZKProof, SoeOptional},
+}))
+
+/** This transaction posts an unsigned transaction on-ledger as a
+    TransactionProposal, pending multi-signature collection. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/proposal/TransactionProposalCreate.h>
+#endif
+TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
+    ({.amendment = featureCosign}),
+    ({
+    {sfProposedTransaction, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+
 /** This transaction type creates the smart contract. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractCreate.h>
 #endif
-TRANSACTION(ttCONTRACT_CREATE, 92, ContractCreate,
+TRANSACTION(ttCONTRACT_CREATE, 103, ContractCreate,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureSmartContract,
@@ -1165,7 +1206,7 @@ TRANSACTION(ttCONTRACT_CREATE, 92, ContractCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractModify.h>
 #endif
-TRANSACTION(ttCONTRACT_MODIFY, 93, ContractModify,
+TRANSACTION(ttCONTRACT_MODIFY, 104, ContractModify,
     ({.delegable = Delegation::Delegable, .amendment = featureSmartContract}),
     ({
     {sfContractAccount, SoeOptional},
@@ -1182,7 +1223,7 @@ TRANSACTION(ttCONTRACT_MODIFY, 93, ContractModify,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractDelete.h>
 #endif
-TRANSACTION(ttCONTRACT_DELETE, 94, ContractDelete,
+TRANSACTION(ttCONTRACT_DELETE, 105, ContractDelete,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureSmartContract,
@@ -1196,7 +1237,7 @@ TRANSACTION(ttCONTRACT_DELETE, 94, ContractDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractClawback.h>
 #endif
-TRANSACTION(ttCONTRACT_CLAWBACK, 95, ContractClawback,
+TRANSACTION(ttCONTRACT_CLAWBACK, 106, ContractClawback,
     ({.delegable = Delegation::Delegable, .amendment = featureSmartContract}),
     ({
     {sfContractAccount, SoeOptional},
@@ -1207,7 +1248,7 @@ TRANSACTION(ttCONTRACT_CLAWBACK, 95, ContractClawback,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractUserDelete.h>
 #endif
-TRANSACTION(ttCONTRACT_USER_DELETE, 96, ContractUserDelete,
+TRANSACTION(ttCONTRACT_USER_DELETE, 107, ContractUserDelete,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureSmartContract,
@@ -1222,7 +1263,7 @@ TRANSACTION(ttCONTRACT_USER_DELETE, 96, ContractUserDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/contract/ContractCall.h>
 #endif
-TRANSACTION(ttCONTRACT_CALL, 97, ContractCall,
+TRANSACTION(ttCONTRACT_CALL, 108, ContractCall,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureSmartContract,

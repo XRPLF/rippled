@@ -9,6 +9,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OpenViewSandbox.h>
 #include <xrpl/ledger/RawView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
@@ -33,7 +34,7 @@ public:
     explicit ApplyContext(
         ServiceRegistry& registry,
         OpenView& base,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<UInt256 const> const& parentBatchId,
         STTx const& tx,
         TER preclaimResult,
         XRPAmount baseFee,
@@ -175,10 +176,10 @@ public:
     void
     visit(
         std::function<void(
-            uint256 const& key,
+            UInt256 const& key,
             bool isDelete,
-            SLE::const_ref before,
-            SLE::const_ref after)> const& func);
+            SLE::ConstRef before,
+            SLE::ConstRef after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)
@@ -186,6 +187,14 @@ public:
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->rawDestroyXRP(fee);
     }
+
+    /**
+     * Registers a newly-created order book directory with the shared,
+     * process-wide OrderBookDB, unless this transaction is being applied
+     * under TapDryRun.
+     */
+    void
+    addOrderBook(Book const& book);
 
     ApplyViewContext
     getApplyViewContext()
@@ -202,7 +211,7 @@ private:
     std::optional<ApplyViewImpl> view_;
 
     // The ID of the batch transaction we are executing under, if set.
-    std::optional<uint256 const> parentBatchId_;
+    std::optional<UInt256 const> parentBatchId_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> vmReturnCode_;
     std::optional<STArray> contractEvents_;

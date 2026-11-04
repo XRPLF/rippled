@@ -13,6 +13,7 @@ add_library(
     helpers/TxTest.cpp
     tx/wasm/fixtures/ContractLedger.cpp
     tx/wasm/fixtures/NftSetup.cpp
+    tx/wasm/fixtures/OwnedLocator.cpp
     tx/wasm/fixtures/WasmLedger.cpp
     tx/wasm/fixtures/WasmRun.cpp
 )
@@ -44,6 +45,7 @@ set(test_modules
     consensus
     crypto
     json
+    ledger
     nodestore
     peerfinder
     protocol
@@ -70,7 +72,8 @@ foreach(module IN LISTS test_modules)
     list(
         FILTER sources
         EXCLUDE
-        REGEX "/fixtures/(ContractLedger|NftSetup|WasmLedger|WasmRun)\\.cpp$"
+        REGEX
+            "/fixtures/(ContractLedger|NftSetup|OwnedLocator|WasmLedger|WasmRun)\\.cpp$"
     )
     target_sources(xrpl_tests PRIVATE ${sources})
 

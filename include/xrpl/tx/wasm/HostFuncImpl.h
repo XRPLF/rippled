@@ -51,9 +51,9 @@ public:
     std::expected<int32_t, HostFunctionError>
     normalizeCacheIndex(int32_t cacheIdx) const
     {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= maxCache)
+        if (cacheIdx <= 0 || cacheIdx > maxCache)
             return std::unexpected(HostFunctionError::SlotOutRange);
+        --cacheIdx;
         if (!cache_[cacheIdx])
             return std::unexpected(HostFunctionError::EmptySlot);
         return cacheIdx;
@@ -274,7 +274,7 @@ public:
     std::expected<Bytes, HostFunctionError>
     floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    std::expected<FloatOrdering, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const override;
 
     std::expected<Bytes, HostFunctionError>

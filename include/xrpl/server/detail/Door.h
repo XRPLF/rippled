@@ -47,15 +47,15 @@ template <class Handler>
 class Door : public IOList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
 private:
-    using clock_type = std::chrono::steady_clock;
-    using timer_type = boost::asio::basic_waitable_timer<clock_type>;
-    using error_code = boost::system::error_code;
-    using yield_context = boost::asio::yield_context;
-    using protocol_type = boost::asio::ip::tcp;
-    using acceptor_type = protocol_type::acceptor;
-    using endpoint_type = protocol_type::endpoint;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::tcp_stream;
+    using ClockType = std::chrono::steady_clock;
+    using TimerType = boost::asio::basic_waitable_timer<ClockType>;
+    using ErrorCode = boost::system::error_code;
+    using YieldContext = boost::asio::yield_context;
+    using ProtocolType = boost::asio::ip::tcp;
+    using AcceptorType = ProtocolType::acceptor;
+    using EndpointType = ProtocolType::endpoint;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
     class Detector : public IOList::Work, public std::enable_shared_from_this<Detector>
@@ -64,9 +64,9 @@ private:
         Port const& port_;
         Handler& handler_;
         boost::asio::io_context& ioc_;
-        stream_type stream_;
-        socket_type& socket_;
-        endpoint_type remoteAddress_;
+        StreamType stream_;
+        SocketType& socket_;
+        EndpointType remoteAddress_;
         boost::asio::strand<boost::asio::io_context::executor_type> strand_;
         beast::Journal const j_;
 
@@ -75,8 +75,8 @@ private:
             Port const& port,
             Handler& handler,
             boost::asio::io_context& ioc,
-            stream_type&& stream,
-            endpoint_type remoteAddress,
+            StreamType&& stream,
+            EndpointType remoteAddress,
             beast::Journal j);
         void
         run();
@@ -85,28 +85,30 @@ private:
 
     private:
         void
-        doDetect(yield_context yield);
+        doDetect(YieldContext yield);
     };
 
     beast::Journal const j_;
     Port const& port_;
     Handler& handler_;
     boost::asio::io_context& ioc_;
-    acceptor_type acceptor_;
+    AcceptorType acceptor_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_{
         port_.protocol.contains("https") || port_.protocol.contains("wss") ||
-        port_.protocol.contains("wss2") || port_.protocol.contains("peer")};
+            port_.protocol.contains("wss2") || port_.protocol.contains("peer"),
+    };
     bool plain_{
         port_.protocol.contains("http") || port_.protocol.contains("ws") ||
-        (port_.protocol.contains("ws2"))};
+            port_.protocol.contains("ws2"),
+    };
     static constexpr std::chrono::milliseconds kInitialAcceptDelay{50};
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
     std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};
     boost::asio::steady_timer backoffTimer_;
     static constexpr std::uint64_t kMaxUsedFdPercent = 70;
     static constexpr std::chrono::milliseconds kFdSampleInterval{250};
-    clock_type::time_point fdSampleAt_;
+    ClockType::time_point fdSampleAt_;
     bool cachedThrottle_{false};
 
     struct FDStats
@@ -141,7 +143,7 @@ public:
     void
     close() override;
 
-    [[nodiscard]] endpoint_type
+    [[nodiscard]] EndpointType
     getEndpoint() const
     {
         return acceptor_.local_endpoint();
@@ -153,11 +155,11 @@ private:
     create(
         bool ssl,
         ConstBufferSequence const& buffers,
-        stream_type&& stream,
-        endpoint_type remoteAddress);
+        StreamType&& stream,
+        EndpointType remoteAddress);
 
     void
-    doAccept(yield_context yield);
+    doAccept(YieldContext yield);
 };
 
 template <class Handler>
@@ -165,8 +167,8 @@ Door<Handler>::Detector::Detector(
     Port const& port,
     Handler& handler,
     boost::asio::io_context& ioc,
-    stream_type&& stream,
-    endpoint_type remoteAddress,
+    StreamType&& stream,
+    EndpointType remoteAddress,
     beast::Journal j)
     : port_(port)
     , handler_(handler)
@@ -184,7 +186,7 @@ void
 Door<Handler>::Detector::run()
 {
     util::spawn(
-        strand_, [self = this->shared_from_this()](yield_context yield) { self->doDetect(yield); });
+        strand_, [self = this->shared_from_this()](YieldContext yield) { self->doDetect(yield); });
 }
 
 template <class Handler>
@@ -207,12 +209,12 @@ Door<Handler>::Detector::doDetect(boost::asio::yield_context doYield)
     {
         if (ssl)
         {
-            if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+            if (auto const sp = ios().template emplace<SSLHTTPPeer<Handler>>(
                     port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
-        if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+        if (auto const sp = ios().template emplace<PlainHTTPPeer<Handler>>(
                 port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
             sp->run();
         return;
@@ -229,7 +231,7 @@ template <class Handler>
 void
 Door<Handler>::reOpen()
 {
-    error_code ec;
+    ErrorCode ec;
 
     if (acceptor_.is_open())
     {
@@ -243,7 +245,7 @@ Door<Handler>::reOpen()
         }
     }
 
-    endpoint_type const localAddress = endpoint_type(port_.ip, port_.port);
+    EndpointType const localAddress = EndpointType(port_.ip, port_.port);
 
     acceptor_.open(localAddress.protocol(), ec);
     if (ec)
@@ -289,7 +291,7 @@ Door<Handler>::Door(
     , acceptor_(ioContext)
     , strand_(boost::asio::make_strand(ioContext))
     , backoffTimer_(ioContext)
-    , fdSampleAt_(clock_type::now() - kFdSampleInterval)
+    , fdSampleAt_(ClockType::now() - kFdSampleInterval)
 {
     reOpen();
 }
@@ -299,7 +301,7 @@ void
 Door<Handler>::run()
 {
     util::spawn(
-        strand_, [self = this->shared_from_this()](yield_context yield) { self->doAccept(yield); });
+        strand_, [self = this->shared_from_this()](YieldContext yield) { self->doAccept(yield); });
 }
 
 template <class Handler>
@@ -311,7 +313,7 @@ Door<Handler>::close()
         return boost::asio::post(strand_, [self = this->shared_from_this()] { self->close(); });
     }
     backoffTimer_.cancel();
-    error_code ec;
+    ErrorCode ec;
     acceptor_.close(ec);
 }
 
@@ -323,17 +325,17 @@ void
 Door<Handler>::create(
     bool ssl,
     ConstBufferSequence const& buffers,
-    stream_type&& stream,
-    endpoint_type remoteAddress)
+    StreamType&& stream,
+    EndpointType remoteAddress)
 {
     if (ssl)
     {
-        if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+        if (auto const sp = ios().template emplace<SSLHTTPPeer<Handler>>(
                 port_, handler_, ioc_, j_, remoteAddress, buffers, std::move(stream)))
             sp->run();
         return;
     }
-    if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+    if (auto const sp = ios().template emplace<PlainHTTPPeer<Handler>>(
             port_, handler_, ioc_, j_, remoteAddress, buffers, std::move(stream)))
         sp->run();
 }
@@ -354,10 +356,10 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             continue;
         }
 
-        error_code ec;
-        endpoint_type remoteAddress;
-        stream_type stream(ioc_);
-        socket_type& socket = stream.socket();
+        ErrorCode ec;
+        EndpointType remoteAddress;
+        StreamType stream(ioc_);
+        SocketType& socket = stream.socket();
         acceptor_.async_accept(socket, remoteAddress, doYield[ec]);
         if (ec)
         {
@@ -390,7 +392,7 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
 
         if (ssl_ && plain_)
         {
-            if (auto sp = ios().template emplace<Detector>(
+            if (auto const sp = ios().template emplace<Detector>(
                     port_, handler_, ioc_, std::move(stream), remoteAddress, j_))
                 sp->run();
         }
@@ -439,7 +441,7 @@ Door<Handler>::shouldThrottleForFds()
 #if BOOST_OS_WINDOWS
     return false;
 #else
-    auto const now = clock_type::now();
+    auto const now = ClockType::now();
     if (now - fdSampleAt_ < kFdSampleInterval)
         return cachedThrottle_;
 

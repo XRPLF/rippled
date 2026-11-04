@@ -31,7 +31,7 @@ public:
     STData(SField const& n, std::uint16_t);
     STData(SField const& n, std::uint32_t);
     STData(SField const& n, std::uint64_t);
-    STData(SField const& n, uint128 const&);
+    STData(SField const& n, UInt128 const&);
     STData(SField const& n, uint160 const&);
     STData(SField const& n, uint192 const&);
     STData(SField const& n, uint256 const&);
@@ -77,7 +77,7 @@ public:
     void
     setFieldU64(std::uint64_t);
     void
-    setFieldH128(uint128 const&);
+    setFieldH128(UInt128 const&);
     void
     setFieldH160(uint160 const&);
     void
@@ -107,7 +107,7 @@ public:
     getFieldU32() const;
     [[nodiscard]] std::uint64_t
     getFieldU64() const;
-    [[nodiscard]] uint128
+    [[nodiscard]] UInt128
     getFieldH128() const;
     [[nodiscard]] uint160
     getFieldH160() const;

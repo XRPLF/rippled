@@ -102,7 +102,7 @@ STData::STData(SField const& n, std::uint64_t v) : STData(n)
     setFieldU64(v);
 }
 
-STData::STData(SField const& n, uint128 const& v) : STData(n)
+STData::STData(SField const& n, UInt128 const& v) : STData(n)
 {
     setFieldH128(v);
 }
@@ -436,7 +436,7 @@ STData::setFieldU64(std::uint64_t v)
 }
 
 void
-STData::setFieldH128(uint128 const& v)
+STData::setFieldH128(UInt128 const& v)
 {
     hold<STUInt128>(STI_UINT128, sfEmailHash, v);
 }
@@ -525,7 +525,7 @@ STData::getFieldU64() const
     return getFieldByValue<STUInt64>();
 }
 
-uint128
+UInt128
 STData::getFieldH128() const
 {
     return getFieldByValue<STUInt128>();
@@ -667,7 +667,7 @@ dataFromJson(SField const& field, json::Value const& v)
             Throw<std::runtime_error>("STData: expected string for UINT128");
         }
 
-        uint128 num;
+        UInt128 num;
 
         if (auto const s = value.asString(); !num.parseHex(s))
         {

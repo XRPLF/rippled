@@ -130,6 +130,13 @@ unsigned-integer-overflow:__chrono/duration.h
 # distinct header from the bits/ directory so it needs its own entry.
 unsigned-integer-overflow:include/c++/*/bit
 
+# libstdc++ <format> takes the magnitude of a negative integer with
+# -static_cast<make_unsigned_t<T>>(v), which wraps by design for the most
+# negative value (std::format("{}", INT_MIN)). std::to_string avoids the report
+# only because it spells the same thing (unsigned)~v + 1u. Like <bit>, <format>
+# is a top-level header rather than one under bits/.
+unsigned-integer-overflow:include/c++/*/format
+
 # =============================================================================
 # Rippled code suppressions
 # =============================================================================

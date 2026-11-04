@@ -1,22 +1,25 @@
 //! Screening a contract before it reaches the ledger.
 //!
 //! [`check`] answers whether [`crate::run`] would refuse a module before the
-//! guest's first instruction — the three stages a caller maps to a malformed
+//! guest's first instruction — the stages a caller maps to a malformed
 //! transaction rather than to a failed one. It needs **no host, no store and no
 //! gas**: everything it reads is a property of the compiled module. That is what
 //! makes it callable from a transaction's preflight, which has no ledger to serve
 //! host calls from.
 //!
-//! Two things it deliberately does not screen. A module exporting **no** linear
-//! memory passes: a contract that makes no host call needs none, and one that
-//! does is refused at the call and charged for what it burned. A start section
-//! passes: it is guest code, and executing it is the one thing a check must not do
-//! — a trap in one is charged to the contract like any other trap.
+//! Two entry points over one pass: [`check`] stops at the first refusal, which is
+//! all a consensus path can act on, and [`check_all`] reports every one. Both draw
+//! from [`check_error_iter`], so they cannot disagree about which refusal is first.
+//!
+//! One thing it deliberately does not screen: a module exporting **no** linear
+//! memory passes, since a contract that makes no host call needs none, and one that
+//! does is refused at the call and charged for what it burned. A start section needs
+//! no rule of its own — the engine forbids one, so such a module fails to compile.
 //!
 //! Two things it screens that a run can only discover: an exported memory, or an
 //! exported table, larger than the engine grants. Both read the same export list, so
-//! [`check_exported_resources`] is one pass — see it for what stays invisible, and
-//! why the table case leaves much more of it there.
+//! [`check_exported_resources_iter`] is one pass — see it for what stays invisible,
+//! and why the table case leaves much more of it there.
 //!
 //! Every rule is here but one: [`signature`] holds the comparison of an import's
 //! type against the ABI's, which needs machinery the rest of the stage does not.
@@ -27,7 +30,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile};
+use crate::vm::{CompileError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -36,6 +39,10 @@ use signature::check_signature;
 pub enum CheckError {
     /// `wasm` is not a valid module under this engine's configuration.
     Compile(String),
+    /// A type, import or export section, or an import or export name, is past its
+    /// cap. Apart from [`CheckError::Compile`] because no contract reaches a cap by
+    /// accident, so a caller may want to count these as deliberate.
+    Limit(String),
     /// An import no engine of this ABI defines: another module namespace, a name
     /// that is not a host function, or one imported as something other than a
     /// function.
@@ -56,6 +63,7 @@ impl fmt::Display for CheckError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CheckError::Compile(detail) => write!(f, "compile: {detail}"),
+            CheckError::Limit(detail) => write!(f, "limit: {detail}"),
             CheckError::Import(detail) => write!(f, "import: {detail}"),
             CheckError::Signature(detail) => write!(f, "signature: {detail}"),
             // The detail says which of the entry point's failures this is, since
@@ -67,29 +75,48 @@ impl fmt::Display for CheckError {
     }
 }
 
+impl From<CompileError> for CheckError {
+    fn from(error: CompileError) -> CheckError {
+        match error {
+            CompileError::Invalid(detail) => CheckError::Compile(detail),
+            CompileError::Limit(detail) => CheckError::Limit(detail),
+        }
+    }
+}
+
 /// Screen `wasm`: it must compile, import only what the engine serves, export
 /// `function_name` as `() -> i32`, and ask for no more memory or table than it may
 /// have.
-///
-/// The stages are ordered by how much of the module each explains. An import fault
-/// is reported before a missing entry point because the imports are what the rest of
-/// the module is built on; the resource caps come last, being a request rather than a
-/// mistake about the ABI.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
-    let module = compile(wasm).map_err(CheckError::Compile)?;
-    check_imports(&module)?;
-    check_entry_point(&module, function_name)?;
-    check_exported_resources(&module)
+    let module = compile(&wasm_engine(), wasm).map_err(CheckError::from)?;
+    check_error_iter(&module, function_name)
+        .next()
+        .map_or(Ok(()), Err)
 }
 
-/// Every import must be one the linker defines, with the type it defines it as. The
-/// first that is not ends the check, so a module with several faults reports the
-/// earliest.
-fn check_imports(module: &Module) -> Result<(), CheckError> {
-    for import in module.imports() {
-        check_import(import.module(), import.name(), import.ty())?;
+/// [`check`], reporting every error found rather than stopping at the first.
+pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
+    let module = compile(&wasm_engine(), wasm).map_err(|e| vec![CheckError::from(e)])?;
+    let refusals: Vec<CheckError> = check_error_iter(&module, function_name).collect();
+    if refusals.is_empty() {
+        return Ok(());
     }
-    Ok(())
+    Err(refusals)
+}
+
+fn check_error_iter<'a>(
+    module: &'a Module,
+    function_name: &'a str,
+) -> impl Iterator<Item = CheckError> + 'a {
+    check_imports_iter(module)
+        .chain(check_entry_point_iter(module, function_name))
+        .chain(check_exported_resources_iter(module))
+}
+
+fn check_imports_iter(module: &Module) -> impl Iterator<Item = CheckError> + '_ {
+    module
+        .imports()
+        .filter_map(|import| check_import(import.module(), import.name(), import.ty()).err())
 }
 
 /// Whether the engine defines this one import, as the guest declares it.
@@ -130,11 +157,15 @@ fn imported_function<'ty>(name: &str, ty: &'ty ExternType) -> Result<&'ty FuncTy
     }
 }
 
-fn check_entry_point(module: &Module, name: &str) -> Result<(), CheckError> {
-    match module.get_export(name) {
-        Some(ExternType::Func(ty)) if is_entry_point(&ty) => Ok(()),
-        found => Err(CheckError::EntryPoint(entry_point_fault(found, name))),
-    }
+fn check_entry_point_iter<'a>(
+    module: &'a Module,
+    name: &'a str,
+) -> impl Iterator<Item = CheckError> + 'a {
+    std::iter::once_with(move || match module.get_export(name) {
+        Some(ExternType::Func(ty)) if is_entry_point(&ty) => None,
+        found => Some(CheckError::EntryPoint(entry_point_fault(found, name))),
+    })
+    .flatten()
 }
 
 /// The entry point's type: nothing in, one `i32` out — what [`crate::run`]'s
@@ -154,22 +185,19 @@ fn is_entry_point(ty: &FuncType) -> bool {
 /// normal shape — and narrow for memories, since a contract needs an exported one to
 /// make any host call at all.
 ///
-/// A module faulting on both is reported by whichever it declares first. Neither
-/// fault explains the other, so there is no precedence to preserve — only the need
-/// for every node to reach the same verdict, which export order already gives.
-fn check_exported_resources(module: &Module) -> Result<(), CheckError> {
-    for export in module.exports() {
-        match export.ty() {
-            ExternType::Memory(ty) => {
-                check_initial_pages(ty.minimum()).map_err(CheckError::Memory)?;
-            }
-            ExternType::Table(ty) => {
-                check_initial_elements(ty.minimum()).map_err(CheckError::Table)?;
-            }
-            _ => {}
-        }
-    }
-    Ok(())
+/// A module faulting on both yields both, in export order. Neither fault explains
+/// the other, so there is no precedence to preserve — only the need for every node to
+/// reach the same verdict, which export order already gives.
+fn check_exported_resources_iter(module: &Module) -> impl Iterator<Item = CheckError> + '_ {
+    module.exports().filter_map(|export| match export.ty() {
+        ExternType::Memory(ty) => check_initial_pages(ty.minimum())
+            .err()
+            .map(CheckError::Memory),
+        ExternType::Table(ty) => check_initial_elements(ty.minimum())
+            .err()
+            .map(CheckError::Table),
+        _ => None,
+    })
 }
 
 /// Whether the engine will grant a memory of this declared initial size.
@@ -216,10 +244,10 @@ pub(crate) fn entry_point_fault(found: Option<ExternType>, name: &str) -> String
 }
 
 /// The rules, one by one, on inputs built directly rather than parsed out of a
-/// module. `tests/preflight.rs` runs real modules through [`check`]; what is here is
-/// what a module cannot state precisely — which rule fires, in which order, and in
-/// what words the caller logs it. The signature rule's derivation is tested beside
-/// it, in [`signature`].
+/// module. `tests/preflight.rs` runs real modules through [`check`] and
+/// [`check_all`]; what is here is what a module cannot state precisely — which rule
+/// fires and in what words the caller logs it. The signature rule's derivation is
+/// tested beside it, in [`signature`].
 ///
 /// `wat` is a dev-dependency, so the one test here that does need a module writes it
 /// as text like every other test in the crate. What the library must not gain is a
@@ -474,6 +502,17 @@ mod tests {
         assert!(
             matches!(check(&empty, "finish"), Err(CheckError::EntryPoint(_))),
             "a module that compiles and imports nothing reaches the entry point"
+        );
+    }
+
+    /// Compiling is the one stage that ends the walk for [`check_all`] too: there is
+    /// no module to read the other rules off.
+    #[test]
+    fn a_failed_compile_is_reported_alone() {
+        let refusals = check_all(b"not wasm", "finish").expect_err("not a module");
+        assert!(
+            matches!(refusals.as_slice(), [CheckError::Compile(_)]),
+            "{refusals:?}"
         );
     }
 }

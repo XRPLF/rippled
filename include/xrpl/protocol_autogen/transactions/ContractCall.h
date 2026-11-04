@@ -18,7 +18,7 @@ class ContractCallBuilder;
 /**
  * @brief Transaction: ContractCall
  *
- * Type: ttCONTRACT_CALL (97)
+ * Type: ttCONTRACT_CALL (108)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
  * Privileges: Privilege::NoPriv

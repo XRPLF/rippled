@@ -53,7 +53,7 @@ class Clawback_test : public beast::unit_test::Suite
         test::jtx::Account const& dst,
         Currency const& cur)
     {
-        if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
+        if (auto const sle = env.le(keylet::trustLine(src, dst, cur)))
         {
             auto const useHigh = src.id() > dst.id();
             return sle->isFlag(useHigh ? lsfHighFreeze : lsfLowFreeze);

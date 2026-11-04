@@ -23,7 +23,7 @@ apt-get clean
 rm -rf /var/lib/apt/lists/*
 EOF
 
-ARG PRE_COMMIT_VERSION=4.6.0
+ARG PRE_COMMIT_VERSION=4.6.2
 RUN pip install --no-cache --break-system-packages \
     pre-commit==${PRE_COMMIT_VERSION}
 

@@ -66,7 +66,7 @@ private:
     static std::shared_ptr<SLE>
     makeVault(Asset const& asset, Number const& assetsTotal)
     {
-        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        auto vault = std::make_shared<SLE>(keylet::vault(UInt256(1)));
         vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
         vault->at(sfAssetsTotal) = assetsTotal;
         associateAsset(*vault, asset);
@@ -84,7 +84,8 @@ private:
             Number::RoundingMode::ToNearest,
             Number::RoundingMode::Downward,
             Number::RoundingMode::Upward,
-            Number::RoundingMode::TowardsZero};
+            Number::RoundingMode::TowardsZero,
+        };
 
         for (auto const& c : cases)
         {

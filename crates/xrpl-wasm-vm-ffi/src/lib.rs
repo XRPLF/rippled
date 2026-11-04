@@ -31,7 +31,7 @@
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use xrpl_host_functions::{HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
 use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
@@ -68,6 +68,10 @@ mod ffi {
         Trap,
         /// The engine panicked. A defect in this crate or the one below it.
         Panic,
+        /// A type, import or export section, or an import or export name, is past
+        /// its cap. Apart from `Compile` so the far side can count it: no contract
+        /// reaches a cap by accident.
+        Limit,
     }
 
     /// A run's outcome, flattened: cxx enums carry no payload, so the status, the
@@ -109,6 +113,10 @@ mod ffi {
         /// An import of a host function typed as something other than what the
         /// engine registers it as.
         Signature,
+        /// A type, import or export section, or an import or export name, is past
+        /// its cap. Apart from `Compile` so the far side can count it: no contract
+        /// reaches a cap by accident.
+        Limit,
     }
 
     /// A check's verdict. No cost, because nothing was executed.
@@ -662,6 +670,16 @@ struct CxxHost<'a> {
     ctx: &'a ffi::HostContext,
 }
 
+/// The error a negative code names, or `InternalFatal`.
+///
+/// **The one place the fallback is decided.** A code outside the ABI is a value no
+/// `HostFunctionError` variant names, which a C++ `enum class` can still hold — the call
+/// was not served, whatever the host meant by it, so the run stops on the one code that
+/// says so.
+fn host_error(n: i32) -> HostError {
+    HostError::from_code(n).unwrap_or(HostError::InternalFatal)
+}
+
 /// A byte-producing call's answer: the value's true length, or its error code.
 ///
 /// The conversion *is* the sign test — it fails on exactly the negative values — so
@@ -671,7 +689,7 @@ struct CxxHost<'a> {
 /// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
 /// rule forbids the impl.
 fn bytes_written(n: i32) -> HostResult<usize> {
-    usize::try_from(n).map_err(|_| HostError::from_code(n))
+    usize::try_from(n).map_err(|_| host_error(n))
 }
 
 /// The ABI's data type as the shared enum C++ was given a definition of.
@@ -695,9 +713,19 @@ fn crossed(data_type: TraceDataType) -> ffi::TraceDataType {
 /// a non-negative value is that answer, a negative one its error code.
 fn scalar(n: i32) -> HostResult<i32> {
     if n < 0 {
-        return Err(HostError::from_code(n));
+        return Err(host_error(n));
     }
     Ok(n)
+}
+
+/// A call whose answer is a named verdict: [`scalar`]'s split first, then the code must
+/// name a variant.
+///
+/// **This is where the C++ side is held to the ABI.** The generated `FloatOrdering` names
+/// the same variants, but an `enum class` holds any `int32_t`, and a code naming no
+/// variant is nothing a contract can act on, hence `InternalFatal` and a stopped run.
+fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
+    FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
 }
 
 impl HostFunctions for CxxHost<'_> {
@@ -1012,8 +1040,8 @@ impl HostFunctions for CxxHost<'_> {
         bytes_written(self.ctx.float_from_mant_exp(mantissa, exponent, mode, out))
     }
 
-    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<i32> {
-        scalar(self.ctx.float_compare(x, y))
+    fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
+        float_ordering(self.ctx.float_compare(x, y))
     }
 
     fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], mode: i32) -> HostResult<usize> {
@@ -1274,6 +1302,7 @@ impl From<&RunError> for ffi::RunStatus {
     fn from(error: &RunError) -> ffi::RunStatus {
         match error {
             RunError::Compile(_) => ffi::RunStatus::Compile,
+            RunError::Limit(_) => ffi::RunStatus::Limit,
             RunError::Instantiate(_) => ffi::RunStatus::Instantiate,
             RunError::EntryPoint(_) => ffi::RunStatus::EntryPoint,
             RunError::OutOfGas => ffi::RunStatus::OutOfGas,
@@ -1306,6 +1335,7 @@ impl From<&CheckError> for ffi::CheckStatus {
     fn from(error: &CheckError) -> ffi::CheckStatus {
         match error {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
+            CheckError::Limit(_) => ffi::CheckStatus::Limit,
             CheckError::Import(_) => ffi::CheckStatus::Import,
             CheckError::Signature(_) => ffi::CheckStatus::Signature,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
@@ -1354,11 +1384,76 @@ mod tests {
         assert_eq!(crossed.result, 0, "a failed run returned no value");
     }
 
+    /// Every code a guest can be handed comes back as the error that produced it, not as
+    /// a neighbouring one.
+    #[test]
+    fn every_wire_code_crosses_back_as_its_error() {
+        for &error in HostError::ALL {
+            assert_eq!(host_error(error.code()), error, "{error:?}");
+        }
+    }
+
+    /// A code from outside the set is `InternalFatal`, the fallback this crate owns.
+    ///
+    /// `-23` is the code the ABI would append next; `i32::MIN + 1` is next to the sentinel
+    /// and unassigned, which is what makes the sentinel a value rather than a range. The
+    /// non-negative codes reach here only once the sign has been read elsewhere.
+    #[test]
+    fn a_code_outside_the_set_is_internal_fatal() {
+        for code in [-23, i32::MIN + 1, 0, 1, i32::MAX] {
+            assert_eq!(host_error(code), HostError::InternalFatal, "{code}");
+        }
+    }
+
+    /// The split every scalar answer crosses on: non-negative is the value, negative is
+    /// the code that names why there is none.
+    #[test]
+    fn a_scalar_splits_its_answer_from_its_error_on_the_sign() {
+        assert_eq!(scalar(0), Ok(0));
+        assert_eq!(scalar(7), Ok(7));
+        assert_eq!(scalar(-19), Err(HostError::FloatInputMalformed));
+    }
+
+    /// `float_cmp`'s three verdicts survive the crossing as themselves.
+    #[test]
+    fn every_verdict_crosses_back_as_itself() {
+        for &ordering in FloatOrdering::ALL {
+            assert_eq!(
+                float_ordering(ordering.code()),
+                Ok(ordering),
+                "{ordering:?}"
+            );
+        }
+    }
+
+    /// A verdict C++ answered outside the enum stops the run, rather than a contract
+    /// being handed a `3` that matches none of its three branches. `0` is not in
+    /// this set: it is `Equal`, not an absent answer.
+    #[test]
+    fn a_code_naming_no_verdict_is_internal_fatal() {
+        for code in [3, 4, 99, i32::MAX] {
+            assert_eq!(
+                float_ordering(code),
+                Err(HostError::InternalFatal),
+                "code {code}"
+            );
+        }
+    }
+
+    /// An error still crosses as an error, and does not become the drift sentinel: the
+    /// sign is read before the code is matched against the variants.
+    #[test]
+    fn a_refused_comparison_keeps_its_own_error() {
+        assert_eq!(float_ordering(-19), Err(HostError::FloatInputMalformed));
+        assert_eq!(float_ordering(-1), Err(HostError::Unimplemented));
+    }
+
     /// The `RunError` set as the test *expects* it, not as the conversion reports it:
     /// deriving it from the code under test would make the assertion vacuous.
     fn every_run_error() -> Vec<RunError> {
         vec![
             RunError::Compile(String::new()),
+            RunError::Limit(String::new()),
             RunError::Instantiate(String::new()),
             RunError::EntryPoint(String::new()),
             RunError::OutOfGas,
@@ -1515,6 +1610,7 @@ mod tests {
     fn every_check_error() -> Vec<CheckError> {
         vec![
             CheckError::Compile(String::new()),
+            CheckError::Limit(String::new()),
             CheckError::Import(String::new()),
             CheckError::Signature(String::new()),
             CheckError::EntryPoint(String::new()),

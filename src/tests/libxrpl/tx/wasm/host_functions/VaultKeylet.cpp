@@ -13,7 +13,7 @@ struct VaultKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(VaultKeyletImpl, MatchesVaultFunction)
+TEST_F(VaultKeyletImpl, matches_vault_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(VaultKeyletImpl, MatchesVaultFunction)
         keylet::vault(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(VaultKeyletImpl, InvalidAccount)
+TEST_F(VaultKeyletImpl, invalid_account)
 {
     expectError(makeHost()->vaultKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

@@ -224,7 +224,7 @@ getAMMOfferStartWithTakerGets(
     if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
+    auto const getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is integral.
         auto const takerGets =
@@ -292,7 +292,7 @@ getAMMOfferStartWithTakerPays(
     if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
+    auto const getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is integral.
         auto const takerPays =
@@ -353,7 +353,7 @@ changeSpotPriceQuality(
         }
         if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
         {
-            auto const nTakerPays = [&]() {
+            auto const nTakerPays = [&] {
                 // The fee might make the AMM offer quality less than CLOB
                 // quality. Therefore, AMM offer has to satisfy this constraint:
                 // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
@@ -372,8 +372,8 @@ changeSpotPriceQuality(
             auto const takerPays =
                 toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::RoundingMode::Upward);
             // should not fail
-            if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
-                Quality{amounts} < quality &&
+            auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+            if (Quality{amounts} < quality &&
                 !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
             {
                 JLOG(j.error()) << "changeSpotPriceQuality failed: " << to_string(pool.in) << " "
@@ -382,21 +382,19 @@ changeSpotPriceQuality(
                                 << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
-            else
-            {
-                JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
-                                << to_string(pool.out) << " "
-                                << " " << quality << " " << tfee << " " << to_string(amounts.in)
-                                << " " << to_string(amounts.out);
-                return amounts;
-            }
+
+            JLOG(j.trace()) << "changeSpotPriceQuality succeeded: " << to_string(pool.in) << " "
+                            << to_string(pool.out) << " "
+                            << " " << quality << " " << tfee << " " << to_string(amounts.in) << " "
+                            << to_string(amounts.out);
+            return amounts;
         }
         JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in) << " "
                         << to_string(pool.out) << " " << quality << " " << tfee;
         return std::nullopt;
     }
 
-    auto amounts = [&]() {
+    auto amounts = [&] {
         bool const inIntegral = getAsset(pool.in).integral();
         bool const outIntegral = getAsset(pool.out).integral();
 
@@ -872,8 +870,8 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
  */
 void
 initializeFeeAuctionVote(
-    ApplyView& view,
-    SLE::pointer& ammSle,
+    ApplyView const& view,
+    SLE::pointer const& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
@@ -895,7 +893,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    SLE::pointer const& ammSle,
     AccountID const& account);
 
 }  // namespace xrpl

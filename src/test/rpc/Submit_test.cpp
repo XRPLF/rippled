@@ -28,7 +28,7 @@ public:
         env.close();
 
         // Lambda to test invalid fail_hard parameter types
-        auto testInvalidFailHard = [&](auto const& param) {
+        auto const testInvalidFailHard = [&](auto const& param) {
             // Test with tx_blob path
             {
                 JTx const jt = env.jt(pay(alice, bob, XRP(1)));

@@ -132,8 +132,7 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
-        if (auto const ter = checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
-            !isTesSuccess(ter))
+        if (auto const ter = checkContractCode(ctx.view.fees(), ctx.tx, ctx.j); !isTesSuccess(ter))
             return ter;
     }
 
@@ -209,7 +208,7 @@ ContractCreate::checkContractCode(Fees const& fees, STTx const& tx, beast::Journ
     // or gasLimit deactivates WASM uploads.
     if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
     {
-        JLOG(j.trace()) << "Contract: WASM upload deactivated by the node configuration.";
+        JLOG(j.trace()) << "Contract: WASM upload deactivated by fee voting.";
         return temTEMP_DISABLED;
     }
 
@@ -342,7 +341,7 @@ ContractCreate::doApply()
 }
 
 void
-ContractCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ContractCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

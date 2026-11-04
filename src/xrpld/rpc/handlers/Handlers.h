@@ -27,8 +27,6 @@ doAMMInfo(rpc::JsonContext&);
 json::Value
 doBookOffers(rpc::JsonContext&);
 json::Value
-doBookChanges(rpc::JsonContext&);
-json::Value
 doBlackList(rpc::JsonContext&);
 json::Value
 doCanDelete(rpc::JsonContext&);
@@ -43,7 +41,7 @@ doConsensusInfo(rpc::JsonContext&);
 json::Value
 doContractInfo(rpc::JsonContext&);
 json::Value
-doDepositAuthorized(rpc::JsonContext&);
+doDepositAuthorized(rpc::JsonContext const&);
 json::Value
 doFeature(rpc::JsonContext&);
 json::Value
@@ -93,11 +91,11 @@ doPause(rpc::JsonContext&);
 json::Value
 doPeers(rpc::JsonContext&);
 json::Value
-doPing(rpc::JsonContext&);
+doPing(rpc::JsonContext const&);
 json::Value
 doPrint(rpc::JsonContext&);
 json::Value
-doRandom(rpc::JsonContext&);
+doRandom(rpc::JsonContext const&);
 json::Value
 doResume(rpc::JsonContext&);
 json::Value
@@ -129,8 +127,6 @@ doSubmitMultiSigned(rpc::JsonContext&);
 json::Value
 doSubscribe(rpc::JsonContext&);
 json::Value
-doTransactionEntry(rpc::JsonContext&);
-json::Value
 doTxJson(rpc::JsonContext&);
 json::Value
 doTxHistory(rpc::JsonContext&);
@@ -141,9 +137,9 @@ doUnlList(rpc::JsonContext&);
 json::Value
 doUnsubscribe(rpc::JsonContext&);
 json::Value
-doValidationCreate(rpc::JsonContext&);
+doValidationCreate(rpc::JsonContext const&);
 json::Value
-doWalletPropose(rpc::JsonContext&);
+doWalletPropose(rpc::JsonContext const&);
 json::Value
 doValidators(rpc::JsonContext&);
 json::Value
@@ -151,5 +147,5 @@ doValidatorListSites(rpc::JsonContext&);
 json::Value
 doValidatorInfo(rpc::JsonContext&);
 json::Value
-doVaultInfo(rpc::JsonContext&);
+doVaultInfo(rpc::JsonContext const&);
 }  // namespace xrpl

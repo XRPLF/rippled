@@ -21,7 +21,7 @@ struct FloatMultiplyCall : HostContextTest
     std::int32_t const mode = 21;
 };
 
-TEST_F(FloatMultiplyCall, OperandsAndModeAreForwardedResultIsWritten)
+TEST_F(FloatMultiplyCall, operands_and_mode_are_forwarded_result_is_written)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatMultiply(BytesAre("mul-x"), BytesAre("mul-yy"), mode))
@@ -34,7 +34,7 @@ TEST_F(FloatMultiplyCall, OperandsAndModeAreForwardedResultIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(result)));
 }
 
-TEST_F(FloatMultiplyCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatMultiplyCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre("mul-x"), BytesAre("mul-yy"), mode))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -46,7 +46,7 @@ TEST_F(FloatMultiplyCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(FloatMultiplyCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatMultiplyCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatMultiply(BytesAre("mul-x"), BytesAre("mul-yy"), mode))
         .WillOnce(testing::Throw(std::runtime_error{"float multiply came apart"}));
@@ -61,7 +61,7 @@ TEST_F(FloatMultiplyCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(FloatMultiplyCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(FloatMultiplyCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const result{9, 8, 7};
     EXPECT_CALL(host, floatMultiply(BytesAre("mul-x"), BytesAre("mul-yy"), mode))
@@ -76,7 +76,7 @@ TEST_F(FloatMultiplyCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatMultiplyCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatMultiplyCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const shortX{0x2a};
     EXPECT_CALL(host, floatMultiply(testing::_, BytesAre("mul-yy"), mode))

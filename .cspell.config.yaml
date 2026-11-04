@@ -64,10 +64,12 @@ words:
   - blindings
   - bookdir
   - Bougalis
+  - bthomee
   - Britto
   - Btrfs
   - Buildx
   - canonicality
+  - cbindgen
   - cdylib
   - canonicalised
   - cctools
@@ -146,6 +148,7 @@ words:
   - impls
   - inequation
   - initialiser
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -180,6 +183,7 @@ words:
   - lsmf
   - ltype
   - mathbunnyru
+  - maxima
   - mcmodel
   - MEMORYSTATUSEX
   - MPTAMM
@@ -199,6 +203,7 @@ words:
   - mptokenissuance
   - mptokens
   - mpts
+  - mpt
   - mtgox
   - multisig
   - multisign
@@ -259,6 +264,7 @@ words:
   - queuable
   - Raphson
   - rcflags
+  - reencrypted
   - replayer
   - repodata
   - repomd
@@ -390,6 +396,7 @@ words:
   - ximinez
   - XMACRO
   - xored
+  - xrp
   - xrpkuwait
   - xrpl
   - xrpld

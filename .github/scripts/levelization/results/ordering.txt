@@ -86,7 +86,6 @@ test.app > xrpl.tx
 test.basics > test.jtx
 test.basics > xrpl.basics
 test.basics > xrpl.core
-test.basics > xrpld.rpc
 test.basics > xrpl.json
 test.basics > xrpl.protocol
 test.beast > xrpl.basics
@@ -117,6 +116,7 @@ test.jtx > xrpl.config
 test.jtx > xrpl.core
 test.jtx > xrpld.app
 test.jtx > xrpld.core
+test.jtx > xrpld.overlay
 test.jtx > xrpld.rpc
 test.jtx > xrpl.json
 test.jtx > xrpl.ledger
@@ -198,6 +198,9 @@ tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx
+tests.xrpld > xrpld.rpc
+tests.xrpld > xrpl.json
+tests.xrpld > xrpl.protocol
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.config > xrpl.basics
@@ -291,10 +294,10 @@ xrpld.perflog > xrpl.basics
 xrpld.perflog > xrpl.config
 xrpld.perflog > xrpl.core
 xrpld.perflog > xrpld.app
-xrpld.perflog > xrpld.rpc
 xrpld.perflog > xrpl.json
 xrpld.perflog > xrpl.nodestore
 xrpld.perflog > xrpl.protocol
+xrpld.perflog > xrpl.server
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.config
 xrpld.rpc > xrpl.core

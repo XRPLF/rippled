@@ -46,7 +46,7 @@ allFeatures()
 {
     static FeatureBitset const kFeatures = [] {
         auto const& sa = allAmendments();
-        std::vector<uint256> feats;
+        std::vector<UInt256> feats;
         feats.reserve(sa.size());
         for ([[maybe_unused]] auto const& [name, _] : sa)
         {
@@ -76,14 +76,12 @@ TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOv
 {
     // Convert FeatureBitset to unordered_set for Rules constructor
     auto const featureBits = features.value_or(allFeatures());
-    foreachFeature(featureBits, [&](uint256 const& f) { featureSet_.insert(f); });
+    foreachFeature(featureBits, [&](UInt256 const& f) { featureSet_.insert(f); });
 
     // Create rules with the specified features
     rules_.emplace(featureSet_);
 
-    // One fee set for both the view and the registry.
     Fees const fees = feesOverride.value_or(TestServiceRegistry::defaultFees());
-    registry_.setFees(fees);
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
@@ -91,7 +89,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOv
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
-        std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
+        std::vector<UInt256>{featureSet_.begin(), featureSet_.end()},
         registry_.getNodeFamily());
 
     // Initialize time from the genesis ledger.  closedLedger_ is created above
@@ -105,7 +103,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features, std::optional<Fees> feesOv
 }
 
 bool
-TxTest::isEnabled(uint256 const& feature) const
+TxTest::isEnabled(UInt256 const& feature) const
 {
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     return rules_->enabled(feature);
@@ -132,7 +130,8 @@ TxTest::submit(std::shared_ptr<STTx const> stx)
         .ter = result.ter,
         .applied = result.applied,
         .metadata = std::move(result).metadata,
-        .tx = std::move(stx)};
+        .tx = std::move(stx),
+    };
 }
 
 void
@@ -214,7 +213,17 @@ TxTest::close()
 
     now_ = ledgerCloseTime;
 
-    auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
+    auto const newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
+
+    if (pendingFees_)
+    {
+        auto const sle = std::make_shared<SLE>(*newLedger->read(keylet::feeSettings()));
+        sle->at(sfGasLimit) = pendingFees_->gasLimit;
+        sle->at(sfBytecodeSizeLimit) = pendingFees_->bytecodeSizeLimit;
+        sle->at(sfGasPrice) = pendingFees_->gasPrice;
+        newLedger->rawReplace(sle);
+        pendingFees_.reset();
+    }
 
     CanonicalTXSet txSet(prevLedger.header().hash);
     for (auto const& tx : pendingTxs_)
@@ -225,7 +234,8 @@ TxTest::close()
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
         {
-            auto result = apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
+            auto const result =
+                apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");
@@ -292,6 +302,12 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     if (account > iou.issue().account)
         balance.negate();
     return balance;
+}
+
+void
+TxTest::setFees(Fees const& fees)
+{
+    pendingFees_ = fees;
 }
 
 }  // namespace xrpl::test

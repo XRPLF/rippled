@@ -43,7 +43,7 @@ ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ContractCall::preflight(PreflightContext const& ctx)
 {
-    // Protocol ceiling only; the node's configured gas limit is checked in preclaim.
+    // Protocol ceiling only; the voted gas limit is checked in preclaim.
     if (auto const allowance = ctx.tx[sfGas]; allowance == 0 || allowance > kMaxGasLimit)
     {
         JLOG(ctx.j.trace()) << "ContractCall: Gas out of range: " << allowance;
@@ -71,18 +71,18 @@ ContractCall::preflight(PreflightContext const& ctx)
 TER
 ContractCall::preclaim(PreclaimContext const& ctx)
 {
-    // The node's configured limits, read as EscrowFinish does; a zero gasLimit
+    // The voted limits, read as EscrowFinish does; a zero gasLimit
     // deactivates the WASM runtime.
-    auto const fees = ctx.registry.get().getFees();
+    auto const fees = ctx.view.fees();
     if (fees.gasLimit == 0)
     {
-        JLOG(ctx.j.trace()) << "ContractCall: WASM runtime deactivated by the node configuration.";
+        JLOG(ctx.j.trace()) << "ContractCall: WASM runtime deactivated by fee voting.";
         return temTEMP_DISABLED;
     }
 
     if (ctx.tx[sfGas] > fees.gasLimit)
     {
-        JLOG(ctx.j.trace()) << "ContractCall: Gas over the configured limit: " << ctx.tx[sfGas];
+        JLOG(ctx.j.trace()) << "ContractCall: Gas over the voted limit: " << ctx.tx[sfGas];
         return temBAD_LIMIT;
     }
 
@@ -327,7 +327,7 @@ ContractCall::doApply()
 }
 
 void
-ContractCall::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ContractCall::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

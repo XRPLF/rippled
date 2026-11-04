@@ -21,8 +21,8 @@ namespace xrpl {
 
 namespace {
 
-using RunStatus = rs::wasm_vm::RunStatus;
-using CheckStatus = rs::wasm_vm::CheckStatus;
+using rs::wasm_vm::CheckStatus;
+using rs::wasm_vm::RunStatus;
 
 // The engine's outcome as the caller's: a value with its gas cost, or a TER with the gas cost
 // to record beside it.
@@ -45,8 +45,8 @@ outcome(rs::wasm_vm::RunResult const& run)
         case RunStatus::Ok:
             return EscrowResult{.result = run.result, .cost = cost};
 
-        // The cost is the whole limit: XLS-0102 halts the guest the instant the meter runs
-        // out, and the run is charged for all of it.
+        // The cost is what the meter spent, which can be a little under the limit: it stops
+        // at the last instruction it can afford. EscrowFinish charges the whole limit.
         case RunStatus::OutOfGas:
             return std::unexpected{WasmTER{.ter = tecOUT_OF_GAS, .cost = cost}};
 
@@ -68,6 +68,7 @@ outcome(rs::wasm_vm::RunResult const& run)
         // Reaching apply means the screening did not happen, which is a node-side fault
         // rather than the transaction's.
         case RunStatus::Compile:
+        case RunStatus::Limit:
         case RunStatus::EntryPoint:
         // The host could not serve a call, or it threw and `HostContext` caught it.
         case RunStatus::Internal:
@@ -98,9 +99,10 @@ verdict(CheckStatus status)
 
         // The module will not compile, imports what no engine of this ABI serves or
         // a host function at a signature none of them registers, does not export the
-        // entry point as `() -> i32`, or asks for more linear memory or table than it
-        // may have.
+        // entry point as `() -> i32`, asks for more linear memory or table than it
+        // may have, or has a type, import or export section or a name past its cap.
         case CheckStatus::Compile:
+        case CheckStatus::Limit:
         case CheckStatus::Import:
         case CheckStatus::Signature:
         case CheckStatus::EntryPoint:

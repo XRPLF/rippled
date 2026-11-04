@@ -64,7 +64,7 @@ public:
         {
             // Cannot pass a non-string into the `account` param
 
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
@@ -82,7 +82,7 @@ public:
         {
             // Cannot pass a non-string into the `ident` param
 
-            auto testInvalidIdentParam = [&](auto const& param) {
+            auto const testInvalidIdentParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
@@ -512,7 +512,7 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(1000), alice, bob);
 
-        auto getAccountFlag = [&env](std::string_view fName, Account const& account) {
+        auto const getAccountFlag = [&env](std::string_view fName, Account const& account) {
             json::Value params;
             params[jss::account] = account.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
@@ -527,13 +527,16 @@ public:
         };
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> kAsFlags{
-            {{"defaultRipple", asfDefaultRipple},
-             {"depositAuth", asfDepositAuth},
-             {"disallowIncomingXRP", asfDisallowXRP},
-             {"globalFreeze", asfGlobalFreeze},
-             {"noFreeze", asfNoFreeze},
-             {"requireAuthorization", asfRequireAuth},
-             {"requireDestinationTag", asfRequireDest}}};
+            {
+                {"defaultRipple", asfDefaultRipple},
+                {"depositAuth", asfDepositAuth},
+                {"disallowIncomingXRP", asfDisallowXRP},
+                {"globalFreeze", asfGlobalFreeze},
+                {"noFreeze", asfNoFreeze},
+                {"requireAuthorization", asfRequireAuth},
+                {"requireDestinationTag", asfRequireDest},
+            },
+        };
 
         for (auto& asf : kAsFlags)
         {
@@ -556,10 +559,13 @@ public:
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
             kDisallowIncomingFlags{
-                {{"disallowIncomingCheck", asfDisallowIncomingCheck},
-                 {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
-                 {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
-                 {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
+                {
+                    {"disallowIncomingCheck", asfDisallowIncomingCheck},
+                    {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
+                    {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                    {"disallowIncomingTrustline", asfDisallowIncomingTrustline},
+                },
+        };
 
         for (auto& asf : kDisallowIncomingFlags)
         {

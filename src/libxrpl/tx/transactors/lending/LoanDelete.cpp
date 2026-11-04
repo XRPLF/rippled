@@ -136,7 +136,7 @@ LoanDelete::doApply()
 }
 
 void
-LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

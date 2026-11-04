@@ -454,7 +454,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("Credentials fail, empty credentialType param.");
-                auto jv = credentials::create(subject, issuer, "");
+                auto const jv = credentials::create(subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -466,7 +466,7 @@ struct Credentials_test : public beast::unit_test::Suite
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
                 static_assert(kLongCredType.size() > kMaxCredentialTypeLength);
-                auto jv = credentials::create(subject, issuer, kLongCredType);
+                auto const jv = credentials::create(subject, issuer, kLongCredType);
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -647,7 +647,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("CredentialsAccept fail, invalid credentialType param.");
-                auto jv = credentials::accept(subject, issuer, "");
+                auto const jv = credentials::accept(subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
         }
@@ -821,7 +821,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("CredentialsDelete fail, invalid credentialType param.");
-                auto jv = credentials::deleteCred(subject, subject, issuer, "");
+                auto const jv = credentials::deleteCred(subject, subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -901,9 +901,9 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("deleteSLE fail, bad SLE.");
-                auto view =
+                auto const view =
                     std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
-                auto ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
+                auto const ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
         }
@@ -1098,7 +1098,7 @@ struct Credentials_test : public beast::unit_test::Suite
         env(deposit::authCredentials(becky, {{.issuer = subject, .credType = credType}}));
         env.close();
         // env();
-        auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
+        auto const jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto const stx = std::make_shared<STTx>(*jtx.stx);
@@ -1128,7 +1128,7 @@ struct Credentials_test : public beast::unit_test::Suite
         ApplyViewImpl av(&*open, TapNone);
 
         // Erase the issuer's account to simulate ledger corruption
-        auto sleIssuer = av.peek(keylet::account(issuer.id()));
+        auto const sleIssuer = av.peek(keylet::account(issuer.id()));
         if (!BEAST_EXPECT(sleIssuer))
             return;
         av.erase(sleIssuer);

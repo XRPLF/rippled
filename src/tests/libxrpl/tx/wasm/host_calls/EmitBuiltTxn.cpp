@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/WasmFixture.h>
+#include <tx/wasm/fixtures/ContractCallFixture.h>
 
 #include <expected>
 #include <string>
@@ -17,7 +17,7 @@ using testing::Return;
 // The TER travels in a region rather than as the call's result because half the TER codes
 // are negative, and a negative result is a `HostFunctionError`. These tests are what pins
 // that: a `tec` and a `tem` must both arrive intact.
-struct EmitBuiltTxnCall : HostCallTest
+struct EmitBuiltTxnCall : ContractCallTest
 {
     [[nodiscard]] std::string
     wat() const override
@@ -45,7 +45,7 @@ struct EmitBuiltTxnCall : HostCallTest
     }
 };
 
-TEST_F(EmitBuiltTxnCall, ASuccessfulEmitWritesTesSuccess)
+TEST_F(EmitBuiltTxnCall, a_successful_emit_writes_tes_success)
 {
     EXPECT_CALL(host, emitBuiltTxn(0U)).WillOnce(Return(TERtoInt(tesSUCCESS)));
 
@@ -54,28 +54,28 @@ TEST_F(EmitBuiltTxnCall, ASuccessfulEmitWritesTesSuccess)
 
 // The reason the TER is not the call's result: this code is negative, and a negative result
 // would have been read as a host error and stopped the run.
-TEST_F(EmitBuiltTxnCall, ANegativeTerArrivesIntact)
+TEST_F(EmitBuiltTxnCall, a_negative_ter_arrives_intact)
 {
     EXPECT_CALL(host, emitBuiltTxn).WillOnce(Return(TERtoInt(temMALFORMED)));
 
     EXPECT_EQ(hostAnswer(), TERtoInt(temMALFORMED));
 }
 
-TEST_F(EmitBuiltTxnCall, ATerIsFourBytes)
+TEST_F(EmitBuiltTxnCall, a_ter_is_four_bytes)
 {
     EXPECT_CALL(host, emitBuiltTxn).WillOnce(Return(TERtoInt(tecUNFUNDED_PAYMENT)));
 
     EXPECT_EQ(hostAnswer("ter_length"), 4);
 }
 
-TEST_F(EmitBuiltTxnCall, ABufferTooSmallForATerIsRefused)
+TEST_F(EmitBuiltTxnCall, a_buffer_too_small_for_a_ter_is_refused)
 {
     EXPECT_CALL(host, emitBuiltTxn).WillOnce(Return(TERtoInt(tesSUCCESS)));
 
     EXPECT_EQ(hostAnswer("short_buffer"), hfErrorToInt(HostFunctionError::BufferTooSmall));
 }
 
-TEST_F(EmitBuiltTxnCall, HostErrorBecomesContractReturnValue)
+TEST_F(EmitBuiltTxnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, emitBuiltTxn)
         .WillOnce(Return(std::unexpected(HostFunctionError::SubmitTxnFailure)));

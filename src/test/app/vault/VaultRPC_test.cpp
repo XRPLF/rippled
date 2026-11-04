@@ -59,7 +59,8 @@ private:
 
         // Set some fields
         {
-            auto tx1 = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            auto const tx1 =
+                vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx1);
 
             auto tx2 = vault.set({.owner = owner, .id = keylet.key});
@@ -68,7 +69,7 @@ private:
             env.close();
         }
 
-        auto const sleVault = [&env, keylet = keylet, this]() {
+        auto const sleVault = [&env, keylet = keylet, this] {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
             return vault;
@@ -169,7 +170,7 @@ private:
             testcase("RPC ledger_entry cannot find vault by key");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = to_string(uint256(42));
+            jvParams[jss::vault] = to_string(UInt256(42));
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
             BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "entryNotFound");
         }
@@ -333,7 +334,7 @@ private:
             testcase("RPC vault_info json all zero vault_id");
             json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault_id] = strHex(uint256(beast::kZero));
+            jvParams[jss::vault_id] = strHex(UInt256(beast::kZero));
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
@@ -511,7 +512,7 @@ private:
 
         {
             testcase("RPC vault_info command line unknown index");
-            json::Value jv = env.rpc("vault_info", strHex(uint256(42)), "validated");
+            json::Value jv = env.rpc("vault_info", strHex(UInt256(42)), "validated");
             checkError(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
@@ -542,12 +543,13 @@ private:
         auto const red = sub + kMinInvestmentPeriod;
 
         Vault const vault{env};
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = closedEnded,
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = closedEnded,
+            .subscriptionDate = sub,
+            .redemptionDate = red,
+        });
         env(tx);
         env.close();
 

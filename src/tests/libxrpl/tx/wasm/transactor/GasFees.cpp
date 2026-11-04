@@ -58,7 +58,7 @@ struct GasFees : testing::Test
 
 // If the product ever wrapped, this is the test that notices: 30 drops would start looking
 // sufficient.
-TEST_F(GasFees, ALargeAllowanceCannotBeBoughtForAFewDrops)
+TEST_F(GasFees, a_large_allowance_cannot_be_bought_for_a_few_drops)
 {
     auto const owed = escrowFinishFee(env, kBigAllowance);
     ASSERT_GT(owed.drops(), kBigAllowance) << "the fee must scale with the allowance";
@@ -66,19 +66,19 @@ TEST_F(GasFees, ALargeAllowanceCannotBeBoughtForAFewDrops)
     EXPECT_EQ(finishPaying(XRPAmount{30}), telINSUF_FEE_P);
 }
 
-TEST_F(GasFees, AFeeOneDropShortOfTheAllowanceIsRefused)
+TEST_F(GasFees, a_fee_one_drop_short_of_the_allowance_is_refused)
 {
     EXPECT_EQ(finishPaying(escrowFinishFee(env, kBigAllowance) - XRPAmount{1}), telINSUF_FEE_P);
 }
 
 // Otherwise the two refusals above prove nothing: any fee at all might be rejected.
-TEST_F(GasFees, TheExactFeeIsAccepted)
+TEST_F(GasFees, the_exact_fee_is_accepted)
 {
     EXPECT_EQ(finishPaying(escrowFinishFee(env, kBigAllowance)), tesSUCCESS);
 }
 
 // Asking for a near-limit budget does not mean spending it.
-TEST_F(GasFees, OnlyTheGasActuallyUsedIsReported)
+TEST_F(GasFees, only_the_gas_actually_used_is_reported)
 {
     auto builder = transactions::EscrowFinishBuilder{carol, alice, escrowSeq};
     builder.setGas(kBigAllowance);

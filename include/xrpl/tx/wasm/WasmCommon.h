@@ -4,15 +4,21 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
+
+// Generated from the Rust ABI. Exported so that including this header counts as including those for
+// misc-include-cleaner.
+#include <xrpl_host_functions.h>  // IWYU pragma: export
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <exception>
-#include <limits>
 #include <optional>
 #include <source_location>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -23,40 +29,6 @@ namespace xrpl {
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
-
-enum class HostFunctionError : int32_t {
-    Unimplemented = -1,
-    FieldNotFound = -2,
-    BufferTooSmall = -3,
-    NoArray = -4,
-    NotLeafField = -5,
-    LocatorMalformed = -6,
-    SlotOutRange = -7,
-    SlotsFull = -8,
-    EmptySlot = -9,
-    LedgerObjNotFound = -10,
-    OutOfTransferLimit = -11,
-    DataFieldTooLarge = -12,
-    PointerOutOfBounds = -13,
-    NoMemExported = -14,
-    InvalidParams = -15,
-    InvalidAccount = -16,
-    InvalidField = -17,
-    IndexOutOfBounds = -18,
-    FloatInputMalformed = -19,
-    FloatComputationError = -20,
-    SubmitTxnFailure = -21,
-    InvalidState = -22,
-
-    // The call was not served at all, so the engine stops the run and the transaction is
-    // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
-    // answers it for a host body that throws.
-    //
-    // The only entry outside the -1 ..= -22 range a contract reads: it needs no number
-    // there, and INT32_MIN cannot collide with a code appended above. Negative so that a
-    // reader treating it as an ordinary failure is still right.
-    InternalFatal = std::numeric_limits<int32_t>::min(),
-};
 
 template <typename T>
 struct WasmResult
@@ -75,19 +47,24 @@ struct WasmTER
     std::optional<int64_t> cost;
 };
 
+template <typename T>
+constexpr T
+adjustWasmEndianess(T x)
+{
+    static_assert(std::is_integral_v<T>, "Only integral types");
+    if constexpr (std::endian::native == std::endian::big)
+    {
+        return std::byteswap(x);  // LCOV_EXCL_LINE
+    }
+    return x;
+}
+
 class FieldLocator
 {
-    int32_t const* ptr_ = nullptr;
-    uint32_t size_ = 0;
-    std::vector<int32_t> buf_;
+    std::span<uint8_t const> bytes_;
 
 public:
-    FieldLocator(std::vector<int32_t>&& buf)
-        : ptr_(&buf[0]), size_(buf.size()), buf_(std::move(buf))
-    {
-    }
-
-    FieldLocator(int32_t const* ptr, uint32_t const size) : ptr_(ptr), size_(size)
+    explicit FieldLocator(std::span<uint8_t const> bytes) : bytes_(bytes)
     {
     }
 
@@ -99,67 +76,37 @@ public:
     operator=(FieldLocator&&) = default;
 
     int32_t
-    operator[](unsigned i) const
+    operator[](size_t i) const
     {
-        if (i >= size_)
+        if (i >= size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::FieldLocator::operator[] : index out of bounds");
             Throw<std::runtime_error>("index out of bounds");
-        return ptr_[i];
+            // LCOV_EXCL_STOP
+        }
+        auto step = int32_t{};
+        std::memcpy(&step, bytes_.data() + (i * sizeof(int32_t)), sizeof(int32_t));
+        return adjustWasmEndianess(step);
     }
 
-    [[nodiscard]] uint32_t
+    [[nodiscard]] size_t
     size() const
     {
-        return size_;
-    }
-
-    [[nodiscard]] int32_t const*
-    data() const
-    {
-        return ptr_;
-    }
-
-    [[nodiscard]] bool
-    empty() const
-    {
-        return size_ == 0;
+        return bytes_.size() / sizeof(int32_t);
     }
 };
-
-template <typename T, size_t Size = sizeof(T)>
-constexpr T
-adjustWasmEndianessHlp(T x)
-{
-    static_assert(std::is_integral_v<T>, "Only integral types");
-    if constexpr (Size > 1)
-    {
-        using U = std::make_unsigned_t<T>;
-        U u = static_cast<U>(x);
-        U const low = (u & 0xFF) << ((Size - 1) << 3);
-        u = adjustWasmEndianessHlp<U, Size - 1>(u >> 8);
-        return static_cast<T>(low | u);
-    }
-
-    return x;
-}
-
-template <typename T, size_t Size = sizeof(T)>
-constexpr T
-adjustWasmEndianess(T x)
-{
-    // LCOV_EXCL_START
-    static_assert(std::is_integral_v<T>, "Only integral types");
-    if constexpr (std::endian::native == std::endian::big)
-    {
-        return adjustWasmEndianessHlp(x);
-    }
-    return x;
-    // LCOV_EXCL_STOP
-}
 
 constexpr int32_t
 hfErrorToInt(HostFunctionError e)
 {
     return static_cast<int32_t>(e);
+}
+
+constexpr int32_t
+floatOrderingToInt(FloatOrdering o)
+{
+    return static_cast<int32_t>(o);
 }
 
 template <class Body>

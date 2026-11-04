@@ -24,7 +24,7 @@ public:
      *     otherwise, the hash associated data.
      */
     virtual std::optional<Blob>
-    getFetchPack(uint256 const& nodeHash) = 0;
+    getFetchPack(UInt256 const& nodeHash) = 0;
 };
 
 }  // namespace xrpl

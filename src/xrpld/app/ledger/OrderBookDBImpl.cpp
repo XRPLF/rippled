@@ -54,7 +54,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         return;
     }
 
-    auto seq = seq_.load();
+    auto const seq = seq_.load();
 
     if (seq != 0)
     {
@@ -81,7 +81,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
             // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
             registry_.get().getJobQueue().addJob(
-                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
+                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger] {
                     update(ledger);
                 });
         }
@@ -185,7 +185,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 auto const asset1 = (*sle)[sfAsset];
                 auto const asset2 = (*sle)[sfAsset2];
-                auto addBook = [&](Asset const& in, Asset const& out) {
+                auto const addBook = [&](Asset const& in, Asset const& out) {
                     allBooks[in].insert(out);
 
                     if (isXRP(out))
@@ -246,15 +246,15 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<UInt256> const& domain)
 {
     std::vector<Book> ret;
 
     {
         std::scoped_lock const sl(lock_);
 
-        auto getBooks = [&](auto const& container, auto const& key) {
-            if (auto it = container.find(key); it != container.end())
+        auto const getBooks = [&](auto const& container, auto const& key) {
+            if (auto const it = container.find(key); it != container.end())
             {
                 auto const& books = it->second;
                 ret.reserve(books.size());
@@ -278,18 +278,18 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
 }
 
 int
-OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<UInt256> const& domain)
 {
     std::scoped_lock const sl(lock_);
 
     if (!domain)
     {
-        if (auto it = allBooks_.find(asset); it != allBooks_.end())
+        if (auto const it = allBooks_.find(asset); it != allBooks_.end())
             return static_cast<int>(it->second.size());
     }
     else
     {
-        if (auto it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
+        if (auto const it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -305,10 +305,10 @@ OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& do
     return xrpBooks_.contains(asset);
 }
 
-hash_set<Book>
+HashSet<Book>
 affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j)
 {
-    hash_set<Book> result;
+    HashSet<Book> result;
 
     for (auto const& node : alTx.getMeta().getNodes())
     {
@@ -316,7 +316,7 @@ affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j)
         {
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
-                auto extract = [&](SField const& field) {
+                auto const extract = [&](SField const& field) {
                     if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field)); data &&
                         data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {

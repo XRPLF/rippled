@@ -17,22 +17,22 @@
 
 namespace xrpl::detail {
 
-class RawStateTable::SlesIterImpl : public ReadView::SlesType::iter_base
+class RawStateTable::SlesIterImpl : public ReadView::SlesType::IterBase
 {
 private:
     SLE::const_pointer sle0_;
     ReadView::SlesType::Iterator iter0_;
     ReadView::SlesType::Iterator end0_;
     SLE::const_pointer sle1_;
-    items_t::const_iterator iter1_;
-    items_t::const_iterator end1_;
+    ItemsT::const_iterator iter1_;
+    ItemsT::const_iterator end1_;
 
 public:
     SlesIterImpl(SlesIterImpl const&) = default;
 
     SlesIterImpl(
-        items_t::const_iterator iter1,
-        items_t::const_iterator end1,
+        ItemsT::const_iterator iter1,
+        ItemsT::const_iterator end1,
         ReadView::SlesType::Iterator iter0,
         ReadView::SlesType::Iterator end0)
         : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
@@ -46,14 +46,14 @@ public:
         }
     }
 
-    std::unique_ptr<base_type>
+    std::unique_ptr<BaseType>
     copy() const override
     {
         return std::make_unique<SlesIterImpl>(*this);
     }
 
     bool
-    equal(base_type const& impl) const override
+    equal(BaseType const& impl) const override
     {
         if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
         {
@@ -212,7 +212,7 @@ RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key
     const -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
-    items_t::const_iterator iter;
+    ItemsT::const_iterator iter;
     // Find base successor that is
     // not also deleted in our list
     do
@@ -241,7 +241,7 @@ RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key
 }
 
 void
-RawStateTable::erase(SLE::ref sle)
+RawStateTable::erase(SLE::Ref sle)
 {
     // The base invariant is checked during apply
     auto const result = items_.emplace(
@@ -267,7 +267,7 @@ RawStateTable::erase(SLE::ref sle)
 }
 
 void
-RawStateTable::insert(SLE::ref sle)
+RawStateTable::insert(SLE::Ref sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
@@ -292,7 +292,7 @@ RawStateTable::insert(SLE::ref sle)
 }
 
 void
-RawStateTable::replace(SLE::ref sle)
+RawStateTable::replace(SLE::Ref sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
@@ -335,22 +335,22 @@ RawStateTable::destroyXRP(XRPAmount const& fee)
     dropsDestroyed_ += fee;
 }
 
-std::unique_ptr<ReadView::SlesType::iter_base>
+std::unique_ptr<ReadView::SlesType::IterBase>
 RawStateTable::slesBegin(ReadView const& base) const
 {
     return std::make_unique<SlesIterImpl>(
         items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
 
-std::unique_ptr<ReadView::SlesType::iter_base>
+std::unique_ptr<ReadView::SlesType::IterBase>
 RawStateTable::slesEnd(ReadView const& base) const
 {
     return std::make_unique<SlesIterImpl>(
         items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
 
-std::unique_ptr<ReadView::SlesType::iter_base>
-RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
+std::unique_ptr<ReadView::SlesType::IterBase>
+RawStateTable::slesUpperBound(ReadView const& base, UInt256 const& key) const
 {
     return std::make_unique<SlesIterImpl>(
         items_.upper_bound(key), items_.end(), base.sles.upperBound(key), base.sles.end());

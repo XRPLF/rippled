@@ -342,6 +342,9 @@ operator~(TypedField<T> const& f)
 
 //------------------------------------------------------------------------------
 
+// TYPED_SFIELD below pastes these names together as SF_##stiSuffix, so the
+// spelling is fixed by the macro and cannot be CamelCase.
+// NOLINTBEGIN(readability-identifier-naming)
 using SF_UINT8 = TypedField<STInteger<std::uint8_t>>;
 using SF_UINT16 = TypedField<STInteger<std::uint16_t>>;
 using SF_UINT32 = TypedField<STInteger<std::uint32_t>>;
@@ -368,6 +371,7 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 using SF_DATA = TypedField<STData>;
 using SF_DATATYPE = TypedField<STDataType>;
 using SF_JSON = TypedField<STJson>;
+// NOLINTEND(readability-identifier-naming)
 
 //------------------------------------------------------------------------------
 

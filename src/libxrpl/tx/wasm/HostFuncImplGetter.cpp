@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
@@ -77,6 +78,10 @@ getAnyFieldData(STBase const* obj)
         case STI_VL: {
             auto const* vl(static_cast<STBlob const*>(obj));  // NOLINT
             auto const& data = vl->value();
+            if (data.size() > kMaxWasmDataLength)
+            {
+                return std::unexpected{HostFunctionError::DataFieldTooLarge};
+            }
             return Bytes{data.begin(), data.end()};
         }
 
@@ -143,7 +148,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
     auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const sfieldCode = adjustWasmEndianess(locator[0]);
+        int32_t const sfieldCode = locator[0];
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
             return std::unexpected(HostFunctionError::InvalidField);
@@ -156,7 +161,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
 
     for (unsigned i = 1; i < locator.size(); ++i)
     {
-        int32_t const sfieldCode = adjustWasmEndianess(locator[i]);
+        int32_t const sfieldCode = locator[i];
 
         if (STI_ARRAY == field->getSType())
         {

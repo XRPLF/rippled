@@ -35,9 +35,15 @@ contract can buy too cheaply, a denial-of-service vector rather than a rounding 
     jq -r '.benchmarks[] | select(.price_ratio) | [.price_ratio, .name] | @tsv' | sort -n
 ```
 
-`unreliable=1` when `rel_error` exceeds 25%, or when `suggested_gas` falls below the crossing floor
+`unreliable=1` when `rel_error` exceeds 25%, or when `implied_gas` falls below the crossing floor
 — a call whose own cost is small next to the crossing is read off the difference of two nearly
 equal numbers.
+
+The two arms catch different failures, and the second is the one that fires in practice. `rel_error`
+is about precision; the floor comparison is about how much of `suggested_gas` was measured for this
+case at all. On a quiet Release machine the floor is ~36 gas, and the cheap `Impl` cases sit near 3 —
+so the floor is over 90% of their price while `rel_error` reads a comfortable 2%. Expect roughly a
+quarter of the priced rows to carry `unreliable=1`, all of them `Impl`.
 
 ### With `--benchmark_repetitions`
 
@@ -82,8 +88,7 @@ why the three terms in `rel_error` do not all combine in quadrature.
 **`guestInstruction` is the self-test — read it first.** It runs the calibration's own loop body, so
 its `implied_gas` (wall time) and `charged_gas` (the fuel meter) are two independent measurements of
 one quantity. Quiet Release machine: **≈13.7 against 13.007, ~5% high.** A persistent gap much
-beyond that means every other number in the run shares it. It has already caught an estimator
-mismatch worth +40%, and the memory leak below.
+beyond that means every other number in the run shares it.
 
 **`suggested_gas` for an `Impl`-only case is a lower bound** — the crossing floor is measured on a
 call with no input, so a function that moves bytes pays more; `Sha512Half` and `UpdateData` sweep
@@ -115,39 +120,115 @@ appearing a second time, because the transactor validates and executes with no m
 them. The size sweeps matter more than the floor: a fixed cost is only a griefing concern if it is
 large, but a slope against attacker-chosen module size is one at any height.
 
-Two caveats when reading a sweep. `gas_per_byte` is an **average** carrying the case's fixed cost,
+One caveat when reading a sweep: `gas_per_byte` is an **average** carrying the case's fixed cost,
 not a marginal rate — it overestimates, and falls toward the true slope as the module grows, so read
-the convergence rather than any single row. And the `/4096` points get few iterations and go noisy
-first; compare `rel_error` across the sweep before quoting the largest one.
+the convergence rather than any single row. A quiet Release run converges 31.4 → 13.2 → 7.8 → 6.7 →
+6.5 across `compileScaling`.
 
-The sweep stops at 4096 functions for want of a real cap to stop at — no maximum contract size is
-enforced anywhere yet, the transactor not being wired.
+**The filler modules are shaped by the engine's limits, not chosen freely.**
+`EnforcedLimits::strict()` refuses any module averaging under 40 bytes per function body once bodies
+total 1 KiB — a limit wasmi added to defend lazy compilation against precisely the shape a size
+sweep wants. So `fillerWat` gives each body `kFillerChain` mul/add pairs to clear that floor; one
+pair averages 12 bytes and is refused outright. Thinning the bodies to get more functions per byte
+does not make a harder module, it makes an inadmissible one.
+
+The sweep tops out at 2048 functions, bounded by **bytes** rather than function count: ~158 KiB
+against `kMaxBytecodeSizeLimit` of 200,000, where 4096 functions would be ~317 KiB and refused
+earlier in the transactor. `strict()`'s own `max_functions` of 10,000 never binds — 40 bytes per
+function against a 200,000-byte module caps any admissible contract at 5,000.
 
 The linker rebuild and the fuel-metering overhead are **not** separable from here — C++ sees only
 `runEscrowWasm` and `preflightEscrowWasm`. Both need benchmarks inside `xrpl-wasm-vm`, where
 `compile` and `wasm_engine` are `pub(crate)`.
 
-### Compiling leaks — pin your iteration counts
+### Pin your iteration counts
 
-`wasm_engine()` is a process-global `LazyLock<Engine>`, and what `Module::new` adds to it is never
-released. Repeatedly preflighting one **60-byte** module:
+Pin `->Iterations(...)`: automatic sizing targets a wall-clock budget, not a compile count,
+so the cheap cases get six-figure counts and `/2048` a handful — leaving no row comparable to
+another or to the last run.
 
-| `--benchmark_repetitions` | peak RSS |
-| ------------------------- | -------- |
-| 1                         | 0.41 GB  |
-| 5                         | 1.46 GB  |
-| 15                        | 4.20 GB  |
+## Setting the two limits (`Limits.cpp`)
 
-Linear, at roughly **800 bytes per compile**. Within the suite this is why every `Vm.cpp` case pins
-`->Iterations(...)`: automatic sizing ran `preflightMinimal` ~348k times per repetition, reaching
-7.9 GB at 25 repetitions, after which every later case in the binary failed to compile — 720 errored
-rows, all blaming cases that were innocent.
+`Vm.cpp` prices a run's overhead in wall time, none of which a contract is charged for.
+**Translation is the exception**: wasmi 2.0 bills **7 fuel per byte of reached function body** as
+it lowers that body to IR, out of the run's own fuel, on the first call into each function. So
+`gasLimit` and `bytecodeSizeLimit` are not independent — `7 × reached-code-size` is a floor a
+contract pays before executing one instruction of its own, and these cases measure where that floor
+lands against both ceilings.
 
-**Outside the suite it is worth a look.** A validator compiles once to screen an `EscrowCreate`
-and again for every `EscrowFinish` that runs the contract — with no module cache between them, and
-once per apply attempt rather than once per transaction — all against that same static engine.
-Whether that is unbounded growth in production depends on wasmi internals not checked here (wasmi
-2.0.0, wasmparser 0.228): this is the C++-visible symptom, not a diagnosis.
+| case                 | measures                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `fullyReached/bytes` | a module of `bytes` with every function called. The worst case a size limit has to survive                           |
+| `neverReached/bytes` | the same sizes with nothing called: validated, never translated. The wall time a validator eats for free             |
+| `partiallyReached/n` | at `kMaxBytecodeSizeLimit`, `n` sixteenths of the module reached. `7 × bytecodeSizeLimit` is the bound, not the bill |
+| `worstCase/gas/size` | a fully-reached module of `size` spending every remaining unit of `gas` on the most underpriced call there is        |
+
+On top of the `Vm.cpp` counters these report `charged_gas` (what the fuel meter billed, translation
+included), `translation_gas` and `translation_share` (against a same-sized module with nothing
+reached), and the one that answers the gas question: **`pct_gas_limit`**. At 100 the contract's
+entire budget goes to getting itself running; past 100 it cannot be finished at all. `charge_ratio`
+is `charged_gas / gas_equivalent` — below 1 partly because the run's compile and instantiate stages
+are timed here and charged to nobody, and partly because of what `worstCase` is built to show.
+
+The filler bodies are dead code after a `return`: translated in full, executed in two instructions.
+That isolates the rate from execution, and it is also the shape an attacker would send, since it
+maximizes translation cost per byte. Padding is what keeps work and size independent — adding a call
+to the entry point displaces nops rather than growing the module.
+
+**The expensive call is `check_sig`, not `sha512_half`.** Measured here, `sha512_half` at its 1 KiB
+maximum costs 589 ns and `check_sig` 14,576 ns — 25x more, charged 300 gas against a suggested
+26,188 (`price_ratio` 0.011). It is simultaneously the most expensive thing a contract can ask for
+and the most underpriced, which is what `worstCase` exploits.
+
+### The decision rule
+
+A fully-reached module of `B` bytes charges `7·B` almost exactly; execution and scaffolding are
+rounding error next to it. Measured on an Apple-silicon Release build:
+
+| case                  | `charged_gas` | `pct_gas_limit` |  `ns_per_op` |
+| --------------------- | ------------: | --------------: | -----------: |
+| `fullyReached/25000`  |       173,442 |            17.3 |       243 µs |
+| `fullyReached/50000`  |       348,442 |            34.8 |       431 µs |
+| `fullyReached/100000` |       698,442 |            69.8 |       792 µs |
+| `fullyReached/200000` |     1,398,442 |       **139.8** |      1.49 ms |
+| `neverReached/*`      |         1,808 |             0.2 | 125 – 470 µs |
+
+(`pct_gas_limit` is against the 1,000,000 default in both cases.)
+
+So the quantity a limit pair has to be chosen against is the **ratio** `gasLimit /
+bytecodeSizeLimit`. Below 7 a full-size contract cannot run at all; at 7 it runs and can do nothing.
+Both of today's pairs sit at 10, which spends 70% of the budget before the contract starts. The two
+limits are voted independently through `FeeVoteImpl`, so the pairing is not guaranteed: size voted
+to `kMaxBytecodeSizeLimit` with gas left at its default is the 139.8% row, a contract that cannot be
+finished on that network at all.
+
+`neverReached` bills a **constant** 1,808 whatever the module size, while its wall time grows 4x
+across the sweep. Validation is real work charged to nobody, so a size limit is a wall-time decision
+independently of any gas question.
+
+### What actually bounds the wall time
+
+`worstCase` is the row to size a network against — the longest one `EscrowFinish` can be made to
+take at a given pair:
+
+| pair (gas / size)   | `check_sig_calls` | `ms_per_op` | `translation_share` | `charge_ratio` |
+| ------------------- | ----------------: | ----------: | ------------------: | -------------: |
+| 1,000,000 / 100,000 |               983 |        15.6 |                0.57 |          0.039 |
+| 2,000,000 / 200,000 |             1,957 |        31.1 |                0.57 |          0.039 |
+| 2,000,000 / 100,000 |             4,229 |    **64.9** |                0.07 |          0.019 |
+
+The third row is the one to read twice. A **smaller** module is worse, because the gas translation
+does not take is gas available for calls that are underpriced 90x — so raising `gasLimit` without
+repricing `check_sig` costs more wall time than raising `bytecodeSizeLimit` does. `charge_ratio`
+0.019 says it directly: that run is billed one fiftieth of what its wall time is worth at the rate a
+guest instruction pays.
+
+Translation is therefore the lesser of the two problems, and the two levers are not interchangeable:
+`bytecodeSizeLimit` bounds a cost that is _charged_, while `gasLimit` bounds one that is not. And
+the 7 is about right — `fullyReached/200000` minus `neverReached/200000` is 1.02 ms of translation
+over 200,000 bytes, or 5.1 ns/byte, which at this machine's ~0.61 ns per gas is 8.4 gas/byte of real
+cost against 7 charged. Retuning it would move the limits question very little. Fix the
+host-function prices first.
 
 ## Gotchas, each of which has already cost someone an afternoon
 
@@ -173,8 +254,9 @@ Whether that is unbounded growth in production depends on wasmi internals not ch
 One `.cpp` per host function under `host_functions/`, mirroring
 `src/tests/libxrpl/tx/wasm/host_functions/`, so adding a host function is a two-file checklist
 rather than a judgement call. `Crossing.cpp` holds the harness's own reference points, `Vm.cpp` the
-per-run overhead around them, `WasmBench.*` the measurement machinery, `BenchFixtures.*` the shared
-ledger (one ledger, funded once, for the whole binary).
+per-run overhead around them, `Limits.cpp` the `gasLimit`/`bytecodeSizeLimit` pairing, `WasmBench.*`
+the measurement machinery, `BenchFixtures.*` the shared ledger (one ledger, funded once, for the
+whole binary).
 
 The ledger and real host come from `xrpl.testkit.wasm` — a framework-free library built alongside
 the tests — so this target links **no GTest and no GMock**. See

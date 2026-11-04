@@ -22,7 +22,7 @@ struct NftokenOfferKeyletCall : HostContextTest
     std::uint32_t const seq = 13579;
 };
 
-TEST_F(NftokenOfferKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
+TEST_F(NftokenOfferKeyletCall, account_and_seq_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -34,7 +34,7 @@ TEST_F(NftokenOfferKeyletCall, AccountAndSeqAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(NftokenOfferKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(NftokenOfferKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -46,7 +46,7 @@ TEST_F(NftokenOfferKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NftokenOfferKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
@@ -57,7 +57,7 @@ TEST_F(NftokenOfferKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NftokenOfferKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
@@ -68,7 +68,7 @@ TEST_F(NftokenOfferKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NftokenOfferKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(NftokenOfferKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, nftokenOfferKeylet).Times(0);
 
@@ -78,7 +78,7 @@ TEST_F(NftokenOfferKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(NftokenOfferKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NftokenOfferKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq))
         .WillOnce(testing::Throw(std::runtime_error{"nftoken offer keylet came apart"}));
@@ -93,7 +93,7 @@ TEST_F(NftokenOfferKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NftokenOfferKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NftokenOfferKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -105,7 +105,7 @@ TEST_F(NftokenOfferKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NftokenOfferKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NftokenOfferKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(keylet));
@@ -117,7 +117,7 @@ TEST_F(NftokenOfferKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(NftokenOfferKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(NftokenOfferKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, nftokenOfferKeylet(account, seq)).WillOnce(testing::Return(Bytes{}));
 

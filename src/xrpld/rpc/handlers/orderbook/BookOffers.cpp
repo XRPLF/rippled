@@ -58,7 +58,7 @@ parseTakerAssetJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
-    auto const assetError = [&]() {
+    auto const assetError = [&] {
         if (name == jss::taker_pays)
             return RpcSrcCurMalformed;
         return RpcDstAmtMalformed;
@@ -97,7 +97,7 @@ parseTakerIssuerJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
-    auto const issuerError = [&]() {
+    auto const issuerError = [&] {
         if (name == jss::taker_pays)
             return RpcSrcIsrMalformed;
         return RpcDstIsrMalformed;
@@ -215,10 +215,10 @@ doBookOffers(rpc::JsonContext& context)
             return rpc::invalidFieldError(jss::taker);
     }
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (context.params.isMember(jss::domain))
     {
-        uint256 num;
+        UInt256 num;
         if (!context.params[jss::domain].isString() ||
             !num.parseHex(context.params[jss::domain].asString()))
         {

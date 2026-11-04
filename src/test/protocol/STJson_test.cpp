@@ -692,7 +692,7 @@ struct STJson_test : public beast::unit_test::Suite
             std::make_shared<STUInt16>(sfSignerWeight, 0xFEDC),
             std::make_shared<STUInt32>(sfNetworkID, 0xFEDCBA98),
             std::make_shared<STUInt64>(sfIndexNext, 0xFEDCBA9876543210),
-            std::make_shared<STUInt128>(sfEmailHash, uint128{0x1234}),
+            std::make_shared<STUInt128>(sfEmailHash, UInt128{0x1234}),
             std::make_shared<STUInt160>(sfTakerPaysCurrency, uint160{0x1234}),
             std::make_shared<STUInt192>(sfMPTokenIssuanceID, uint192{0x1234}),
             std::make_shared<STUInt256>(sfLedgerHash, uint256{0x1234}),

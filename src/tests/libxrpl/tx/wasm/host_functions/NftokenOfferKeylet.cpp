@@ -13,7 +13,7 @@ struct NftokenOfferKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(NftokenOfferKeyletImpl, MatchesNftokenOfferFunction)
+TEST_F(NftokenOfferKeyletImpl, matches_nftoken_offer_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(NftokenOfferKeyletImpl, MatchesNftokenOfferFunction)
         keylet::nftokenOffer(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(NftokenOfferKeyletImpl, InvalidAccount)
+TEST_F(NftokenOfferKeyletImpl, invalid_account)
 {
     expectError(makeHost()->nftokenOfferKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

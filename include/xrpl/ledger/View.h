@@ -118,12 +118,12 @@ canTransferLPToken(
     AccountID const& lpTokenIssuer);
 
 // Return the list of enabled amendments
-[[nodiscard]] std::set<uint256>
+[[nodiscard]] std::set<UInt256>
 getEnabledAmendments(ReadView const& view);
 
 // Return a map of amendments that have achieved majority
-using majorityAmendments_t = std::map<uint256, NetClock::time_point>;
-[[nodiscard]] majorityAmendments_t
+using MajorityAmendmentsT = std::map<UInt256, NetClock::time_point>;
+[[nodiscard]] MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view);
 
 /**
@@ -136,7 +136,7 @@ getMajorityAmendments(ReadView const& view);
  * @return The hash of the ledger with the
  *         given sequence number or std::nullopt.
  */
-[[nodiscard]] std::optional<uint256>
+[[nodiscard]] std::optional<UInt256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal);
 
 /**
@@ -168,15 +168,15 @@ getCandidateLedger(LedgerIndex requested)
 areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason);
 
 [[nodiscard]] bool
 areCompatible(
-    uint256 const& validHash,
+    UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason);
 
 //------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    SLE::pointer& object,
+    SLE::pointer const& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /**
@@ -215,10 +215,10 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::const_ref toSle,
+    SLE::ConstRef toSle,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs = std::nullopt);
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
@@ -245,7 +245,7 @@ canWithdraw(
     AccountID const& to,
     STAmount const& amount,
     bool hasDestinationTag,
-    std::optional<std::vector<uint256>> const& credentialIDs = std::nullopt);
+    std::optional<std::vector<UInt256>> const& credentialIDs = std::nullopt);
 
 /**
  * Checks that can withdraw funds from an object to itself or a destination.
@@ -306,7 +306,7 @@ canTransferFT(
  * is always tesSUCCESS if the entry should be skipped.
  */
 using EntryDeleter =
-    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, SLE::pointer&)>;
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, UInt256 const&, SLE::pointer&)>;
 /**
  * Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller

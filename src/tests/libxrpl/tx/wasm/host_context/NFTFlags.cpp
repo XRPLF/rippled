@@ -25,7 +25,7 @@ struct NFTFlagsCall : HostContextTest
     uint256 const nftId = uint256::fromVoid(nftIdBytes.data());
 };
 
-TEST_F(NFTFlagsCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTFlagsCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     static constexpr std::int32_t kFlags = 0x0b;
     EXPECT_CALL(host, getNFTFlags(testing::Eq(nftId))).WillOnce(testing::Return(kFlags));
@@ -33,7 +33,7 @@ TEST_F(NFTFlagsCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_EQ(hostContext.getNFTFlags(bytesOf(nftIdBytes)), kFlags);
 }
 
-TEST_F(NFTFlagsCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTFlagsCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTFlags(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -43,7 +43,7 @@ TEST_F(NFTFlagsCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::LedgerObjNotFound));
 }
 
-TEST_F(NFTFlagsCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTFlagsCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTFlags(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft flags came apart"}));
@@ -55,7 +55,7 @@ TEST_F(NFTFlagsCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTFlags"));
 }
 
-TEST_F(NFTFlagsCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTFlagsCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTFlags).Times(0);
@@ -70,7 +70,7 @@ TEST_F(NFTFlagsCall, MalformedNftIdIsRefusedWithoutAskingHost)
 // `HostFunctionError::InternalFatal` (`INT32_MIN`) - the code `guarded` supplies for a thrown
 // exception. The ABI at this layer has no way to tell the two apart; this is a property of
 // the shape, not a bug to fix.
-TEST_F(NFTFlagsCall, HighBitFlagsAreIndistinguishableFromInternalFatal)
+TEST_F(NFTFlagsCall, high_bit_flags_are_indistinguishable_from_internal_fatal)
 {
     EXPECT_CALL(host, getNFTFlags(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::numeric_limits<std::int32_t>::min()));

@@ -6,7 +6,7 @@ bridged into C++ via `cxxbridge`/the `cxx` crate.
 The workspace is built unconditionally — `add_subdirectory(crates)` in the
 top-level `CMakeLists.txt` is not behind an option, and
 `xrpl_wasm_vm_ffi_cxxbridge` is a `PUBLIC` dependency of
-`xrpl.libxrpl.ledger` (see `cmake/XrplCore.cmake`). The Rust toolchain pinned in
+`xrpl.libxrpl.tx` (see `cmake/XrplCore.cmake`). The Rust toolchain pinned in
 [`rust-toolchain.toml`](../rust-toolchain.toml) is therefore required to build
 `libxrpl` at all; the Nix devshell provides it automatically.
 
@@ -73,6 +73,12 @@ The cxx bridge into `xrpld`. Three crossings:
 
 The C++ side is `src/libxrpl/tx/wasm/WasmVM.cpp` and
 `src/libxrpl/tx/wasm/HostContext.cpp`.
+
+`build.rs` also runs cbindgen over `xrpl-host-functions`, writing the ABI's wire
+enums and integer constants to `xrpl_host_functions.h`, so C++ declares none of
+them itself. cbindgen reads the source, not the expansion, which is why
+`#[coded_enum]` requires `#[repr(i32)]` instead of supplying it. An enum reaches
+the header only if `cbindgen.toml` lists it.
 
 **Neither language may unwind into the other**, and the two halves are not
 symmetric:

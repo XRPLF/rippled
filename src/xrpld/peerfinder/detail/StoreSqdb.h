@@ -45,7 +45,7 @@ public:
     // Loads the bootstrap cache, calling the callback for each entry
     //
     std::size_t
-    load(load_callback const& cb) override
+    load(LoadCallback const& cb) override
     {
         std::size_t n(0);
 

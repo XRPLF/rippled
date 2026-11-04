@@ -126,7 +126,8 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
-    auto vote = [&v, this](auto const current, auto target, char const* name, auto const& sfield) {
+    auto const vote = [&v, this](
+                          auto const current, auto target, char const* name, auto const& sfield) {
         if (current != target)
         {
             JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -143,14 +144,14 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     else
     {
-        auto to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
-        auto to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto voteAndConvert = [&v, this](
-                                  auto const current,
-                                  XRPAmount target,
-                                  auto const& convertCallback,
-                                  char const* name,
-                                  auto const& sfield) {
+        auto const to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
+        auto const to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
+        auto const voteAndConvert = [&v, this](
+                                        auto const current,
+                                        XRPAmount target,
+                                        auto const& convertCallback,
+                                        char const* name,
+                                        auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -184,7 +185,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                 "bytecode size limit",
                 sfBytecodeSizeLimit);
         }
-        vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
+        if (target_.gasPrice >= kMinGasPrice)
+        {
+            vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
+        }
     }
 }
 
@@ -205,29 +209,37 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
-    auto validOrCurrent = [](std::uint32_t target, std::uint32_t max, std::uint32_t current) {
-        return target <= max ? target : current;
-    };
+    auto const validOrCurrent =
+        [](std::uint32_t target, std::uint32_t min, std::uint32_t max, std::uint32_t current) {
+            return (target >= min && target <= max) ? target : current;
+        };
 
     detail::VotableValue gasLimitVote(
         lastClosedLedger->fees().gasLimit,
-        validOrCurrent(target_.gasLimit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
+        validOrCurrent(target_.gasLimit, 0, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
 
     detail::VotableValue bytecodeSizeLimitVote(
         lastClosedLedger->fees().bytecodeSizeLimit,
         validOrCurrent(
             target_.bytecodeSizeLimit,
+            0,
             kMaxBytecodeSizeLimit,
             lastClosedLedger->fees().bytecodeSizeLimit));
 
-    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gasPrice);
+    detail::VotableValue gasPriceVote(
+        lastClosedLedger->fees().gasPrice,
+        validOrCurrent(
+            target_.gasPrice,
+            kMinGasPrice,
+            std::numeric_limits<std::uint32_t>::max(),
+            lastClosedLedger->fees().gasPrice));
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<XRPAmount>& value,
-                         SF_AMOUNT const& xrpField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<XRPAmount>& value,
+                               SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField); field && field->native())
             {
                 auto const vote = field->xrp();
@@ -257,9 +269,9 @@ FeeVoteImpl::doVoting(
     }
     else
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<XRPAmount>& value,
-                         auto const& valueField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<XRPAmount>& value,
+                               auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
                 using XRPType = XRPAmount::value_type;
@@ -294,13 +306,14 @@ FeeVoteImpl::doVoting(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<std::uint32_t>& value,
-                         SF_UINT32 const& sfield,
-                         std::uint32_t maxValue) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<std::uint32_t>& value,
+                               SF_UINT32 const& sfield,
+                               std::uint32_t minValue,
+                               std::uint32_t maxValue) {
             if (auto const field = ~val->at(~sfield); field)
             {
-                if (field.value() <= maxValue)
+                if (field.value() >= minValue && field.value() <= maxValue)
                 {
                     value.addVote(field.value());
                 }
@@ -319,9 +332,14 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, gasLimitVote, sfGasLimit, kMaxGasLimit);
-            doVote(val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, kMaxBytecodeSizeLimit);
-            doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
+            doVote(val, gasLimitVote, sfGasLimit, 0, kMaxGasLimit);
+            doVote(val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, 0, kMaxBytecodeSizeLimit);
+            doVote(
+                val,
+                gasPriceVote,
+                sfGasPrice,
+                kMinGasPrice,
+                std::numeric_limits<std::uint32_t>::max());
         }
     }
 
@@ -369,7 +387,7 @@ FeeVoteImpl::doVoting(
             }
         });
 
-        uint256 const txID = feeTx.getTransactionID();
+        UInt256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

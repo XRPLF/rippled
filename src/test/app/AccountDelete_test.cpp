@@ -63,7 +63,8 @@ private:
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         // We can't use env.meta() here, because meta() doesn't include
@@ -289,7 +290,7 @@ public:
             env(offer(alice, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 45));
+        env.require(Offers(alice, 45));
 
         // Close enough ledgers to be able to delete alice's account.
         incLgrSeqForAccDel(env, alice);
@@ -337,8 +338,8 @@ public:
             env(offer(becky, gw["USD"](1), XRP(1)));
             env.close();
         }
-        env.require(offers(alice, 200));
-        env.require(offers(becky, 200));
+        env.require(Offers(alice, 200));
+        env.require(Offers(becky, 200));
 
         // Close enough ledgers to be able to delete alice's and becky's
         // accounts.
@@ -348,7 +349,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
+        UInt256 const checkId = keylet::check(alice, SeqProxy::rawSequence(env.seq(alice))).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 
@@ -412,7 +413,8 @@ public:
         env.close();
 
         Keylet const alicePayChanKey{
-            keylet::payChannel(alice, becky, SeqProxy::rawSequence(env.seq(alice)))};
+            keylet::payChannel(alice, becky, SeqProxy::rawSequence(env.seq(alice))),
+        };
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -428,7 +430,7 @@ public:
         // in her directory.
 
         // Lambda to close a PayChannel.
-        auto payChanClose =
+        auto const payChanClose =
             [](jtx::Account const& account, Keylet const& payChanKeylet, PublicKey const& pk) {
                 json::Value jv;
                 jv[jss::TransactionType] = jss::PaymentChannelClaim;
@@ -444,7 +446,8 @@ public:
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
         Keylet const gwPayChanKey{
-            keylet::payChannel(gw, alice, SeqProxy::rawSequence(env.seq(gw)))};
+            keylet::payChannel(gw, alice, SeqProxy::rawSequence(env.seq(gw))),
+        };
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -543,10 +546,10 @@ public:
         env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, kOfferCount));
+        env.require(Offers(alice, kOfferCount));
         env(offerCancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, kOfferCount - 1));
+        env.require(Offers(alice, kOfferCount - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};
@@ -874,8 +877,10 @@ public:
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),
-                credentials::Ids({"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
-                                  "A288BE4"}),
+                credentials::Ids({
+                    "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
+                    "A288BE4",
+                }),
                 Fee(acctDelFee),
                 Ter(tecBAD_CREDENTIALS));
             env.close();

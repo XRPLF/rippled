@@ -1,9 +1,9 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <benchmark/benchmark.h>
 #include <benchmarks/libxrpl/wasm/BenchFixtures.h>
 #include <benchmarks/libxrpl/wasm/WasmBench.h>
+#include <tx/wasm/fixtures/OwnedLocator.h>
 
 #include <string_view>
 
@@ -20,7 +20,7 @@ currentLedgerObjNestedFieldImpl(benchmark::State& state)
         kWasmName,
         [] { return Fixtures::instance().host(); },
         [](auto& host) {
-            return host.getCurrentLedgerObjNestedField(FieldLocator{{sfAccount.getCode()}});
+            return host.getCurrentLedgerObjNestedField(locator({sfAccount.getCode()}));
         });
 }
 BENCHMARK(currentLedgerObjNestedFieldImpl)->UseManualTime()->Iterations(kBenchIterations);

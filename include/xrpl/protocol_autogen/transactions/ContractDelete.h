@@ -18,7 +18,7 @@ class ContractDeleteBuilder;
 /**
  * @brief Transaction: ContractDelete
  *
- * Type: ttCONTRACT_DELETE (94)
+ * Type: ttCONTRACT_DELETE (105)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
  * Privileges: Privilege::MustDeleteAcct

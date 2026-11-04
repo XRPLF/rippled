@@ -222,7 +222,7 @@ public:
      * @return True if the feature is enabled.
      */
     [[nodiscard]] bool
-    isEnabled(uint256 const& feature) const;
+    isEnabled(UInt256 const& feature) const;
 
     /**
      * @brief Get the current rules.
@@ -255,7 +255,7 @@ public:
         submit(T&& builder, Account const& signer, XRPAmount fee = XRPAmount{10})
     {
         auto const& obj = builder.getSTObject();
-        auto accountId = obj[sfAccount];
+        auto const accountId = obj[sfAccount];
         if (!obj.isFieldPresent(sfTicketSequence))
         {
             builder.setSequence(getAccountRoot(accountId).getSequence());
@@ -434,11 +434,17 @@ public:
     getBalance(AccountID const& account, IOU const& iou) const;
 
     /**
-     * @brief Get the service registry.
+     * @brief Change the fee settings the ledger carries.
      *
-     * Returns the concrete test type so a test can reach its setters — `setFees` in
-     * particular, for the cases that need a limit to change *after* setup, which the
+     * Takes effect at the next `close()`, which writes the values into FeeSettings.
+     * For the cases that need a limit to change *after* setup, which the
      * constructor's `fees` parameter cannot express.
+     */
+    void
+    setFees(Fees const& fees);
+
+    /**
+     * @brief Get the service registry.
      *
      * @return A reference to the service registry.
      */
@@ -450,7 +456,8 @@ public:
 
 private:
     TestServiceRegistry registry_;
-    std::unordered_set<uint256, beast::Uhash<>> featureSet_;
+    std::optional<Fees> pendingFees_;
+    std::unordered_set<UInt256, beast::Uhash<>> featureSet_;
     std::optional<Rules> rules_;
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;

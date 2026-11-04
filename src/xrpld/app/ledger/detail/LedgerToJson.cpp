@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
@@ -11,6 +12,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -27,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <string>
@@ -179,6 +182,19 @@ fillJsonTx(
         }
     }
 
+    // compute outgoing CTID
+    if (stMeta && stMeta->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const lgrSeq = fill.ledger.seq();
+        uint32_t const txnIdx = stMeta->getFieldU32(sfTransactionIndex);
+        uint32_t netID = fill.context->app.getNetworkIDService().getNetworkID();
+        if (txn->isFieldPresent(sfNetworkID))
+            netID = txn->getFieldU32(sfNetworkID);
+
+        if (auto ctid = rpc::encodeCTID(lgrSeq, txnIdx, netID))
+            txJson[jss::ctid] = *ctid;
+    }
+
     if (((fill.options & static_cast<int>(LedgerFill::Options::OwnerFunds)) != 0) &&
         txn->getTxnType() == ttOFFER_CREATE)
     {
@@ -212,7 +228,7 @@ fillJsonTx(json::Value& json, LedgerFill const& fill)
 
     try
     {
-        auto appendAll = [&](auto const& txs) {
+        auto const appendAll = [&](auto const& txs) {
             for (auto& i : txs)
             {
                 txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
@@ -236,8 +252,8 @@ fillJsonState(json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
     auto& array = json[jss::accountState] = json::ValueType::Array;
-    auto expanded = isExpanded(fill);
-    auto binary = isBinary(fill);
+    auto const expanded = isExpanded(fill);
+    auto const binary = isBinary(fill);
 
     for (auto const& sle : ledger.sles)
     {
@@ -262,8 +278,8 @@ void
 fillJsonQueue(json::Value& json, LedgerFill const& fill)
 {
     auto& queueData = json[jss::queue_data] = json::ValueType::Array;
-    auto bBinary = isBinary(fill);
-    auto bExpanded = isExpanded(fill);
+    auto const bBinary = isBinary(fill);
+    auto const bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
@@ -311,7 +327,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
-    auto bFull = isFull(fill);
+    auto const bFull = isFull(fill);
     if (isBinary(fill))
     {
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());

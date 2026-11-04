@@ -13,7 +13,7 @@ struct HostFunctionTourE2e : RealVmTest
 {
 };
 
-TEST_F(HostFunctionTourE2e, AContractTouringManyHostFunctionsSucceeds)
+TEST_F(HostFunctionTourE2e, a_contract_touring_many_host_functions_succeeds)
 {
     // Each call must return >= 0 (a byte count, i.e. success); the guest returns the first
     // negative error code, or 1 if the whole tour succeeds. Output regions are disjoint so no

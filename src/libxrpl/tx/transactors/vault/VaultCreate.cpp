@@ -18,6 +18,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -86,6 +87,11 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::kZero)
+            return temMALFORMED;
+
+        // An AssetsMaximum out of range for the asset, e.g. XRP above
+        // STAmount::kMaxNativeN, would throw when rounded to the asset.
+        if (ctx.rules.enabled(fixCleanup3_5_0) && !isRepresentable(ctx.tx[sfAsset], *assetMax))
             return temMALFORMED;
     }
 
@@ -179,13 +185,13 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    auto const vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
@@ -223,7 +229,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<uint256> {
+    auto const referenceHolding = [&] -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -314,7 +320,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

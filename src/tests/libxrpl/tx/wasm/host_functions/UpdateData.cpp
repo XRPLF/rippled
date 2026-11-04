@@ -10,7 +10,7 @@ struct UpdateDataImpl : RealHostFixture
 {
 };
 
-TEST_F(UpdateDataImpl, SmallData)
+TEST_F(UpdateDataImpl, small_data)
 {
     auto h = makeHost();
     auto data = Bytes(10, 0x42);
@@ -19,7 +19,7 @@ TEST_F(UpdateDataImpl, SmallData)
     EXPECT_EQ(h->getData(), data);
 }
 
-TEST_F(UpdateDataImpl, LargeData)
+TEST_F(UpdateDataImpl, large_data)
 {
     auto h = makeHost();
     auto data = Bytes(kMaxWasmDataLength + 1, 0x42);

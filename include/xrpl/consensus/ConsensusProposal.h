@@ -235,7 +235,7 @@ public:
     /**
      * The digest for this proposal, used for signing purposes.
      */
-    uint256 const&
+    UInt256 const&
     signingHash() const
     {
         if (!signingHash_)
@@ -283,7 +283,7 @@ private:
     /**
      * The signing hash for this proposal
      */
-    mutable std::optional<uint256> signingHash_;
+    mutable std::optional<UInt256> signingHash_;
 };
 
 template <class NodeId, class LedgerId, class Position>

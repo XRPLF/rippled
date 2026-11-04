@@ -13,6 +13,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/shamap/SHAMapItem.h>
@@ -32,15 +33,17 @@ namespace xrpl {
 SkipListAcquire::SkipListAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
           ledgerHash,
           ledger_replay_parameters::kSubTaskTimeout,
-          {.jobType = JtReplayTask,
-           .jobName = "SkipListAcq",
-           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
+          {
+              .jobType = JtReplayTask,
+              .jobName = "SkipListAcq",
+              .jobLimit = ledger_replay_parameters::kMaxQueuedTasks,
+          },
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -145,7 +148,7 @@ SkipListAcquire::processData(
     JLOG(journal_.trace()) << "got data for " << hash_;
     try
     {
-        if (auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key()); sle)
+        if (auto const sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key()); sle)
         {
             if (auto const& skipList = sle->getFieldV256(sfHashes).value(); !skipList.empty())
                 onSkipListAcquired(skipList, ledgerSeq, sl);
@@ -183,7 +186,7 @@ SkipListAcquire::getData() const
 void
 SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl)
 {
-    if (auto const hashIndex = ledger->read(keylet::skip());
+    if (LedgerHashesEntryR const hashIndex(*ledger, journal_);
         hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
         auto const& slist = hashIndex->getFieldV256(sfHashes).value();
@@ -201,7 +204,7 @@ SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, S
 
 void
 SkipListAcquire::onSkipListAcquired(
-    std::vector<uint256> const& skipList,
+    std::vector<UInt256> const& skipList,
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {
@@ -220,7 +223,7 @@ SkipListAcquire::notify(ScopedLockType& sl)
     auto const good = !failed_;
     sl.unlock();
 
-    for (auto& cb : toCall)
+    for (auto const& cb : toCall)
     {
         cb(good, hash_);
     }

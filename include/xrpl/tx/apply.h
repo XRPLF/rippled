@@ -35,7 +35,7 @@ enum class Validity {
     /**
      * Signature and local checks are good / passed.
      */
-    Valid
+    Valid,
 };
 
 /**
@@ -66,7 +66,7 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules);
  * @see checkValidity, Validity
  */
 void
-forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
+forceValidity(HashRouter& router, UInt256 const& txid, Validity validity);
 
 /**
  * Apply a transaction to an `OpenView`.
@@ -151,7 +151,7 @@ enum class ApplyTransactionResult {
     /**
      * Should be retried in this ledger
      */
-    Retry
+    Retry,
 };
 
 /**

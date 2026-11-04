@@ -187,13 +187,14 @@ InvariantsBase::createLoanBroker(
     // accepts closed-ended vaults. Build one with a comfortable
     // subscription window; LoanBrokerSet itself is not phase-gated,
     // so leaving the vault in the Subscription phase is fine here.
-    uint256 vaultID;
+    UInt256 vaultID;
     Vault const vault{env};
-    auto [tx, vKeylet, _] = vault.createClosedEnded(
-        {.owner = a,
-         .asset = asset,
-         .subscriptionOffset = std::chrono::seconds{60},
-         .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u}});
+    auto [tx, vKeylet, _] = vault.createClosedEnded({
+        .owner = a,
+        .asset = asset,
+        .subscriptionOffset = std::chrono::seconds{60},
+        .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u},
+    });
     env(tx);
     BEAST_EXPECT(env.le(vKeylet));
 
@@ -211,7 +212,7 @@ InvariantsBase::createLoanBroker(
 
 SLE::pointer
 InvariantsBase::makeLoanSle(
-    uint256 const& loanBrokerID,
+    UInt256 const& loanBrokerID,
     std::uint32_t loanSeq,
     AccountID const& borrower)
 {

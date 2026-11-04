@@ -48,14 +48,14 @@ struct InstanceParamImpl : ContractHostFixture
     }
 };
 
-TEST_F(InstanceParamImpl, AnIntegerComesBackLittleEndian)
+TEST_F(InstanceParamImpl, an_integer_comes_back_little_endian)
 {
     auto const contractHost = host({param(std::uint32_t{0x01020304})});
 
     expectValue(contractHost->instanceParam(0, STI_UINT32), (Bytes{0x04, 0x03, 0x02, 0x01}));
 }
 
-TEST_F(InstanceParamImpl, EveryIntegerWidthIsItsOwnLength)
+TEST_F(InstanceParamImpl, every_integer_width_is_its_own_length)
 {
     auto const contractHost = host({
         param(std::uint8_t{0xff}),
@@ -70,7 +70,7 @@ TEST_F(InstanceParamImpl, EveryIntegerWidthIsItsOwnLength)
     expectValue(contractHost->instanceParam(3, STI_UINT64), Bytes(8, 0xff));
 }
 
-TEST_F(InstanceParamImpl, AnAccountIsItsTwentyBytes)
+TEST_F(InstanceParamImpl, an_account_is_its_twenty_bytes)
 {
     auto const contractHost = host({param(alice.id())});
 
@@ -82,7 +82,7 @@ TEST_F(InstanceParamImpl, AnAccountIsItsTwentyBytes)
 // serialization without a field header.
 TEST_F(InstanceParamImpl, every_wide_type_is_its_bytes_or_its_serialization)
 {
-    uint128 const h128{"0102030405060708090A0B0C0D0E0F10"};
+    UInt128 const h128{"0102030405060708090A0B0C0D0E0F10"};
     uint160 const h160{"0102030405060708090A0B0C0D0E0F1011121314"};
     uint192 const h192{"0102030405060708090A0B0C0D0E0F101112131415161718"};
     uint256 const h256{"0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F20"};
@@ -136,28 +136,28 @@ TEST_F(InstanceParamImpl, an_empty_parameter_is_refused)
 
 // The type is what the contract claims the parameter holds, so a parameter of another type
 // is a malformed request rather than a converted value.
-TEST_F(InstanceParamImpl, AParameterOfAnotherTypeIsRefused)
+TEST_F(InstanceParamImpl, a_parameter_of_another_type_is_refused)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 
     expectError(contractHost->instanceParam(0, STI_UINT16), HostFunctionError::InvalidParams);
 }
 
-TEST_F(InstanceParamImpl, AnIndexPastTheEndIsOutOfBounds)
+TEST_F(InstanceParamImpl, an_index_past_the_end_is_out_of_bounds)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 
     expectError(contractHost->instanceParam(1, STI_UINT32), HostFunctionError::IndexOutOfBounds);
 }
 
-TEST_F(InstanceParamImpl, AnInstanceWithNoParametersHasNothingAtIndexZero)
+TEST_F(InstanceParamImpl, an_instance_with_no_parameters_has_nothing_at_index_zero)
 {
     expectError(host({})->instanceParam(0, STI_UINT32), HostFunctionError::IndexOutOfBounds);
 }
 
 // The instance's parameters and the call's are separate tables, so an instance parameter is
 // not reachable as a function parameter.
-TEST_F(InstanceParamImpl, TheCallsParametersAreADifferentTable)
+TEST_F(InstanceParamImpl, the_calls_parameters_are_a_different_table)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 

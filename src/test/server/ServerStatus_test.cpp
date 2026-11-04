@@ -56,7 +56,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
-        auto const sectionName = proto.starts_with("h") ? Sections::kPortRpc : Sections::kPortWs;
+        auto const sectionName = proto.starts_with('h') ? Sections::kPortRpc : Sections::kPortWs;
         auto p = jtx::envconfig();
 
         p->overwrite(sectionName, Keys::kProtocol, proto);
@@ -70,9 +70,9 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
 
         p->overwrite(
-            proto.starts_with("h") ? Sections::kPortWs : Sections::kPortRpc,
+            proto.starts_with('h') ? Sections::kPortWs : Sections::kPortRpc,
             Keys::kProtocol,
-            proto.starts_with("h") ? "ws" : "http");
+            proto.starts_with('h') ? "ws" : "http");
 
         if (proto == "https")
         {
@@ -165,7 +165,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
-        auto it = r.async_resolve(host, std::to_string(port), yield[ec]);
+        auto const it = r.async_resolve(host, std::to_string(port), yield[ec]);
         if (ec)
             return;
 
@@ -260,7 +260,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             }
         }
 
-        if (proto.starts_with("h"))
+        if (proto.starts_with('h'))
         {
             auto jrc = makeJSONRPCClient(env.app().config());
             jrr = jrc->invoke("ledger_accept", jp);
@@ -288,7 +288,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this, makeConfig(proto, admin, credentials)};
 
         json::Value jrr;
-        auto const protoWs = proto.starts_with("w");
+        auto const protoWs = proto.starts_with('w');
 
         // the set of checks we do are different depending
         // on how the admin config options are set
@@ -440,7 +440,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         boost::system::error_code ec;
         response<string_body> resp;
-        auto req = makeWSUpgrade(*ip, *port);  // NOLINT(bugprone-unchecked-optional-access)
+        auto const req = makeWSUpgrade(*ip, *port);  // NOLINT(bugprone-unchecked-optional-access)
 
         // truncate the request message to near the value of the version header
         auto reqString = boost::lexical_cast<std::string>(req);
@@ -450,7 +450,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
-        auto it = r.async_resolve(
+        auto const it = r.async_resolve(
             *ip, std::to_string(*port), yield[ec]);  // NOLINT(bugprone-unchecked-optional-access)
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -484,7 +484,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
-        if (clientProtocol.starts_with("h"))
+        if (clientProtocol.starts_with('h'))
         {
             doHTTPRequest(env, yield, clientProtocol == "https", resp, ec);
             BEAST_EXPECT(ec);
@@ -577,7 +577,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         json::Value jr;
         jr[jss::method] = "server_info";
 
-        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
+        auto const it = r.async_resolve(ip, std::to_string(port), yield[ec]);
         BEAST_EXPECT(!ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>> clients;
@@ -606,7 +606,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             clients.emplace_back(ip::tcp::socket{ios}, boost::beast::multi_buffer{});
             async_connect(clients.back().first, it, yield[ec]);
             BEAST_EXPECT(!ec);
-            auto req = makeHTTPRequest(ip, port, to_string(jr), {});
+            auto const req = makeHTTPRequest(ip, port, to_string(jr), {});
             async_write(clients.back().first, req, yield[ec]);
             BEAST_EXPECT(!ec);
         }
@@ -695,7 +695,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
 
-        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
+        auto const it = r.async_resolve(ip, std::to_string(port), yield[ec]);
         if (!BEAST_EXPECT(!ec))
             return;
 
@@ -708,7 +708,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         ws.handshake(ip + ":" + std::to_string(port), "/");
 
         // helper lambda, used below
-        auto sendAndParse = [&](std::string const& req) -> json::Value {
+        auto const sendAndParse = [&](std::string const& req) -> json::Value {
             ws.async_write_some(true, buffer(req), yield[ec]);
             if (!BEAST_EXPECT(!ec))
                 return json::ValueType::Object;

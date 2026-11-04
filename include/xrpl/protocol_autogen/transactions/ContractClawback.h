@@ -18,7 +18,7 @@ class ContractClawbackBuilder;
 /**
  * @brief Transaction: ContractClawback
  *
- * Type: ttCONTRACT_CLAWBACK (95)
+ * Type: ttCONTRACT_CLAWBACK (106)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
  * Privileges: Privilege::NoPriv

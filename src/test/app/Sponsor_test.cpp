@@ -19,6 +19,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
@@ -57,6 +58,7 @@
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -70,13 +72,13 @@
 namespace xrpl::test {
 
 static STAmount
-accountReserve(jtx::Env& env, std::uint32_t count = 1)
+accountReserve(jtx::Env const& env, std::uint32_t count = 1)
 {
     return env.current()->fees().reserve * count;
 }
 
 static STAmount
-reserve(jtx::Env& env, std::uint32_t count)
+reserve(jtx::Env const& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count, 1);
 }
@@ -174,11 +176,12 @@ public:
                 sponsor::SponseeAcc(alice),
                 Ter(temINVALID_FLAG));
 
-            for (auto flag :
-                 {tfSponsorshipSetRequireSignForFee,
-                  tfSponsorshipClearRequireSignForFee,
-                  tfSponsorshipSetRequireSignForReserve,
-                  tfSponsorshipClearRequireSignForReserve})
+            for (auto const flag : {
+                     tfSponsorshipSetRequireSignForFee,
+                     tfSponsorshipClearRequireSignForFee,
+                     tfSponsorshipSetRequireSignForReserve,
+                     tfSponsorshipClearRequireSignForReserve,
+                 })
             {
                 env(sponsor::set(sponsor, tfDeleteObject | flag),
                     sponsor::SponseeAcc(alice),
@@ -636,7 +639,7 @@ public:
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
 
             // update sponsorship flags
-            auto testFlagUpdate = [&](auto setFlag, auto clearFlag, auto ledgerFlag) {
+            auto const testFlagUpdate = [&](auto setFlag, auto clearFlag, auto ledgerFlag) {
                 env(sponsor::set(sponsor, setFlag), sponsor::SponseeAcc(alice), Fee(XRP(1)));
                 env.close();
 
@@ -863,7 +866,7 @@ public:
             env(sponsor::set_reserve(sponsor, 0, -20), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
             env.close();
 
-            auto sle = env.le(keylet::sponsorship(sponsor, alice));
+            auto const sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
@@ -1103,7 +1106,7 @@ public:
 
                 // Only one of the three valid flags can be set.
                 // Setting more than one flag is invalid
-                for (auto flag : {
+                for (auto const flag : {
                          tfSponsorshipCreate | tfSponsorshipReassign,
                          tfSponsorshipCreate | tfSponsorshipEnd,
                          tfSponsorshipReassign | tfSponsorshipEnd,
@@ -1161,6 +1164,25 @@ public:
                 // Account = Sponsee
                 env(sponsor::transfer(alice, tfSponsorshipEnd),
                     sponsor::SponseeAcc(alice),
+                    Ter(temMALFORMED));
+            }
+
+            // Post-fixCleanup3_5_0, a zero ObjectID is malformed.
+            // Pre-fixCleanup3_5_0 path is unreachable so it is not testable.
+            if (features[fixCleanup3_5_0])
+            {
+                UInt256 const zeroObjectID{};
+
+                env(sponsor::transfer(alice, tfSponsorshipEnd, zeroObjectID), Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipCreate, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipReassign, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
                     Ter(temMALFORMED));
             }
         }
@@ -1844,7 +1866,7 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            auto const checkBlocked = [&](Account const& account, uint256 const& objectID) {
+            auto const checkBlocked = [&](Account const& account, UInt256 const& objectID) {
                 env(sponsor::transfer(account, tfSponsorshipCreate, objectID),
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor),
@@ -1929,9 +1951,9 @@ public:
             {
                 // Fee should be checked before sponsor permission, otherwise a tec
                 // result from a later check could cause context reset to pay Fee.
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -1949,9 +1971,9 @@ public:
 
             {
                 // Sponsor pays the Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 auto const sendAmt = XRP(100);
                 auto const feeAmt = XRP(10);
@@ -1967,9 +1989,9 @@ public:
 
             {
                 // insufficient balance to pay Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -1985,9 +2007,9 @@ public:
             {
                 // Fee is paid by Sponsor
                 // on context reset (tec error)
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
                 auto const feeAmt = XRP(10);
 
                 env(pay(alice, bob, XRP(20000)),
@@ -2054,9 +2076,9 @@ public:
             {
                 // Fee should be checked before sponsor permission, otherwise a tec
                 // result from a later check could cause context reset to pay Fee.
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -2073,10 +2095,10 @@ public:
 
             {
                 // Sponsor pays the Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
+                auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                 auto const sendAmt = XRP(100);
                 auto const feeAmt = XRP(10);
@@ -2094,10 +2116,10 @@ public:
                 // insufficient balance to pay Fee
                 {
                     // > FeeAmount
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
+                    auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(90) + drops(1)),
@@ -2113,9 +2135,9 @@ public:
                 // use all FeeAmount
                 {
                     // = FeeAmount
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(90)),
@@ -2138,10 +2160,10 @@ public:
 
                 {
                     // > MaxFee
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
+                    auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(1) + drops(1)),
@@ -2159,10 +2181,10 @@ public:
             {
                 // Fee is paid by Sponsor
                 // on context reset (tec error)
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
+                auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
                 auto const feeAmt = XRP(1);
 
                 env(pay(alice, bob, XRP(20000)),
@@ -2187,8 +2209,9 @@ public:
 
                 BEAST_EXPECT(
                     env.le(keylet::sponsorship(sponsor, alice))->isFieldPresent(sfFeeAmount));
-                auto sponsorAvailableFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
-                env(check::cancel(alice, uint256(1)),
+                auto const sponsorAvailableFee =
+                    sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                env(check::cancel(alice, UInt256(1)),
                     Fee(sponsorAvailableFee),
                     sponsor::As(sponsor, spfSponsorFee),
                     Ter(tecNO_ENTRY));
@@ -2217,7 +2240,7 @@ public:
             // checkFee returns tecINSUFF_FEE and reset() is invoked.
             OpenView overlay(&*env.closed());
 
-            auto jt = env.jt(
+            auto const jt = env.jt(
                 noop(alice),
                 Fee(drops(1000)),
                 Seq(env.seq(alice)),
@@ -2271,7 +2294,7 @@ public:
             env.close();
 
             OpenView overlay(&*env.closed());
-            auto jt = env.jt(
+            auto const jt = env.jt(
                 ledger_state_fix::nftPageLinks(alice, alice),
                 Fee(fixFee),
                 sponsor::As(sponsor, spfSponsorFee));
@@ -2284,7 +2307,7 @@ public:
             auto const original = overlay.read(keylet::sponsorship(sponsor, alice));
             if (BEAST_EXPECT(original))
             {
-                auto sle = std::make_shared<SLE>(*original);
+                auto const sle = std::make_shared<SLE>(*original);
                 sle->makeFieldAbsent(sfFeeAmount);
                 overlay.rawReplace(sle);
             }
@@ -2391,7 +2414,7 @@ public:
         env.close();
 
         // Invalid flags
-        for (auto flag : {
+        for (auto const flag : {
                  tfNoRippleDirect,
                  tfPartialPayment,
                  tfLimitQuality,
@@ -2641,7 +2664,7 @@ public:
         auto const sponsorCurrentOwnerCount = ownerCount(env, sponsor) -
             sponsoredOwnerCount(env, sponsor) + sponsoringOwnerCount(env, sponsor);
 
-        auto submit = [&](TER ter) {
+        auto const submit = [&](TER ter) {
             return [&, ter](json::Value const& jv, auto const&... fN) {
                 if (sponsorSig)
                 {
@@ -2943,7 +2966,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(check::cash(bob, keylet.key, usd(1))); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
                     BEAST_EXPECT(ownerCount(env, bob) == 1);    // RippleState
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -3012,7 +3035,7 @@ public:
                 [&](Env& env, auto const& submit) {
                     submit(check::cash(bob, checkKeylet.key, mpt(1)));
                 },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, bob) == 1);  // MPToken
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -3167,11 +3190,13 @@ public:
             env.fund(XRP(1000000), alice, sponsor);
             env.close();
             auto const authCreds = std::vector<deposit::AuthorizeCredentials>{
-                {.issuer = sponsor, .credType = credType}};
+                {.issuer = sponsor, .credType = credType},
+            };
             auto const preauthKeylet = keylet::depositPreauth(
                 alice.id(),
                 std::set<std::pair<AccountID, Slice>>{
-                    {sponsor.id(), Slice(credType.data(), credType.size())}});
+                    {sponsor.id(), Slice(credType.data(), credType.size())},
+                });
 
             // Cover DepositPreauth's sfAuthorizeCredentials sponsor-reserve branch.
             testEachSponsorship(
@@ -3454,6 +3479,101 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
+        {
+            // Bytecode Escrow: its reserve scales with the Bytecode size, so
+            // every leg of a sponsorship has to move the whole weight.
+            auto env = Env{*this, testableAmendments()};
+
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, XRP(100)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            auto const escrowKeylet = keylet::escrow(alice, SeqProxy::rawSequence(seq));
+            std::size_t const bytecodeSize = 1200;
+            std::uint32_t const bytecodeWeight = 3;  // ceil(1200 / 500)
+
+            if (!cosigning)
+            {
+                env(sponsor::set_reserve(sponsor, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+                env(sponsor::set_reserve(sponsor2, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+                env.close();
+            }
+
+            // EscrowCreate's preclaim runs the WASM preflight, so a real
+            // 1200-byte contract cannot be assembled from here; the Bytecode
+            // field is injected directly and the owner's OwnerCount restored
+            // to the weight such a create would have charged.
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                auto const existing = view.read(escrowKeylet);
+                if (!existing)
+                {
+                    return false;
+                }
+                auto const escrowSle = std::make_shared<SLE>(*existing);
+                auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+                escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
+                account->setFieldU32(sfOwnerCount, bytecodeWeight);
+                view.rawReplace(escrowSle);
+                view.rawReplace(account);
+                return true;
+            });
+            BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+
+            std::optional<Sig> const sponsorSig =
+                cosigning ? std::optional<Sig>(Sig(sfSponsorSignature, sponsor)) : std::nullopt;
+            std::optional<Sig> const sponsor2Sig =
+                cosigning ? std::optional<Sig>(Sig(sfSponsorSignature, sponsor2)) : std::nullopt;
+
+            // create sponsor: charges the whole bytecode weight, not 1
+            if (sponsorSig)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    *sponsorSig);
+            }
+            else
+            {
+                env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve));
+            }
+
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == bytecodeWeight);
+            BEAST_EXPECT(env.le(escrowKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // transfer sponsor: moves the whole weight between the two sponsors
+            if (sponsor2Sig)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, escrowKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    *sponsor2Sig);
+            }
+            else
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, escrowKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve));
+            }
+
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == bytecodeWeight);
+            BEAST_EXPECT(env.le(escrowKeylet)->getAccountID(sfSponsor) == sponsor2.id());
+
+            // end sponsor: hands the whole weight back to the owner
+            env(sponsor::transfer(alice, tfSponsorshipEnd, escrowKeylet.key));
+
+            BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(!env.le(escrowKeylet)->isFieldPresent(sfSponsor));
+        }
+
         Account const gw("gw");
         auto const usd = gw["usd"];
         {
@@ -3657,7 +3777,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(escrow::cancel(alice, alice, seq)); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
                     auto const trustSle = env.le(keylet::trustLine(alice, gw, usd.currency));
                     BEAST_EXPECT(trustSle);
@@ -4068,7 +4188,7 @@ public:
             // PayChanCreate
             auto const pk = alice.pk();
             auto const settleDelay = 10s;
-            uint256 chan;
+            UInt256 chan;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -4274,8 +4394,8 @@ public:
         // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
         // restore the owner's OwnerCount to the legacy weight.
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
-            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            auto const signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
             signerList->clearFlag(lsfOneOwnerCount);
             account->setFieldU32(sfOwnerCount, legacyWeight);
             view.rawReplace(signerList);
@@ -4307,6 +4427,89 @@ public:
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+    }
+
+    // An escrow carrying Bytecode costs one owner count per 500 bytes, so
+    // sponsoring one must move that full weight rather than a single unit.
+    void
+    testBytecodeEscrowReserve()
+    {
+        testcase("Bytecode escrow sponsorship reserve");
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const sponsor = Account{"sponsor"};
+
+        auto env = Env{*this, testableAmendments()};
+        env.fund(XRP(1000000), alice, bob, sponsor);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(escrow::create(alice, bob, XRP(100)),
+            escrow::kCondition(escrow::kCb1),
+            escrow::kCancelTime(env.now() + 100s));
+        env.close();
+
+        auto const escrowKeylet = keylet::escrow(alice, SeqProxy::rawSequence(seq));
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+        std::size_t const bytecodeSize = 1200;
+        std::uint32_t const bytecodeWeight = 3;  // ceil(1200 / 500)
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // Pre-fund exactly the bytecode weight
+        env(sponsor::set_reserve(sponsor, 0, bytecodeWeight), sponsor::SponseeAcc(alice));
+        env.close();
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == bytecodeWeight);
+        }
+
+        // Synthesize a bytecode escrow. EscrowCreate's preclaim runs the WASM
+        // preflight, so a real 1200-byte contract cannot be assembled from
+        // here; the Bytecode field is injected directly and the owner's
+        // OwnerCount restored to the weight such a create would have charged.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto const existing = view.read(escrowKeylet);
+            if (!existing)
+            {
+                return false;
+            }
+            auto const escrowSle = std::make_shared<SLE>(*existing);
+            auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
+            account->setFieldU32(sfOwnerCount, bytecodeWeight);
+            view.rawReplace(escrowSle);
+            view.rawReplace(account);
+            return true;
+        });
+        BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+
+        // Create must charge the full bytecode weight (3), not 1: counting the
+        // escrow as a single unit would leave 2 pre-funded units unspent.
+        env(sponsor::transfer(alice, tfSponsorshipCreate, escrowKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve));
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == bytecodeWeight);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == bytecodeWeight);
+        // All pre-funded units consumed (drained to absent).
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+        }
+
+        // End hands the same weight back; create bumped by the same amount, so
+        // the counters return to 0 (counting 1 here would underflow).
+        env(sponsor::transfer(alice, tfSponsorshipEnd, escrowKeylet.key));
+
+        BEAST_EXPECT(ownerCount(env, alice) == bytecodeWeight);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        if (auto const sle = env.le(escrowKeylet); BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT(!sle->isFieldPresent(sfSponsor));
+        }
     }
 
     void
@@ -5283,7 +5486,7 @@ public:
         env(sponsor::set(sponsor, 0, 10, XRP(10)), sponsor::SponseeAcc(alice));
         env.close();
 
-        auto checkBlocked = [&](json::Value const& jv) {
+        auto const checkBlocked = [&](json::Value const& jv) {
             env(jv,
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
@@ -5296,7 +5499,7 @@ public:
         checkBlocked(token::mint(alice, 0u));
         checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
         checkBlocked(acctdelete(alice, bob));
-        checkBlocked(loan::set(alice, uint256(1), Number{1}));
+        checkBlocked(loan::set(alice, UInt256(1), Number{1}));
     }
 
     void
@@ -5473,7 +5676,7 @@ public:
         // [reserve(1), reserve(2)), the finish succeeds only when the escrow
         // reserve is released before delivery, which either featureSponsor or
         // fixCleanup3_4_0 does.
-        auto runTest = [&](FeatureBitset features, TER expected) {
+        auto const runTest = [&](FeatureBitset features, TER expected) {
             Account const alice("alice");
             Account const gw("gw");
             auto const usd = gw["usd"];
@@ -5694,6 +5897,7 @@ protected:
         testTransferSponsor(jtx::testableAmendments());
         testTransferSponsor(jtx::testableAmendments() - fixCleanup3_4_0);
         testLegacySignerListReserve();
+        testBytecodeEscrowReserve();
         testSponsorFee();
         testSponsorAccount();
 

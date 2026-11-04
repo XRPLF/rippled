@@ -161,8 +161,7 @@ ContractModify::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
-        if (auto const ter =
-                ContractCreate::checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
+        if (auto const ter = ContractCreate::checkContractCode(ctx.view.fees(), ctx.tx, ctx.j);
             !isTesSuccess(ter))
             return ter;
     }
@@ -327,7 +326,7 @@ ContractModify::doApply()
 }
 
 void
-ContractModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ContractModify::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

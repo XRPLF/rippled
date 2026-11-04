@@ -18,7 +18,7 @@ class ContractModifyBuilder;
 /**
  * @brief Transaction: ContractModify
  *
- * Type: ttCONTRACT_MODIFY (93)
+ * Type: ttCONTRACT_MODIFY (104)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
  * Privileges: Privilege::NoPriv

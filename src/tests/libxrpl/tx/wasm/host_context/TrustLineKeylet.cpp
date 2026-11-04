@@ -35,7 +35,7 @@ struct TrustLineKeyletCall : HostContextTest
     Currency const currency = Currency::fromVoid(currencyBytes.data());
 };
 
-TEST_F(TrustLineKeyletCall, AccountsAndCurrencyAreForwardedKeyletIsWritten)
+TEST_F(TrustLineKeyletCall, accounts_and_currency_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
@@ -49,7 +49,7 @@ TEST_F(TrustLineKeyletCall, AccountsAndCurrencyAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(TrustLineKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(TrustLineKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -62,7 +62,7 @@ TEST_F(TrustLineKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TrustLineKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(TrustLineKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(testing::Throw(std::runtime_error{"trust line keylet came apart"}));
@@ -76,7 +76,7 @@ TEST_F(TrustLineKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("trustLineKeylet"));
 }
 
-TEST_F(TrustLineKeyletCall, MalformedAccount1IsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletCall, malformed_account1_is_refused_without_asking_host)
 {
     Bytes const malformedAccount1(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, trustLineKeylet).Times(0);
@@ -91,7 +91,7 @@ TEST_F(TrustLineKeyletCall, MalformedAccount1IsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletCall, MalformedAccount2IsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletCall, malformed_account2_is_refused_without_asking_host)
 {
     Bytes const malformedAccount2(AccountID::size() + 1, 0x31);
     EXPECT_CALL(host, trustLineKeylet).Times(0);
@@ -106,7 +106,7 @@ TEST_F(TrustLineKeyletCall, MalformedAccount2IsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(TrustLineKeyletCall, MalformedCurrencyIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletCall, malformed_currency_is_refused_without_asking_host)
 {
     Bytes const malformedCurrency(Currency::size() - 1, 0x61);
     EXPECT_CALL(host, trustLineKeylet).Times(0);
@@ -124,7 +124,7 @@ TEST_F(TrustLineKeyletCall, MalformedCurrencyIsRefusedWithoutAskingHost)
 // The currency length is checked before either account's, but every malformed shape answers
 // the same `InvalidParams`, so a call malformed in both places cannot show which check fired.
 // What's observable: the host is never asked.
-TEST_F(TrustLineKeyletCall, CurrencyAndAccountBothMalformedIsRefusedWithoutAskingHost)
+TEST_F(TrustLineKeyletCall, currency_and_account_both_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedCurrency(Currency::size() - 1, 0x61);
     Bytes const malformedAccount1(AccountID::size() - 1, 0x01);
@@ -142,7 +142,7 @@ TEST_F(TrustLineKeyletCall, CurrencyAndAccountBothMalformedIsRefusedWithoutAskin
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(TrustLineKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(TrustLineKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
@@ -156,7 +156,7 @@ TEST_F(TrustLineKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(TrustLineKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(TrustLineKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
@@ -170,7 +170,7 @@ TEST_F(TrustLineKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(TrustLineKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(TrustLineKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, trustLineKeylet(account1, account2, currency))
         .WillOnce(testing::Return(Bytes{}));

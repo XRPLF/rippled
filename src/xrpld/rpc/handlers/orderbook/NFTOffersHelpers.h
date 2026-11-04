@@ -27,7 +27,7 @@
 namespace xrpl {
 
 inline void
-appendNftOfferJson(Application const& app, SLE::const_ref offer, json::Value& offers)
+appendNftOfferJson(Application const& app, SLE::ConstRef offer, json::Value& offers)
 {
     json::Value& obj(offers.append(json::ValueType::Object));
 
@@ -52,7 +52,7 @@ appendNftOfferJson(Application const& app, SLE::const_ref offer, json::Value& of
 //   marker: opaque                 // optional, resume previous query
 // }
 inline json::Value
-enumerateNFTOffers(rpc::JsonContext& context, uint256 const& nftId, Keylet const& directory)
+enumerateNFTOffers(rpc::JsonContext& context, UInt256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
     if (auto err = readLimitField(limit, rpc::tuning::kNftOffers, context))
@@ -73,7 +73,7 @@ enumerateNFTOffers(rpc::JsonContext& context, uint256 const& nftId, Keylet const
 
     std::vector<SLE::const_pointer> offers;
     unsigned int reserve(limit);
-    uint256 startAfter;
+    UInt256 startAfter;
     std::uint64_t startHint = 0;
 
     if (context.params.isMember(jss::marker))
@@ -115,7 +115,7 @@ enumerateNFTOffers(rpc::JsonContext& context, uint256 const& nftId, Keylet const
     }
 
     if (!forEachItemAfter(
-            *ledger, directory, startAfter, startHint, reserve, [&offers](SLE::const_ref offer) {
+            *ledger, directory, startAfter, startHint, reserve, [&offers](SLE::ConstRef offer) {
                 if (offer->getType() == ltNFTOKEN_OFFER)
                 {
                     offers.emplace_back(offer);

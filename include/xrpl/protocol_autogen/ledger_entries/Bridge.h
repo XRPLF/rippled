@@ -339,7 +339,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Bridge
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Bridge{std::make_shared<SLE>(std::move(object_), index)};
     }

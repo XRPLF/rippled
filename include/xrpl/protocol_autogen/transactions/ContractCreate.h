@@ -18,7 +18,7 @@ class ContractCreateBuilder;
 /**
  * @brief Transaction: ContractCreate
  *
- * Type: ttCONTRACT_CREATE (92)
+ * Type: ttCONTRACT_CREATE (103)
  * Delegable: Delegation::Delegable
  * Amendment: featureSmartContract
  * Privileges: Privilege::CreatePseudoAcct

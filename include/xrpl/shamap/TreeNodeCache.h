@@ -8,7 +8,7 @@
 namespace xrpl {
 
 using TreeNodeCache = TaggedCache<
-    uint256,
+    UInt256,
     SHAMapTreeNode,
     /*IsKeyCache*/ false,
     intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,

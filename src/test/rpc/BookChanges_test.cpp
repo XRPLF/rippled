@@ -106,22 +106,24 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), Domain(domainID));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+        env(pay(bob, carol, usd(10)), Path(~usd), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();
@@ -175,21 +177,21 @@ public:
 
         auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
-            auto ledger = std::make_shared<Ledger>(
+        auto const test = [&](std::unordered_set<UInt256, beast::Uhash<>> const& features) {
+            auto const ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
                 Rules{features},
                 env.current()->fees(),
                 env.app().getNodeFamily());
 
-            auto txSerializer = std::make_shared<Serializer>();
+            auto const txSerializer = std::make_shared<Serializer>();
             tx->add(*txSerializer);
 
-            auto metaSerializer = std::make_shared<Serializer>();
+            auto const metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
+            ledger->rawTxInsert(UInt256{1}, txSerializer, metaSerializer);
             ledger->setImmutable();
             ledger->setValidated();
 
@@ -206,8 +208,8 @@ public:
             }
         };
 
-        test(std::unordered_set<uint256, beast::Uhash<>>{});
-        test(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2});
+        test(std::unordered_set<UInt256, beast::Uhash<>>{});
+        test(std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2});
     }
 
     // Build a ledger whose transactions are OfferCreates carrying the supplied
@@ -216,10 +218,10 @@ public:
     static json::Value
     bookChangesFor(jtx::Env& env, std::vector<std::pair<STAmount, STAmount>> const& crossings)
     {
-        auto ledger = std::make_shared<Ledger>(
+        auto const ledger = std::make_shared<Ledger>(
             2,
             NetClock::time_point{},
-            Rules{std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}},
+            Rules{std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2}},
             env.current()->fees(),
             env.app().getNodeFamily());
 
@@ -246,18 +248,18 @@ public:
             STArray affectedNodes{sfAffectedNodes};
             affectedNodes.pushBack(std::move(modifiedOffer));
 
-            auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
+            auto const metadata = std::make_shared<STObject>(sfTransactionMetaData);
             metadata->setFieldArray(sfAffectedNodes, affectedNodes);
 
             STTx const tx{ttOFFER_CREATE, [](STObject&) {}};
 
-            auto txSerializer = std::make_shared<Serializer>();
+            auto const txSerializer = std::make_shared<Serializer>();
             tx.add(*txSerializer);
 
-            auto metaSerializer = std::make_shared<Serializer>();
+            auto const metaSerializer = std::make_shared<Serializer>();
             metadata->add(*metaSerializer);
 
-            ledger->rawTxInsert(uint256{seq}, txSerializer, metaSerializer);
+            ledger->rawTxInsert(UInt256{seq}, txSerializer, metaSerializer);
         }
 
         ledger->setImmutable();

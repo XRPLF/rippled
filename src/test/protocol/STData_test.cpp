@@ -71,7 +71,7 @@ struct STData_test : public beast::unit_test::Suite
             BEAST_EXPECT(dataU64.getInnerTypeString() == "UINT64");
 
             // UINT128
-            uint128 const val128 = uint128(1);
+            UInt128 const val128 = UInt128(1);
             STData const dataU128(sf, val128);
             BEAST_EXPECT(dataU128.getFieldH128() == val128);
             BEAST_EXPECT(dataU128.getInnerTypeString() == "UINT128");
@@ -200,7 +200,7 @@ struct STData_test : public beast::unit_test::Suite
 
         {
             // UINT128
-            uint128 const originalU128 = uint128(1);
+            UInt128 const originalU128 = UInt128(1);
             STData const dataU128(sf, originalU128);
 
             Serializer s;
@@ -347,7 +347,7 @@ struct STData_test : public beast::unit_test::Suite
 
         {
             // UINT128
-            uint128 const valU128 = uint128(1);
+            UInt128 const valU128 = UInt128(1);
             data.setFieldH128(valU128);
             BEAST_EXPECT(data.getFieldH128() == valU128);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT128");
@@ -454,7 +454,7 @@ struct STData_test : public beast::unit_test::Suite
 
         {
             // UINT128
-            uint128 const valU128 = uint128(1);
+            UInt128 const valU128 = UInt128(1);
             STData const dataU128(sf, valU128);
             json::Value jsonU128 = dataU128.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(jsonU128[jss::type].asString() == "UINT128");
@@ -579,7 +579,7 @@ struct STData_test : public beast::unit_test::Suite
             jsonU128[jss::type] = "UINT128";
             jsonU128[jss::value] = "00000000000000000000000000000001";
             STData const dataU128 = dataFromJson(sf, jsonU128);
-            uint128 expected;
+            UInt128 expected;
             bool const ok = expected.parseHex("00000000000000000000000000000001");
             BEAST_EXPECT(ok);
             BEAST_EXPECT(dataU128.getFieldH128() == expected);
@@ -680,7 +680,7 @@ struct STData_test : public beast::unit_test::Suite
             STData(sf, static_cast<std::uint16_t>(0xFEDC)),
             STData(sf, static_cast<std::uint32_t>(0xFEDCBA98)),
             STData(sf, static_cast<std::uint64_t>(0xFEDCBA9876543210)),
-            STData(sf, uint128{0x1234}),
+            STData(sf, UInt128{0x1234}),
             STData(sf, uint160{0x1234}),
             STData(sf, uint192{0x1234}),
             STData(sf, uint256{0x1234}),

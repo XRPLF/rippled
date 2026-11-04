@@ -4,6 +4,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/fixtures/ContractCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 #include <tx/wasm/fixtures/WasmFixture.h>
 
@@ -18,7 +19,7 @@ using testing::Return;
 
 // set_data_object_field — an account region, a string key, and a typed value the host has
 // to decode: the shape no escrow host function has.
-struct SetDataObjectFieldCall : HostCallTest
+struct SetDataObjectFieldCall : ContractCallTest
 {
     // A 20-byte account the guest holds as bytes, distinctive enough that a wrong region
     // cannot match it.
@@ -67,7 +68,7 @@ struct SetDataObjectFieldCall : HostCallTest
 
 // The whole wire contract in one call: the account arrives as an id, the key as a view over
 // the guest's bytes, and the value as the `STJson::Value` its type byte names.
-TEST_F(SetDataObjectFieldCall, AccountKeyAndDecodedValueReachHost)
+TEST_F(SetDataObjectFieldCall, account_key_and_decoded_value_reach_host)
 {
     EXPECT_CALL(
         host,
@@ -78,7 +79,7 @@ TEST_F(SetDataObjectFieldCall, AccountKeyAndDecodedValueReachHost)
     EXPECT_EQ(hostAnswer(), 0);
 }
 
-TEST_F(SetDataObjectFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(SetDataObjectFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, setDataObjectField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));
@@ -87,7 +88,7 @@ TEST_F(SetDataObjectFieldCall, HostErrorBecomesContractReturnValue)
 }
 
 // An empty value is how a contract removes a key: the host is asked to store no value.
-TEST_F(SetDataObjectFieldCall, AnEmptyValueAsksTheHostToRemoveTheKey)
+TEST_F(SetDataObjectFieldCall, an_empty_value_asks_the_host_to_remove_the_key)
 {
     valueBytes.clear();
     valueLength = 0;
@@ -100,7 +101,7 @@ TEST_F(SetDataObjectFieldCall, AnEmptyValueAsksTheHostToRemoveTheKey)
 
 // Bytes that hold no field are the shim's refusal rather than something the host has to
 // recognize.
-TEST_F(SetDataObjectFieldCall, AValueWithoutAFieldIsRefusedWithoutAskingTheHost)
+TEST_F(SetDataObjectFieldCall, a_value_without_a_field_is_refused_without_asking_the_host)
 {
     valueBytes = "\\10";
     valueLength = 1;

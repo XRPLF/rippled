@@ -16,14 +16,14 @@ namespace xrpl::test {
 // `float_to_mant_exp` splits a float into an eight-byte mantissa and a four-byte exponent,
 // each into its own guest buffer, and answers with a status rather than a byte count. Two
 // regions means two independent bounds checks, two writes, and an ordering between them —
-// none of which the single-output shapes exercise. `host_calls` pins that wiring against a
+// none of which the single-output shapes exercise. `guest_to_host_calls` pins that wiring against a
 // mock; this proves the real impl drives it the same way, with the guest reading both
 // halves back out of its own memory.
 struct FloatToMantExpE2e : RealVmTest
 {
 };
 
-TEST_F(FloatToMantExpE2e, ContractReadsBothHalvesOfASplitFloat)
+TEST_F(FloatToMantExpE2e, contract_reads_both_halves_of_a_split_float)
 {
     // Pi's canonical encoding in, mantissa to offset 64, exponent to offset 128. The
     // contract returns the low half of the mantissa so the assertion checks that real bytes

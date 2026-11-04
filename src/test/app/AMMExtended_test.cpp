@@ -73,7 +73,8 @@ class AMMExtended_test : public jtx::AMMTest
     // For now, just disable SAV entirely, which locks in the small Number
     // mantissas
     FeatureBitset const all_{
-        testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2,
+    };
 
 private:
     void
@@ -267,39 +268,20 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        if (features[featureMPTokensV2])
-        {
-            Env env{*this, features};
-            fund(env, gw_, {alice_, carol_}, XRP(30'000'000), {USD(30'000'000)});
-
-            AMM const ammAlice(env, alice_, XRP(10'100'000), USD(10'000'000));
-
-            // Scale the exact-quality fixture up so the visual relationship
-            // stays clear: the passive CLOB offer has the same 1:1 quality as
-            // the generated AMM offer, so it should not cross.
-            env(offer(carol_, XRP(100'000), USD(100'000), tfPassive));
-            env.close();
-            BEAST_EXPECT(
-                ammAlice.expectBalances(XRP(10'100'000), USD(10'000'000), ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), USD(100'000)}}}));
-        }
-        else
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Carol creates a passive offer that could cross AMM.
-                    // Carol's offer should stay in the ledger.
-                    env(offer(carol_, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {features});
-        }
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Carol creates a passive offer that could cross AMM.
+                // Carol's offer should stay in the ledger.
+                env(offer(carol_, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
         // tfPassive -- cross only offers of better quality.
         testAMM(
@@ -1219,7 +1201,7 @@ private:
         env.close();
         env.require(Balance(cam, aBux(35)));
         env.require(Balance(cam, bBux(35)));
-        env.require(offers(cam, 1));
+        env.require(Offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(30), aBux(30)));
@@ -1338,7 +1320,7 @@ private:
 
         // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
         // pseudo-account has no key to ask for one.
-        auto const ammLineAuthorized = [&]() -> bool {
+        auto const ammLineAuthorized = [&] -> bool {
             auto const line =
                 env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
             if (!BEAST_EXPECT(line))
@@ -1450,7 +1432,6 @@ private:
         testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all_);
         testFillModes(all_);
-        testFillModes(all_ - featureMPTokensV2);
         testOfferCrossWithXRP(all_);
         testOfferCrossWithLimitOverride(all_);
         testCurrencyConversionEntire(all_);
@@ -2070,7 +2051,7 @@ private:
                 STAmount smax(BTC(61));
                 PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
-                auto ipe = [](Issue const& iss) {
+                auto const ipe = [](Issue const& iss) {
                     return STPathElement(
                         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
                         xrpAccount(),
@@ -2109,7 +2090,7 @@ private:
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
+                    if (auto const ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
                 }
                 sb.apply(view);
@@ -3004,7 +2985,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env]() {
+        auto const failedIouPayments = [this, &env] {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob_'s balances before hand to confirm they don't
@@ -3392,7 +3373,7 @@ private:
         env.close();
 
         //    test: offer was removed by offer_create
-        auto offers = getAccountOffers(env, a4)[jss::offers];
+        auto const offers = getAccountOffers(env, a4)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
     }

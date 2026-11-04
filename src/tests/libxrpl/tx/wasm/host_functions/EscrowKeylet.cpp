@@ -15,7 +15,7 @@ struct EscrowKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(EscrowKeyletImpl, MatchesLedgerKeyletFunction)
+TEST_F(EscrowKeyletImpl, matches_ledger_keylet_function)
 {
     auto const owner = Account{"owner"};
     auto const seq = std::uint32_t{42};
@@ -25,7 +25,7 @@ TEST_F(EscrowKeyletImpl, MatchesLedgerKeyletFunction)
         keylet::escrow(owner.id(), SeqProxy::rawSequence(seq)));
 }
 
-TEST_F(EscrowKeyletImpl, DifferentAccountsGiveDifferentKeylets)
+TEST_F(EscrowKeyletImpl, different_accounts_give_different_keylets)
 {
     auto h = makeHost();
     auto const a = h->escrowKeylet(Account{"alice"}.id(), 7);
@@ -35,7 +35,7 @@ TEST_F(EscrowKeyletImpl, DifferentAccountsGiveDifferentKeylets)
     EXPECT_NE(*a, *b);
 }
 
-TEST_F(EscrowKeyletImpl, UnsetAccountIsInvalidAccount)
+TEST_F(EscrowKeyletImpl, unset_account_is_invalid_account)
 {
     expectError(makeHost()->escrowKeylet(AccountID{}, 1), HostFunctionError::InvalidAccount);
 }

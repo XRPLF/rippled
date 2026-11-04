@@ -22,6 +22,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -74,9 +76,10 @@ private:
             MPTTester mptt{env, issuer, kMptInitNoFund};
 
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             env.close();
             PrettyAsset const mptAsset = mptt.issuanceID();
             mptt.authorize({.account = lender});
@@ -204,7 +207,7 @@ private:
             },
             CaseArgs{.requireAuth = true});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -597,6 +600,105 @@ private:
             nullptr);
     }
 
+    void
+    testLoanSetOriginationFeeTwoMptCreates(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const fix340Enabled = features[fixCleanup3_4_0];
+        testcase << "LoanSet: borrower and broker owner missing MPToken"
+                 << (fix340Enabled ? "" : " pre-fixCleanup3_4_0");
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        Env env(*this, features);
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        env.close();
+        PrettyAsset const asset = mptt.issuanceID();
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+        env.close();
+
+        env(pay(issuer, lender, asset(10'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        // Delete borrower's asset MPToken.
+        mptt.authorize({.account = borrower, .flags = tfMPTUnauthorize});
+        env.close();
+
+        // Pay out and delete the broker owner's asset MPToken.
+        auto const lenderMPToken = keylet::mptoken(mptt.issuanceID(), lender);
+        auto const sleLenderMPT = env.le(lenderMPToken);
+        if (!BEAST_EXPECT(sleLenderMPT))
+            return;
+        env(pay(lender, issuer, asset(sleLenderMPT->at(sfMPTAmount))));
+        env.close();
+        mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+        env.close();
+
+        auto const borrowerMPToken = keylet::mptoken(mptt.issuanceID(), borrower);
+        auto const brokerKeylet = keylet::loanBroker(broker.brokerID);
+        auto const sleBrokerBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(sleBrokerBefore))
+            return;
+        auto const loanSequence = sleBrokerBefore->at(sfLoanSequence);
+        auto const debtTotalBefore = sleBrokerBefore->at(sfDebtTotal);
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
+
+        auto const sleVaultBefore = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultBefore))
+            return;
+        auto const assetsAvailableBefore = sleVaultBefore->at(sfAssetsAvailable);
+
+        env(set(borrower, broker.brokerID, asset(1'000).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            Ter{fix340Enabled ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}});
+        env.close();
+
+        auto const sleBorrowerAfter = env.le(borrowerMPToken);
+        auto const sleLenderAfter = env.le(lenderMPToken);
+        auto const sleLoanAfter = env.le(loanKeylet);
+        auto const sleBrokerAfter = env.le(brokerKeylet);
+        auto const sleVaultAfter = env.le(keylet::vault(broker.vaultID));
+        if (!BEAST_EXPECT(sleVaultAfter))
+            return;
+        if (fix340Enabled)
+        {
+            if (!BEAST_EXPECT(sleBorrowerAfter && sleLenderAfter && sleLoanAfter && sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBorrowerAfter->at(sfMPTAmount) == 999);
+            BEAST_EXPECT(sleLenderAfter->at(sfMPTAmount) == 1);
+            BEAST_EXPECT(sleLoanAfter->at(sfPrincipalOutstanding) == Number{1'000});
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence + 1);
+            BEAST_EXPECT(
+                sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore - Number{1'000});
+        }
+        else
+        {
+            // The whole transaction must roll back.
+            BEAST_EXPECT(!sleBorrowerAfter);
+            BEAST_EXPECT(!sleLenderAfter);
+            BEAST_EXPECT(!sleLoanAfter);
+            if (!BEAST_EXPECT(sleBrokerAfter))
+                return;
+            BEAST_EXPECT(sleBrokerAfter->at(sfLoanSequence) == loanSequence);
+            BEAST_EXPECT(sleBrokerAfter->at(sfDebtTotal) == debtTotalBefore);
+            BEAST_EXPECT(sleVaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore);
+        }
+    }
+
     // LoanSet in a closed-ended vault — phase gating and maturity bound.
     void
     testLoanSetClosedEnded()
@@ -604,8 +706,8 @@ private:
         testcase("LoanSet closed-ended: phase and maturity bound");
         using namespace jtx;
         using namespace loan;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -654,9 +756,9 @@ private:
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             BEAST_EXPECT(broker.redemptionDate.has_value());
-            using d = NetClock::duration;
-            using tp = NetClock::time_point;
-            env.close(tp{d{*broker.redemptionDate + 1}});
+            using D = NetClock::duration;
+            using Tp = NetClock::time_point;
+            env.close(Tp{D{*broker.redemptionDate + 1}});
             setLoan(env, broker, tecEXPIRED);
         });
 
@@ -677,7 +779,9 @@ private:
                 asset,
                 lender,
                 BrokerParameters{
-                    .vaultKind = VaultKind::ClosedEnded, .redemptionOffset = kRedemptionOffset});
+                    .vaultKind = VaultKind::ClosedEnded,
+                    .redemptionOffset = kRedemptionOffset,
+                });
             env(set(lender, broker.brokerID, broker.asset(100).value()),
                 kCounterparty(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -734,12 +838,13 @@ private:
                     .vaultKind = VaultKind::ClosedEnded,
                     .subscriptionOffset = 300u,
                     .redemptionOffset = kMinInvestmentPeriod,
-                    .skipPhaseAdvance = true});
+                    .skipPhaseAdvance = true,
+                });
             BEAST_EXPECT(broker.subscriptionDate.has_value());
             BEAST_EXPECT(broker.redemptionDate.has_value());
 
             auto const red = *broker.redemptionDate;
-            auto const startDate = [&]() { return env.now().time_since_epoch().count(); };
+            auto const startDate = [&] { return env.now().time_since_epoch().count(); };
             auto const minLoan = [&](TER expected) {
                 env(set(lender, broker.brokerID, broker.asset(100).value()),
                     kCounterparty(borrower),
@@ -752,7 +857,7 @@ private:
             };
 
             // First Investment ledger: the minimum schedule still clears the buffer.
-            env.close(tp{d{*broker.subscriptionDate + 1}});
+            env.close(Tp{D{*broker.subscriptionDate + 1}});
             BEAST_EXPECT(startDate() > *broker.subscriptionDate);
             BEAST_EXPECT(startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red);
             minLoan(tesSUCCESS);
@@ -775,7 +880,7 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        auto run = [this](FeatureBitset features, TER expected) {
+        auto const run = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string(
                     "LoanSet existing borrower line after issuer "
@@ -828,6 +933,38 @@ private:
         run(all_, tesSUCCESS);
     }
 
+    void
+    testPrincipalRequestedOutOfRange(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("LoanSet PrincipalRequested out of range for the asset (") +
+            (withFix ? "post" : "pre") + "-fixCleanup3_5_0)");
+
+        Env env(*this, features);
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrp{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrp, lender);
+
+        // Without the fix, the representability check in preclaim throws for
+        // XRP above STAmount::kMaxNativeN.
+        auto const ownerCount = env.ownerCount(borrower);
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        env(set(borrower, broker.brokerID, maxXrp + 1),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(borrower) == ownerCount);
+    }
+
 public:
     void
     run() override
@@ -838,6 +975,11 @@ public:
 
         testLoanSetClosedEnded();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
+        testLoanSetOriginationFeeTwoMptCreates(all_);
+        testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
+
+        testPrincipalRequestedOutOfRange(all_);
+        testPrincipalRequestedOutOfRange(all_ - fixCleanup3_5_0);
     }
 };
 

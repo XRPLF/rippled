@@ -14,7 +14,7 @@ template <
     class Hash = std::hash<Key>,
     class KeyEqual = std::equal_to<Key>,
     class Allocator = std::allocator<Key>>
-using aged_unordered_set =
+using AgedUnorderedSet =
     detail::AgedUnorderedContainer<false, false, Key, void, Clock, Hash, KeyEqual, Allocator>;
 
 }  // namespace beast

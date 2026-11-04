@@ -18,7 +18,7 @@ namespace xrpl {
  * @param resultIfNoRules What to return if called from outside a Transactor context.
  */
 bool
-isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
+isFeatureEnabled(UInt256 const& feature, bool resultIfNoRules);
 
 /**
  * Check whether a feature is enabled in the current ledger rules
@@ -29,7 +29,7 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
  * a Transactor context
  */
 bool
-isFeatureEnabled(uint256 const& feature);
+isFeatureEnabled(UInt256 const& feature);
 
 class DigestAwareReadView;
 
@@ -64,7 +64,7 @@ public:
      * These are the rules reflected by
      * the genesis ledger.
      */
-    explicit Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets);
+    explicit Rules(std::unordered_set<UInt256, beast::Uhash<>> const& presets);
 
 private:
     // Allow a friend function to construct Rules.
@@ -74,14 +74,14 @@ private:
     friend Rules
     makeRulesGivenLedger(
         DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::Uhash<>> const& presets);
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets);
 
     Rules(
-        std::unordered_set<uint256, beast::Uhash<>> const& presets,
-        std::optional<uint256> const& digest,
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+        std::optional<UInt256> const& digest,
         STVector256 const& amendments);
 
-    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
+    [[nodiscard]] std::unordered_set<UInt256, beast::Uhash<>> const&
     presets() const;
 
 public:
@@ -89,7 +89,7 @@ public:
      * Returns `true` if a feature is enabled.
      */
     [[nodiscard]] bool
-    enabled(uint256 const& feature) const;
+    enabled(UInt256 const& feature) const;
 
     /**
      * Returns `true` if two rule sets are identical.

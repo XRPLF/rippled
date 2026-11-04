@@ -53,7 +53,7 @@ public:
         {
             Throw<std::runtime_error>("Failed to parse url.");
         }
-        else if (pUrl.scheme == "https")
+        if (pUrl.scheme == "https")
         {
             ssl_ = true;
         }
@@ -86,7 +86,7 @@ public:
     {
         std::scoped_lock const sl(lock_);
 
-        auto jm = broadcast ? j_.debug() : j_.info();
+        auto const jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "rpc_call::fromNetwork push: " << jvObj;
 
         deque_.emplace_back(seq_++, jvObj);
@@ -97,7 +97,7 @@ public:
             JLOG(j_.info()) << "rpc_call::fromNetwork start";
 
             sending_ =
-                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this]() { sendThread(); });
+                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this] { sendThread(); });
         }
     }
 
