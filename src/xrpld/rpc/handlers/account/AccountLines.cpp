@@ -23,6 +23,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
+#include <rpcspec/AccountTypes.hpp>
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/handlers/account_lines/Types.hpp>
 
@@ -107,15 +108,11 @@ AccountLinesHandler::process(Input const& input) const
     if (!ledger.exists(keylet::account(accountID)))
         return std::unexpected{RpcActNotFound};
 
-    std::optional<AccountID> peer;
-    if (input.peer.has_value())
+    auto const& peer = input.peer;
+    if (!peer.has_value() && peer.error() == ::rpc::spec::AccountError::Malformed)
     {
-        if (!input.peer->has_value())
-        {
-            output.error = RpcActMalformed;
-            return output;
-        }
-        peer = **input.peer;
+        output.error = RpcActMalformed;
+        return output;
     }
 
     auto const limit = clampLimit(input.limit, tuning::kAccountLines, context.role);

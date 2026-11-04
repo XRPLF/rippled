@@ -62,7 +62,6 @@ target_link_libraries(
         absl::random_random
         date::date
         ed25519::ed25519
-        LibArchive::LibArchive
         OpenSSL::Crypto
         Xrpl::boost
         Xrpl::libs
@@ -304,7 +303,9 @@ if(xrpld)
             account_nfts
             account_offers
             book_changes
+            deposit_authorized
             ledger
+            nft_offers_common
             transaction_entry
     )
     target_sources(xrpld PRIVATE ${rpcspec_instantiations})

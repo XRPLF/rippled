@@ -136,42 +136,9 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             v[sfield] = target;
         }
     };
-    if (rules.enabled(featureXRPFees))
-    {
-        vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
-        vote(
-            lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
-    }
-    else
-    {
-        auto const to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
-        auto const to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto const voteAndConvert = [&v, this](
-                                        auto const current,
-                                        XRPAmount target,
-                                        auto const& convertCallback,
-                                        char const* name,
-                                        auto const& sfield) {
-            if (current != target)
-            {
-                JLOG(journal_.info()) << "Voting for " << name << " of " << target;
-
-                if (auto const f = convertCallback(target))
-                    v[sfield] = *f;
-            }
-        };
-
-        voteAndConvert(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
-        voteAndConvert(
-            lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
-        voteAndConvert(
-            lastFees.increment,
-            target_.ownerReserve,
-            to32,
-            "reserve increment",
-            sfReserveIncrement);
-    }
+    vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
+    vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
+    vote(lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
     if (rules.enabled(featureSmartEscrow))
     {
         if (target_.gasLimit <= kMaxGasLimit)
@@ -235,83 +202,44 @@ FeeVoteImpl::doVoting(
             std::numeric_limits<std::uint32_t>::max(),
             lastClosedLedger->fees().gasPrice));
 
+    auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                           detail::VotableValue<XRPAmount>& value,
+                           SF_AMOUNT const& xrpField) {
+        if (auto const field = ~val->at(~xrpField); field && field->native())
+        {
+            auto const vote = field->xrp();
+            if (isLegalAmountSigned(vote))
+            {
+                value.addVote(vote);
+            }
+            else
+            {
+                value.noVote();
+            }
+        }
+        else
+        {
+            value.noVote();
+        }
+    };
+
+    for (auto const& val : set)
+    {
+        if (!val->isTrusted())
+            continue;
+        doVote(val, baseFeeVote, sfBaseFeeDrops);
+        doVote(val, baseReserveVote, sfReserveBaseDrops);
+        doVote(val, incReserveVote, sfReserveIncrementDrops);
+    }
+
     auto const& rules = lastClosedLedger->rules();
-    if (rules.enabled(featureXRPFees))
-    {
-        auto const doVote = [](std::shared_ptr<STValidation> const& val,
-                               detail::VotableValue<XRPAmount>& value,
-                               SF_AMOUNT const& xrpField) {
-            if (auto const field = ~val->at(~xrpField); field && field->native())
-            {
-                auto const vote = field->xrp();
-                if (isLegalAmountSigned(vote))
-                {
-                    value.addVote(vote);
-                }
-                else
-                {
-                    value.noVote();
-                }
-            }
-            else
-            {
-                value.noVote();
-            }
-        };
-
-        for (auto const& val : set)
-        {
-            if (!val->isTrusted())
-                continue;
-            doVote(val, baseFeeVote, sfBaseFeeDrops);
-            doVote(val, baseReserveVote, sfReserveBaseDrops);
-            doVote(val, incReserveVote, sfReserveIncrementDrops);
-        }
-    }
-    else
-    {
-        auto const doVote = [](std::shared_ptr<STValidation> const& val,
-                               detail::VotableValue<XRPAmount>& value,
-                               auto const& valueField) {
-            if (auto const field = val->at(~valueField))
-            {
-                using XRPType = XRPAmount::value_type;
-                auto const vote = *field;
-                if (vote <= std::numeric_limits<XRPType>::max() &&
-                    isLegalAmountSigned(XRPAmount{unsafeCast<XRPType>(vote)}))
-                {
-                    value.addVote(XRPAmount{unsafeCast<XRPType>(vote)});
-                }
-                else
-                {
-                    // Invalid amounts will be treated as if they're
-                    // not provided. Don't throw because this value is
-                    // provided by an external entity.
-                    value.noVote();
-                }
-            }
-            else
-            {
-                value.noVote();
-            }
-        };
-
-        for (auto const& val : set)
-        {
-            if (!val->isTrusted())
-                continue;
-            doVote(val, baseFeeVote, sfBaseFee);
-            doVote(val, baseReserveVote, sfReserveBase);
-            doVote(val, incReserveVote, sfReserveIncrement);
-        }
-    }
     if (rules.enabled(featureSmartEscrow))
     {
-        auto const doVote = [](std::shared_ptr<STValidation> const& val,
-                               detail::VotableValue<std::uint32_t>& value,
-                               SF_UINT32 const& sfield,
-                               std::uint32_t minValue,
-                               std::uint32_t maxValue) {
+        auto const doExtensionVote = [](std::shared_ptr<STValidation> const& val,
+                                        detail::VotableValue<std::uint32_t>& value,
+                                        SF_UINT32 const& sfield,
+                                        std::uint32_t minValue,
+                                        std::uint32_t maxValue) {
             if (auto const field = ~val->at(~sfield);
                 field && *field >= minValue && *field <= maxValue)
             {
@@ -327,9 +255,10 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, gasLimitVote, sfGasLimit, 0, kMaxGasLimit);
-            doVote(val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, 0, kMaxBytecodeSizeLimit);
-            doVote(
+            doExtensionVote(val, gasLimitVote, sfGasLimit, 0, kMaxGasLimit);
+            doExtensionVote(
+                val, bytecodeSizeLimitVote, sfBytecodeSizeLimit, 0, kMaxBytecodeSizeLimit);
+            doExtensionVote(
                 val,
                 gasPriceVote,
                 sfGasPrice,
@@ -364,22 +293,9 @@ FeeVoteImpl::doVoting(
         STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
-            if (rules.enabled(featureXRPFees))
-            {
-                obj[sfBaseFeeDrops] = baseFee;
-                obj[sfReserveBaseDrops] = baseReserve;
-                obj[sfReserveIncrementDrops] = incReserve;
-            }
-            else
-            {
-                // Without the featureXRPFees amendment, these fields are
-                // required.
-                obj[sfBaseFee] = baseFee.dropsAs<std::uint64_t>(baseFeeVote.current());
-                obj[sfReserveBase] = baseReserve.dropsAs<std::uint32_t>(baseReserveVote.current());
-                obj[sfReserveIncrement] =
-                    incReserve.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
-            }
+            obj[sfBaseFeeDrops] = baseFee;
+            obj[sfReserveBaseDrops] = baseReserve;
+            obj[sfReserveIncrementDrops] = incReserve;
             if (rules.enabled(featureSmartEscrow))
             {
                 obj[sfGasLimit] = gasLimit;

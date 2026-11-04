@@ -183,23 +183,9 @@ Ledger::Ledger(
 
     {
         auto const sle = std::make_shared<SLE>(keylet::feeSettings());
-        // Whether featureXRPFees is supported will depend on startup options.
-        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
-        {
-            sle->at(sfBaseFeeDrops) = fees.base;
-            sle->at(sfReserveBaseDrops) = fees.reserve;
-            sle->at(sfReserveIncrementDrops) = fees.increment;
-        }
-        else
-        {
-            if (auto const f = fees.base.dropsAs<std::uint64_t>())
-                sle->at(sfBaseFee) = *f;
-            if (auto const f = fees.reserve.dropsAs<std::uint32_t>())
-                sle->at(sfReserveBase) = *f;
-            if (auto const f = fees.increment.dropsAs<std::uint32_t>())
-                sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
-        }
+        sle->at(sfBaseFeeDrops) = fees.base;
+        sle->at(sfReserveBaseDrops) = fees.reserve;
+        sle->at(sfReserveIncrementDrops) = fees.increment;
         if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
         {
             sle->at(sfGasLimit) = fees.gasLimit;
@@ -675,11 +661,6 @@ Ledger::setup()
             if (oldFees && newFees)
             {
                 // Should be all of one or the other, but not both
-                ret = false;
-            }
-            if (!rules_.enabled(featureXRPFees) && newFees)
-            {
-                // Can't populate the new fees before the amendment is enabled
                 ret = false;
             }
             if (!rules_.enabled(featureSmartEscrow) && extensionFees)

@@ -19,6 +19,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -77,8 +78,12 @@ public:
         // non-conventional ledger input should throw an error
         params["ledger"] = "non_conventional_ledger_input";
         resp = env.rpc("json", "book_changes", to_string(params));
-        BEAST_EXPECT(resp[jss::result].isMember(jss::error));
-        BEAST_EXPECT(resp[jss::result][jss::status] != "success");
+        BEAST_EXPECT(resp[jss::result][jss::status] == "error");
+        BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+        BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'ledger', not string or number.");
     }
 
     void
