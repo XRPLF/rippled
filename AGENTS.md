@@ -29,7 +29,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup
 
 ## Code Style
 
-New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING.md#before-making-a-pull-request). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
+New file placement and header levelization: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md#source-layout). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
 
 ## Architecture
 
