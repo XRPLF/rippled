@@ -24,10 +24,12 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/account/SetPasskeyList.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/contract/ContractDelete.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
+#include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
@@ -84,6 +86,18 @@ removeDepositPreauthFromLedger(
     beast::Journal j)
 {
     return DepositPreauth::removeFromLedger(view, delIndex, j);
+}
+
+TER
+removeWithdrawPreauthFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const&,
+    beast::Journal j)
+{
+    return WithdrawPreauth::removeFromLedger(view, delIndex, j);
 }
 
 TER
@@ -150,6 +164,40 @@ removeDelegateFromLedger(
 }
 
 TER
+removePasskeyListFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const&,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return SetPasskeyList::deleteSLE(view, sleDel, account, j);
+}
+
+// A bin share snapshot records only the fees accrued since a deposit; it was exempted from the
+// owner count when it was created, so removing it leaves the count as it is.
+TER
+removeAMMBinHoldingFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const&,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    if (!view.dirRemove(keylet::ownerDir(account), (*sleDel)[sfOwnerNode], sleDel->key(), true))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "AccountDelete: unable to remove a bin share snapshot from its owner.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    view.erase(sleDel);
+    return tesSUCCESS;
+}
+
+TER
 removeContractFromLedger(
     ServiceRegistry&,
     ApplyView& view,
@@ -189,6 +237,12 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDelegateFromLedger;
         case ltCONTRACT:
             return removeContractFromLedger;
+        case ltPASSKEY_LIST:
+            return removePasskeyListFromLedger;
+        case ltWITHDRAW_PREAUTH:
+            return removeWithdrawPreauthFromLedger;
+        case ltAMM_BIN_HOLDING:
+            return removeAMMBinHoldingFromLedger;
         default:
             return nullptr;
     }
