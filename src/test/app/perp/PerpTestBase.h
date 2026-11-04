@@ -3,13 +3,12 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -54,7 +53,8 @@ protected:
     };
 
     /**
-     * Funds every account of the fixture and gives the owner and the traders USD.
+     * Funds every account of the fixture, gives the owner and the traders USD, and moves the
+     * close time to the oracle test start time so that OracleSet accepts its default timestamp.
      */
     void
     fundAccounts(Env& env) const
@@ -67,7 +67,7 @@ protected:
             env.trust(usd_(1'000'000), account);
             env(pay(gw_, account, usd_(100'000)));
         }
-        env.close();
+        env.close(env.timeKeeper().now() + (oracle::kTestStartTime - kEpochOffset));
     }
 
     /**

@@ -1,11 +1,9 @@
 #include <test/app/perp/PerpTestBase.h>
-#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/amount.h>
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -18,6 +16,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
@@ -28,6 +27,7 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -123,7 +123,7 @@ class PerpPrice_test : public PerpTestBase
     }
 
     /**
-     * Creates document 1 of owner quoting the given XRP/USD price in tenths.
+     * Creates document 1 of owner quoting the given XRP/USD price in tenths; jtx closes the ledger.
      */
     static Oracle
     makeOracle(test::jtx::Env& env, AccountID const& owner, std::uint32_t tenths)
@@ -134,8 +134,8 @@ class PerpPrice_test : public PerpTestBase
                 .owner = owner, .documentID = 1, .series = {{"XRP", "USD", tenths, 1}}}};
     }
 
-    [[nodiscard]] std::optional<Number>
-    firstQuote(ReadView const& view, SLE const& market) const
+    [[nodiscard]] static std::optional<Number>
+    firstQuote(ReadView const& view, SLE const& market)
     {
         return perp::freshQuote(view, market, market.getFieldArray(sfIndexOracles)[0]);
     }
@@ -148,7 +148,6 @@ class PerpPrice_test : public PerpTestBase
         Env env{*this, all_};
         fundAccounts(env);
         auto const oracle = makeOracle(env, o1_.id(), 20);
-        env.close();
         env.close();
         env.close();
 
@@ -227,7 +226,6 @@ class PerpPrice_test : public PerpTestBase
         BEAST_EXPECT(firstQuote(*env.current(), *eur) == Number(3));
 
         oracle.set(oracle::UpdateArg{.series = {{"XRP", "EUR", 31, 1}}});
-        env.close();
         BEAST_EXPECT(!firstQuote(*env.current(), *usd));
         BEAST_EXPECT(firstQuote(*env.current(), *eur) == Number(31, -1));
     }
@@ -273,7 +271,6 @@ class PerpPrice_test : public PerpTestBase
         MarketParams const params{.oracles = {o1_.id(), o2_.id(), o3_.id()}, .indexMaxLedgers = 2};
 
         q1.set(oracle::UpdateArg{.series = {{"XRP", "USD", 21, 1}}});
-        env.close();
         {
             auto const market = makeMarket(params);
             auto const index = perp::computeIndex(*env.current(), *market);
@@ -293,7 +290,6 @@ class PerpPrice_test : public PerpTestBase
         }
 
         q2.set(oracle::UpdateArg{.series = {{"XRP", "USD", 23, 1}}});
-        env.close();
         {
             auto const market = makeMarket(params);
             auto const index = perp::computeIndex(*env.current(), *market);
@@ -603,9 +599,10 @@ class PerpPrice_test : public PerpTestBase
         BEAST_EXPECT(perp::tierRequirement(Number{200'000}, tiers, false) == Number(15'000));
         BEAST_EXPECT(perp::tierRequirement(Number{0}, tiers, true) == Number(0));
         BEAST_EXPECT(!perp::tierRequirement(Number{1'000'001}, tiers, true));
-        // Requirements round up: 1/3 x 0.1 has no exact decimal form.
-        auto const third = perp::tierRequirement(Number{1} / Number{3}, tiers, true);
-        BEAST_EXPECT(third && *third > (Number{1} / Number{3}) / Number{10});
+        // Requirements round up: x times 0.2 needs one digit more than the mantissa holds.
+        Number const inexact{5'000'006'666'666'666'667, -13};
+        auto const rounded = perp::tierRequirement(inexact, tiers, true);
+        BEAST_EXPECT(rounded && *rounded > (inexact * Number{2, -1}) - Number{10'000});
     }
 
 public:
