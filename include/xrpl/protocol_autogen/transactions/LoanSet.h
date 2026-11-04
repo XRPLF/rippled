@@ -456,6 +456,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfGracePeriod);
     }
+
+    /**
+     * @brief Get sfLoanSequence (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLoanSequence() const
+    {
+        if (hasLoanSequence())
+        {
+            return this->tx_->at(sfLoanSequence);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLoanSequence is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLoanSequence() const
+    {
+        return this->tx_->isFieldPresent(sfLoanSequence);
+    }
 };
 
 /**
@@ -688,6 +714,17 @@ public:
     setGracePeriod(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfGracePeriod] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLoanSequence (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanSetBuilder&
+    setLoanSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLoanSequence] = value;
         return *this;
     }
 
