@@ -19,24 +19,24 @@ namespace xrpl {
 void
 SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto getSponsored = [](SLE::ConstRef sle) -> std::uint32_t {
+    auto const getSponsored = [](SLE::ConstRef sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoredOwnerCount);
         return 0;
     };
-    auto getSponsoring = [](SLE::ConstRef sle) -> std::uint32_t {
+    auto const getSponsoring = [](SLE::ConstRef sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringOwnerCount);
         return 0;
     };
 
-    auto getOwnerCount = [](SLE::ConstRef sle) -> std::uint32_t {
+    auto const getOwnerCount = [](SLE::ConstRef sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfOwnerCount);
         return 0;
     };
 
-    auto getSponsoredObjectOwnerCount = [&](SLE::ConstRef sle) -> std::uint32_t {
+    auto const getSponsoredObjectOwnerCount = [&](SLE::ConstRef sle) -> std::uint32_t {
         if (!sle)
             return 0;
         switch (sle->getType())
@@ -118,13 +118,13 @@ SponsorshipOwnerCountsMatch::finalize(
 void
 SponsorshipAccountCountMatchesField::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto getSponsoringAccountCount = [](SLE::ConstRef sle) -> std::uint32_t {
+    auto const getSponsoringAccountCount = [](SLE::ConstRef sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringAccountCount);
         return 0;
     };
 
-    auto hasSponsorField = [](SLE::ConstRef sle) -> bool {
+    auto const hasSponsorField = [](SLE::ConstRef sle) -> bool {
         return sle && sle->getType() == ltACCOUNT_ROOT && sle->isFieldPresent(sfSponsor);
     };
 

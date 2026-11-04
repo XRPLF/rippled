@@ -7,7 +7,7 @@
 pcpp>=1.30
 
 # Parser combinator library - used to parse the macro DSL
-pyparsing>=3.0.0
+pyparsing>=3.3.3
 
 # Template engine - used to generate C++ code from templates
-Mako>=1.2.2
+Mako>=1.4.2

@@ -4,6 +4,7 @@
 #include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 
@@ -300,7 +301,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
     std::scoped_lock const lock(mutex_);
 
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
         return false;
@@ -337,6 +338,29 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     canonicalizeImpl(
         key_type const& key,
         CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback)
+{
+    std::scoped_lock<MutexType> const lock(mutex_);
+    return canonicalizeImpl(lock, key, data, policy, std::forward<Callback>(replaceCallback));
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+template <class Policy, class Callback>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    canonicalizeImpl(
+        std::scoped_lock<MutexType> const&,
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
         [[maybe_unused]] Policy policy,
         [[maybe_unused]] Callback&& replaceCallback)
 {
@@ -354,9 +378,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // passing a const argument is a compile error.
     constexpr bool replaceCached = std::is_same_v<Policy, detail::ReplaceCached>;
 
-    std::scoped_lock const lock(mutex_);
-
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
     {
@@ -371,7 +393,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     Entry& entry = cit->second;
     entry.touch(clock_.now());
 
-    auto shouldReplaceCached = [&] {
+    auto const shouldReplaceCached = [&] {
         if constexpr (replaceCached)
         {
             return true;
@@ -400,7 +422,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         return true;
     }
 
-    auto cachedData = entry.lock();
+    auto const cachedData = entry.lock();
 
     if (cachedData)
     {
@@ -563,29 +585,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     retrieve(key_type const& key, T& data)
 {
     // retrieve the value of the stored data
-    auto entry = fetch(key);
+    auto const entry = fetch(key);
 
     if (!entry)
         return false;
 
     data = *entry;
     return true;
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
-inline auto
-TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    peekMutex() -> MutexType&
-{
-    return mutex_;
 }
 
 template <
@@ -687,7 +693,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             return ret;
     }
 
-    auto sle = h();
+    auto const sle = h();
     if (!sle)
         return {};
 
@@ -709,11 +715,54 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class Callback>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    fetchAndModify(key_type const& key, Callback&& callback)
+{
+    static_assert(
+        !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
+    static_assert(
+        std::is_same_v<std::shared_ptr<T>, SharedPointerType> ||
+            std::is_same_v<intr_ptr::SharedPtr<T>, SharedPointerType>,
+        "fetchAndModify requires std::shared_ptr<T> or intr_ptr::SharedPtr<T>");
+
+    std::scoped_lock<MutexType> const lock(mutex_);
+
+    // Same pointer-type dispatch as insert(): the placeholder must have exactly
+    // SharedPointerType so canonicalizeImpl can write the cached pointer back.
+    SharedPointerType entry = [] {
+        if constexpr (std::is_same_v<std::shared_ptr<T>, SharedPointerType>)
+        {
+            return std::make_shared<T>();
+        }
+        else
+        {
+            return intr_ptr::makeShared<T>();
+        }
+    }();
+    canonicalizeImpl(lock, key, entry, detail::ReplaceClient{});
+
+    ALWAYS(
+        entry != nullptr, "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
+
+    callback(*entry);
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l)
 {
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
     if (cit == cache_.end())
         return {};
 
@@ -783,7 +832,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -863,7 +912,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
         int cacheRemovals = 0;
         int mapRemovals = 0;

@@ -41,13 +41,13 @@ public:
         {
             // Try to put sfGeneric in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate const elements{{sfGeneric, SoeRequired}}; });
+                [&] { SOTemplate const elements{{sfGeneric, SoeRequired}}; });
         }
 
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
         {
             // Test return of sfInvalid.
-            auto testInvalid = [this](SerializedTypeID tid, int fv) {
+            auto const testInvalid = [this](SerializedTypeID tid, int fv) {
                 SField const& shouldBeInvalid{SField::getField(tid, fv)};
                 BEAST_EXPECT(shouldBeInvalid == sfInvalid);
             };
@@ -60,11 +60,11 @@ public:
         {
             // Try to put sfInvalid in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate const elements{{sfInvalid, SoeRequired}}; });
+                [&] { SOTemplate const elements{{sfInvalid, SoeRequired}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
-            except<std::runtime_error>([&]() {
+            except<std::runtime_error>([&] {
                 SOTemplate const elements{
                     {sfAccount, SoeRequired},
                     {sfAccount, SoeRequired},
@@ -188,7 +188,7 @@ public:
         // read free object
 
         {
-            auto const st = [&]() {
+            auto const st = [&] {
                 STObject s(sfGeneric);
                 s.setFieldU32(sf1Outer, 1);
                 s.setFieldU32(sf2Outer, 2);
@@ -197,7 +197,7 @@ public:
 
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
-            except<STObject::FieldErr>([&]() { st[sf3Outer]; });
+            except<STObject::FieldErr>([&] { st[sf3Outer]; });
             BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(st[~sf3Outer] == std::nullopt);
@@ -219,7 +219,7 @@ public:
         };
 
         {
-            auto const st = [&]() {
+            auto const st = [&] {
                 STObject s(sotOuter, sfGeneric);
                 s.setFieldU32(sf1Outer, 1);
                 s.setFieldU32(sf2Outer, 2);
@@ -241,8 +241,8 @@ public:
 
         {
             STObject st(sfGeneric);
-            unexcept([&]() { st[sf1Outer]; });
-            except([&]() { return st[sf1Outer] == 0; });
+            unexcept([&] { st[sf1Outer]; });
+            except([&] { return st[sf1Outer] == 0; });
             BEAST_EXPECT(st[~sf1Outer] == std::nullopt);
             BEAST_EXPECT(st[~sf1Outer] == std::optional<std::uint32_t>{});
             BEAST_EXPECT(st[~sf1Outer] != std::optional<std::uint32_t>(1));
@@ -265,8 +265,8 @@ public:
             BEAST_EXPECT(st[~sf1Outer] == std::optional<std::uint32_t>{});
             st[~sf1Outer] = std::nullopt;
             BEAST_EXPECT(!st[~sf1Outer]);
-            except([&]() { return st[sf1Outer] == 0; });
-            except([&]() { return *st[~sf1Outer]; });
+            except([&] { return st[sf1Outer] == 0; });
+            except([&] { return *st[~sf1Outer]; });
             st[sf1Outer] = 1;
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(!!st[sf1Outer]);
@@ -303,11 +303,11 @@ public:
             BEAST_EXPECT(*st[~sf1Outer] == 0);
             BEAST_EXPECT(!st[~sf2Outer]);
             BEAST_EXPECT(st[~sf2Outer] == std::nullopt);
-            except([&]() { return st[sf2Outer] == 0; });
+            except([&] { return st[sf2Outer] == 0; });
             BEAST_EXPECT(!!st[~sf3Outer]);
             BEAST_EXPECT(st[~sf3Outer] != std::nullopt);
             BEAST_EXPECT(st[sf3Outer] == 0);
-            except([&]() { st[~sf1Outer] = std::nullopt; });
+            except([&] { st[~sf1Outer] = std::nullopt; });
             st[sf1Outer] = 1;
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(*st[~sf1Outer] == 1);
@@ -321,7 +321,7 @@ public:
             BEAST_EXPECT(*st[~sf2Outer] == 2);
             BEAST_EXPECT(!!st[~sf2Outer]);
             st[~sf2Outer] = std::nullopt;
-            except([&]() { return *st[~sf2Outer]; });
+            except([&] { return *st[~sf2Outer]; });
             BEAST_EXPECT(!st[~sf2Outer]);
             st[sf3Outer] = 3;
             BEAST_EXPECT(st[sf3Outer] == 3);
@@ -335,7 +335,7 @@ public:
             BEAST_EXPECT(st[sf3Outer] == 0);
             BEAST_EXPECT(*st[~sf3Outer] == 0);
             BEAST_EXPECT(!!st[~sf3Outer]);
-            except([&]() { st[~sf3Outer] = std::nullopt; });
+            except([&] { st[~sf3Outer] = std::nullopt; });
             BEAST_EXPECT(st[sf3Outer] == 0);
             BEAST_EXPECT(*st[~sf3Outer] == 0);
             BEAST_EXPECT(!!st[~sf3Outer]);
@@ -477,7 +477,7 @@ public:
         {
             std::array<std::uint8_t, 7> const payload{{0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
             SerialIter sit{makeSlice(payload)};
-            auto obj = std::make_shared<STArray>(sit, sfMetadata);
+            auto const obj = std::make_shared<STArray>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
         }
         catch (std::exception const& e)
@@ -489,7 +489,7 @@ public:
         {
             std::array<std::uint8_t, 3> const payload{{0xe2, 0xe1, 0xe2}};
             SerialIter sit{makeSlice(payload)};
-            auto obj = std::make_shared<STObject>(sit, sfMetadata);
+            auto const obj = std::make_shared<STObject>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
         }
         catch (std::exception const& e)

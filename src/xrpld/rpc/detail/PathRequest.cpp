@@ -72,7 +72,7 @@ PathRequest::PathRequest(
 
 PathRequest::PathRequest(
     Application& app,
-    std::function<void(void)> completion,
+    std::function<void()> completion,
     resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
@@ -96,7 +96,7 @@ PathRequest::PathRequest(
 PathRequest::~PathRequest()
 {
     using namespace std::chrono;
-    auto stream = journal_.info();
+    auto const stream = journal_.info();
     if (!stream)
         return;
 
@@ -170,7 +170,7 @@ PathRequest::updateComplete()
     if (fCompletion_)
     {
         fCompletion_();
-        fCompletion_ = std::function<void(void)>();
+        fCompletion_ = std::function<void()>();
     }
 }
 
@@ -255,10 +255,11 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
             doUpdate(cache, true);
     }
 
-    if (auto stream = journal_.debug())
+    if (auto const stream = journal_.debug())
     {
         if (valid)
         {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures it is set
             stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
             stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
@@ -513,9 +514,9 @@ PathRequest::getPathFinder(
     PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
-    auto i = currencyMap.find(currency);
+    auto const i = currencyMap.find(currency);
     if (i != currencyMap.end())
         return i->second;
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
@@ -546,7 +547,7 @@ PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
     int const level,
     json::Value& jvArray,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
@@ -556,7 +557,7 @@ PathRequest::findPaths(
     if (sourceAssets.empty())
     {
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-        auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
+        auto const assets = accountSourceAssets(*raSrcAccount_, cache, true);
         bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
@@ -618,7 +619,7 @@ PathRequest::findPaths(
             return *raSrcAccount_;
         }();
 
-        STAmount const saMaxAmount = [&]() {
+        STAmount const saMaxAmount = [&] {
             if (saSendMax_)
                 return *saSendMax_;
             return asset.visit(
@@ -722,7 +723,7 @@ json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
     bool fast,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     using namespace std::chrono;
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");

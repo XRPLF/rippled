@@ -20,7 +20,7 @@ enum class NodeObjectType : std::uint32_t {
     Ledger = 1,
     AccountNode = 3,
     TransactionNode = 4,
-    Dummy = 512  // an invalid or missing object
+    Dummy = 512,  // an invalid or missing object
 };
 
 /**

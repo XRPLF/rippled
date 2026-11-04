@@ -30,6 +30,16 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
+  # Distrusts the roots of the compromised eMudhra intermediates;
+  # see https://emudhra.we-have-a-problem.com/.
+  # TODO: revert to plain pkgs.cacert once nixpkgs ships cacert >= 3.131.1.
+  cacert = pkgs.cacert.override {
+    blacklist = [
+      "Comodo AAA Services root"
+      "emSign ECC Root CA - G3"
+    ];
+  };
+
   # Conan 2.33 is the first release whose settings.yml accepts clang 23.
   # TODO: drop once nixpkgs ships it.
   conan = pkgs.conan.overridePythonAttrs (old: {
@@ -52,8 +62,8 @@ let
   # version-suffixed name first and fall back to a system binary on the PATH
   # when Nix doesn't provide it:
   #   - Conan's Boost recipe looks up `g++-<major>` before plain `g++`.
-  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>` and
-  #     `clang-apply-replacements-<v>` before the unsuffixed names.
+  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>`
+  #     before the unsuffixed name.
   # On a host that also has the matching system binary
   # (e.g. Ubuntu's `/usr/bin/g++-<v>` or `clang-tidy-<v>`),
   # the probe escapes Nix and mixes a system tool into the Nix environment.
@@ -114,6 +124,7 @@ let
 in
 {
   inherit
+    cacert
     gccVersion
     llvmVersion
     gccPackage

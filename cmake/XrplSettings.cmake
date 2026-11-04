@@ -62,11 +62,11 @@ if(unity)
     set(CMAKE_UNITY_BUILD ON CACHE BOOL "Do a unity build")
 endif()
 
-if(is_clang AND is_linux)
+if(is_llvm_clang AND is_linux)
     option(voidstar "Enable Antithesis instrumentation." OFF)
 endif()
 
-if(is_gcc OR is_clang)
+if(is_gcc OR is_any_clang)
     include(ProcessorCount)
     ProcessorCount(PROCESSOR_COUNT)
 
@@ -125,7 +125,7 @@ else()
     set(use_mold OFF CACHE BOOL "mold linker, linux only" FORCE)
 endif()
 
-if(is_clang)
+if(is_any_clang)
     option(use_lld "enables detection of lld linker" ON)
 else()
     set(use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)

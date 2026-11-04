@@ -221,7 +221,7 @@ CheckCreate::doApply()
 
     sleCheck.insert();
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != accountID_)

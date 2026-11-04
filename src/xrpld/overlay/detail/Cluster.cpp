@@ -32,7 +32,7 @@ Cluster::member(PublicKey const& identity) const
 {
     std::scoped_lock const lock(mutex_);
 
-    auto iter = nodes_.find(identity);
+    auto const iter = nodes_.find(identity);
     if (iter == nodes_.end())
         return std::nullopt;
     return iter->name();

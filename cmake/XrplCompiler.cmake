@@ -130,7 +130,7 @@ else()
         INTERFACE
             -Wall
             -Wdeprecated
-            $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
+            $<$<BOOL:${is_any_clang}>:-Wno-deprecated-declarations>
             $<$<BOOL:${wextra}>:-Wextra
             -Wno-unused-parameter>
             $<$<BOOL:${werr}>:-Werror>
@@ -177,7 +177,7 @@ else()
     if(
         is_nix_compiler
         AND is_linux
-        AND is_clang
+        AND is_any_clang
         AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"
     )
         string(
@@ -204,7 +204,10 @@ if(voidstar)
             "Antithesis instrumentation requires Linux, aborting..."
         )
     elseif(
-        NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+        NOT (
+            is_llvm_clang
+            AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0
+        )
     )
         message(
             FATAL_ERROR

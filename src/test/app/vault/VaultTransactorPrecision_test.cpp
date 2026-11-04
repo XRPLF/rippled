@@ -71,10 +71,11 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             auto const before = read(env, f);
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(amount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -112,10 +113,11 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             jtx::PrettyAsset const& asset = f.asset.value();
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(99'000'000).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(99'000'000).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -156,14 +158,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         jtx::PrettyAsset const& asset = f.asset.value();
 
         Vault const v{env};
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(1'000'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(1'000'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
-        auto checkSuccess = [&](STAmount const& amount, std::string const& tag) {
+        auto const checkSuccess = [&](STAmount const& amount, std::string const& tag) {
             auto const before = read(env, f);
             env(v.withdraw({.depositor = f.depositor, .id = f.vaultKeylet.key, .amount = amount}),
                 Ter(std::ignore));
@@ -215,10 +218,11 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         jtx::PrettyAsset const& asset = f.asset.value();
 
         Vault const v{env};
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(1'000'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(1'000'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
@@ -255,23 +259,26 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         jtx::PrettyAsset const& asset = f.asset.value();
 
         Vault const v{env};
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(2'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(2'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
-        auto checkSuccess = [&](std::optional<STAmount> const& amount, std::string const& tag) {
+        auto const checkSuccess = [&](std::optional<STAmount> const& amount,
+                                      std::string const& tag) {
             auto const before = read(env, f);
             if (before.sharesTotal == Number{0})
                 return;
 
-            env(v.clawback(
-                    {.issuer = f.issuer,
-                     .id = f.vaultKeylet.key,
-                     .holder = f.depositor,
-                     .amount = amount}),
+            env(v.clawback({
+                    .issuer = f.issuer,
+                    .id = f.vaultKeylet.key,
+                    .holder = f.depositor,
+                    .amount = amount,
+                }),
                 Ter(std::ignore));
             env.close();
             if (env.ter() != tesSUCCESS)
@@ -303,14 +310,15 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
         jtx::PrettyAsset const& asset = f.asset.value();
 
         Vault const v{env};
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(5'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(5'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
-        auto checkInvariant = [&](std::string const& tag) {
+        auto const checkInvariant = [&](std::string const& tag) {
             TER const actual = env.ter();
             BEAST_EXPECTS(actual != tecINVARIANT_FAILED, tag + " unexpected invariant failure");
             if (actual != tesSUCCESS)
@@ -327,18 +335,20 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             int const depositAmount = kAmounts[i];
             int const withdrawAmount = kAmounts[i + 1];
 
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(depositAmount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(depositAmount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
             checkInvariant("deposit=" + std::to_string(depositAmount));
 
-            env(v.withdraw(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(withdrawAmount).value()}),
+            env(v.withdraw({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(withdrawAmount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
             checkInvariant("withdraw=" + std::to_string(withdrawAmount));

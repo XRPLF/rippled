@@ -90,14 +90,14 @@ class InvariantsPermissioned_test : public InvariantsBase
             makeEnv(features),
             {{"permissioned domain credentials aren't sorted"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto slePd = createPermissionedDomain(ac, a1, a2, 0);
+                auto const slePd = createPermissionedDomain(ac, a1, a2, 0);
 
                 STArray credentials(sfAcceptedCredentials, 2);
                 for (std::size_t n = 0; n < 2; ++n)
                 {
                     auto cred = STObject::makeInnerObject(sfCredential);
                     cred.setAccountID(sfIssuer, a2);
-                    auto credType = std::string("cred_type") + std::to_string(9 - n);
+                    auto const credType = std::string("cred_type") + std::to_string(9 - n);
                     cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
                     credentials.pushBack(std::move(cred));
                 }
@@ -114,7 +114,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             makeEnv(features),
             {{"permissioned domain credentials aren't unique"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto slePd = createPermissionedDomain(ac, a1, a2, 0);
+                auto const slePd = createPermissionedDomain(ac, a1, a2, 0);
 
                 STArray credentials(sfAcceptedCredentials, 2);
                 for (std::size_t n = 0; n < 2; ++n)
@@ -138,7 +138,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"permissioned domain with no rules."}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
-                auto slePd = createPermissionedDomain(ac, a1, a2);
+                auto const slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD with empty rules
                 {
@@ -159,7 +159,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
-                auto slePd = createPermissionedDomain(ac, a1, a2);
+                auto const slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
@@ -169,7 +169,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                     {
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
-                        auto credType = "cred_type2" + std::to_string(n);
+                        auto const credType = "cred_type2" + std::to_string(n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
                         credentials.pushBack(std::move(cred));
                     }
@@ -190,7 +190,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"permissioned domain credentials aren't sorted"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
-                auto slePd = createPermissionedDomain(ac, a1, a2);
+                auto const slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
@@ -199,7 +199,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                     {
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
-                        auto credType = std::string("cred_type2") + std::to_string(9 - n);
+                        auto const credType = std::string("cred_type2") + std::to_string(9 - n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
                         credentials.pushBack(std::move(cred));
                     }
@@ -220,7 +220,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"permissioned domain credentials aren't unique"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
-                auto slePd = createPermissionedDomain(ac, a1, a2);
+                auto const slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
@@ -245,14 +245,17 @@ class InvariantsPermissioned_test : public InvariantsBase
         std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
         std::vector<std::string> const badMoreThan1{
-            {"transaction affected more than 1 permissioned domain entry."}};
+            {"transaction affected more than 1 permissioned domain entry."},
+        };
         std::vector<std::string> const emptyV;
         std::vector<std::string> const badNoDomains{{"no domain objects affected by"}};
         std::vector<std::string> const badNotDeleted{
-            {"domain object modified, but not deleted by "}};
+            {"domain object modified, but not deleted by "},
+        };
         std::vector<std::string> const badDeleted{{"domain object deleted by"}};
         std::vector<std::string> const badTx{
-            {"domain object(s) affected by an unauthorized transaction."}};
+            {"domain object(s) affected by an unauthorized transaction."},
+        };
 
         {
             testcase << "PermissionedDomain set 2 domains ";
@@ -289,8 +292,8 @@ class InvariantsPermissioned_test : public InvariantsBase
                 a2,
                 fixEnabled ? badMoreThan1 : emptyV,
                 [&pd1, &pd2](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
-                    auto sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
+                    auto const sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
+                    auto const sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
                     ac.view().erase(sle1);
                     ac.view().erase(sle2);
                     return true;
@@ -355,7 +358,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 a2,
                 fixEnabled ? badDeleted : emptyV,
                 [&pd1](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
+                    auto const sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     ac.view().erase(sle1);
                     return true;
                 },
@@ -407,7 +410,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"domain doesn't exist"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 Keylet const offerKey = keylet::offer(a1.id(), SeqProxy::rawSequence(10));
-                auto sleOffer = std::make_shared<SLE>(offerKey);
+                auto const sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a1);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                 sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -434,7 +437,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {{"hybrid offer is malformed"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                auto sleOffer = std::make_shared<SLE>(offerKey);
+                auto const sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a2);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                 sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -469,7 +472,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 {{"hybrid offer is malformed"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    auto const sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                     sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -508,7 +511,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                            : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    auto const sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                     sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -545,7 +548,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 {{"hybrid offer is malformed"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    auto const sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                     sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -578,7 +581,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 {{"transaction consumed wrong domains"}},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    auto const sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                     sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -615,7 +618,7 @@ class InvariantsPermissioned_test : public InvariantsBase
                 {{"domain transaction affected regular offers"}},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), SeqProxy::rawSequence(10));
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    auto const sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
                     sleOffer->setFieldAmount(sfTakerGets, XRP(1));
@@ -662,7 +665,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
             env.close();
 
-            auto sleOffer =
+            auto const sleOffer =
                 std::make_shared<SLE>(keylet::offer(a2.id(), SeqProxy::rawSequence(10)));
             sleOffer->setAccountID(sfAccount, a2);
             sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
@@ -905,7 +908,7 @@ class InvariantsPermissioned_test : public InvariantsBase
             {
                 auto cred = STObject::makeInnerObject(sfCredential);
                 cred.setAccountID(sfIssuer, a2);
-                auto credType = "cred_type" + std::to_string(n);
+                auto const credType = "cred_type" + std::to_string(n);
                 cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
                 credentials.pushBack(std::move(cred));
             }
@@ -929,7 +932,7 @@ class InvariantsPermissioned_test : public InvariantsBase
 
         for (std::size_t n = 0; n < numCreds; ++n)
         {
-            auto credType = "cred_type" + std::to_string(n);
+            auto const credType = "cred_type" + std::to_string(n);
             credentials.push_back({.issuer = a2, .credType = credType});
         }
 

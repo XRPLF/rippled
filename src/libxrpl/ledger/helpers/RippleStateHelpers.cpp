@@ -48,7 +48,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -79,7 +79,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -349,7 +349,7 @@ updateTrustLine(
     if (!state)
         return false;
 
-    auto sle = view.peek(keylet::account(sender));
+    auto const sle = view.peek(keylet::account(sender));
     if (!sle)
         return false;
 
@@ -418,7 +418,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (auto const state = view.peek(index))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -511,7 +511,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
+    if (auto const state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -753,7 +753,8 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        auto const sleLowAccount =
+            ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -770,7 +771,8 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        auto const sleHighAccount =
+            ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -805,8 +807,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    auto sleLow = view.peek(keylet::account(low));
-    auto sleHigh = view.peek(keylet::account(high));
+    auto const sleLow = view.peek(keylet::account(low));
+    auto const sleHigh = view.peek(keylet::account(high));
     if (!sleLow || !sleHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

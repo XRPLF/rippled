@@ -182,29 +182,27 @@ Ledger::Ledger(
     }
 
     {
-        auto sle = std::make_shared<SLE>(keylet::feeSettings());
-        // Whether featureXRPFees is supported will depend on startup options.
-        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
+        auto const sle = std::make_shared<SLE>(keylet::feeSettings());
+        sle->at(sfBaseFeeDrops) = fees.base;
+        sle->at(sfReserveBaseDrops) = fees.reserve;
+        sle->at(sfReserveIncrementDrops) = fees.increment;
+        if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
         {
-            sle->at(sfBaseFeeDrops) = fees.base;
-            sle->at(sfReserveBaseDrops) = fees.reserve;
-            sle->at(sfReserveIncrementDrops) = fees.increment;
-        }
-        else
-        {
-            if (auto const f = fees.base.dropsAs<std::uint64_t>())
-                sle->at(sfBaseFee) = *f;
-            if (auto const f = fees.reserve.dropsAs<std::uint32_t>())
-                sle->at(sfReserveBase) = *f;
-            if (auto const f = fees.increment.dropsAs<std::uint32_t>())
-                sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
+            sle->at(sfGasLimit) = fees.gasLimit;
+            sle->at(sfBytecodeSizeLimit) = fees.bytecodeSizeLimit;
+            sle->at(sfGasPrice) = fees.gasPrice;
         }
         rawInsert(sle);
     }
 
     stateMap_.flushDirty(NodeObjectType::AccountNode);
-    setImmutable();
+    // Built locally. See Ledger::setImmutable().
+    if (!setImmutable())
+    {
+        // LCOV_EXCL_START
+        logicError("Ledger::Ledger(CreateGenesisT, ...): genesis ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 }
 
 Ledger::Ledger(
@@ -215,7 +213,7 @@ Ledger::Ledger(
     Fees const& fees,
     Family& family,
     beast::Journal j)
-    : immutable_(true)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
@@ -238,8 +236,20 @@ Ledger::Ledger(
         JLOG(j.warn()) << "Don't have state data root for ledger" << header_.seq;
     }
 
-    txMap_.setImmutable();
-    stateMap_.setImmutable();
+    // Loaded locally. See Ledger::setImmutable().
+    if (setMapsImmutable())
+    {
+        immutable_ = true;
+    }
+    else
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invalid map for ledger " << header_.seq;
+        UNREACHABLE("xrpl::Ledger::Ledger(LedgerHeader const&, ...) : map is invalid");
+        // Treat it as a damaged ledger: the code below recomputes the hash and re-acquires.
+        loaded = false;
+        // LCOV_EXCL_STOP
+    }
 
     if (!setup())
         loaded = false;
@@ -310,27 +320,50 @@ Ledger::Ledger(
     setup();
 }
 
-void
+bool
 Ledger::setImmutable(bool rehash)
 {
-    // Force update, since this is the only
-    // place the hash transitions to valid
-    if (!immutable_ && rehash)
+    // A map found structurally invalid during sync must never be made immutable: isValid() tests
+    // only for Invalid, and an immutable ledger is treated as persistable. Asked before anything is
+    // written, so a refusal leaves the header exactly as it was rather than half relabeled.
+    if (!mapsValid())
+        return false;
+
+    // Read here but written to the header below, once the maps are settled: getHash() can unshare a
+    // dirty tree, so it has to run while the map is still mutable, while a write to the header must
+    // wait until both maps have made it. Skipped once the ledger is immutable, since its maps can
+    // no longer change.
+    bool const deriveMapHashes = !immutable_ && rehash;
+    UInt256 const txHash = deriveMapHashes ? txMap_.getHash().asUInt256() : UInt256{};
+    UInt256 const accountHash = deriveMapHashes ? stateMap_.getHash().asUInt256() : UInt256{};
+
+    // Both were valid at the check above, but a concurrent walk can invalidate one in between (see
+    // SHAMap::state_), so the result is checked. setInvalid() outranks Immutable and can land
+    // after both maps have been settled, so this narrows the window it guards.
+    bool const bothImmutable = setMapsImmutable();
+    SOMETIMES(!bothImmutable, "xrpl::Ledger::setImmutable : map invalidated while going immutable");
+    if (!bothImmutable)
+        return false;
+
+    // Written only now, so losing the race above leaves the header describing what the ledger was
+    // built from rather than a map that has since been abandoned. Forced rather than conditional,
+    // since this is the only place the hash transitions to valid.
+    if (deriveMapHashes)
     {
-        header_.txHash = txMap_.getHash().asUInt256();
-        header_.accountHash = stateMap_.getHash().asUInt256();
+        header_.txHash = txHash;
+        header_.accountHash = accountHash;
     }
 
     if (rehash)
         header_.hash = calculateLedgerHash(header_);
 
+    // Set last, so isImmutable() reports only a ledger whose maps are both immutable.
     immutable_ = true;
-    txMap_.setImmutable();
-    stateMap_.setImmutable();
     setup();
+    return true;
 }
 
-void
+bool
 Ledger::setAccepted(
     NetClock::time_point closeTime,
     NetClock::duration closeResolution,
@@ -342,7 +375,17 @@ Ledger::setAccepted(
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
     header_.closeFlags = correctCloseTime ? 0 : kSLcfNoConsensusTime;
-    setImmutable();
+    // Built locally. See Ledger::setImmutable().
+    if (!setImmutable())
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "Invalid map for accepted ledger " << header_.seq;
+        UNREACHABLE("xrpl::Ledger::setAccepted : map is invalid");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
 }
 
 bool
@@ -395,7 +438,7 @@ Ledger::exists(UInt256 const& key) const
 std::optional<UInt256>
 Ledger::succ(UInt256 const& key, std::optional<UInt256> const& last) const
 {
-    auto item = stateMap_.upperBound(key);
+    auto const item = stateMap_.upperBound(key);
     if (item == stateMap_.end())
         return std::nullopt;
     if (last && item->key() >= last)
@@ -566,6 +609,7 @@ Ledger::setup()
         {
             bool oldFees = false;
             bool newFees = false;
+            bool extensionFees = false;
             {
                 auto const baseFee = sle->at(~sfBaseFee);
                 auto const reserveBase = sle->at(~sfReserveBase);
@@ -582,7 +626,7 @@ Ledger::setup()
                 auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
                 auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
                 auto const reserveIncrementXRP = sle->at(~sfReserveIncrementDrops);
-                auto assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
+                auto const assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
                     if (src)
                     {
                         if (src->native())
@@ -600,14 +644,29 @@ Ledger::setup()
                 assign(fees_.increment, reserveIncrementXRP);
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
+            {
+                auto const gasLimit = sle->at(~sfGasLimit);
+                auto const bytecodeSizeLimit = sle->at(~sfBytecodeSizeLimit);
+                auto const gasPrice = sle->at(~sfGasPrice);
+
+                // An absent field resolves to the protocol constant.
+                if (rules_.enabled(featureSmartEscrow))
+                {
+                    fees_.gasLimit = gasLimit.value_or(kDefaultGasLimit);
+                    fees_.bytecodeSizeLimit = bytecodeSizeLimit.value_or(kDefaultBytecodeSizeLimit);
+                    fees_.gasPrice = gasPrice.value_or(kDefaultGasPrice);
+                }
+                extensionFees = gasLimit || bytecodeSizeLimit || gasPrice;
+            }
             if (oldFees && newFees)
             {
                 // Should be all of one or the other, but not both
                 ret = false;
             }
-            if (!rules_.enabled(featureXRPFees) && newFees)
+            if (!rules_.enabled(featureSmartEscrow) && extensionFees)
             {
-                // Can't populate the new fees before the amendment is enabled
+                // Can't populate the extension fees before the amendment is
+                // enabled
                 ret = false;
             }
         }
@@ -648,8 +707,8 @@ Ledger::negativeUNL() const
         {
             if (n.isFieldPresent(sfPublicKey))
             {
-                auto d = n.getFieldVL(sfPublicKey);
-                auto s = makeSlice(d);
+                auto const d = n.getFieldVL(sfPublicKey);
+                auto const s = makeSlice(d);
                 if (!publicKeyType(s))
                 {
                     continue;
@@ -667,8 +726,8 @@ Ledger::validatorToDisable() const
 {
     if (auto const sle = NegativeUNLEntryR(*this); sle && sle->isFieldPresent(sfValidatorToDisable))
     {
-        auto d = sle->getFieldVL(sfValidatorToDisable);
-        auto s = makeSlice(d);
+        auto const d = sle->getFieldVL(sfValidatorToDisable);
+        auto const s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
     }
@@ -682,8 +741,8 @@ Ledger::validatorToReEnable() const
     if (auto const sle = NegativeUNLEntryR(*this);
         sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
-        auto d = sle->getFieldVL(sfValidatorToReEnable);
-        auto s = makeSlice(d);
+        auto const d = sle->getFieldVL(sfValidatorToReEnable);
+        auto const s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
     }
@@ -694,7 +753,7 @@ Ledger::validatorToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
-    auto sle = peek(keylet::negativeUNL());
+    auto const sle = peek(keylet::negativeUNL());
     if (!sle)
         return;
 
@@ -763,7 +822,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 
     if (!missingNodes1.empty())
     {
-        if (auto stream = j.info())
+        if (auto const stream = j.info())
         {
             stream << missingNodes1.size() << " missing account node(s)";
             stream << "First: " << missingNodes1[0].what();
@@ -782,7 +841,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 
     if (!missingNodes2.empty())
     {
-        if (auto stream = j.info())
+        if (auto const stream = j.info())
         {
             stream << missingNodes2.size() << " missing transaction node(s)";
             stream << "First: " << missingNodes2[0].what();

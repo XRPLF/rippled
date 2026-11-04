@@ -181,7 +181,7 @@ ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
     return apply(
-        registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
+        registry, view, [&] mutable { return preflight(registry, view.rules(), tx, flags, j); });
 }
 
 ApplyResult
@@ -193,7 +193,7 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    return apply(registry, view, [&]() mutable {
+    return apply(registry, view, [&] mutable {
         return preflight(registry, view.rules(), parentBatchId, tx, flags, j);
     });
 }
@@ -212,7 +212,7 @@ applyBatchTransactions(
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
+    auto const applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
         OpenView perTxBatchView(kBatchView, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);

@@ -62,7 +62,7 @@ enum class OperatingMode {
     CONNECTED = 1,     ///< convinced we are talking to the network
     SYNCING = 2,       ///< fallen slightly behind
     TRACKING = 3,      ///< convinced we agree with the network
-    FULL = 4           ///< we have the ledger and can even validate
+    FULL = 4,          ///< we have the ledger and can even validate
 };
 
 /**
