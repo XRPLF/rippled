@@ -144,7 +144,8 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas. MPTokensV2 enables them too, so keep it for MPT pools
         // only, which require it.
-        auto envFeatures = features - featureSingleAssetVault - featureLendingProtocol;
+        auto envFeatures =
+            features - featureSingleAssetVault - featureLendingProtocol - featurePerpetualFutures;
         if (!asset1.holds<MPTIssue>() && !asset2.holds<MPTIssue>())
             envFeatures = envFeatures - featureMPTokensV2;
         Env env{*this, envFeatures, arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};

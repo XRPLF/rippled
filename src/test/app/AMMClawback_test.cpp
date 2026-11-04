@@ -2860,7 +2860,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
         FeatureBitset const all = jtx::testableAmendments() - featureSingleAssetVault -
-            featureLendingProtocol - featureMPTokensV2;
+            featureLendingProtocol - featureMPTokensV2 - featurePerpetualFutures;
 
         testInvalidRequest(all);
         testInvalidRequest(all - featureMPTokensV2);
