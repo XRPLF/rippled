@@ -5,15 +5,25 @@
 #include <test/jtx/Oracle.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/perp.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <functional>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -96,6 +106,64 @@ protected:
         env.close();
         world.vault = keylet;
         return world;
+    }
+
+    /**
+     * Creates the owner's exchange in asset with the minimum parameter delay; closes the ledger.
+     */
+    static Keylet
+    createExchange(Env& env, Account const& owner, Asset const& asset)
+    {
+        auto const exchange = test::jtx::Perp::exchangeKeylet(env, owner);
+        env(test::jtx::Perp::exchangeSet(owner, asset));
+        env.close();
+        return exchange;
+    }
+
+    /**
+     * The default jtx market on XRP/USD, reading document 1 of oracles o1, o2 and o3.
+     */
+    [[nodiscard]] test::jtx::Perp::MarketArgs
+    marketArgs() const
+    {
+        test::jtx::Perp::MarketArgs args;
+        args.oracles = {
+            {.owner = o1_.id(), .documentID = 1},
+            {.owner = o2_.id(), .documentID = 1},
+            {.owner = o3_.id(), .documentID = 1}};
+        return args;
+    }
+
+    [[nodiscard]] static Keylet
+    marketKeylet(
+        uint256 const& exchangeID,
+        std::string const& base = "XRP",
+        std::string const& quote = "USD")
+    {
+        return keylet::perpMarket(exchangeID, toCurrency(base), toCurrency(quote));
+    }
+
+    /**
+     * Applies change to the entry at keylet in the open ledger only, so the next close drops it.
+     *
+     * A test that seeds state this way submits and checks its transaction before closing.
+     */
+    void
+    seed(
+        Env& env,
+        Keylet const& keylet,
+        std::function<void(ApplyView&, SLE::pointer const&)> const& change)
+    {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            Sandbox sb(&view, TapNone);
+            auto const sle = sb.peek(keylet);
+            if (!BEAST_EXPECT(sle))
+                return false;
+            change(sb, sle);
+            sb.update(sle);
+            sb.apply(view);
+            return true;
+        });
     }
 };
 
