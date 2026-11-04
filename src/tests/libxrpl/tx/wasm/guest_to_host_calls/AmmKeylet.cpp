@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 
@@ -36,8 +37,8 @@ struct AmmKeyletGuest : GuestToHostCallTest
 
     Bytes const mptWire = Bytes(MPTID::size(), 0x7a);
     Bytes const issueWire = [] {
-        Bytes bytes(Currency::size(), 0x42);
-        bytes.insert(bytes.end(), AccountID::size(), 0x99);
+        Bytes bytes(Currency::size() + AccountID::size(), 0x99);
+        std::fill_n(bytes.begin(), Currency::size(), 0x42);
         return bytes;
     }();
 

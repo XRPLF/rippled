@@ -165,8 +165,8 @@ dataHeavyModule(std::uint32_t dataBytes)
     appendBody(codePayload, entryPointCode());
     appendSection(out, kSectionCode, codePayload);
 
-    auto dataPayload = Bytes{0x01, 0x00};  // one segment, memory 0
-    dataPayload.insert(std::end(dataPayload), {kOpcodeI32Const, 0x00, kOpcodeEnd});  // offset 0
+    // One segment, memory 0, offset 0.
+    auto dataPayload = Bytes{0x01, 0x00, kOpcodeI32Const, 0x00, kOpcodeEnd};
     appendU32Leb(dataPayload, dataBytes);
     dataPayload.insert(std::end(dataPayload), dataBytes, kDataFillByte);
     appendSection(out, kSectionData, dataPayload);
