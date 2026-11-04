@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -1281,6 +1282,19 @@ NoModifiedUnmodifiableFields::finalize(
         }
         return changed;
     };
+    // An array field has no at(), so it is compared whole.
+    auto const kArrayChanged = [&j, &tx](SLE const& before, SLE const& after, SField const& field) {
+        STArray const& was = before.getFieldArray(field);
+        STArray const& now = after.getFieldArray(field);
+        bool const changed =
+            before.isFieldPresent(field) != after.isFieldPresent(field) || !(was == now);
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
+    };
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
@@ -1390,9 +1404,8 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfAsset) ||
                     kFieldChanged(before, after, sfScale) ||
                     kFieldChanged(before, after, sfDomainID) ||
-                    kFieldChanged(before, after, sfVaultID) ||
-                    kFieldChanged(before, after, sfVaultLossWindow) ||
-                    kFieldChanged(before, after, sfParameterDelay) ||
+                    kFieldChanged(before, after, sfLiquidationRewardMin) ||
+                    kFieldChanged(before, after, sfLiquidationChunkMin) ||
                     kFieldChanged(before, after, sfOwnerNode);
                 break;
             case ltPERP_MARKET:
@@ -1401,6 +1414,8 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfExchangeID) ||
                     kFieldChanged(before, after, sfBaseAsset) ||
                     kFieldChanged(before, after, sfQuoteAsset) ||
+                    kArrayChanged(*before, *after, sfIndexOracles) ||
+                    kFieldChanged(before, after, sfIndexMaxLedgers) ||
                     kFieldChanged(before, after, sfPriceTick) ||
                     kFieldChanged(before, after, sfLotSize) ||
                     kFieldChanged(before, after, sfOwnerNode);
@@ -1410,7 +1425,6 @@ NoModifiedUnmodifiableFields::finalize(
                 bad = bad || kFieldChanged(before, after, sfFlags) ||
                     kFieldChanged(before, after, sfAccount) ||
                     kFieldChanged(before, after, sfExchangeID) ||
-                    kFieldChanged(before, after, sfSubaccount) ||
                     kFieldChanged(before, after, sfOwnerNode);
                 break;
             case ltMARGIN_POSITION:

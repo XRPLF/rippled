@@ -30,7 +30,6 @@ TEST(TransactionsMarginDepositTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
 
     MarginDepositBuilder builder{
@@ -42,7 +41,6 @@ TEST(TransactionsMarginDepositTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
-    builder.setSubaccount(subaccountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -72,14 +70,6 @@ TEST(TransactionsMarginDepositTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = tx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-        EXPECT_TRUE(tx.hasSubaccount());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -97,7 +87,6 @@ TEST(TransactionsMarginDepositTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
 
     // Build an initial transaction
@@ -109,7 +98,6 @@ TEST(TransactionsMarginDepositTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
-    initialBuilder.setSubaccount(subaccountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -140,13 +128,6 @@ TEST(TransactionsMarginDepositTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = rebuiltTx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-    }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -177,37 +158,5 @@ TEST(TransactionsMarginDepositTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(MarginDepositBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsMarginDepositTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::Secp256k1, generateSeed("testMarginDepositNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-    auto const exchangeIDValue = canonical_UINT256();
-    auto const amountValue = canonical_AMOUNT();
-
-    MarginDepositBuilder builder{
-        accountValue,
-        exchangeIDValue,
-        amountValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasSubaccount());
-    EXPECT_FALSE(tx.getSubaccount().has_value());
-}
 
 }

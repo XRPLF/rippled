@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -20,12 +19,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-bool
-PerpMarketDelete::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpMarketDelete::getFlagsMask(PreflightContext const& ctx)

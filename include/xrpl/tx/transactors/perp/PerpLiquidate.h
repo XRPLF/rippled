@@ -16,7 +16,7 @@ namespace xrpl {
 
 /**
  * Liquidates a position of a margin account below its maintenance margin (spec 9): in book mode
- * the position is sold into the book, in takeover mode the liquidator takes it over at the mark,
+ * the position is sold into the book, in takeover mode the liquidator takes it over at the index,
  * and the loss waterfall pays any shortfall.
  */
 class PerpLiquidate : public Transactor
@@ -27,9 +27,6 @@ public:
     explicit PerpLiquidate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
-
-    static bool
-    checkExtraFeatures(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);

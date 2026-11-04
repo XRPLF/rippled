@@ -1091,24 +1091,21 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 TRANSACTION(ttPERP_EXCHANGE_SET, 103, PerpExchangeSet,
     ({
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt |
-            Privilege::MayModifyVault,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfExchangeID, SoeOptional},
     {sfAsset, SoeOptional, SoeMptSupported},
     {sfScale, SoeOptional},
     {sfDomainID, SoeOptional},
-    {sfVaultID, SoeOptional},
     {sfMakerFee, SoeOptional},
     {sfTakerFee, SoeOptional},
     {sfOwnerFeeShare, SoeOptional},
-    {sfVaultFeeShare, SoeOptional},
     {sfBuilderFeeMax, SoeOptional},
     {sfCoverRateMinimum, SoeOptional},
-    {sfVaultLossLimit, SoeOptional},
-    {sfVaultLossWindow, SoeOptional},
-    {sfParameterDelay, SoeOptional},
+    {sfLiquidationPenalty, SoeOptional},
+    {sfLiquidationRewardMin, SoeOptional},
+    {sfLiquidationChunkMin, SoeOptional},
     {sfData, SoeOptional},
 }))
 
@@ -1119,8 +1116,7 @@ TRANSACTION(ttPERP_EXCHANGE_SET, 103, PerpExchangeSet,
 TRANSACTION(ttPERP_EXCHANGE_DELETE, 104, PerpExchangeDelete,
     ({
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt |
-            Privilege::MayModifyVault,
+        .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfExchangeID, SoeRequired},
@@ -1140,24 +1136,12 @@ TRANSACTION(ttPERP_MARKET_SET, 105, PerpMarketSet,
     {sfBaseAsset, SoeOptional},
     {sfQuoteAsset, SoeOptional},
     {sfIndexOracles, SoeOptional},
-    {sfIndexMaxAge, SoeOptional},
     {sfIndexMaxLedgers, SoeOptional},
     {sfPriceTick, SoeOptional},
     {sfLotSize, SoeOptional},
     {sfMarginTiers, SoeOptional},
     {sfOpenInterestMax, SoeOptional},
     {sfOrderPriceBand, SoeOptional},
-    {sfMidSpreadMax, SoeOptional},
-    {sfMarkBand, SoeOptional},
-    {sfMarkMoveMax, SoeOptional},
-    {sfBasisWindow, SoeOptional},
-    {sfFundingInterestRate, SoeOptional},
-    {sfFundingCap, SoeOptional},
-    {sfLiquidationPenalty, SoeOptional},
-    {sfLiquidationRewardShare, SoeOptional},
-    {sfLiquidationRewardMin, SoeOptional},
-    {sfLiquidationChunkMin, SoeOptional},
-    {sfSettleStaleAfter, SoeOptional},
 }))
 
 /** This transaction deletes a perpetual futures market. */
@@ -1180,11 +1164,9 @@ TRANSACTION(ttMARGIN_DEPOSIT, 107, MarginDeposit,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfExchangeID, SoeRequired},
-    {sfSubaccount, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
 }))
 
@@ -1195,11 +1177,10 @@ TRANSACTION(ttMARGIN_DEPOSIT, 107, MarginDeposit,
 TRANSACTION(ttMARGIN_WITHDRAW, 108, MarginWithdraw,
     ({
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MayAuthorizeMpt | Privilege::MayModifyVault,
+        .privileges = Privilege::MayAuthorizeMpt,
     }),
     ({
     {sfExchangeID, SoeRequired},
-    {sfSubaccount, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfDestination, SoeOptional},
 }))
@@ -1212,11 +1193,9 @@ TRANSACTION(ttPERP_ORDER_CREATE, 109, PerpOrderCreate,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfMarketID, SoeRequired},
-    {sfSubaccount, SoeOptional},
     {sfLimitPrice, SoeRequired},
     {sfSize, SoeRequired},
     {sfOfferSequence, SoeOptional},
@@ -1247,13 +1226,11 @@ TRANSACTION(ttPERP_LIQUIDATE, 111, PerpLiquidate,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfMarginAccountID, SoeRequired},
     {sfMarketID, SoeRequired},
     {sfSize, SoeOptional},
-    {sfSubaccount, SoeOptional},
 }))
 
 /** This transaction refreshes a perpetual futures market and settles a margin account. */
@@ -1264,7 +1241,6 @@ TRANSACTION(ttPERP_REFRESH, 112, PerpRefresh,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
-        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfMarketID, SoeOptional},

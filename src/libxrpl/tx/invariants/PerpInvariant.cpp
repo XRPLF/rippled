@@ -339,6 +339,11 @@ ValidPerp::finalize(
                     return size.after != size.before && size.after != Number{};
                 }))
                 fail("perp position in a settled market changed other than to zero");
+
+            // The index a market settled at is its settlement price and stays frozen.
+            if (before && (*before)[sfMarketStatus] == perp::kMarketSettled &&
+                Number{(*before)[sfIndexPrice]} != Number{market[sfIndexPrice]})
+                fail("perp settled market index changed");
         }
     }
 

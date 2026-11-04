@@ -90,17 +90,6 @@ public:
     }
 
     /**
-     * @brief Get sfSubaccount (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getSubaccount() const
-    {
-        return this->sle_->at(sfSubaccount);
-    }
-
-    /**
      * @brief Get sfCash (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -200,17 +189,15 @@ public:
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      * @param account The sfAccount field value.
      * @param exchangeID The sfExchangeID field value.
-     * @param subaccount The sfSubaccount field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    MarginAccountBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT256::type::value_type> const& exchangeID,std::decay_t<typename SF_UINT32::type::value_type> const& subaccount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    MarginAccountBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT256::type::value_type> const& exchangeID,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<MarginAccountBuilder>(ltMARGIN_ACCOUNT)
     {
         setPreviousTxnID(previousTxnID);
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
         setAccount(account);
         setExchangeID(exchangeID);
-        setSubaccount(subaccount);
         setOwnerNode(ownerNode);
     }
 
@@ -273,17 +260,6 @@ public:
     setExchangeID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfExchangeID] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSubaccount (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    MarginAccountBuilder&
-    setSubaccount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSubaccount] = value;
         return *this;
     }
 

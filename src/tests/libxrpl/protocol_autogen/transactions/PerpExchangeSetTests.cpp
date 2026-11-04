@@ -33,16 +33,14 @@ TEST(TransactionsPerpExchangeSetTests, BuilderSettersRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const scaleValue = canonical_UINT8();
     auto const domainIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
     auto const makerFeeValue = canonical_UINT32();
     auto const takerFeeValue = canonical_UINT32();
     auto const ownerFeeShareValue = canonical_UINT32();
-    auto const vaultFeeShareValue = canonical_UINT32();
     auto const builderFeeMaxValue = canonical_UINT32();
     auto const coverRateMinimumValue = canonical_UINT32();
-    auto const vaultLossLimitValue = canonical_UINT32();
-    auto const vaultLossWindowValue = canonical_UINT32();
-    auto const parameterDelayValue = canonical_UINT32();
+    auto const liquidationPenaltyValue = canonical_UINT32();
+    auto const liquidationRewardMinValue = canonical_NUMBER();
+    auto const liquidationChunkMinValue = canonical_NUMBER();
     auto const dataValue = canonical_VL();
 
     PerpExchangeSetBuilder builder{
@@ -56,16 +54,14 @@ TEST(TransactionsPerpExchangeSetTests, BuilderSettersRoundTrip)
     builder.setAsset(assetValue);
     builder.setScale(scaleValue);
     builder.setDomainID(domainIDValue);
-    builder.setVaultID(vaultIDValue);
     builder.setMakerFee(makerFeeValue);
     builder.setTakerFee(takerFeeValue);
     builder.setOwnerFeeShare(ownerFeeShareValue);
-    builder.setVaultFeeShare(vaultFeeShareValue);
     builder.setBuilderFeeMax(builderFeeMaxValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
-    builder.setVaultLossLimit(vaultLossLimitValue);
-    builder.setVaultLossWindow(vaultLossWindowValue);
-    builder.setParameterDelay(parameterDelayValue);
+    builder.setLiquidationPenalty(liquidationPenaltyValue);
+    builder.setLiquidationRewardMin(liquidationRewardMinValue);
+    builder.setLiquidationChunkMin(liquidationChunkMinValue);
     builder.setData(dataValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -117,14 +113,6 @@ TEST(TransactionsPerpExchangeSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultIDValue;
-        auto const actualOpt = tx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-        EXPECT_TRUE(tx.hasVaultID());
-    }
-
-    {
         auto const& expected = makerFeeValue;
         auto const actualOpt = tx.getMakerFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMakerFee should be present";
@@ -149,14 +137,6 @@ TEST(TransactionsPerpExchangeSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultFeeShareValue;
-        auto const actualOpt = tx.getVaultFeeShare();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultFeeShare should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultFeeShare");
-        EXPECT_TRUE(tx.hasVaultFeeShare());
-    }
-
-    {
         auto const& expected = builderFeeMaxValue;
         auto const actualOpt = tx.getBuilderFeeMax();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBuilderFeeMax should be present";
@@ -173,27 +153,27 @@ TEST(TransactionsPerpExchangeSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossLimitValue;
-        auto const actualOpt = tx.getVaultLossLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultLossLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultLossLimit");
-        EXPECT_TRUE(tx.hasVaultLossLimit());
+        auto const& expected = liquidationPenaltyValue;
+        auto const actualOpt = tx.getLiquidationPenalty();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationPenalty should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationPenalty");
+        EXPECT_TRUE(tx.hasLiquidationPenalty());
     }
 
     {
-        auto const& expected = vaultLossWindowValue;
-        auto const actualOpt = tx.getVaultLossWindow();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultLossWindow should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultLossWindow");
-        EXPECT_TRUE(tx.hasVaultLossWindow());
+        auto const& expected = liquidationRewardMinValue;
+        auto const actualOpt = tx.getLiquidationRewardMin();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardMin should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
+        EXPECT_TRUE(tx.hasLiquidationRewardMin());
     }
 
     {
-        auto const& expected = parameterDelayValue;
-        auto const actualOpt = tx.getParameterDelay();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfParameterDelay should be present";
-        expectEqualField(expected, *actualOpt, "sfParameterDelay");
-        EXPECT_TRUE(tx.hasParameterDelay());
+        auto const& expected = liquidationChunkMinValue;
+        auto const actualOpt = tx.getLiquidationChunkMin();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationChunkMin should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationChunkMin");
+        EXPECT_TRUE(tx.hasLiquidationChunkMin());
     }
 
     {
@@ -224,16 +204,14 @@ TEST(TransactionsPerpExchangeSetTests, BuilderFromStTxRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const scaleValue = canonical_UINT8();
     auto const domainIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
     auto const makerFeeValue = canonical_UINT32();
     auto const takerFeeValue = canonical_UINT32();
     auto const ownerFeeShareValue = canonical_UINT32();
-    auto const vaultFeeShareValue = canonical_UINT32();
     auto const builderFeeMaxValue = canonical_UINT32();
     auto const coverRateMinimumValue = canonical_UINT32();
-    auto const vaultLossLimitValue = canonical_UINT32();
-    auto const vaultLossWindowValue = canonical_UINT32();
-    auto const parameterDelayValue = canonical_UINT32();
+    auto const liquidationPenaltyValue = canonical_UINT32();
+    auto const liquidationRewardMinValue = canonical_NUMBER();
+    auto const liquidationChunkMinValue = canonical_NUMBER();
     auto const dataValue = canonical_VL();
 
     // Build an initial transaction
@@ -247,16 +225,14 @@ TEST(TransactionsPerpExchangeSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setAsset(assetValue);
     initialBuilder.setScale(scaleValue);
     initialBuilder.setDomainID(domainIDValue);
-    initialBuilder.setVaultID(vaultIDValue);
     initialBuilder.setMakerFee(makerFeeValue);
     initialBuilder.setTakerFee(takerFeeValue);
     initialBuilder.setOwnerFeeShare(ownerFeeShareValue);
-    initialBuilder.setVaultFeeShare(vaultFeeShareValue);
     initialBuilder.setBuilderFeeMax(builderFeeMaxValue);
     initialBuilder.setCoverRateMinimum(coverRateMinimumValue);
-    initialBuilder.setVaultLossLimit(vaultLossLimitValue);
-    initialBuilder.setVaultLossWindow(vaultLossWindowValue);
-    initialBuilder.setParameterDelay(parameterDelayValue);
+    initialBuilder.setLiquidationPenalty(liquidationPenaltyValue);
+    initialBuilder.setLiquidationRewardMin(liquidationRewardMinValue);
+    initialBuilder.setLiquidationChunkMin(liquidationChunkMinValue);
     initialBuilder.setData(dataValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -305,13 +281,6 @@ TEST(TransactionsPerpExchangeSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = vaultIDValue;
-        auto const actualOpt = rebuiltTx.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultID should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-    }
-
-    {
         auto const& expected = makerFeeValue;
         auto const actualOpt = rebuiltTx.getMakerFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMakerFee should be present";
@@ -333,13 +302,6 @@ TEST(TransactionsPerpExchangeSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = vaultFeeShareValue;
-        auto const actualOpt = rebuiltTx.getVaultFeeShare();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultFeeShare should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultFeeShare");
-    }
-
-    {
         auto const& expected = builderFeeMaxValue;
         auto const actualOpt = rebuiltTx.getBuilderFeeMax();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBuilderFeeMax should be present";
@@ -354,24 +316,24 @@ TEST(TransactionsPerpExchangeSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossLimitValue;
-        auto const actualOpt = rebuiltTx.getVaultLossLimit();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultLossLimit should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultLossLimit");
+        auto const& expected = liquidationPenaltyValue;
+        auto const actualOpt = rebuiltTx.getLiquidationPenalty();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationPenalty should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationPenalty");
     }
 
     {
-        auto const& expected = vaultLossWindowValue;
-        auto const actualOpt = rebuiltTx.getVaultLossWindow();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultLossWindow should be present";
-        expectEqualField(expected, *actualOpt, "sfVaultLossWindow");
+        auto const& expected = liquidationRewardMinValue;
+        auto const actualOpt = rebuiltTx.getLiquidationRewardMin();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardMin should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
     }
 
     {
-        auto const& expected = parameterDelayValue;
-        auto const actualOpt = rebuiltTx.getParameterDelay();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfParameterDelay should be present";
-        expectEqualField(expected, *actualOpt, "sfParameterDelay");
+        auto const& expected = liquidationChunkMinValue;
+        auto const actualOpt = rebuiltTx.getLiquidationChunkMin();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationChunkMin should be present";
+        expectEqualField(expected, *actualOpt, "sfLiquidationChunkMin");
     }
 
     {
@@ -444,26 +406,22 @@ TEST(TransactionsPerpExchangeSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getScale().has_value());
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
-    EXPECT_FALSE(tx.hasVaultID());
-    EXPECT_FALSE(tx.getVaultID().has_value());
     EXPECT_FALSE(tx.hasMakerFee());
     EXPECT_FALSE(tx.getMakerFee().has_value());
     EXPECT_FALSE(tx.hasTakerFee());
     EXPECT_FALSE(tx.getTakerFee().has_value());
     EXPECT_FALSE(tx.hasOwnerFeeShare());
     EXPECT_FALSE(tx.getOwnerFeeShare().has_value());
-    EXPECT_FALSE(tx.hasVaultFeeShare());
-    EXPECT_FALSE(tx.getVaultFeeShare().has_value());
     EXPECT_FALSE(tx.hasBuilderFeeMax());
     EXPECT_FALSE(tx.getBuilderFeeMax().has_value());
     EXPECT_FALSE(tx.hasCoverRateMinimum());
     EXPECT_FALSE(tx.getCoverRateMinimum().has_value());
-    EXPECT_FALSE(tx.hasVaultLossLimit());
-    EXPECT_FALSE(tx.getVaultLossLimit().has_value());
-    EXPECT_FALSE(tx.hasVaultLossWindow());
-    EXPECT_FALSE(tx.getVaultLossWindow().has_value());
-    EXPECT_FALSE(tx.hasParameterDelay());
-    EXPECT_FALSE(tx.getParameterDelay().has_value());
+    EXPECT_FALSE(tx.hasLiquidationPenalty());
+    EXPECT_FALSE(tx.getLiquidationPenalty().has_value());
+    EXPECT_FALSE(tx.hasLiquidationRewardMin());
+    EXPECT_FALSE(tx.getLiquidationRewardMin().has_value());
+    EXPECT_FALSE(tx.hasLiquidationChunkMin());
+    EXPECT_FALSE(tx.getLiquidationChunkMin().has_value());
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
 }

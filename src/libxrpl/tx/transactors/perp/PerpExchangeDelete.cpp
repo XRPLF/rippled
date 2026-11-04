@@ -9,7 +9,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -24,12 +23,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-bool
-PerpExchangeDelete::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpExchangeDelete::getFlagsMask(PreflightContext const& ctx)
@@ -113,17 +106,6 @@ PerpExchangeDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
     view().erase(pseudo);
-
-    // The backstop vault no longer backs an exchange.
-    if (auto const vaultID = (*exchange)[~sfVaultID])
-    {
-        if (auto const vault = view().peek(keylet::vault(*vaultID)))
-        {
-            vault->makeFieldAbsent(sfPerpExchangeID);
-            view().update(vault);
-        }
-    }
-
     view().erase(exchange);
     return tesSUCCESS;
 }

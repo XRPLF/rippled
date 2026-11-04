@@ -30,7 +30,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const marketIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const limitPriceValue = canonical_NUMBER();
     auto const sizeValue = canonical_NUMBER();
     auto const offerSequenceValue = canonical_UINT32();
@@ -48,7 +47,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
-    builder.setSubaccount(subaccountValue);
     builder.setOfferSequence(offerSequenceValue);
     builder.setExpiration(expirationValue);
     builder.setBuilder(builderValue);
@@ -88,14 +86,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = tx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-        EXPECT_TRUE(tx.hasSubaccount());
-    }
-
     {
         auto const& expected = offerSequenceValue;
         auto const actualOpt = tx.getOfferSequence();
@@ -145,7 +135,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const marketIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const limitPriceValue = canonical_NUMBER();
     auto const sizeValue = canonical_NUMBER();
     auto const offerSequenceValue = canonical_UINT32();
@@ -163,7 +152,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
-    initialBuilder.setSubaccount(subaccountValue);
     initialBuilder.setOfferSequence(offerSequenceValue);
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setBuilder(builderValue);
@@ -204,13 +192,6 @@ TEST(TransactionsPerpOrderCreateTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = rebuiltTx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-    }
-
     {
         auto const& expected = offerSequenceValue;
         auto const actualOpt = rebuiltTx.getOfferSequence();
@@ -300,8 +281,6 @@ TEST(TransactionsPerpOrderCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasSubaccount());
-    EXPECT_FALSE(tx.getSubaccount().has_value());
     EXPECT_FALSE(tx.hasOfferSequence());
     EXPECT_FALSE(tx.getOfferSequence().has_value());
     EXPECT_FALSE(tx.hasExpiration());

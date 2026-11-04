@@ -318,10 +318,14 @@ class PerpSettle_test : public PerpTestBase
         env.close();
         BEAST_EXPECT(statusOf(env, t.xrp) == perp::kMarketLive);
         Number const after = marketField(env, t.xrp, sfCumulativeFunding);
-        BEAST_EXPECT(after == before + Number(1, -2));
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'999));
+        // The index accrues to nearest in 19 digits; the long's charge rounds up onto the grid.
+        BEAST_EXPECT(abs(after - before - Number(1, -2)) < Number(1, -18));
+        BEAST_EXPECT(near(cashOf(env, bob_, t), Number(1'999)));
+        BEAST_EXPECT(cashOf(env, bob_, t) <= Number(1'999));
         BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'001));
-        BEAST_EXPECT(exchangeField(env, t, sfSettlementBalance) == balance);
+        // The rounding residue stays with the exchange.
+        BEAST_EXPECT(exchangeField(env, t, sfSettlementBalance) >= balance);
+        BEAST_EXPECT(near(exchangeField(env, t, sfSettlementBalance), balance));
         auto const alicePosition = env.le(positionKeylet(alice_, t, t.xrp));
         BEAST_EXPECT(alicePosition && (*alicePosition)[sfFundingIndex] == after);
         expectAccounting(env, t);
@@ -385,8 +389,8 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(sizeOf(env, carol_, t, t.xrp) == Number(120));
         Number const bobCash = cashOf(env, bob_, t);
         Number const carolCash = cashOf(env, carol_, t);
-        BEAST_EXPECT(bobCash == Number(2'950));
-        BEAST_EXPECT(carolCash == Number(1'800));
+        BEAST_EXPECT(near(bobCash, Number(2'950)));
+        BEAST_EXPECT(near(carolCash, Number(1'800)));
         env(settle(liq_, bob_, t));
         env(settle(liq_, carol_, t));
         env.close();
@@ -395,7 +399,10 @@ class PerpSettle_test : public PerpTestBase
         auto const bobPosition = env.le(positionKeylet(bob_, t, t.xrp));
         BEAST_EXPECT(bobPosition && (*bobPosition)[sfLossIndex] == Number(0));
         auto const carolPosition = env.le(positionKeylet(carol_, t, t.xrp));
-        BEAST_EXPECT(carolPosition && (*carolPosition)[sfLossIndex] == Number(5, -1));
+        BEAST_EXPECT(
+            carolPosition &&
+            (*carolPosition)[sfLossIndex] == marketField(env, t.xrp, sfLossIndexLong));
+        BEAST_EXPECT(near(marketField(env, t.xrp, sfLossIndexLong), Number(5, -1)));
         expectAccounting(env, t);
     }
 

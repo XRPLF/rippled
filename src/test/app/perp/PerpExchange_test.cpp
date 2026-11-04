@@ -149,10 +149,11 @@ class PerpExchange_test : public PerpTestBase
         // Creation carries the asset and the liquidation policy, within its bounds.
         {
             auto const ownerCount = env.ownerCount(owner_);
-            for (auto const* field : {&sfLiquidationPenalty, &sfLiquidationChunkMin})
+            for (auto const& name :
+                 {sfLiquidationPenalty.getName(), sfLiquidationChunkMin.getName()})
             {
                 auto jv = Perp::exchangeSet(owner_, usd_);
-                jv.removeMember(field->getName());
+                jv.removeMember(name);
                 env(jv, Ter(temMALFORMED));
             }
             auto noAsset = Perp::exchangeSet(owner_, usd_);
@@ -290,7 +291,7 @@ class PerpExchange_test : public PerpTestBase
         BEAST_EXPECT(u32(sfLiquidationPenalty) == 3'000);
         env.close();
 
-        // An unchanged value is a tightening; data changes either way.
+        // An unchanged value is accepted; data changes freely.
         auto same = update(sfTakerFee, 400);
         same[sfData] = "0102";
         env(same);
@@ -299,14 +300,6 @@ class PerpExchange_test : public PerpTestBase
             auto const sle = env.le(keylet);
             BEAST_EXPECT(sle && strHex((*sle)[sfData]) == "0102");
             BEAST_EXPECT(u32(sfTakerFee) == 400);
-        }
-        auto clear = Perp::exchangeUpdate(owner_, keylet.key);
-        clear[sfData] = "";
-        env(clear);
-        env.close();
-        {
-            auto const sle = env.le(keylet);
-            BEAST_EXPECT(sle && !sle->isFieldPresent(sfData));
         }
 
         // An update naming a fixed field is malformed, whatever its value.

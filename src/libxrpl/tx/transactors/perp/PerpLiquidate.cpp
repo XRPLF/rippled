@@ -9,7 +9,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -39,7 +38,7 @@ rateOf(std::uint32_t tenthBips)
 
 /**
  * The loss markets of a takeover's waterfall (spec 9.4 step 1): every market where the account
- * holds a size, weighted by that position's notional at the price liquidationSummary values it at.
+ * holds a size, weighted by that position's notional at the market's sfIndexPrice.
  */
 [[nodiscard]] std::expected<std::vector<perp::LossMarket>, TER>
 lossMarketsOf(ApplyView& view, STLedgerEntry const& account)
@@ -57,7 +56,7 @@ lossMarketsOf(ApplyView& view, STLedgerEntry const& account)
         NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
         lossMarkets.push_back(
             {.market = market,
-             .weight = abs(size) * perp::liquidationPrice(*market),
+             .weight = abs(size) * Number{(*market)[sfIndexPrice]},
              .wasLong = size > Number{}});
     }
     return lossMarkets;
@@ -65,21 +64,24 @@ lossMarketsOf(ApplyView& view, STLedgerEntry const& account)
 
 /**
  * The size of spec 9.2: kLiquidationChunk of the position rounded up to a lot when equity is at
- * least two thirds of the maintenance requirement and the notional is above sfLiquidationChunkMin,
- * else the whole position.
+ * least two thirds of the maintenance requirement and the notional is above the exchange's
+ * sfLiquidationChunkMin, else the whole position.
  */
 [[nodiscard]] Number
-liquidationSize(STLedgerEntry const& market, Number const& held, perp::MarginSummary const& summary)
+liquidationSize(
+    STLedgerEntry const& market,
+    STLedgerEntry const& exchange,
+    Number const& held,
+    perp::MarginSummary const& summary)
 {
     Number const whole = abs(held);
-    Number const mark = market[sfMarkPrice];
     Number notional;
     {
         NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
-        notional = whole * mark;
+        notional = whole * market[sfIndexPrice];
     }
     if (Number{3} * summary.equity < Number{2} * summary.requirements.maintenance ||
-        notional <= market[sfLiquidationChunkMin])
+        notional <= exchange[sfLiquidationChunkMin])
         return whole;
 
     Number const lot = market[sfLotSize];
@@ -92,12 +94,6 @@ liquidationSize(STLedgerEntry const& market, Number const& held, perp::MarginSum
 }
 
 }  // namespace
-
-bool
-PerpLiquidate::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpLiquidate::getFlagsMask(PreflightContext const& ctx)
@@ -136,8 +132,7 @@ PerpLiquidate::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // The liquidator acts through its own margin account on the exchange.
-    auto const liquidator =
-        keylet::marginAccount(tx[sfAccount], exchange->key(), tx[~sfSubaccount].value_or(0));
+    auto const liquidator = keylet::marginAccount(tx[sfAccount], exchange->key());
     if (!ctx.view.exists(liquidator))
         return tecNO_ENTRY;
 
@@ -147,7 +142,7 @@ PerpLiquidate::preclaim(PreclaimContext const& ctx)
 
     if (tx.isFlag(tfPerpLiquidateTakeover))
     {
-        // A margin account cannot take over its own position.
+        // An account cannot take over its own position.
         if (liquidator.key == target->key())
             return tecNO_PERMISSION;
         if (auto const domainID = (*exchange)[~sfDomainID])
@@ -173,8 +168,7 @@ PerpLiquidate::doApply()
     auto const exchange = view().peek(keylet::perpExchange((*market)[sfExchangeID]));
     if (!exchange)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    auto const liquidator = view().peek(
-        keylet::marginAccount(accountID_, exchange->key(), tx[~sfSubaccount].value_or(0)));
+    auto const liquidator = view().peek(keylet::marginAccount(accountID_, exchange->key()));
     auto const position = view().peek(keylet::marginPosition(target->key(), market->key()));
     if (!liquidator || !position)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -193,7 +187,8 @@ PerpLiquidate::doApply()
             return ter;
     }
 
-    // 2. The target must be below its maintenance requirement, with Stale markets at last mark.
+    // 2. The target must be below its maintenance requirement, with Stale markets at their last
+    //    quorum index.
     auto const before = perp::liquidationSummary(view(), *target);
     if (!before)
         return before.error();
@@ -202,8 +197,8 @@ PerpLiquidate::doApply()
 
     // 3. The size rule, lowered by the transaction's sfSize.
     Number const held = (*position)[sfSize];
-    Number const mark = (*market)[sfMarkPrice];
-    Number size = liquidationSize(*market, held, *before);
+    Number const index = (*market)[sfIndexPrice];
+    Number size = liquidationSize(*market, *exchange, held, *before);
     if (auto const requested = tx[~sfSize])
     {
         if (!perp::isMultiple(*requested, (*market)[sfLotSize]))
@@ -220,7 +215,7 @@ PerpLiquidate::doApply()
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
             Number const band = rateOf((*market)[sfOrderPriceBand]);
-            limit = wasLong ? mark * (Number{1} - band) : mark * (Number{1} + band);
+            limit = wasLong ? index * (Number{1} - band) : index * (Number{1} + band);
         }
         perp::Taker taker{
             .account = target,
@@ -243,7 +238,8 @@ PerpLiquidate::doApply()
     }
     else
     {
-        // 4. Takeover mode: a negative equity is paid first, exactly, since the move is at mark.
+        // 4. Takeover mode: a negative equity is paid first, exactly, since the move is at the
+        //    index.
         if (auto const domainID = (*exchange)[~sfDomainID])
         {
             if (auto const ter = perp::verifyDomain(view(), *domainID, accountID_, j_);
@@ -257,15 +253,12 @@ PerpLiquidate::doApply()
                 return lossMarkets.error();  // LCOV_EXCL_LINE
             Number const shortfall =
                 perp::roundCollateral(*exchange, -before->equity, Number::RoundingMode::Upward);
-            if (auto const ter =
-                    perp::runWaterfall(view(), target, exchange, shortfall, *lossMarkets, j_);
-                !isTesSuccess(ter))
-                return ter;
+            perp::runWaterfall(view(), target, exchange, shortfall, *lossMarkets);
         }
 
-        // The target closes the size at mark and the liquidator opens it in the same direction.
+        // The target closes the size at the index and the liquidator opens it the same way.
         Number const closing = wasLong ? -size : size;
-        perp::applyFill(view(), target, position, market, exchange, closing, mark);
+        perp::applyFill(view(), target, position, market, exchange, closing, index);
         auto taken = view().peek(keylet::marginPosition(liquidator->key(), market->key()));
         if (!taken)
         {
@@ -274,20 +267,20 @@ PerpLiquidate::doApply()
                 return opened.error();
             taken = *opened;
         }
-        perp::applyFill(view(), liquidator, taken, market, exchange, -closing, mark);
+        perp::applyFill(view(), liquidator, taken, market, exchange, -closing, index);
 
         // No order may take a notional above the last tier, and neither may a takeover.
         Number const takenSize = (*taken)[sfSize];
         Number const worstCase =
             std::max(abs(takenSize + (*taken)[sfOpenBuy]), abs(takenSize - (*taken)[sfOpenSell]));
         auto const& tiers = market->getFieldArray(sfMarginTiers);
-        if (tiers.empty() || worstCase * mark > tiers.back()[sfNotionalMax])
+        if (tiers.empty() || worstCase * index > tiers.back()[sfNotionalMax])
             return tecPERP_POSITION_LIMIT;
         liquidated = size;
     }
 
-    // 5. The penalty, capped by the target's equity, is shared with the liquidator, or the
-    //    insurance fund pays the minimum reward when there is no penalty.
+    // 5. The exchange's penalty, capped by the target's equity, is shared with the liquidator, or
+    //    the insurance fund pays the exchange's minimum reward when there is no penalty.
     auto const after = perp::liquidationSummary(view(), *target);
     if (!after)
         return after.error();  // LCOV_EXCL_LINE
@@ -296,7 +289,7 @@ PerpLiquidate::doApply()
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         penalty = perp::roundCollateral(
             *exchange,
-            liquidated * mark * rateOf((*market)[sfLiquidationPenalty]),
+            liquidated * index * rateOf((*exchange)[sfLiquidationPenalty]),
             Number::RoundingMode::Upward);
     }
     penalty = std::min(
@@ -312,7 +305,7 @@ PerpLiquidate::doApply()
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
             reward = perp::roundCollateral(
                 *exchange,
-                penalty * rateOf((*market)[sfLiquidationRewardShare]),
+                penalty * rateOf(perp::kLiquidationRewardShare),
                 Number::RoundingMode::Downward);
         }
         (*target)[sfCash] = (*target)[sfCash] - penalty;
@@ -323,9 +316,7 @@ PerpLiquidate::doApply()
     else if (!sameOwner)
     {
         reward = std::min(
-            perp::roundCollateral(
-                *exchange, (*market)[sfLiquidationRewardMin], Number::RoundingMode::Downward),
-            Number{(*exchange)[sfInsuranceFund]});
+            Number{(*exchange)[sfLiquidationRewardMin]}, Number{(*exchange)[sfInsuranceFund]});
         (*exchange)[sfInsuranceFund] = (*exchange)[sfInsuranceFund] - reward;
     }
     if (reward > Number{})
@@ -342,15 +333,12 @@ PerpLiquidate::doApply()
         return flat.error();  // LCOV_EXCL_LINE
     if (*flat && (*target)[sfCash] < Number{})
     {
-        if (auto const ter = perp::runWaterfall(
-                view(),
-                target,
-                exchange,
-                -Number{(*target)[sfCash]},
-                {{.market = market, .weight = Number{1}, .wasLong = wasLong}},
-                j_);
-            !isTesSuccess(ter))
-            return ter;
+        perp::runWaterfall(
+            view(),
+            target,
+            exchange,
+            -Number{(*target)[sfCash]},
+            {{.market = market, .weight = Number{1}, .wasLong = wasLong}});
     }
     if (*flat)
         perp::repayWaterfallCredit(view(), target, exchange);

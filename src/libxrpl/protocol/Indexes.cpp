@@ -599,13 +599,9 @@ perpMarket(UInt256 const& exchangeID, Currency const& base, Currency const& quot
 }
 
 Keylet
-marginAccount(
-    AccountID const& account,
-    UInt256 const& exchangeID,
-    std::uint32_t subaccount) noexcept
+marginAccount(AccountID const& account, UInt256 const& exchangeID) noexcept
 {
-    return marginAccount(
-        indexHash(LedgerNameSpace::MarginAccount, account, exchangeID, subaccount));
+    return marginAccount(indexHash(LedgerNameSpace::MarginAccount, account, exchangeID));
 }
 
 Keylet

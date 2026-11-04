@@ -26,26 +26,13 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     auto const baseAssetValue = canonical_CURRENCY();
     auto const quoteAssetValue = canonical_CURRENCY();
     auto const indexOraclesValue = canonical_ARRAY();
-    auto const indexMaxAgeValue = canonical_UINT32();
     auto const indexMaxLedgersValue = canonical_UINT32();
     auto const priceTickValue = canonical_NUMBER();
     auto const lotSizeValue = canonical_NUMBER();
     auto const marginTiersValue = canonical_ARRAY();
     auto const openInterestMaxValue = canonical_NUMBER();
     auto const orderPriceBandValue = canonical_UINT32();
-    auto const midSpreadMaxValue = canonical_UINT32();
-    auto const markBandValue = canonical_UINT32();
-    auto const markMoveMaxValue = canonical_UINT32();
-    auto const basisWindowValue = canonical_UINT32();
-    auto const fundingInterestRateValue = canonical_INT32();
-    auto const fundingCapValue = canonical_UINT32();
-    auto const liquidationPenaltyValue = canonical_UINT32();
-    auto const liquidationRewardShareValue = canonical_UINT32();
-    auto const liquidationRewardMinValue = canonical_NUMBER();
-    auto const liquidationChunkMinValue = canonical_NUMBER();
-    auto const settleStaleAfterValue = canonical_UINT32();
     auto const indexPriceValue = canonical_NUMBER();
-    auto const markPriceValue = canonical_NUMBER();
     auto const basisEMAValue = canonical_NUMBER();
     auto const fundingRateValue = canonical_NUMBER();
     auto const cumulativeFundingValue = canonical_NUMBER();
@@ -56,12 +43,8 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     auto const orderCountValue = canonical_UINT32();
     auto const lastRefreshTimeValue = canonical_UINT32();
     auto const refreshLedgerValue = canonical_UINT32();
-    auto const staleSinceValue = canonical_UINT32();
-    auto const settledAtValue = canonical_UINT32();
+    auto const statusTimeValue = canonical_UINT32();
     auto const marketStatusValue = canonical_UINT8();
-    auto const settlementPriceValue = canonical_NUMBER();
-    auto const pendingParametersValue = canonical_OBJECT();
-    auto const parameterEffectiveTimeValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
     PerpMarketBuilder builder{
@@ -71,29 +54,16 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
         baseAssetValue,
         quoteAssetValue,
         indexOraclesValue,
-        indexMaxAgeValue,
         indexMaxLedgersValue,
         priceTickValue,
         lotSizeValue,
         marginTiersValue,
         openInterestMaxValue,
         orderPriceBandValue,
-        midSpreadMaxValue,
-        markBandValue,
-        markMoveMaxValue,
-        basisWindowValue,
-        fundingCapValue,
-        liquidationPenaltyValue,
-        liquidationRewardShareValue,
-        liquidationChunkMinValue,
-        settleStaleAfterValue,
         ownerNodeValue
     };
 
-    builder.setFundingInterestRate(fundingInterestRateValue);
-    builder.setLiquidationRewardMin(liquidationRewardMinValue);
     builder.setIndexPrice(indexPriceValue);
-    builder.setMarkPrice(markPriceValue);
     builder.setBasisEMA(basisEMAValue);
     builder.setFundingRate(fundingRateValue);
     builder.setCumulativeFunding(cumulativeFundingValue);
@@ -104,12 +74,8 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     builder.setOrderCount(orderCountValue);
     builder.setLastRefreshTime(lastRefreshTimeValue);
     builder.setRefreshLedger(refreshLedgerValue);
-    builder.setStaleSince(staleSinceValue);
-    builder.setSettledAt(settledAtValue);
+    builder.setStatusTime(statusTimeValue);
     builder.setMarketStatus(marketStatusValue);
-    builder.setSettlementPrice(settlementPriceValue);
-    builder.setPendingParameters(pendingParametersValue);
-    builder.setParameterEffectiveTime(parameterEffectiveTimeValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -157,12 +123,6 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = indexMaxAgeValue;
-        auto const actual = entry.getIndexMaxAge();
-        expectEqualField(expected, actual, "sfIndexMaxAge");
-    }
-
-    {
         auto const& expected = indexMaxLedgersValue;
         auto const actual = entry.getIndexMaxLedgers();
         expectEqualField(expected, actual, "sfIndexMaxLedgers");
@@ -199,79 +159,9 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = midSpreadMaxValue;
-        auto const actual = entry.getMidSpreadMax();
-        expectEqualField(expected, actual, "sfMidSpreadMax");
-    }
-
-    {
-        auto const& expected = markBandValue;
-        auto const actual = entry.getMarkBand();
-        expectEqualField(expected, actual, "sfMarkBand");
-    }
-
-    {
-        auto const& expected = markMoveMaxValue;
-        auto const actual = entry.getMarkMoveMax();
-        expectEqualField(expected, actual, "sfMarkMoveMax");
-    }
-
-    {
-        auto const& expected = basisWindowValue;
-        auto const actual = entry.getBasisWindow();
-        expectEqualField(expected, actual, "sfBasisWindow");
-    }
-
-    {
-        auto const& expected = fundingCapValue;
-        auto const actual = entry.getFundingCap();
-        expectEqualField(expected, actual, "sfFundingCap");
-    }
-
-    {
-        auto const& expected = liquidationPenaltyValue;
-        auto const actual = entry.getLiquidationPenalty();
-        expectEqualField(expected, actual, "sfLiquidationPenalty");
-    }
-
-    {
-        auto const& expected = liquidationRewardShareValue;
-        auto const actual = entry.getLiquidationRewardShare();
-        expectEqualField(expected, actual, "sfLiquidationRewardShare");
-    }
-
-    {
-        auto const& expected = liquidationChunkMinValue;
-        auto const actual = entry.getLiquidationChunkMin();
-        expectEqualField(expected, actual, "sfLiquidationChunkMin");
-    }
-
-    {
-        auto const& expected = settleStaleAfterValue;
-        auto const actual = entry.getSettleStaleAfter();
-        expectEqualField(expected, actual, "sfSettleStaleAfter");
-    }
-
-    {
         auto const& expected = ownerNodeValue;
         auto const actual = entry.getOwnerNode();
         expectEqualField(expected, actual, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = fundingInterestRateValue;
-        auto const actualOpt = entry.getFundingInterestRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfFundingInterestRate");
-        EXPECT_TRUE(entry.hasFundingInterestRate());
-    }
-
-    {
-        auto const& expected = liquidationRewardMinValue;
-        auto const actualOpt = entry.getLiquidationRewardMin();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
-        EXPECT_TRUE(entry.hasLiquidationRewardMin());
     }
 
     {
@@ -280,14 +170,6 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfIndexPrice");
         EXPECT_TRUE(entry.hasIndexPrice());
-    }
-
-    {
-        auto const& expected = markPriceValue;
-        auto const actualOpt = entry.getMarkPrice();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMarkPrice");
-        EXPECT_TRUE(entry.hasMarkPrice());
     }
 
     {
@@ -371,19 +253,11 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = staleSinceValue;
-        auto const actualOpt = entry.getStaleSince();
+        auto const& expected = statusTimeValue;
+        auto const actualOpt = entry.getStatusTime();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfStaleSince");
-        EXPECT_TRUE(entry.hasStaleSince());
-    }
-
-    {
-        auto const& expected = settledAtValue;
-        auto const actualOpt = entry.getSettledAt();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSettledAt");
-        EXPECT_TRUE(entry.hasSettledAt());
+        expectEqualField(expected, *actualOpt, "sfStatusTime");
+        EXPECT_TRUE(entry.hasStatusTime());
     }
 
     {
@@ -392,30 +266,6 @@ TEST(PerpMarketTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfMarketStatus");
         EXPECT_TRUE(entry.hasMarketStatus());
-    }
-
-    {
-        auto const& expected = settlementPriceValue;
-        auto const actualOpt = entry.getSettlementPrice();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSettlementPrice");
-        EXPECT_TRUE(entry.hasSettlementPrice());
-    }
-
-    {
-        auto const& expected = pendingParametersValue;
-        auto const actualOpt = entry.getPendingParameters();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPendingParameters");
-        EXPECT_TRUE(entry.hasPendingParameters());
-    }
-
-    {
-        auto const& expected = parameterEffectiveTimeValue;
-        auto const actualOpt = entry.getParameterEffectiveTime();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfParameterEffectiveTime");
-        EXPECT_TRUE(entry.hasParameterEffectiveTime());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -437,26 +287,13 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     auto const baseAssetValue = canonical_CURRENCY();
     auto const quoteAssetValue = canonical_CURRENCY();
     auto const indexOraclesValue = canonical_ARRAY();
-    auto const indexMaxAgeValue = canonical_UINT32();
     auto const indexMaxLedgersValue = canonical_UINT32();
     auto const priceTickValue = canonical_NUMBER();
     auto const lotSizeValue = canonical_NUMBER();
     auto const marginTiersValue = canonical_ARRAY();
     auto const openInterestMaxValue = canonical_NUMBER();
     auto const orderPriceBandValue = canonical_UINT32();
-    auto const midSpreadMaxValue = canonical_UINT32();
-    auto const markBandValue = canonical_UINT32();
-    auto const markMoveMaxValue = canonical_UINT32();
-    auto const basisWindowValue = canonical_UINT32();
-    auto const fundingInterestRateValue = canonical_INT32();
-    auto const fundingCapValue = canonical_UINT32();
-    auto const liquidationPenaltyValue = canonical_UINT32();
-    auto const liquidationRewardShareValue = canonical_UINT32();
-    auto const liquidationRewardMinValue = canonical_NUMBER();
-    auto const liquidationChunkMinValue = canonical_NUMBER();
-    auto const settleStaleAfterValue = canonical_UINT32();
     auto const indexPriceValue = canonical_NUMBER();
-    auto const markPriceValue = canonical_NUMBER();
     auto const basisEMAValue = canonical_NUMBER();
     auto const fundingRateValue = canonical_NUMBER();
     auto const cumulativeFundingValue = canonical_NUMBER();
@@ -467,12 +304,8 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     auto const orderCountValue = canonical_UINT32();
     auto const lastRefreshTimeValue = canonical_UINT32();
     auto const refreshLedgerValue = canonical_UINT32();
-    auto const staleSinceValue = canonical_UINT32();
-    auto const settledAtValue = canonical_UINT32();
+    auto const statusTimeValue = canonical_UINT32();
     auto const marketStatusValue = canonical_UINT8();
-    auto const settlementPriceValue = canonical_NUMBER();
-    auto const pendingParametersValue = canonical_OBJECT();
-    auto const parameterEffectiveTimeValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(PerpMarket::entryType, index);
@@ -483,26 +316,13 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     sle->at(sfBaseAsset) = baseAssetValue;
     sle->at(sfQuoteAsset) = quoteAssetValue;
     sle->setFieldArray(sfIndexOracles, indexOraclesValue);
-    sle->at(sfIndexMaxAge) = indexMaxAgeValue;
     sle->at(sfIndexMaxLedgers) = indexMaxLedgersValue;
     sle->at(sfPriceTick) = priceTickValue;
     sle->at(sfLotSize) = lotSizeValue;
     sle->setFieldArray(sfMarginTiers, marginTiersValue);
     sle->at(sfOpenInterestMax) = openInterestMaxValue;
     sle->at(sfOrderPriceBand) = orderPriceBandValue;
-    sle->at(sfMidSpreadMax) = midSpreadMaxValue;
-    sle->at(sfMarkBand) = markBandValue;
-    sle->at(sfMarkMoveMax) = markMoveMaxValue;
-    sle->at(sfBasisWindow) = basisWindowValue;
-    sle->at(sfFundingInterestRate) = fundingInterestRateValue;
-    sle->at(sfFundingCap) = fundingCapValue;
-    sle->at(sfLiquidationPenalty) = liquidationPenaltyValue;
-    sle->at(sfLiquidationRewardShare) = liquidationRewardShareValue;
-    sle->at(sfLiquidationRewardMin) = liquidationRewardMinValue;
-    sle->at(sfLiquidationChunkMin) = liquidationChunkMinValue;
-    sle->at(sfSettleStaleAfter) = settleStaleAfterValue;
     sle->at(sfIndexPrice) = indexPriceValue;
-    sle->at(sfMarkPrice) = markPriceValue;
     sle->at(sfBasisEMA) = basisEMAValue;
     sle->at(sfFundingRate) = fundingRateValue;
     sle->at(sfCumulativeFunding) = cumulativeFundingValue;
@@ -513,12 +333,8 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     sle->at(sfOrderCount) = orderCountValue;
     sle->at(sfLastRefreshTime) = lastRefreshTimeValue;
     sle->at(sfRefreshLedger) = refreshLedgerValue;
-    sle->at(sfStaleSince) = staleSinceValue;
-    sle->at(sfSettledAt) = settledAtValue;
+    sle->at(sfStatusTime) = statusTimeValue;
     sle->at(sfMarketStatus) = marketStatusValue;
-    sle->at(sfSettlementPrice) = settlementPriceValue;
-    sle->setFieldObject(sfPendingParameters, pendingParametersValue);
-    sle->at(sfParameterEffectiveTime) = parameterEffectiveTimeValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
 
     PerpMarketBuilder builderFromSle{sle};
@@ -591,16 +407,6 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = indexMaxAgeValue;
-
-        auto const fromSle = entryFromSle.getIndexMaxAge();
-        auto const fromBuilder = entryFromBuilder.getIndexMaxAge();
-
-        expectEqualField(expected, fromSle, "sfIndexMaxAge");
-        expectEqualField(expected, fromBuilder, "sfIndexMaxAge");
-    }
-
-    {
         auto const& expected = indexMaxLedgersValue;
 
         auto const fromSle = entryFromSle.getIndexMaxLedgers();
@@ -661,96 +467,6 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = midSpreadMaxValue;
-
-        auto const fromSle = entryFromSle.getMidSpreadMax();
-        auto const fromBuilder = entryFromBuilder.getMidSpreadMax();
-
-        expectEqualField(expected, fromSle, "sfMidSpreadMax");
-        expectEqualField(expected, fromBuilder, "sfMidSpreadMax");
-    }
-
-    {
-        auto const& expected = markBandValue;
-
-        auto const fromSle = entryFromSle.getMarkBand();
-        auto const fromBuilder = entryFromBuilder.getMarkBand();
-
-        expectEqualField(expected, fromSle, "sfMarkBand");
-        expectEqualField(expected, fromBuilder, "sfMarkBand");
-    }
-
-    {
-        auto const& expected = markMoveMaxValue;
-
-        auto const fromSle = entryFromSle.getMarkMoveMax();
-        auto const fromBuilder = entryFromBuilder.getMarkMoveMax();
-
-        expectEqualField(expected, fromSle, "sfMarkMoveMax");
-        expectEqualField(expected, fromBuilder, "sfMarkMoveMax");
-    }
-
-    {
-        auto const& expected = basisWindowValue;
-
-        auto const fromSle = entryFromSle.getBasisWindow();
-        auto const fromBuilder = entryFromBuilder.getBasisWindow();
-
-        expectEqualField(expected, fromSle, "sfBasisWindow");
-        expectEqualField(expected, fromBuilder, "sfBasisWindow");
-    }
-
-    {
-        auto const& expected = fundingCapValue;
-
-        auto const fromSle = entryFromSle.getFundingCap();
-        auto const fromBuilder = entryFromBuilder.getFundingCap();
-
-        expectEqualField(expected, fromSle, "sfFundingCap");
-        expectEqualField(expected, fromBuilder, "sfFundingCap");
-    }
-
-    {
-        auto const& expected = liquidationPenaltyValue;
-
-        auto const fromSle = entryFromSle.getLiquidationPenalty();
-        auto const fromBuilder = entryFromBuilder.getLiquidationPenalty();
-
-        expectEqualField(expected, fromSle, "sfLiquidationPenalty");
-        expectEqualField(expected, fromBuilder, "sfLiquidationPenalty");
-    }
-
-    {
-        auto const& expected = liquidationRewardShareValue;
-
-        auto const fromSle = entryFromSle.getLiquidationRewardShare();
-        auto const fromBuilder = entryFromBuilder.getLiquidationRewardShare();
-
-        expectEqualField(expected, fromSle, "sfLiquidationRewardShare");
-        expectEqualField(expected, fromBuilder, "sfLiquidationRewardShare");
-    }
-
-    {
-        auto const& expected = liquidationChunkMinValue;
-
-        auto const fromSle = entryFromSle.getLiquidationChunkMin();
-        auto const fromBuilder = entryFromBuilder.getLiquidationChunkMin();
-
-        expectEqualField(expected, fromSle, "sfLiquidationChunkMin");
-        expectEqualField(expected, fromBuilder, "sfLiquidationChunkMin");
-    }
-
-    {
-        auto const& expected = settleStaleAfterValue;
-
-        auto const fromSle = entryFromSle.getSettleStaleAfter();
-        auto const fromBuilder = entryFromBuilder.getSettleStaleAfter();
-
-        expectEqualField(expected, fromSle, "sfSettleStaleAfter");
-        expectEqualField(expected, fromBuilder, "sfSettleStaleAfter");
-    }
-
-    {
         auto const& expected = ownerNodeValue;
 
         auto const fromSle = entryFromSle.getOwnerNode();
@@ -758,32 +474,6 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, fromSle, "sfOwnerNode");
         expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
-        auto const& expected = fundingInterestRateValue;
-
-        auto const fromSleOpt = entryFromSle.getFundingInterestRate();
-        auto const fromBuilderOpt = entryFromBuilder.getFundingInterestRate();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfFundingInterestRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfFundingInterestRate");
-    }
-
-    {
-        auto const& expected = liquidationRewardMinValue;
-
-        auto const fromSleOpt = entryFromSle.getLiquidationRewardMin();
-        auto const fromBuilderOpt = entryFromBuilder.getLiquidationRewardMin();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLiquidationRewardMin");
-        expectEqualField(expected, *fromBuilderOpt, "sfLiquidationRewardMin");
     }
 
     {
@@ -797,19 +487,6 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfIndexPrice");
         expectEqualField(expected, *fromBuilderOpt, "sfIndexPrice");
-    }
-
-    {
-        auto const& expected = markPriceValue;
-
-        auto const fromSleOpt = entryFromSle.getMarkPrice();
-        auto const fromBuilderOpt = entryFromBuilder.getMarkPrice();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfMarkPrice");
-        expectEqualField(expected, *fromBuilderOpt, "sfMarkPrice");
     }
 
     {
@@ -943,29 +620,16 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = staleSinceValue;
+        auto const& expected = statusTimeValue;
 
-        auto const fromSleOpt = entryFromSle.getStaleSince();
-        auto const fromBuilderOpt = entryFromBuilder.getStaleSince();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfStaleSince");
-        expectEqualField(expected, *fromBuilderOpt, "sfStaleSince");
-    }
-
-    {
-        auto const& expected = settledAtValue;
-
-        auto const fromSleOpt = entryFromSle.getSettledAt();
-        auto const fromBuilderOpt = entryFromBuilder.getSettledAt();
+        auto const fromSleOpt = entryFromSle.getStatusTime();
+        auto const fromBuilderOpt = entryFromBuilder.getStatusTime();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfSettledAt");
-        expectEqualField(expected, *fromBuilderOpt, "sfSettledAt");
+        expectEqualField(expected, *fromSleOpt, "sfStatusTime");
+        expectEqualField(expected, *fromBuilderOpt, "sfStatusTime");
     }
 
     {
@@ -979,45 +643,6 @@ TEST(PerpMarketTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfMarketStatus");
         expectEqualField(expected, *fromBuilderOpt, "sfMarketStatus");
-    }
-
-    {
-        auto const& expected = settlementPriceValue;
-
-        auto const fromSleOpt = entryFromSle.getSettlementPrice();
-        auto const fromBuilderOpt = entryFromBuilder.getSettlementPrice();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSettlementPrice");
-        expectEqualField(expected, *fromBuilderOpt, "sfSettlementPrice");
-    }
-
-    {
-        auto const& expected = pendingParametersValue;
-
-        auto const fromSleOpt = entryFromSle.getPendingParameters();
-        auto const fromBuilderOpt = entryFromBuilder.getPendingParameters();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPendingParameters");
-        expectEqualField(expected, *fromBuilderOpt, "sfPendingParameters");
-    }
-
-    {
-        auto const& expected = parameterEffectiveTimeValue;
-
-        auto const fromSleOpt = entryFromSle.getParameterEffectiveTime();
-        auto const fromBuilderOpt = entryFromBuilder.getParameterEffectiveTime();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfParameterEffectiveTime");
-        expectEqualField(expected, *fromBuilderOpt, "sfParameterEffectiveTime");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -1071,22 +696,12 @@ TEST(PerpMarketTests, OptionalFieldsReturnNullopt)
     auto const baseAssetValue = canonical_CURRENCY();
     auto const quoteAssetValue = canonical_CURRENCY();
     auto const indexOraclesValue = canonical_ARRAY();
-    auto const indexMaxAgeValue = canonical_UINT32();
     auto const indexMaxLedgersValue = canonical_UINT32();
     auto const priceTickValue = canonical_NUMBER();
     auto const lotSizeValue = canonical_NUMBER();
     auto const marginTiersValue = canonical_ARRAY();
     auto const openInterestMaxValue = canonical_NUMBER();
     auto const orderPriceBandValue = canonical_UINT32();
-    auto const midSpreadMaxValue = canonical_UINT32();
-    auto const markBandValue = canonical_UINT32();
-    auto const markMoveMaxValue = canonical_UINT32();
-    auto const basisWindowValue = canonical_UINT32();
-    auto const fundingCapValue = canonical_UINT32();
-    auto const liquidationPenaltyValue = canonical_UINT32();
-    auto const liquidationRewardShareValue = canonical_UINT32();
-    auto const liquidationChunkMinValue = canonical_NUMBER();
-    auto const settleStaleAfterValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
     PerpMarketBuilder builder{
@@ -1096,36 +711,20 @@ TEST(PerpMarketTests, OptionalFieldsReturnNullopt)
         baseAssetValue,
         quoteAssetValue,
         indexOraclesValue,
-        indexMaxAgeValue,
         indexMaxLedgersValue,
         priceTickValue,
         lotSizeValue,
         marginTiersValue,
         openInterestMaxValue,
         orderPriceBandValue,
-        midSpreadMaxValue,
-        markBandValue,
-        markMoveMaxValue,
-        basisWindowValue,
-        fundingCapValue,
-        liquidationPenaltyValue,
-        liquidationRewardShareValue,
-        liquidationChunkMinValue,
-        settleStaleAfterValue,
         ownerNodeValue
     };
 
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasFundingInterestRate());
-    EXPECT_FALSE(entry.getFundingInterestRate().has_value());
-    EXPECT_FALSE(entry.hasLiquidationRewardMin());
-    EXPECT_FALSE(entry.getLiquidationRewardMin().has_value());
     EXPECT_FALSE(entry.hasIndexPrice());
     EXPECT_FALSE(entry.getIndexPrice().has_value());
-    EXPECT_FALSE(entry.hasMarkPrice());
-    EXPECT_FALSE(entry.getMarkPrice().has_value());
     EXPECT_FALSE(entry.hasBasisEMA());
     EXPECT_FALSE(entry.getBasisEMA().has_value());
     EXPECT_FALSE(entry.hasFundingRate());
@@ -1146,17 +745,9 @@ TEST(PerpMarketTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLastRefreshTime().has_value());
     EXPECT_FALSE(entry.hasRefreshLedger());
     EXPECT_FALSE(entry.getRefreshLedger().has_value());
-    EXPECT_FALSE(entry.hasStaleSince());
-    EXPECT_FALSE(entry.getStaleSince().has_value());
-    EXPECT_FALSE(entry.hasSettledAt());
-    EXPECT_FALSE(entry.getSettledAt().has_value());
+    EXPECT_FALSE(entry.hasStatusTime());
+    EXPECT_FALSE(entry.getStatusTime().has_value());
     EXPECT_FALSE(entry.hasMarketStatus());
     EXPECT_FALSE(entry.getMarketStatus().has_value());
-    EXPECT_FALSE(entry.hasSettlementPrice());
-    EXPECT_FALSE(entry.getSettlementPrice().has_value());
-    EXPECT_FALSE(entry.hasPendingParameters());
-    EXPECT_FALSE(entry.getPendingParameters().has_value());
-    EXPECT_FALSE(entry.hasParameterEffectiveTime());
-    EXPECT_FALSE(entry.getParameterEffectiveTime().has_value());
 }
 }

@@ -24,7 +24,6 @@ TEST(MarginAccountTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const accountValue = canonical_ACCOUNT();
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const cashValue = canonical_NUMBER();
     auto const waterfallCreditValue = canonical_NUMBER();
     auto const marketsValue = canonical_VECTOR256();
@@ -35,7 +34,6 @@ TEST(MarginAccountTests, BuilderSettersRoundTrip)
         previousTxnLgrSeqValue,
         accountValue,
         exchangeIDValue,
-        subaccountValue,
         ownerNodeValue
     };
 
@@ -74,12 +72,6 @@ TEST(MarginAccountTests, BuilderSettersRoundTrip)
         auto const& expected = exchangeIDValue;
         auto const actual = entry.getExchangeID();
         expectEqualField(expected, actual, "sfExchangeID");
-    }
-
-    {
-        auto const& expected = subaccountValue;
-        auto const actual = entry.getSubaccount();
-        expectEqualField(expected, actual, "sfSubaccount");
     }
 
     {
@@ -129,7 +121,6 @@ TEST(MarginAccountTests, BuilderFromSleRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const accountValue = canonical_ACCOUNT();
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const cashValue = canonical_NUMBER();
     auto const waterfallCreditValue = canonical_NUMBER();
     auto const marketsValue = canonical_VECTOR256();
@@ -141,7 +132,6 @@ TEST(MarginAccountTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfAccount) = accountValue;
     sle->at(sfExchangeID) = exchangeIDValue;
-    sle->at(sfSubaccount) = subaccountValue;
     sle->at(sfCash) = cashValue;
     sle->at(sfWaterfallCredit) = waterfallCreditValue;
     sle->at(sfMarkets) = marketsValue;
@@ -194,16 +184,6 @@ TEST(MarginAccountTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, fromSle, "sfExchangeID");
         expectEqualField(expected, fromBuilder, "sfExchangeID");
-    }
-
-    {
-        auto const& expected = subaccountValue;
-
-        auto const fromSle = entryFromSle.getSubaccount();
-        auto const fromBuilder = entryFromBuilder.getSubaccount();
-
-        expectEqualField(expected, fromSle, "sfSubaccount");
-        expectEqualField(expected, fromBuilder, "sfSubaccount");
     }
 
     {
@@ -304,7 +284,6 @@ TEST(MarginAccountTests, OptionalFieldsReturnNullopt)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const accountValue = canonical_ACCOUNT();
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
 
     MarginAccountBuilder builder{
@@ -312,7 +291,6 @@ TEST(MarginAccountTests, OptionalFieldsReturnNullopt)
         previousTxnLgrSeqValue,
         accountValue,
         exchangeIDValue,
-        subaccountValue,
         ownerNodeValue
     };
 

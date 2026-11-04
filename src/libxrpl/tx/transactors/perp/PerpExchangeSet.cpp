@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/perp/PerpExchangeSet.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -18,8 +19,10 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -36,9 +39,6 @@ namespace xrpl {
 bool
 PerpExchangeSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return false;
-
     return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
@@ -47,6 +47,24 @@ PerpExchangeSet::getFlagsMask(PreflightContext const& ctx)
 {
     return tfUniversalMask;
 }
+
+namespace {
+
+/**
+ * The exchange fields an update may only lower (spec 11).
+ */
+constexpr std::array<SF_UINT32 const*, 4> kTightenDown{
+    &sfMakerFee,
+    &sfTakerFee,
+    &sfOwnerFeeShare,
+    &sfBuilderFeeMax};
+
+/**
+ * The exchange fields an update may only raise (spec 11).
+ */
+constexpr std::array<SF_UINT32 const*, 2> kTightenUp{&sfCoverRateMinimum, &sfLiquidationPenalty};
+
+}  // namespace
 
 NotTEC
 PerpExchangeSet::preflight(PreflightContext const& ctx)
@@ -62,19 +80,15 @@ PerpExchangeSet::preflight(PreflightContext const& ctx)
         !validNumericRange(tx[~sfTakerFee], perp::kMaxTradingFee) ||
         !validNumericRange(tx[~sfBuilderFeeMax], perp::kMaxTradingFee) ||
         !validNumericRange(tx[~sfOwnerFeeShare], perp::kRateUnity) ||
-        !validNumericRange(tx[~sfVaultFeeShare], perp::kRateUnity) ||
         !validNumericRange(tx[~sfCoverRateMinimum], perp::kRateUnity) ||
-        !validNumericRange(tx[~sfVaultLossLimit], perp::kRateUnity))
-        return temMALFORMED;
-
-    if (tx[~sfOwnerFeeShare].value_or(0) + tx[~sfVaultFeeShare].value_or(0) > perp::kRateUnity)
+        !validNumericRange(tx[~sfLiquidationPenalty], perp::kRateUnity))
         return temMALFORMED;
 
     if (auto const exchangeID = tx[~sfExchangeID])
     {
-        // An update may change only the mutable fields.
-        std::array<SField const*, 6> const fixed{
-            &sfAsset, &sfScale, &sfDomainID, &sfVaultID, &sfVaultLossWindow, &sfParameterDelay};
+        // An update names no fixed field (spec 11).
+        std::array<SField const*, 5> const fixed{
+            &sfAsset, &sfScale, &sfDomainID, &sfLiquidationRewardMin, &sfLiquidationChunkMin};
         for (auto const* field : fixed)
         {
             if (tx.isFieldPresent(*field))
@@ -85,17 +99,14 @@ PerpExchangeSet::preflight(PreflightContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (!tx.isFieldPresent(sfAsset) || !tx.isFieldPresent(sfParameterDelay))
+    if (!tx.isFieldPresent(sfAsset) || !tx.isFieldPresent(sfLiquidationPenalty) ||
+        !tx.isFieldPresent(sfLiquidationChunkMin))
         return temMALFORMED;
 
-    if (tx[sfParameterDelay] < perp::kMinParameterDelay.count())
+    // The chunk minimum is positive; the reward floor is not negative.
+    if (tx[sfLiquidationChunkMin].signum() <= 0)
         return temMALFORMED;
-
-    // A backstop vault and its loss window come together.
-    if (tx.isFieldPresent(sfVaultID) != tx.isFieldPresent(sfVaultLossWindow))
-        return temMALFORMED;
-    if (auto const vaultID = tx[~sfVaultID];
-        vaultID && (*vaultID == beast::kZero || tx[sfVaultLossWindow] == 0))
+    if (auto const rewardMin = tx[~sfLiquidationRewardMin]; rewardMin && rewardMin->signum() < 0)
         return temMALFORMED;
 
     if (auto const domainID = tx[~sfDomainID]; domainID && *domainID == beast::kZero)
@@ -130,6 +141,18 @@ PerpExchangeSet::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         if ((*exchange)[sfOwner] != account)
             return tecNO_PERMISSION;
+
+        // A loosening value refuses the whole update (spec 11).
+        for (auto const* field : kTightenDown)
+        {
+            if (auto const proposed = tx[~*field]; proposed && *proposed > (*exchange)[*field])
+                return tecNO_PERMISSION;
+        }
+        for (auto const* field : kTightenUp)
+        {
+            if (auto const proposed = tx[~*field]; proposed && *proposed < (*exchange)[*field])
+                return tecNO_PERMISSION;
+        }
         return tesSUCCESS;
     }
 
@@ -158,15 +181,9 @@ PerpExchangeSet::preclaim(PreclaimContext const& ctx)
         domainID && !ctx.view.exists(keylet::permissionedDomain(*domainID)))
         return tecNO_ENTRY;
 
-    if (auto const vaultID = tx[~sfVaultID])
-    {
-        auto const vault = ctx.view.read(keylet::vault(*vaultID));
-        if (!vault)
-            return tecNO_ENTRY;
-        if ((*vault)[sfOwner] != account || (*vault)[sfAsset] != asset ||
-            vault->isFieldPresent(sfPerpExchangeID))
-            return tecNO_PERMISSION;
-    }
+    if (auto const rewardMin = tx[~sfLiquidationRewardMin];
+        rewardMin && !isRepresentable(asset, *rewardMin))
+        return tecPRECISION_LOSS;
 
     if (pseudoAccountAddress(ctx.view, keylet::perpExchange(account, tx.getSeqProxy()).key) ==
         beast::kZero)
@@ -218,33 +235,22 @@ PerpExchangeSet::createExchange()
     if (asset.holds<Issue>() && !asset.native())
         (*exchange)[sfScale] = tx[~sfScale].value_or(kVaultDefaultIouScale);
     (*exchange)[~sfDomainID] = tx[~sfDomainID];
-    (*exchange)[~sfVaultID] = tx[~sfVaultID];
-    (*exchange)[~sfVaultLossWindow] = tx[~sfVaultLossWindow];
-    (*exchange)[sfParameterDelay] = tx[sfParameterDelay];
-    for (auto const* field :
-         {&sfMakerFee,
-          &sfTakerFee,
-          &sfOwnerFeeShare,
-          &sfVaultFeeShare,
-          &sfBuilderFeeMax,
-          &sfCoverRateMinimum,
-          &sfVaultLossLimit})
+    for (auto const* field : kTightenDown)
     {
         if (auto const value = tx[~*field])
             (*exchange)[*field] = *value;
     }
+    if (auto const cover = tx[~sfCoverRateMinimum])
+        (*exchange)[sfCoverRateMinimum] = *cover;
+    (*exchange)[sfLiquidationPenalty] = tx[sfLiquidationPenalty];
+    (*exchange)[sfLiquidationChunkMin] = tx[sfLiquidationChunkMin];
+    if (auto const rewardMin = tx[~sfLiquidationRewardMin])
+    {
+        (*exchange)[sfLiquidationRewardMin] =
+            perp::roundCollateral(*exchange, *rewardMin, Number::RoundingMode::Downward);
+    }
     if (auto const data = tx[~sfData]; data && !data->empty())
         exchange->setFieldVL(sfData, *data);
-
-    // The backstop vault records the exchange it backs.
-    if (auto const vaultID = tx[~sfVaultID])
-    {
-        auto const vault = view().peek(keylet::vault(*vaultID));
-        if (!vault)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        (*vault)[sfPerpExchangeID] = exchange->key();
-        view().update(vault);
-    }
 
     view().insert(exchange);
     return tesSUCCESS;
@@ -258,65 +264,20 @@ PerpExchangeSet::updateExchange()
     if (!exchange)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // A change already due applies before a new one can replace it.
-    auto const now = perp::refreshTime(view());
-    perp::applyPendingParameters(*exchange, now);
-
-    // Raising a fee or share, or lowering the cover minimum, is queued; the opposite applies now.
-    STObject pending = STObject::makeInnerObject(sfPendingParameters);
-    bool queued = false;
-    auto const change = [&](SF_UINT32 const& field, bool queueRaise) {
-        auto const proposed = tx[~field];
-        if (!proposed)
-            return;
-        std::uint32_t const current = (*exchange)[field];
-        if (*proposed == current)
-            return;
-        if ((*proposed > current) == queueRaise)
-        {
-            pending[field] = *proposed;
-            queued = true;
-        }
-        else
-        {
-            (*exchange)[field] = *proposed;
-        }
-    };
-    for (auto const* field :
-         {&sfMakerFee,
-          &sfTakerFee,
-          &sfOwnerFeeShare,
-          &sfVaultFeeShare,
-          &sfBuilderFeeMax,
-          &sfVaultLossLimit})
-        change(*field, true);
-    change(sfCoverRateMinimum, false);
+    // Preclaim refused every loosening, so each value given applies at once.
+    for (auto const* field : kTightenDown)
+    {
+        if (auto const value = tx[~*field])
+            (*exchange)[*field] = *value;
+    }
+    for (auto const* field : kTightenUp)
+    {
+        if (auto const value = tx[~*field])
+            (*exchange)[*field] = *value;
+    }
 
     if (auto const data = tx[~sfData])
-    {
-        if (data->empty())
-        {
-            exchange->makeFieldAbsent(sfData);
-        }
-        else
-        {
-            exchange->setFieldVL(sfData, *data);
-        }
-    }
-
-    // A new queued change replaces the one pending.
-    if (queued)
-    {
-        exchange->setFieldObject(sfPendingParameters, pending);
-        (*exchange)[sfParameterEffectiveTime] =
-            perp::parameterEffectiveTime(now, (*exchange)[sfParameterDelay]);
-    }
-
-    auto const sharesFit = [](STLedgerEntry const& entry) {
-        return entry[sfOwnerFeeShare] + entry[sfVaultFeeShare] <= perp::kRateUnity;
-    };
-    if (!sharesFit(*exchange) || !sharesFit(perp::eventualParameters(*exchange)))
-        return tecLIMIT_EXCEEDED;
+        exchange->setFieldVL(sfData, *data);
 
     view().update(exchange);
     return tesSUCCESS;

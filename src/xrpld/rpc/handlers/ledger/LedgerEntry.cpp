@@ -941,12 +941,7 @@ parseMarginAccount(
     if (!exchangeID)
         return std::unexpected(exchangeID.error());
 
-    auto const subaccount =
-        ledger_entry_helpers::requiredUInt32(params, jss::subaccount, "malformedSubaccount");
-    if (!subaccount)
-        return std::unexpected(subaccount.error());
-
-    return keylet::marginAccount(*account, *exchangeID, *subaccount).key;
+    return keylet::marginAccount(*account, *exchangeID).key;
 }
 
 static std::expected<UInt256, json::Value>

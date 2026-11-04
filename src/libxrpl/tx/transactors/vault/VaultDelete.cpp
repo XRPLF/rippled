@@ -54,14 +54,6 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    // A vault bound to a perpetual futures exchange backs that exchange's losses.
-    if (ctx.view.rules().enabled(featurePerpetualFutures) &&
-        vault->isFieldPresent(sfPerpExchangeID))
-    {
-        JLOG(ctx.j.debug()) << "VaultDelete: vault backs a perpetual futures exchange.";
-        return tecHAS_OBLIGATIONS;
-    }
-
     if (vault->at(sfAssetsAvailable) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets available.";

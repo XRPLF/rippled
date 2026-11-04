@@ -9,8 +9,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
-#include <cstdint>
-
 namespace xrpl {
 
 template <typename ViewT>
@@ -26,10 +24,9 @@ public:
     explicit MarginAccountEntry(
         AccountID const& account,
         UInt256 const& exchangeID,
-        std::uint32_t subaccount,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::marginAccount(account, exchangeID, subaccount), view, j)
+        : Base(keylet::marginAccount(account, exchangeID), view, j)
     {
     }
 

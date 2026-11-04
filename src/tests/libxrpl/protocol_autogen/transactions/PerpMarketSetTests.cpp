@@ -34,24 +34,12 @@ TEST(TransactionsPerpMarketSetTests, BuilderSettersRoundTrip)
     auto const baseAssetValue = canonical_CURRENCY();
     auto const quoteAssetValue = canonical_CURRENCY();
     auto const indexOraclesValue = canonical_ARRAY();
-    auto const indexMaxAgeValue = canonical_UINT32();
     auto const indexMaxLedgersValue = canonical_UINT32();
     auto const priceTickValue = canonical_NUMBER();
     auto const lotSizeValue = canonical_NUMBER();
     auto const marginTiersValue = canonical_ARRAY();
     auto const openInterestMaxValue = canonical_NUMBER();
     auto const orderPriceBandValue = canonical_UINT32();
-    auto const midSpreadMaxValue = canonical_UINT32();
-    auto const markBandValue = canonical_UINT32();
-    auto const markMoveMaxValue = canonical_UINT32();
-    auto const basisWindowValue = canonical_UINT32();
-    auto const fundingInterestRateValue = canonical_INT32();
-    auto const fundingCapValue = canonical_UINT32();
-    auto const liquidationPenaltyValue = canonical_UINT32();
-    auto const liquidationRewardShareValue = canonical_UINT32();
-    auto const liquidationRewardMinValue = canonical_NUMBER();
-    auto const liquidationChunkMinValue = canonical_NUMBER();
-    auto const settleStaleAfterValue = canonical_UINT32();
 
     PerpMarketSetBuilder builder{
         accountValue,
@@ -65,24 +53,12 @@ TEST(TransactionsPerpMarketSetTests, BuilderSettersRoundTrip)
     builder.setBaseAsset(baseAssetValue);
     builder.setQuoteAsset(quoteAssetValue);
     builder.setIndexOracles(indexOraclesValue);
-    builder.setIndexMaxAge(indexMaxAgeValue);
     builder.setIndexMaxLedgers(indexMaxLedgersValue);
     builder.setPriceTick(priceTickValue);
     builder.setLotSize(lotSizeValue);
     builder.setMarginTiers(marginTiersValue);
     builder.setOpenInterestMax(openInterestMaxValue);
     builder.setOrderPriceBand(orderPriceBandValue);
-    builder.setMidSpreadMax(midSpreadMaxValue);
-    builder.setMarkBand(markBandValue);
-    builder.setMarkMoveMax(markMoveMaxValue);
-    builder.setBasisWindow(basisWindowValue);
-    builder.setFundingInterestRate(fundingInterestRateValue);
-    builder.setFundingCap(fundingCapValue);
-    builder.setLiquidationPenalty(liquidationPenaltyValue);
-    builder.setLiquidationRewardShare(liquidationRewardShareValue);
-    builder.setLiquidationRewardMin(liquidationRewardMinValue);
-    builder.setLiquidationChunkMin(liquidationChunkMinValue);
-    builder.setSettleStaleAfter(settleStaleAfterValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -141,14 +117,6 @@ TEST(TransactionsPerpMarketSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = indexMaxAgeValue;
-        auto const actualOpt = tx.getIndexMaxAge();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIndexMaxAge should be present";
-        expectEqualField(expected, *actualOpt, "sfIndexMaxAge");
-        EXPECT_TRUE(tx.hasIndexMaxAge());
-    }
-
-    {
         auto const& expected = indexMaxLedgersValue;
         auto const actualOpt = tx.getIndexMaxLedgers();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIndexMaxLedgers should be present";
@@ -196,94 +164,6 @@ TEST(TransactionsPerpMarketSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasOrderPriceBand());
     }
 
-    {
-        auto const& expected = midSpreadMaxValue;
-        auto const actualOpt = tx.getMidSpreadMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMidSpreadMax should be present";
-        expectEqualField(expected, *actualOpt, "sfMidSpreadMax");
-        EXPECT_TRUE(tx.hasMidSpreadMax());
-    }
-
-    {
-        auto const& expected = markBandValue;
-        auto const actualOpt = tx.getMarkBand();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMarkBand should be present";
-        expectEqualField(expected, *actualOpt, "sfMarkBand");
-        EXPECT_TRUE(tx.hasMarkBand());
-    }
-
-    {
-        auto const& expected = markMoveMaxValue;
-        auto const actualOpt = tx.getMarkMoveMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMarkMoveMax should be present";
-        expectEqualField(expected, *actualOpt, "sfMarkMoveMax");
-        EXPECT_TRUE(tx.hasMarkMoveMax());
-    }
-
-    {
-        auto const& expected = basisWindowValue;
-        auto const actualOpt = tx.getBasisWindow();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBasisWindow should be present";
-        expectEqualField(expected, *actualOpt, "sfBasisWindow");
-        EXPECT_TRUE(tx.hasBasisWindow());
-    }
-
-    {
-        auto const& expected = fundingInterestRateValue;
-        auto const actualOpt = tx.getFundingInterestRate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFundingInterestRate should be present";
-        expectEqualField(expected, *actualOpt, "sfFundingInterestRate");
-        EXPECT_TRUE(tx.hasFundingInterestRate());
-    }
-
-    {
-        auto const& expected = fundingCapValue;
-        auto const actualOpt = tx.getFundingCap();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFundingCap should be present";
-        expectEqualField(expected, *actualOpt, "sfFundingCap");
-        EXPECT_TRUE(tx.hasFundingCap());
-    }
-
-    {
-        auto const& expected = liquidationPenaltyValue;
-        auto const actualOpt = tx.getLiquidationPenalty();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationPenalty should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationPenalty");
-        EXPECT_TRUE(tx.hasLiquidationPenalty());
-    }
-
-    {
-        auto const& expected = liquidationRewardShareValue;
-        auto const actualOpt = tx.getLiquidationRewardShare();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardShare should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationRewardShare");
-        EXPECT_TRUE(tx.hasLiquidationRewardShare());
-    }
-
-    {
-        auto const& expected = liquidationRewardMinValue;
-        auto const actualOpt = tx.getLiquidationRewardMin();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardMin should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
-        EXPECT_TRUE(tx.hasLiquidationRewardMin());
-    }
-
-    {
-        auto const& expected = liquidationChunkMinValue;
-        auto const actualOpt = tx.getLiquidationChunkMin();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationChunkMin should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationChunkMin");
-        EXPECT_TRUE(tx.hasLiquidationChunkMin());
-    }
-
-    {
-        auto const& expected = settleStaleAfterValue;
-        auto const actualOpt = tx.getSettleStaleAfter();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSettleStaleAfter should be present";
-        expectEqualField(expected, *actualOpt, "sfSettleStaleAfter");
-        EXPECT_TRUE(tx.hasSettleStaleAfter());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -305,24 +185,12 @@ TEST(TransactionsPerpMarketSetTests, BuilderFromStTxRoundTrip)
     auto const baseAssetValue = canonical_CURRENCY();
     auto const quoteAssetValue = canonical_CURRENCY();
     auto const indexOraclesValue = canonical_ARRAY();
-    auto const indexMaxAgeValue = canonical_UINT32();
     auto const indexMaxLedgersValue = canonical_UINT32();
     auto const priceTickValue = canonical_NUMBER();
     auto const lotSizeValue = canonical_NUMBER();
     auto const marginTiersValue = canonical_ARRAY();
     auto const openInterestMaxValue = canonical_NUMBER();
     auto const orderPriceBandValue = canonical_UINT32();
-    auto const midSpreadMaxValue = canonical_UINT32();
-    auto const markBandValue = canonical_UINT32();
-    auto const markMoveMaxValue = canonical_UINT32();
-    auto const basisWindowValue = canonical_UINT32();
-    auto const fundingInterestRateValue = canonical_INT32();
-    auto const fundingCapValue = canonical_UINT32();
-    auto const liquidationPenaltyValue = canonical_UINT32();
-    auto const liquidationRewardShareValue = canonical_UINT32();
-    auto const liquidationRewardMinValue = canonical_NUMBER();
-    auto const liquidationChunkMinValue = canonical_NUMBER();
-    auto const settleStaleAfterValue = canonical_UINT32();
 
     // Build an initial transaction
     PerpMarketSetBuilder initialBuilder{
@@ -336,24 +204,12 @@ TEST(TransactionsPerpMarketSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setBaseAsset(baseAssetValue);
     initialBuilder.setQuoteAsset(quoteAssetValue);
     initialBuilder.setIndexOracles(indexOraclesValue);
-    initialBuilder.setIndexMaxAge(indexMaxAgeValue);
     initialBuilder.setIndexMaxLedgers(indexMaxLedgersValue);
     initialBuilder.setPriceTick(priceTickValue);
     initialBuilder.setLotSize(lotSizeValue);
     initialBuilder.setMarginTiers(marginTiersValue);
     initialBuilder.setOpenInterestMax(openInterestMaxValue);
     initialBuilder.setOrderPriceBand(orderPriceBandValue);
-    initialBuilder.setMidSpreadMax(midSpreadMaxValue);
-    initialBuilder.setMarkBand(markBandValue);
-    initialBuilder.setMarkMoveMax(markMoveMaxValue);
-    initialBuilder.setBasisWindow(basisWindowValue);
-    initialBuilder.setFundingInterestRate(fundingInterestRateValue);
-    initialBuilder.setFundingCap(fundingCapValue);
-    initialBuilder.setLiquidationPenalty(liquidationPenaltyValue);
-    initialBuilder.setLiquidationRewardShare(liquidationRewardShareValue);
-    initialBuilder.setLiquidationRewardMin(liquidationRewardMinValue);
-    initialBuilder.setLiquidationChunkMin(liquidationChunkMinValue);
-    initialBuilder.setSettleStaleAfter(settleStaleAfterValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -408,13 +264,6 @@ TEST(TransactionsPerpMarketSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = indexMaxAgeValue;
-        auto const actualOpt = rebuiltTx.getIndexMaxAge();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIndexMaxAge should be present";
-        expectEqualField(expected, *actualOpt, "sfIndexMaxAge");
-    }
-
-    {
         auto const& expected = indexMaxLedgersValue;
         auto const actualOpt = rebuiltTx.getIndexMaxLedgers();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIndexMaxLedgers should be present";
@@ -454,83 +303,6 @@ TEST(TransactionsPerpMarketSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getOrderPriceBand();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfOrderPriceBand should be present";
         expectEqualField(expected, *actualOpt, "sfOrderPriceBand");
-    }
-
-    {
-        auto const& expected = midSpreadMaxValue;
-        auto const actualOpt = rebuiltTx.getMidSpreadMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMidSpreadMax should be present";
-        expectEqualField(expected, *actualOpt, "sfMidSpreadMax");
-    }
-
-    {
-        auto const& expected = markBandValue;
-        auto const actualOpt = rebuiltTx.getMarkBand();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMarkBand should be present";
-        expectEqualField(expected, *actualOpt, "sfMarkBand");
-    }
-
-    {
-        auto const& expected = markMoveMaxValue;
-        auto const actualOpt = rebuiltTx.getMarkMoveMax();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMarkMoveMax should be present";
-        expectEqualField(expected, *actualOpt, "sfMarkMoveMax");
-    }
-
-    {
-        auto const& expected = basisWindowValue;
-        auto const actualOpt = rebuiltTx.getBasisWindow();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBasisWindow should be present";
-        expectEqualField(expected, *actualOpt, "sfBasisWindow");
-    }
-
-    {
-        auto const& expected = fundingInterestRateValue;
-        auto const actualOpt = rebuiltTx.getFundingInterestRate();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFundingInterestRate should be present";
-        expectEqualField(expected, *actualOpt, "sfFundingInterestRate");
-    }
-
-    {
-        auto const& expected = fundingCapValue;
-        auto const actualOpt = rebuiltTx.getFundingCap();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFundingCap should be present";
-        expectEqualField(expected, *actualOpt, "sfFundingCap");
-    }
-
-    {
-        auto const& expected = liquidationPenaltyValue;
-        auto const actualOpt = rebuiltTx.getLiquidationPenalty();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationPenalty should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationPenalty");
-    }
-
-    {
-        auto const& expected = liquidationRewardShareValue;
-        auto const actualOpt = rebuiltTx.getLiquidationRewardShare();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardShare should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationRewardShare");
-    }
-
-    {
-        auto const& expected = liquidationRewardMinValue;
-        auto const actualOpt = rebuiltTx.getLiquidationRewardMin();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationRewardMin should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
-    }
-
-    {
-        auto const& expected = liquidationChunkMinValue;
-        auto const actualOpt = rebuiltTx.getLiquidationChunkMin();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLiquidationChunkMin should be present";
-        expectEqualField(expected, *actualOpt, "sfLiquidationChunkMin");
-    }
-
-    {
-        auto const& expected = settleStaleAfterValue;
-        auto const actualOpt = rebuiltTx.getSettleStaleAfter();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSettleStaleAfter should be present";
-        expectEqualField(expected, *actualOpt, "sfSettleStaleAfter");
     }
 
 }
@@ -598,8 +370,6 @@ TEST(TransactionsPerpMarketSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getQuoteAsset().has_value());
     EXPECT_FALSE(tx.hasIndexOracles());
     EXPECT_FALSE(tx.getIndexOracles().has_value());
-    EXPECT_FALSE(tx.hasIndexMaxAge());
-    EXPECT_FALSE(tx.getIndexMaxAge().has_value());
     EXPECT_FALSE(tx.hasIndexMaxLedgers());
     EXPECT_FALSE(tx.getIndexMaxLedgers().has_value());
     EXPECT_FALSE(tx.hasPriceTick());
@@ -612,28 +382,6 @@ TEST(TransactionsPerpMarketSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getOpenInterestMax().has_value());
     EXPECT_FALSE(tx.hasOrderPriceBand());
     EXPECT_FALSE(tx.getOrderPriceBand().has_value());
-    EXPECT_FALSE(tx.hasMidSpreadMax());
-    EXPECT_FALSE(tx.getMidSpreadMax().has_value());
-    EXPECT_FALSE(tx.hasMarkBand());
-    EXPECT_FALSE(tx.getMarkBand().has_value());
-    EXPECT_FALSE(tx.hasMarkMoveMax());
-    EXPECT_FALSE(tx.getMarkMoveMax().has_value());
-    EXPECT_FALSE(tx.hasBasisWindow());
-    EXPECT_FALSE(tx.getBasisWindow().has_value());
-    EXPECT_FALSE(tx.hasFundingInterestRate());
-    EXPECT_FALSE(tx.getFundingInterestRate().has_value());
-    EXPECT_FALSE(tx.hasFundingCap());
-    EXPECT_FALSE(tx.getFundingCap().has_value());
-    EXPECT_FALSE(tx.hasLiquidationPenalty());
-    EXPECT_FALSE(tx.getLiquidationPenalty().has_value());
-    EXPECT_FALSE(tx.hasLiquidationRewardShare());
-    EXPECT_FALSE(tx.getLiquidationRewardShare().has_value());
-    EXPECT_FALSE(tx.hasLiquidationRewardMin());
-    EXPECT_FALSE(tx.getLiquidationRewardMin().has_value());
-    EXPECT_FALSE(tx.hasLiquidationChunkMin());
-    EXPECT_FALSE(tx.getLiquidationChunkMin().has_value());
-    EXPECT_FALSE(tx.hasSettleStaleAfter());
-    EXPECT_FALSE(tx.getSettleStaleAfter().has_value());
 }
 
 }

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -31,11 +32,14 @@ constexpr std::size_t kMaxMarginPositions = 16;
 constexpr std::size_t kMaxPerpMarkets = 64;
 constexpr std::size_t kMaxPerpFills = 64;
 constexpr std::uint32_t kLiquidationChunk = 20'000;
+constexpr std::uint32_t kLiquidationRewardShare = 50'000;
 constexpr std::uint32_t kMaxTradingFee = 10'000;
+constexpr std::chrono::seconds kIndexMaxAge{kMaxLastUpdateTimeDelta};
+constexpr std::chrono::seconds kBasisWindow{150};
+constexpr std::int32_t kFundingInterestRate = 10;
 constexpr std::uint32_t kFundingInterestClamp = 50;
-constexpr std::uint32_t kMaxFundingCap = 4'000;
-constexpr std::chrono::seconds kMinParameterDelay{86'400};
-constexpr std::chrono::seconds kMinSettleStaleAfter{3'600};
+constexpr std::uint32_t kFundingCap = 4'000;
+constexpr std::chrono::seconds kSettleStaleAfter{86'400};
 constexpr std::chrono::seconds kSettlementGrace{86'400};
 
 /**
@@ -91,7 +95,7 @@ refreshTime(ReadView const& view);
  * @param market The ltPERP_MARKET entry, for its pair and freshness bounds.
  * @param indexOracle One sfIndexOracle entry of the market's sfIndexOracles.
  * @return The positive quote, or nullopt when the oracle is missing, has no price for the
- *         pair, or is older than sfIndexMaxLedgers ledgers or sfIndexMaxAge seconds.
+ *         pair, or is older than sfIndexMaxLedgers ledgers or kIndexMaxAge seconds.
  */
 [[nodiscard]] std::optional<Number>
 freshQuote(ReadView const& view, STLedgerEntry const& market, STObject const& indexOracle);
@@ -105,15 +109,11 @@ freshQuote(ReadView const& view, STLedgerEntry const& market, STObject const& in
 computeIndex(ReadView const& view, STLedgerEntry const& market);
 
 /**
- * Inputs of one mark computation (spec 5.3). Rates are in tenth-bips.
+ * Inputs of one basis EMA update (spec 5.3).
  */
-struct MarkInput
+struct BasisInput
 {
     Number index;
-    /**
-     * The mark of the previous refresh; zero before the first, which skips the move cap.
-     */
-    Number prevMark;
     Number basisEMA;
     /**
      * Seconds since the previous refresh.
@@ -121,44 +121,29 @@ struct MarkInput
     std::uint32_t elapsed{};
     std::optional<Number> bid;
     std::optional<Number> ask;
-    std::uint32_t basisWindow{};
-    std::uint32_t midSpreadMax{};
-    std::uint32_t markMoveMax{};
-    std::uint32_t markBand{};
+    /**
+     * The market's sfOrderPriceBand in tenth-bips; a mid counts only within half of it.
+     */
+    std::uint32_t orderPriceBand{};
 };
 
 /**
- * The outputs of a mark computation.
- */
-struct MarkResult
-{
-    Number mark;
-    Number basisEMA;
-};
-
-/**
- * The basis EMA and the mark: the median of index, index plus basis and the book mid, moved at
- * most sfMarkMoveMax from the previous mark and then held within sfMarkBand of the index
- * (spec 5.3). Rounds to nearest.
- */
-[[nodiscard]] MarkResult
-computeMark(MarkInput const& input);
-
-/**
- * The 8-hour funding rate: premium plus the clamped interest term, capped (spec 6.1). Rounds to
- * nearest.
- *
- * @param mark The new mark.
- * @param index The new index, positive.
- * @param interestRate sfFundingInterestRate in tenth-bips, signed.
- * @param fundingCap sfFundingCap in tenth-bips.
+ * The basis EMA after one refresh (spec 5.3): the book mid less the index when the books are
+ * uncrossed and their spread is within half the order band, else zero, taken into the EMA with
+ * weight min(elapsed, kBasisWindow / 2) / kBasisWindow. Rounds to nearest.
  */
 [[nodiscard]] Number
-computeFundingRate(
-    Number const& mark,
-    Number const& index,
-    std::int32_t interestRate,
-    std::uint32_t fundingCap);
+computeBasisEMA(BasisInput const& input);
+
+/**
+ * The 8-hour funding rate (spec 6.1): the premium sfBasisEMA / index plus the interest term
+ * kFundingInterestRate less the premium, clamped to kFundingInterestClamp, all capped at
+ * kFundingCap. Rounds to nearest.
+ *
+ * @return The rate, or zero when the index is not positive.
+ */
+[[nodiscard]] Number
+computeFundingRate(Number const& basisEMA, Number const& index);
 
 /**
  * The increase of sfCumulativeFunding over elapsed seconds at rate and index, with elapsed
@@ -175,45 +160,20 @@ fundingAccrual(Number const& rate, Number const& index, std::uint32_t elapsed);
 bestPrice(ReadView const& view, uint256 const& marketID, bool sell);
 
 /**
- * Moves a queued parameter change into the entry once its effective time has come (spec 11).
+ * Whether replacing a market's margin tiers tightens or keeps them (spec 11): the same number of
+ * tiers, and in each tier initial and maintenance rates no lower and a notional bound no higher.
  *
- * Applies to an ltPERP_EXCHANGE or an ltPERP_MARKET. Each field of sfPendingParameters
- * replaces the entry's field; sfPendingParameters and sfParameterEffectiveTime are then
- * removed. The caller writes the entry back to its view.
- *
- * @return Whether a change was applied.
- */
-bool
-applyPendingParameters(STLedgerEntry& entry, std::uint32_t now);
-
-/**
- * The time a change queued at now takes effect: now plus delay, saturating at the largest time.
- */
-[[nodiscard]] std::uint32_t
-parameterEffectiveTime(std::uint32_t now, std::uint32_t delay);
-
-/**
- * A copy of an ltPERP_EXCHANGE or ltPERP_MARKET with its queued parameter change applied: the
- * parameters the entry holds once the change takes effect.
- */
-[[nodiscard]] STLedgerEntry
-eventualParameters(STLedgerEntry const& entry);
-
-/**
- * Whether replacing a market's margin tiers loosens them (spec 4.3): the new tiers allow a larger
- * notional, or require less initial or maintenance margin at some notional both allow.
- *
- * @param current sfMarginTiers of the market, ascending in sfNotionalMax.
- * @param proposed The replacement, ascending in sfNotionalMax.
+ * @param current sfMarginTiers of the market.
+ * @param proposed The replacement, already valid as tiers on their own.
  */
 [[nodiscard]] bool
-tiersLoosen(STArray const& current, STArray const& proposed);
+tiersTighten(STArray const& current, STArray const& proposed);
 
 /**
- * Refreshes a market once per ledger (spec 5.4 steps 1-7): applies due parameter changes of the
- * market and its exchange, accrues funding while Live, and recomputes the index, mark and
- * funding rate, moving the exchange's sfOpenInterestNotional with the mark. Without index
- * quorum the market turns Stale, unless Settled, and keeps its last prices. Does nothing when
+ * Refreshes a market once per ledger (spec 5.4): accrues funding while Live, and recomputes the
+ * index, the basis EMA and the funding rate, moving the exchange's sfOpenInterestNotional with
+ * the index. Without index quorum a Live market turns Stale and keeps its last index; a Settled
+ * market keeps its frozen index. sfStatusTime records each change of status. Does nothing when
  * the market was already refreshed in this ledger.
  *
  * @param view The view both entries were peeked from.
@@ -304,13 +264,13 @@ settlementCharge(
 settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journal j);
 
 /**
- * Settles a market at price (spec 10): sets it Settled with sfSettlementPrice and sfSettledAt,
- * stops funding and clears sfStaleSince. The caller writes the entry back.
+ * Settles a market at its sfIndexPrice, which is frozen from then on (spec 10): sets it Settled
+ * with sfStatusTime and stops funding. The caller writes the entry back.
  *
- * @param now The settlement time, sfSettledAt.
+ * @param now The settlement time, sfStatusTime.
  */
 void
-settleMarket(STLedgerEntry& market, Number const& price, std::uint32_t now);
+settleMarket(STLedgerEntry& market, std::uint32_t now);
 
 /**
  * Whether no position of the margin account has a size.
@@ -321,9 +281,9 @@ settleMarket(STLedgerEntry& market, Number const& price, std::uint32_t now);
 isFlat(ReadView const& view, STLedgerEntry const& account);
 
 /**
- * Closes a settled position in a Settled market at sfSettlementPrice through the fill path
+ * Closes a settled position in a Settled market at its frozen sfIndexPrice through the fill path
  * (spec 10, 7.5), and deletes the position when it holds no order. A close that would realize a
- * gain is not made until kSettlementGrace after sfSettledAt. A close that leaves the account with
+ * gain is not made until kSettlementGrace after sfStatusTime. A close that leaves the account with
  * no size and negative sfCash runs the waterfall for -sfCash with this market as the loss market
  * (spec 9.6).
  *
@@ -331,7 +291,7 @@ isFlat(ReadView const& view, STLedgerEntry const& account);
  * @param position The ltMARGIN_POSITION, settled in this transaction.
  * @param market The Settled ltPERP_MARKET.
  * @param exchange The ltPERP_EXCHANGE.
- * @return tesSUCCESS, or the error of the position deletion or of runWaterfall.
+ * @return tesSUCCESS, or the error of the position deletion.
  */
 [[nodiscard]] TER
 closeSettledPosition(
@@ -351,7 +311,7 @@ repayWaterfallCredit(ApplyView& view, SLE::Ref account, SLE::Ref exchange);
 
 /**
  * Reduces the exchange's sfBadDebt by up to amount, as every insurance-fund inflow and cover
- * deposit does first (spec 9.6 step 5). The caller writes the entry back.
+ * deposit does first (spec 9.6 step 4). The caller writes the entry back.
  *
  * @return The part of amount left after the bad debt.
  */
@@ -359,7 +319,7 @@ repayWaterfallCredit(ApplyView& view, SLE::Ref account, SLE::Ref exchange);
 absorbBadDebt(STLedgerEntry& exchange, Number const& amount);
 
 /**
- * The part of a margin withdrawal kept against bad debt (spec 9.6 step 5): amount times
+ * The part of a margin withdrawal kept against bad debt (spec 9.6 step 4): amount times
  * h = min(1, sfBadDebt / sfCashTotal), rounded upward onto the collateral grid and at most
  * sfBadDebt.
  *
@@ -380,8 +340,8 @@ struct MarginRequirements
 
 /**
  * A margin account's equity (spec 7.1): sfCash less its unsettled charges plus the unrealized
- * PnL of each position at its market's mark, or at sfSettlementPrice in a Settled market.
- * Rounds downward. Reads only.
+ * PnL of each position at its market's sfIndexPrice, frozen in a Settled market. Rounds downward.
+ * Reads only.
  *
  * @return The equity, tecPERP_STALE_PRICE when a position's market is Stale, or
  *         tefBAD_LEDGER when a listed entry is missing.
@@ -390,7 +350,7 @@ struct MarginRequirements
 accountEquity(ReadView const& view, STLedgerEntry const& account);
 
 /**
- * A margin account's requirements (spec 7.2) at each market's mark. The initial requirement
+ * A margin account's requirements (spec 7.2) at each market's sfIndexPrice. The initial requirement
  * counts resting orders at their worst case. A notional above the last tier is charged the last
  * tier's rate. A position in a Settled market requires nothing. Reads only.
  *
@@ -435,16 +395,9 @@ marginSummary(
     STLedgerEntry const* position = nullptr);
 
 /**
- * The price liquidation values a market's positions at (spec 9.1): the settlement price in a
- * Settled market, else the last sfMarkPrice, which a Stale market keeps.
- */
-[[nodiscard]] Number
-liquidationPrice(STLedgerEntry const& market);
-
-/**
  * The equity and requirements of a margin account for liquidation (spec 9.1): as marginSummary,
- * except that a position in a Stale market is valued at the market's last sfMarkPrice. Reads
- * only.
+ * except that a position in a Stale market is valued at the market's last quorum sfIndexPrice.
+ * Reads only.
  *
  * @return The summary, or tefBAD_LEDGER when a listed entry is missing.
  */
@@ -664,8 +617,7 @@ struct MatchResult
  * maker orders. Expired and self-trade makers are deleted, as are makers whose fill would leave
  * their equity below zero, or below their initial requirement when their size grows; reduce-only
  * makers are trimmed to their position. Each fill is made at the maker's price, charges both
- * sides' trading and builder fees (spec 12), and reduces the taker's counted open size. The
- * vault's fee share is paid into the bound vault when it has shares, else to the insurance fund.
+ * sides' trading and builder fees (spec 12), and reduces the taker's counted open size.
  *
  * @param market The ltPERP_MARKET, refreshed in this ledger.
  * @param exchange The market's ltPERP_EXCHANGE.
@@ -675,7 +627,7 @@ struct MatchResult
 matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, beast::Journal j);
 
 /**
- * A market that bears a waterfall shortfall through its loss index (spec 9.6 step 4).
+ * A market that bears a waterfall shortfall through its loss index (spec 9.6 step 3).
  */
 struct LossMarket
 {
@@ -684,7 +636,7 @@ struct LossMarket
      */
     SLE::pointer market;
     /**
-     * The account's share of the shortfall in this market: its position's notional at the mark.
+     * The account's share of the shortfall in this market: its position's notional at the index.
      */
     Number weight;
     /**
@@ -695,25 +647,22 @@ struct LossMarket
 
 /**
  * Pays a margin account's shortfall (spec 9.6). The sources are taken in order, each giving
- * min(remaining, what it has): the insurance fund; the owner's cover; the bound vault, at most
- * sfVaultLossLimit of its assets per sfVaultLossWindow and at most its sfAssetsAvailable; the loss
- * index of the opposite side of each loss market, split by weight; and bad debt. The whole
- * shortfall is credited to the account's sfCash and the exchange's sfCashTotal, and the amount the
- * first four sources paid to its sfWaterfallCredit.
+ * min(remaining, what it has): the insurance fund; the owner's cover; the loss index of the
+ * opposite side of each loss market, split by weight; and bad debt. The whole shortfall is
+ * credited to the account's sfCash and the exchange's sfCashTotal, and the amount the first three
+ * sources paid to its sfWaterfallCredit.
  *
  * @param account The ltMARGIN_ACCOUNT.
  * @param exchange The account's ltPERP_EXCHANGE.
  * @param shortfall The positive amount to pay, on the collateral grid.
  * @param lossMarkets The markets whose opposite side bears the loss index step.
- * @return tesSUCCESS, or the error of the vault transfer.
  */
-[[nodiscard]] TER
+void
 runWaterfall(
     ApplyView& view,
     SLE::Ref account,
     SLE::Ref exchange,
     Number const& shortfall,
-    std::vector<LossMarket> const& lossMarkets,
-    beast::Journal j);
+    std::vector<LossMarket> const& lossMarkets);
 
 }  // namespace xrpl::perp

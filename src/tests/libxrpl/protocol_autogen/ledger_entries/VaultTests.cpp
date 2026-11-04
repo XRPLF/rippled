@@ -41,7 +41,6 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
-    auto const perpExchangeIDValue = canonical_UINT256();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -67,7 +66,6 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setVaultKind(vaultKindValue);
     builder.setSubscriptionDate(subscriptionDateValue);
     builder.setRedemptionDate(redemptionDateValue);
-    builder.setPerpExchangeID(perpExchangeIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -228,14 +226,6 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRedemptionDate());
     }
 
-    {
-        auto const& expected = perpExchangeIDValue;
-        auto const actualOpt = entry.getPerpExchangeID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPerpExchangeID");
-        EXPECT_TRUE(entry.hasPerpExchangeID());
-    }
-
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -270,7 +260,6 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
-    auto const perpExchangeIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -295,7 +284,6 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfVaultKind) = vaultKindValue;
     sle->at(sfSubscriptionDate) = subscriptionDateValue;
     sle->at(sfRedemptionDate) = redemptionDateValue;
-    sle->at(sfPerpExchangeID) = perpExchangeIDValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -552,19 +540,6 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfRedemptionDate");
     }
 
-    {
-        auto const& expected = perpExchangeIDValue;
-
-        auto const fromSleOpt = entryFromSle.getPerpExchangeID();
-        auto const fromBuilderOpt = entryFromBuilder.getPerpExchangeID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPerpExchangeID");
-        expectEqualField(expected, *fromBuilderOpt, "sfPerpExchangeID");
-    }
-
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -659,7 +634,5 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getSubscriptionDate().has_value());
     EXPECT_FALSE(entry.hasRedemptionDate());
     EXPECT_FALSE(entry.getRedemptionDate().has_value());
-    EXPECT_FALSE(entry.hasPerpExchangeID());
-    EXPECT_FALSE(entry.getPerpExchangeID().has_value());
 }
 }

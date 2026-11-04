@@ -8,7 +8,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -25,12 +24,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-bool
-PerpOrderCreate::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpOrderCreate::getFlagsMask(PreflightContext const& ctx)
@@ -83,16 +76,15 @@ PerpOrderCreate::preclaim(PreclaimContext const& ctx)
     if (!exchange)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.exists(
-            keylet::marginAccount(account, exchange->key(), tx[~sfSubaccount].value_or(0))))
+    if (!ctx.view.exists(keylet::marginAccount(account, exchange->key())))
         return tecNO_ENTRY;
 
-    // The builder's fee is capped by the exchange and paid to its subaccount 0.
+    // The builder's fee is capped by the exchange and paid to its margin account.
     if (auto const builder = tx[~sfBuilder])
     {
         if (tx[sfBuilderFee] > (*exchange)[sfBuilderFeeMax])
             return tecNO_PERMISSION;
-        if (!ctx.view.exists(keylet::marginAccount(*builder, exchange->key(), 0)))
+        if (!ctx.view.exists(keylet::marginAccount(*builder, exchange->key())))
             return tecNO_ENTRY;
     }
 
@@ -135,8 +127,7 @@ PerpOrderCreate::doApply()
     auto const exchange = view().peek(keylet::perpExchange((*market)[sfExchangeID]));
     if (!exchange)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    auto const account = view().peek(
-        keylet::marginAccount(accountID_, exchange->key(), tx[~sfSubaccount].value_or(0)));
+    auto const account = view().peek(keylet::marginAccount(accountID_, exchange->key()));
     if (!account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     std::uint32_t const ownerCount = (*root)[sfOwnerCount];
@@ -199,7 +190,7 @@ PerpOrderCreate::doApply()
         Number const worstCase =
             std::max(abs(held + (*position)[sfOpenBuy]), abs(held - (*position)[sfOpenSell]));
         auto const& tiers = market->getFieldArray(sfMarginTiers);
-        if (tiers.empty() || worstCase * (*market)[sfMarkPrice] > tiers.back()[sfNotionalMax])
+        if (tiers.empty() || worstCase * (*market)[sfIndexPrice] > tiers.back()[sfNotionalMax])
             return tecPERP_POSITION_LIMIT;
     }
     {

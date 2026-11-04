@@ -21,7 +21,7 @@ class MarginDepositBuilder;
  * Type: ttMARGIN_DEPOSIT (107)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
- * Privileges: Privilege::MayModifyVault
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MarginDepositBuilder to construct new transactions.
@@ -56,32 +56,6 @@ public:
     getExchangeID() const
     {
         return this->tx_->at(sfExchangeID);
-    }
-
-    /**
-     * @brief Get sfSubaccount (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getSubaccount() const
-    {
-        if (hasSubaccount())
-        {
-            return this->tx_->at(sfSubaccount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSubaccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSubaccount() const
-    {
-        return this->tx_->isFieldPresent(sfSubaccount);
     }
 
     /**
@@ -151,17 +125,6 @@ public:
     setExchangeID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfExchangeID] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSubaccount (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    MarginDepositBuilder&
-    setSubaccount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSubaccount] = value;
         return *this;
     }
 

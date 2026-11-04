@@ -20,7 +20,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -66,8 +65,9 @@ class InvariantsPerp_test : public InvariantsBase
 
     /**
      * The entries setup creates: alice long 10 and bob short 10 in XRP/USD, alice's resting bid
-     * of 5, carol's resting bid of 1 in the isolated-only ETH/USD market, dave's flat account,
-     * and the owner's USD vault, which no perp transaction may write.
+     * of 5, carol's resting bid of 1 in the isolated-only ETH/USD market, which the owner then
+     * settles, dave's flat account, and the owner's USD vault, which no perp transaction may
+     * write.
      */
     struct World
     {
@@ -168,6 +168,11 @@ class InvariantsPerp_test : public InvariantsBase
         env(order(alice_, xrp, Number(95), Number(5)));
         auto const carolOrder = Perp::orderKeylet(env, carol_);
         env(order(carol_, eth, Number(95), Number(1)));
+        env.close();
+
+        auto settle = Perp::marketUpdate(owner_, eth.key);
+        settle[jss::Flags] = tfPerpMarketSettle;
+        env(settle);
         env.close();
 
         BEAST_EXPECT(env.le(aliceOrder));
@@ -353,6 +358,13 @@ class InvariantsPerp_test : public InvariantsBase
                     edit(ac, position(w, bob_, w.xrp), [](SLE& sle) {
                            add(sle, sfSize, Number{5});
                        });
+            },
+            ttPERP_REFRESH);
+
+        check(
+            {"perp settled market index changed"},
+            [](World const& w, ApplyContext& ac) {
+                return edit(ac, w.eth, [](SLE& sle) { sle[sfIndexPrice] = Number{101}; });
             },
             ttPERP_REFRESH);
     }
@@ -557,7 +569,7 @@ class InvariantsPerp_test : public InvariantsBase
              [](World const& w, ApplyContext& ac) {
                  return edit(ac, w.xrp, [](SLE& sle) {
                      STArray oracles = sle.getFieldArray(sfIndexOracles);
-                     oracles.pop_back();
+                     oracles.erase(oracles.begin());
                      sle.setFieldArray(sfIndexOracles, oracles);
                  });
              }},
@@ -587,7 +599,9 @@ class InvariantsPerp_test : public InvariantsBase
     void
     testVaultWritesRefused()
     {
-        // No perp transaction carries a vault privilege, so none may write a vault.
+        // No perp transaction carries a vault privilege, so none may write a vault. The second
+        // pass, with only the fee charged, writes no vault and passes.
+        std::initializer_list<TER> const firstPassFails{tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         for (auto const type :
              {ttPERP_EXCHANGE_SET,
               ttPERP_EXCHANGE_DELETE,
@@ -604,7 +618,8 @@ class InvariantsPerp_test : public InvariantsBase
                     return edit(
                         ac, w.vault, [](SLE& sle) { sle[sfAssetsMaximum] = Number{5'000}; });
                 },
-                type);
+                type,
+                firstPassFails);
         }
     }
 

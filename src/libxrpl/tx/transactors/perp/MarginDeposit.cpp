@@ -11,7 +11,6 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -29,12 +28,6 @@
 
 namespace xrpl {
 
-bool
-MarginDeposit::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
-
 std::uint32_t
 MarginDeposit::getFlagsMask(PreflightContext const& ctx)
 {
@@ -51,10 +44,6 @@ MarginDeposit::preflight(PreflightContext const& ctx)
     auto const amount = tx[sfAmount];
     if (amount <= beast::kZero || !isLegalNet(amount))
         return temBAD_AMOUNT;
-
-    // A cover deposit touches no margin account.
-    if (tx.isFlag(tfPerpCover) && tx.isFieldPresent(sfSubaccount))
-        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -145,8 +134,7 @@ MarginDeposit::doApply()
             return ter;
     }
 
-    auto const keylet =
-        keylet::marginAccount(accountID_, exchange->key(), tx[~sfSubaccount].value_or(0));
+    auto const keylet = keylet::marginAccount(accountID_, exchange->key());
     auto account = view().peek(keylet);
     bool const created = !account;
     if (created)
@@ -164,7 +152,6 @@ MarginDeposit::doApply()
 
         (*account)[sfAccount] = accountID_;
         (*account)[sfExchangeID] = exchange->key();
-        (*account)[sfSubaccount] = tx[~sfSubaccount].value_or(0);
         (*exchange)[sfMarginAccountCount] = (*exchange)[sfMarginAccountCount] + 1;
     }
     else if (

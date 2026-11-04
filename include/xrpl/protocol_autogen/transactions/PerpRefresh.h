@@ -21,7 +21,7 @@ class PerpRefreshBuilder;
  * Type: ttPERP_REFRESH (112)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
- * Privileges: Privilege::MayModifyVault
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PerpRefreshBuilder to construct new transactions.

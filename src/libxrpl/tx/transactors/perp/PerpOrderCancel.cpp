@@ -6,7 +6,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -20,12 +19,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-bool
-PerpOrderCancel::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpOrderCancel::getFlagsMask(PreflightContext const& ctx)

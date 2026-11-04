@@ -12,8 +12,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -21,7 +19,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -33,11 +30,9 @@
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -130,7 +125,7 @@ freshQuote(ReadView const& view, STLedgerEntry const& market, STObject const& in
     // A provider timestamp ahead of the close gives a negative age.
     std::int64_t const age =
         std::int64_t{refreshTime(view)} - std::int64_t{(*oracle)[sfLastUpdateTime]};
-    if (age > std::int64_t{market[sfIndexMaxAge]})
+    if (age > kIndexMaxAge.count())
         return std::nullopt;
 
     // STAmount holds the whole uint64 price, which Number's signed mantissa cannot.
@@ -165,61 +160,37 @@ computeIndex(ReadView const& view, STLedgerEntry const& market)
     return (quotes[(count / 2) - 1] + quotes[count / 2]) / Number{2};
 }
 
-MarkResult
-computeMark(MarkInput const& input)
+Number
+computeBasisEMA(BasisInput const& input)
 {
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
     Number const& index = input.index;
 
-    // The book mid counts only from an uncrossed pair no wider than sfMidSpreadMax.
-    std::optional<Number> mid;
+    // The book mid counts only from an uncrossed pair no wider than half the order band.
+    Number sample;
     if (input.bid && input.ask && index > Number{} && *input.bid < *input.ask &&
-        (*input.ask - *input.bid) / index <= rateOf(input.midSpreadMax))
+        (*input.ask - *input.bid) / index <= rateOf(input.orderPriceBand) / Number{2})
     {
-        mid = (*input.bid + *input.ask) / Number{2};
+        sample = ((*input.bid + *input.ask) / Number{2}) - index;
     }
 
-    Number const sample = mid ? *mid - index : Number{};
-    Number const window{input.basisWindow};
-    Number const half{5, -1};
-    Number const alpha =
-        input.basisWindow == 0 ? half : std::min(Number{input.elapsed}, window * half) / window;
-    Number const basisEMA = input.basisEMA + (alpha * (sample - input.basisEMA));
-
-    std::array<Number, 3> candidates{index, index + basisEMA, mid.value_or(index)};
-    std::ranges::sort(candidates);
-    Number const raw = candidates[1];
-
-    Number moved = raw;
-    if (input.prevMark > Number{})
-    {
-        Number const moveMax = rateOf(input.markMoveMax);
-        moved = clampNumber(
-            raw, input.prevMark * (Number{1} - moveMax), input.prevMark * (Number{1} + moveMax));
-    }
-
-    Number const band = rateOf(input.markBand);
-    return {
-        .mark = clampNumber(moved, index * (Number{1} - band), index * (Number{1} + band)),
-        .basisEMA = basisEMA};
+    Number const window{kBasisWindow.count()};
+    Number const alpha = std::min(Number{input.elapsed}, window / Number{2}) / window;
+    return input.basisEMA + (alpha * (sample - input.basisEMA));
 }
 
 Number
-computeFundingRate(
-    Number const& mark,
-    Number const& index,
-    std::int32_t interestRate,
-    std::uint32_t fundingCap)
+computeFundingRate(Number const& basisEMA, Number const& index)
 {
     if (index <= Number{})
         return Number{};
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
-    Number const premium = (mark - index) / index;
+    Number const premium = basisEMA / index;
     Number const interestClamp = rateOf(kFundingInterestClamp);
-    Number const cap = rateOf(fundingCap);
+    Number const cap = rateOf(kFundingCap);
     Number const interest =
-        clampNumber(rateOf(interestRate) - premium, -interestClamp, interestClamp);
+        clampNumber(rateOf(kFundingInterestRate) - premium, -interestClamp, interestClamp);
     return clampNumber(premium + interest, -cap, cap);
 }
 
@@ -251,97 +222,20 @@ bestPrice(ReadView const& view, uint256 const& marketID, bool sell)
 }
 
 bool
-applyPendingParameters(STLedgerEntry& entry, std::uint32_t now)
+tiersTighten(STArray const& current, STArray const& proposed)
 {
-    auto const effective = entry[~sfParameterEffectiveTime];
-    if (!entry.isFieldPresent(sfPendingParameters) || !effective || *effective > now)
+    if (proposed.size() != current.size())
         return false;
-
-    STObject const pending = entry.getFieldObject(sfPendingParameters);
-    for (auto const& field : pending)
+    for (std::size_t i = 0; i < current.size(); ++i)
     {
-        auto const& name = field.getFName();
-        if (field.getSType() == STI_NOTPRESENT)
-            continue;
-        if (entry.getFieldIndex(name) == -1)
-        {
-            UNREACHABLE("xrpl::perp::applyPendingParameters : field outside the entry");
-            continue;
-        }
-
-        switch (field.getSType())
-        {
-            case STI_UINT32:
-                entry.setFieldU32(name, pending.getFieldU32(name));
-                break;
-            case STI_INT32:
-                entry.setFieldI32(name, pending.getFieldI32(name));
-                break;
-            case STI_NUMBER:
-                entry.setFieldNumber(name, pending.getFieldNumber(name));
-                break;
-            case STI_ARRAY:
-                entry.setFieldArray(name, pending.getFieldArray(name));
-                break;
-            default:
-                UNREACHABLE("xrpl::perp::applyPendingParameters : unexpected field type");
-                continue;
-        }
-
-        // A default-styled field holding its default value is stored absent.
-        if (entry.getStyle(name) == SoeDefault && entry.peekAtField(name).isDefault())
-            entry.makeFieldAbsent(name);
+        auto const& before = current[i];
+        auto const& after = proposed[i];
+        if (after[sfInitialMarginRate] < before[sfInitialMarginRate] ||
+            after[sfMaintenanceMarginRate] < before[sfMaintenanceMarginRate] ||
+            Number{after[sfNotionalMax]} > Number{before[sfNotionalMax]})
+            return false;
     }
-
-    entry.makeFieldAbsent(sfPendingParameters);
-    entry.makeFieldAbsent(sfParameterEffectiveTime);
     return true;
-}
-
-std::uint32_t
-parameterEffectiveTime(std::uint32_t now, std::uint32_t delay)
-{
-    std::uint64_t const effective = std::uint64_t{now} + delay;
-    return static_cast<std::uint32_t>(
-        std::min<std::uint64_t>(effective, std::numeric_limits<std::uint32_t>::max()));
-}
-
-STLedgerEntry
-eventualParameters(STLedgerEntry const& entry)
-{
-    STLedgerEntry eventual{entry};
-    applyPendingParameters(eventual, std::numeric_limits<std::uint32_t>::max());
-    return eventual;
-}
-
-bool
-tiersLoosen(STArray const& current, STArray const& proposed)
-{
-    if (current.empty() || proposed.empty())
-        return !proposed.empty();
-
-    Number const proposedMax = proposed.back()[sfNotionalMax];
-    if (proposedMax > current.back()[sfNotionalMax])
-        return true;
-
-    // Both requirements are linear between tier bounds, so comparing at every bound suffices.
-    for (auto const* tiers : {&current, &proposed})
-    {
-        for (auto const& tier : *tiers)
-        {
-            Number const bound = tier[sfNotionalMax];
-            if (bound > proposedMax)
-                continue;
-            for (bool const initial : {true, false})
-            {
-                auto const before = tierRequirement(bound, current, initial);
-                auto const after = tierRequirement(bound, proposed, initial);
-                if (before && after && *after < *before)
-                    return true;
-            }
-        }
-    }
-    return false;
 }
 
 void
@@ -357,8 +251,7 @@ refreshMarket(ApplyView& view, SLE::Ref market, SLE::Ref exchange, beast::Journa
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
     auto const t = refreshTime(view);
-    bool exchangeChanged = applyPendingParameters(*exchange, t);
-    applyPendingParameters(*market, t);
+    bool exchangeChanged = false;
 
     std::uint32_t const lastRefresh = (*market)[sfLastRefreshTime];
     std::uint32_t const elapsed = t > lastRefresh ? t - lastRefresh : 0;
@@ -371,43 +264,43 @@ refreshMarket(ApplyView& view, SLE::Ref market, SLE::Ref exchange, beast::Journa
             fundingAccrual((*market)[sfFundingRate], (*market)[sfIndexPrice], elapsed);
     }
 
-    // A Settled market keeps the prices it was settled at.
+    // A Settled market keeps its frozen index.
     if (status != kMarketSettled)
     {
         auto const index = computeIndex(view, *market);
         if (!index)
         {
             JLOG(j.debug()) << "perp::refreshMarket: no index quorum for market " << market->key();
-            (*market)[sfMarketStatus] = kMarketStale;
-            if (!market->isFieldPresent(sfStaleSince))
-                (*market)[sfStaleSince] = t;
+            if (status == kMarketLive)
+            {
+                (*market)[sfMarketStatus] = kMarketStale;
+                (*market)[sfStatusTime] = t;
+            }
             (*market)[sfFundingRate] = Number{};
         }
         else
         {
-            (*market)[sfMarketStatus] = kMarketLive;
-            (*market)[~sfStaleSince] = std::nullopt;
+            if (status == kMarketStale)
+            {
+                (*market)[sfMarketStatus] = kMarketLive;
+                (*market)[sfStatusTime] = t;
+            }
 
-            Number const oldMark = (*market)[sfMarkPrice];
-            auto const mark = computeMark(
+            // The book feeds only the basis, and the basis only funding.
+            Number const oldIndex = (*market)[sfIndexPrice];
+            Number const basisEMA = computeBasisEMA(
                 {.index = *index,
-                 .prevMark = oldMark,
                  .basisEMA = (*market)[sfBasisEMA],
                  .elapsed = elapsed,
                  .bid = bestPrice(view, market->key(), false),
                  .ask = bestPrice(view, market->key(), true),
-                 .basisWindow = (*market)[sfBasisWindow],
-                 .midSpreadMax = (*market)[sfMidSpreadMax],
-                 .markMoveMax = (*market)[sfMarkMoveMax],
-                 .markBand = (*market)[sfMarkBand]});
+                 .orderPriceBand = (*market)[sfOrderPriceBand]});
 
             (*market)[sfIndexPrice] = *index;
-            (*market)[sfMarkPrice] = mark.mark;
-            (*market)[sfBasisEMA] = mark.basisEMA;
-            (*market)[sfFundingRate] = computeFundingRate(
-                mark.mark, *index, (*market)[sfFundingInterestRate], (*market)[sfFundingCap]);
+            (*market)[sfBasisEMA] = basisEMA;
+            (*market)[sfFundingRate] = computeFundingRate(basisEMA, *index);
 
-            Number const notionalDelta = (*market)[sfOpenInterestLong] * (mark.mark - oldMark);
+            Number const notionalDelta = (*market)[sfOpenInterestLong] * (*index - oldIndex);
             if (notionalDelta != Number{})
             {
                 (*exchange)[sfOpenInterestNotional] =
@@ -548,13 +441,11 @@ settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journ
 }
 
 void
-settleMarket(STLedgerEntry& market, Number const& price, std::uint32_t now)
+settleMarket(STLedgerEntry& market, std::uint32_t now)
 {
     market[sfMarketStatus] = kMarketSettled;
-    market[sfSettlementPrice] = price;
-    market[sfSettledAt] = now;
+    market[sfStatusTime] = now;
     market[sfFundingRate] = Number{};
-    market[~sfStaleSince] = std::nullopt;
 }
 
 std::expected<bool, TER>
@@ -581,15 +472,14 @@ closeSettledPosition(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        market && (*market)[sfMarketStatus] == kMarketSettled &&
-            market->isFieldPresent(sfSettlementPrice),
+        market && (*market)[sfMarketStatus] == kMarketSettled,
         "xrpl::perp::closeSettledPosition : settled market");
     Number const size = (*position)[sfSize];
     if (size == Number{})
         return tesSUCCESS;
 
     // A gain waits out kSettlementGrace, so losses close first.
-    Number const price = (*market)[sfSettlementPrice];
+    Number const price = (*market)[sfIndexPrice];
     Number gain;
     {
         NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
@@ -599,7 +489,7 @@ closeSettledPosition(
             Number::RoundingMode::Downward);
     }
     std::uint64_t const graceEnd =
-        std::uint64_t{std::as_const(*market)[~sfSettledAt].value_or(0)} + kSettlementGrace.count();
+        std::uint64_t{(*market)[sfStatusTime]} + kSettlementGrace.count();
     if (gain > Number{} && refreshTime(view) < graceEnd)
         return tesSUCCESS;
 
@@ -613,13 +503,13 @@ closeSettledPosition(
         return flat.error();  // LCOV_EXCL_LINE
     if (!*flat || (*account)[sfCash] >= Number{})
         return tesSUCCESS;
-    return runWaterfall(
+    runWaterfall(
         view,
         account,
         exchange,
         -Number{(*account)[sfCash]},
-        {{.market = market, .weight = Number{1}, .wasLong = size > Number{}}},
-        j);
+        {{.market = market, .weight = Number{1}, .wasLong = size > Number{}}});
+    return tesSUCCESS;
 }
 
 void
@@ -700,8 +590,8 @@ struct MarginState
 };
 
 /**
- * A Settled market is valued at its settlement price. With liquidation set, a Stale market is
- * valued at its last mark; otherwise no market may be Stale.
+ * Every market is valued at its sfIndexPrice, frozen in a Settled market. With liquidation set, a
+ * Stale market is valued at its last quorum index; otherwise no market may be Stale.
  */
 [[nodiscard]] std::expected<MarginState, TER>
 marginState(
@@ -735,11 +625,11 @@ marginState(
         auto const charge = settlementCharge(*exchange, *market, *position);
         state.cash = state.cash - charge.funding - charge.loss;
 
-        Number const mark = liquidationPrice(*market);
+        Number const index = (*market)[sfIndexPrice];
         Number const size = (*position)[sfSize];
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-            Number const pnl = (size * mark) - (*position)[sfEntryNotional];
+            Number const pnl = (size * index) - (*position)[sfEntryNotional];
             state.unrealized = state.unrealized + pnl;
             state.losses = state.losses + std::min(pnl, Number{});
         }
@@ -751,8 +641,8 @@ marginState(
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         Number const worstCase =
             std::max(abs(size + (*position)[sfOpenBuy]), abs(size - (*position)[sfOpenSell]));
-        Number const initial = requirement(worstCase * mark, tiers, true);
-        Number const maintenance = requirement(abs(size) * mark, tiers, false);
+        Number const initial = requirement(worstCase * index, tiers, true);
+        Number const maintenance = requirement(abs(size) * index, tiers, false);
         state.requirements.initial = state.requirements.initial + initial;
         state.requirements.maintenance = state.requirements.maintenance + maintenance;
     }
@@ -805,17 +695,6 @@ marginSummary(ReadView const& view, STLedgerEntry const& account, STLedgerEntry 
     NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
     return MarginSummary{
         .equity = state->cash + state->unrealized, .requirements = state->requirements};
-}
-
-Number
-liquidationPrice(STLedgerEntry const& market)
-{
-    if (market[sfMarketStatus] == kMarketSettled)
-    {
-        if (auto const settlement = market[~sfSettlementPrice])
-            return *settlement;
-    }
-    return market[sfMarkPrice];
 }
 
 std::expected<MarginSummary, TER>
@@ -1124,7 +1003,7 @@ applyFill(
     {
         NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
         (*exchange)[sfOpenInterestNotional] =
-            (*exchange)[sfOpenInterestNotional] + (longDelta * (*market)[sfMarkPrice]);
+            (*exchange)[sfOpenInterestNotional] + (longDelta * (*market)[sfIndexPrice]);
     }
 
     associateAsset(*account, (*exchange)[sfAsset]);
@@ -1149,9 +1028,8 @@ feeOf(STLedgerEntry const& exchange, Number const& notional, std::uint32_t rate)
 }
 
 /**
- * Charges one side of a fill its trading fee, split to the owner, the vault and the insurance
- * fund, and its builder fee, paid to the builder's margin account or else the insurance fund
- * (spec 12). The vault share accrues to vaultFees, or to the insurance fund when unset.
+ * Charges one side of a fill its trading fee, split to the owner and the insurance fund, and its
+ * builder fee, paid to the builder's margin account or else the insurance fund (spec 12).
  */
 void
 chargeFees(
@@ -1161,8 +1039,7 @@ chargeFees(
     Number const& notional,
     std::uint32_t rate,
     std::optional<AccountID> const& builder,
-    std::uint32_t builderRate,
-    std::optional<Number>& vaultFees)
+    std::uint32_t builderRate)
 {
     Number const fee = feeOf(*exchange, notional, rate);
     Number const builderFee = builder ? feeOf(*exchange, notional, builderRate) : Number{};
@@ -1176,34 +1053,21 @@ chargeFees(
     if (fee != Number{})
     {
         Number ownerPart;
-        Number vaultPart;
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
             ownerPart = roundCollateral(
                 *exchange,
                 fee * rateOf((*exchange)[sfOwnerFeeShare]),
                 Number::RoundingMode::Downward);
-            vaultPart = roundCollateral(
-                *exchange,
-                fee * rateOf((*exchange)[sfVaultFeeShare]),
-                Number::RoundingMode::Downward);
         }
         (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] - fee;
         (*exchange)[sfOwnerFees] = (*exchange)[sfOwnerFees] + ownerPart;
-        insurance = fee - ownerPart - vaultPart;
-        if (vaultFees)
-        {
-            *vaultFees = *vaultFees + vaultPart;
-        }
-        else
-        {
-            insurance = insurance + vaultPart;
-        }
+        insurance = fee - ownerPart;
     }
 
     if (builder && builderFee != Number{})
     {
-        auto const builderAccount = view.peek(keylet::marginAccount(*builder, exchange->key(), 0));
+        auto const builderAccount = view.peek(keylet::marginAccount(*builder, exchange->key()));
         if (builderAccount)
         {
             (*builderAccount)[sfCash] = (*builderAccount)[sfCash] + builderFee;
@@ -1222,50 +1086,6 @@ chargeFees(
             (*exchange)[sfInsuranceFund] + absorbBadDebt(*exchange, insurance);
     }
     view.update(exchange);
-}
-
-/**
- * Whether the exchange's vault takes the vault fee share: it is bound and has shares, since a
- * vault without shares may hold no assets.
- */
-[[nodiscard]] bool
-vaultTakesFees(ReadView const& view, STLedgerEntry const& exchange)
-{
-    auto const vaultID = exchange[~sfVaultID];
-    if (!vaultID)
-        return false;
-    auto const vault = view.read(keylet::vault(*vaultID));
-    if (!vault)
-        return false;  // LCOV_EXCL_LINE
-    auto const shares = view.read(keylet::mptokenIssuance((*vault)[sfShareMPTID]));
-    return shares && (*shares)[sfOutstandingAmount] != 0;
-}
-
-/**
- * Moves the vault fee share from the exchange's pseudo-account to the vault's, raising the
- * vault's balances so that its shares appreciate.
- */
-[[nodiscard]] TER
-payVaultFees(ApplyView& view, SLE::Ref exchange, Number const& amount, beast::Journal j)
-{
-    auto const vault = view.peek(keylet::vault((*exchange)[sfVaultID]));
-    if (!vault)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    Asset const asset = (*exchange)[sfAsset];
-    STAmount const paid{asset, amount};
-    if (auto const ter = accountSend(
-            view, (*exchange)[sfAccount], (*vault)[sfAccount], paid, j, {}, WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
-    if (auto const ter = adjustVaultCash(vault, paid, j); !isTesSuccess(ter))
-        return ter;  // LCOV_EXCL_LINE
-    associateAsset(*vault, asset);
-    view.update(vault);
-
-    (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] - amount;
-    view.update(exchange);
-    return tesSUCCESS;
 }
 
 /**
@@ -1347,10 +1167,6 @@ std::expected<MatchResult, TER>
 matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, beast::Journal j)
 {
     MatchResult result;
-    std::optional<Number> vaultFees;
-    if (vaultTakesFees(view, *exchange))
-        vaultFees = Number{};
-
     PerpBookTip tip(view, market->key(), !taker.sell);
     std::size_t visited = 0;
     while (taker.remaining > Number{})
@@ -1440,8 +1256,7 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
             notional,
             taker.noTakerFee ? 0 : std::uint32_t{(*exchange)[sfTakerFee]},
             taker.builder,
-            taker.builderFee,
-            vaultFees);
+            taker.builderFee);
         chargeFees(
             view,
             exchange,
@@ -1449,8 +1264,7 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
             notional,
             (*exchange)[sfMakerFee],
             std::as_const(*order)[~sfBuilder],
-            std::as_const(*order)[~sfBuilderFee].value_or(0),
-            vaultFees);
+            std::as_const(*order)[~sfBuilderFee].value_or(0));
 
         // The filled part of each order leaves its position's counted open size.
         if (!taker.reduceOnly)
@@ -1478,11 +1292,6 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
         }
     }
 
-    if (vaultFees && *vaultFees != Number{})
-    {
-        if (auto const ter = payVaultFees(view, exchange, *vaultFees, j); !isTesSuccess(ter))
-            return std::unexpected(ter);
-    }
     associateAsset(*exchange, (*exchange)[sfAsset]);
     return result;
 }
@@ -1490,79 +1299,8 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
 namespace {
 
 /**
- * Draws up to wanted from the exchange's bound vault into its pseudo-account (spec 9.6 step 3):
- * at most sfVaultLossLimit of the vault's assets less sfVaultLossInWindow, restarting the window
- * once sfVaultLossWindow has passed, and at most the vault's sfAssetsAvailable.
- *
- * @return The amount drawn, on the collateral grid; or the error of the transfer.
- */
-[[nodiscard]] std::expected<Number, TER>
-drawVault(ApplyView& view, SLE::Ref exchange, Number const& wanted, beast::Journal j)
-{
-    auto const vault = view.peek(keylet::vault((*exchange)[sfVaultID]));
-    if (!vault)
-        return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
-
-    std::uint32_t const now = refreshTime(view);
-    std::uint32_t start = (*exchange)[sfVaultLossWindowStart];
-    Number inWindow = (*exchange)[sfVaultLossInWindow];
-    if (std::uint64_t{now} >=
-        std::uint64_t{start} + std::as_const(*exchange)[~sfVaultLossWindow].value_or(0))
-    {
-        start = now;
-        inWindow = Number{};
-    }
-
-    Number allowance;
-    {
-        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-        allowance = roundCollateral(
-                        *exchange,
-                        getAssetsTotal(vault) * rateOf((*exchange)[sfVaultLossLimit]),
-                        Number::RoundingMode::Downward) -
-            inWindow;
-    }
-    Number const cap = std::min(allowance, Number{(*vault)[sfAssetsAvailable]});
-    Number const draw =
-        roundCollateral(*exchange, std::min(wanted, cap), Number::RoundingMode::Downward);
-    if (draw <= Number{})
-        return Number{};
-
-    // The vault rounds the outflow onto its own grid; an amount below its precision is skipped.
-    Asset const asset = (*exchange)[sfAsset];
-    auto const clamped = clampVaultOutflow(vault, STAmount{asset, -draw});
-    if (!clamped)
-        return Number{};
-    Number const drawn =
-        roundCollateral(*exchange, Number{*clamped}, Number::RoundingMode::Downward);
-    if (drawn <= Number{})
-        return Number{};  // LCOV_EXCL_LINE
-
-    STAmount const amount{asset, drawn};
-    if (auto const ter = accountSend(
-            view,
-            (*vault)[sfAccount],
-            (*exchange)[sfAccount],
-            amount,
-            j,
-            {},
-            WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return std::unexpected(ter);
-    if (auto const ter = adjustVaultCash(vault, -amount, j); !isTesSuccess(ter))
-        return std::unexpected(ter);  // LCOV_EXCL_LINE
-    associateAsset(*vault, asset);
-    view.update(vault);
-
-    (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] + drawn;
-    (*exchange)[sfVaultLossWindowStart] = start;
-    (*exchange)[sfVaultLossInWindow] = inWindow + drawn;
-    return drawn;
-}
-
-/**
  * Raises the opposite side's loss index of each loss market by its share of remaining over that
- * side's open interest (spec 9.6 step 4). Shares follow the weights, rounded downward onto the
+ * side's open interest (spec 9.6 step 3). Shares follow the weights, rounded downward onto the
  * collateral grid, with the rounding remainder on the first heaviest market.
  *
  * @return The amount the loss indexes took; a market with no opposite open interest takes nothing.
@@ -1630,21 +1368,20 @@ chargeLossIndexes(
 
 }  // namespace
 
-TER
+void
 runWaterfall(
     ApplyView& view,
     SLE::Ref account,
     SLE::Ref exchange,
     Number const& shortfall,
-    std::vector<LossMarket> const& lossMarkets,
-    beast::Journal j)
+    std::vector<LossMarket> const& lossMarkets)
 {
     XRPL_ASSERT(
         account && account->getType() == ltMARGIN_ACCOUNT && exchange &&
             exchange->getType() == ltPERP_EXCHANGE && (*account)[sfExchangeID] == exchange->key(),
         "xrpl::perp::runWaterfall : account of the exchange");
     if (shortfall <= Number{})
-        return tesSUCCESS;
+        return;
 
     Number remaining = shortfall;
 
@@ -1659,20 +1396,11 @@ runWaterfall(
         remaining = remaining - taken;
     }
 
-    // 3. The bound vault.
-    if (remaining > Number{} && exchange->isFieldPresent(sfVaultID))
-    {
-        auto const drawn = drawVault(view, exchange, remaining, j);
-        if (!drawn)
-            return drawn.error();
-        remaining = remaining - *drawn;
-    }
-
-    // 4. The opposite sides' loss indexes.
+    // 3. The opposite sides' loss indexes.
     if (remaining > Number{})
         remaining = remaining - chargeLossIndexes(view, exchange, remaining, lossMarkets);
 
-    // 5. Bad debt, recovered by the withdrawal haircut.
+    // 4. Bad debt, recovered by the withdrawal haircut.
     if (remaining > Number{})
         (*exchange)[sfBadDebt] = (*exchange)[sfBadDebt] + remaining;
 
@@ -1683,7 +1411,6 @@ runWaterfall(
     associateAsset(*exchange, (*exchange)[sfAsset]);
     view.update(account);
     view.update(exchange);
-    return tesSUCCESS;
 }
 
 }  // namespace xrpl::perp

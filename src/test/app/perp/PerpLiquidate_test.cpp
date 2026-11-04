@@ -346,7 +346,7 @@ class PerpLiquidate_test : public PerpTestBase
 
     /**
      * One liquidation of alice short 100 at 100, marked at 110, with cash: in book mode against
-     * carol's ask of 100 at 108, else by liq's takeover at the mark.
+     * carol's ask of 100 at 108, else by liq's takeover at the index.
      */
     void
     chunkCase(
@@ -415,7 +415,7 @@ class PerpLiquidate_test : public PerpTestBase
         env.close();
 
         // Before: cash 500, uPnL -100 x 110 + 10000 = -1000, equity -500, MM 220.
-        // The waterfall-first design would credit 500 (equity at mark), then the fill at 108
+        // The waterfall-first design would credit 500 (equity at the index), then the fill at 108
         // would realise -800 and leave cash 200 to the target. Filling first: realized
         // -100 x 108 + 10000 = -800, cash -300 on a flat account, penalty
         // min(110, max(0, -300)) = 0, and the waterfall pays D = 300 from the cover.
@@ -428,7 +428,7 @@ class PerpLiquidate_test : public PerpTestBase
             return;
         BEAST_EXPECT(margin->getFieldV256(sfMarkets).empty());
         BEAST_EXPECT((*margin)[sfCash] == Number(0));
-        BEAST_EXPECT((*margin)[sfWaterfallCredit] == Number(300));
+        BEAST_EXPECT(near((*margin)[sfWaterfallCredit], Number(300)));
         BEAST_EXPECT(near(exchangeField(env, t, sfCoverAvailable), Number(700)));
         BEAST_EXPECT(exchangeField(env, t, sfInsuranceFund) == Number(0));
         BEAST_EXPECT(exchangeField(env, t, sfBadDebt) == Number(0));
@@ -520,7 +520,7 @@ class PerpLiquidate_test : public PerpTestBase
         cover(env, t, 1'000);
         shortAt100(env, t, 500);
 
-        // The waterfall pays D = -equity = 500 first; the close at mark 110 then realizes
+        // The waterfall pays D = -equity = 500 first; the close at index 110 then realizes
         // exactly -1000, so the target ends with cash 0 and no penalty is due.
         env(liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateTakeover));
         env.close();
@@ -775,7 +775,7 @@ class PerpLiquidate_test : public PerpTestBase
         env(liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateToBook));
         env.close();
         auto const market = env.le(t.xrp);
-        BEAST_EXPECT(market && (*market)[sfLossIndexLong] == Number(3));
+        BEAST_EXPECT(market && near((*market)[sfLossIndexLong], Number(3)));
         BEAST_EXPECT(near(creditOf(env, alice_, t), Number(300)));
         expectAccounting(env, t);
 
@@ -786,7 +786,7 @@ class PerpLiquidate_test : public PerpTestBase
         BEAST_EXPECT(near(cashOf(env, bob_, t), Number(1'701)));
         BEAST_EXPECT(near(cashOf(env, carol_, t), Number(2'001)));
         auto const position = env.le(positionKeylet(bob_, t, t.xrp));
-        BEAST_EXPECT(position && (*position)[sfLossIndex] == Number(3));
+        BEAST_EXPECT(market && position && (*position)[sfLossIndex] == (*market)[sfLossIndexLong]);
         expectAccounting(env, t);
     }
 

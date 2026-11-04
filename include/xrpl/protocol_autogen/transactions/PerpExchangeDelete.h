@@ -21,7 +21,7 @@ class PerpExchangeDeleteBuilder;
  * Type: ttPERP_EXCHANGE_DELETE (104)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
- * Privileges: Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt | Privilege::MayModifyVault
+ * Privileges: Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PerpExchangeDeleteBuilder to construct new transactions.

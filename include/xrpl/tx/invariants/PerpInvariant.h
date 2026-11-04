@@ -24,7 +24,8 @@ namespace xrpl {
  *    changes in `sfCash` over the exchange's modified margin accounts.
  * 3. In a Live market, the sizes of the modified positions sum to an unchanged total, and
  *    `sfOpenInterestLong == sfOpenInterestShort`.
- * 4. In a Settled market, a position's size changes only to zero.
+ * 4. In a Settled market, a position's size changes only to zero, and a market already Settled
+ *    keeps its frozen `sfIndexPrice`.
  * 5. The change in `sfOpenInterestLong` equals the summed change in max(size, 0) over the
  *    market's modified positions, and the change in `sfOpenInterestShort` that in max(-size, 0).
  * 6. `sfInsuranceFund`, `sfCoverAvailable`, `sfOwnerFees`, `sfBadDebt` and `sfWaterfallCredit`

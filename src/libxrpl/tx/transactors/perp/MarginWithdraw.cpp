@@ -11,7 +11,6 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -27,12 +26,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-bool
-MarginWithdraw::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 MarginWithdraw::getFlagsMask(PreflightContext const& ctx)
@@ -52,10 +45,6 @@ MarginWithdraw::preflight(PreflightContext const& ctx)
     bool const deleteAccount = tx.isFlag(tfPerpDeleteAccount);
     if (static_cast<int>(cover) + static_cast<int>(ownerFees) + static_cast<int>(deleteAccount) > 1)
         return temINVALID_FLAG;
-
-    // Cover and owner-fee withdrawals touch no margin account.
-    if ((cover || ownerFees) && tx.isFieldPresent(sfSubaccount))
-        return temMALFORMED;
 
     // Only a withdrawal that deletes the account may move nothing.
     auto const amount = tx[sfAmount];
@@ -114,8 +103,7 @@ MarginWithdraw::preclaim(PreclaimContext const& ctx)
                 return tecPERP_INSUFFICIENT_COVER;
         }
     }
-    else if (!ctx.view.exists(
-                 keylet::marginAccount(account, exchange->key(), tx[~sfSubaccount].value_or(0))))
+    else if (!ctx.view.exists(keylet::marginAccount(account, exchange->key())))
     {
         return tecNO_ENTRY;
     }
@@ -153,8 +141,7 @@ TER
 MarginWithdraw::withdrawMargin(SLE::Ref exchange, Number const& amount, Number& payout)
 {
     auto const& tx = ctx_.tx;
-    auto const margin = view().peek(
-        keylet::marginAccount(accountID_, exchange->key(), tx[~sfSubaccount].value_or(0)));
+    auto const margin = view().peek(keylet::marginAccount(accountID_, exchange->key()));
     if (!margin)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

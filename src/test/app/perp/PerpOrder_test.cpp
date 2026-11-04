@@ -676,7 +676,7 @@ class PerpOrder_test : public PerpTestBase
         Env env{*this, all_};
         auto const t = setupTrading(env);
 
-        // Bob is long 100 at 2.0 and offers to close at 1.8, a loss of 20 against the mark.
+        // Bob is long 100 at 2.0 and offers to close at 1.8, a loss of 20 against the index.
         env(order(carol_, t.market, Number(2), Number(100), tfPerpSell));
         env(order(bob_, t.market, Number(2), Number(100)));
         auto const bobAsk = Perp::orderKeylet(env, bob_);
@@ -788,7 +788,7 @@ class PerpOrder_test : public PerpTestBase
         Env env{*this, all_};
         auto const t = setupTrading(env, [](json::Value& jv) { jv[sfCoverRateMinimum] = 10'000; });
 
-        // Open interest 10 at mark 2.0 needs cover of 10 % of notional 20.
+        // Open interest 10 at index 2.0 needs cover of 10 % of notional 20.
         env(order(bob_, t.market, Number(2), Number(20), tfPerpSell));
         env.close();
         env(order(alice_, t.market, Number(2), Number(10)), Ter(tecPERP_INSUFFICIENT_COVER));

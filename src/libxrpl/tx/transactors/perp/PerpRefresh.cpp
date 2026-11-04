@@ -5,7 +5,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/PerpHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -17,15 +16,8 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <utility>
 
 namespace xrpl {
-
-bool
-PerpRefresh::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
 
 std::uint32_t
 PerpRefresh::getFlagsMask(PreflightContext const& ctx)
@@ -80,7 +72,7 @@ PerpRefresh::doApply()
             return tefINTERNAL;  // LCOV_EXCL_LINE
         perp::refreshMarket(view(), market, exchange, j_);
 
-        // A market Stale for sfSettleStaleAfter settles at its last mark (spec 10).
+        // A market Stale for kSettleStaleAfter settles at its last quorum index (spec 10).
         if (tx.isFlag(tfPerpSettleStale))
         {
             std::uint8_t const status = (*market)[sfMarketStatus];
@@ -89,10 +81,10 @@ PerpRefresh::doApply()
             if (status != perp::kMarketStale)
                 return tecNO_PERMISSION;
             auto const now = perp::refreshTime(view());
-            std::uint32_t const staleSince = std::as_const(*market)[~sfStaleSince].value_or(now);
-            if (std::uint64_t{now} < std::uint64_t{staleSince} + (*market)[sfSettleStaleAfter])
+            if (std::uint64_t{now} <
+                std::uint64_t{(*market)[sfStatusTime]} + perp::kSettleStaleAfter.count())
                 return tecTOO_SOON;
-            perp::settleMarket(*market, (*market)[sfMarkPrice], now);
+            perp::settleMarket(*market, now);
             view().update(market);
         }
     }

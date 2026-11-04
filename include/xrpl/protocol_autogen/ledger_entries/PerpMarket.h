@@ -113,17 +113,6 @@ public:
     }
 
     /**
-     * @brief Get sfIndexMaxAge (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getIndexMaxAge() const
-    {
-        return this->sle_->at(sfIndexMaxAge);
-    }
-
-    /**
      * @brief Get sfIndexMaxLedgers (SoeRequired)
      * @return The field value.
      */
@@ -191,153 +180,6 @@ public:
     }
 
     /**
-     * @brief Get sfMidSpreadMax (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getMidSpreadMax() const
-    {
-        return this->sle_->at(sfMidSpreadMax);
-    }
-
-    /**
-     * @brief Get sfMarkBand (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getMarkBand() const
-    {
-        return this->sle_->at(sfMarkBand);
-    }
-
-    /**
-     * @brief Get sfMarkMoveMax (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getMarkMoveMax() const
-    {
-        return this->sle_->at(sfMarkMoveMax);
-    }
-
-    /**
-     * @brief Get sfBasisWindow (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getBasisWindow() const
-    {
-        return this->sle_->at(sfBasisWindow);
-    }
-
-    /**
-     * @brief Get sfFundingInterestRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_INT32::type::value_type>
-    getFundingInterestRate() const
-    {
-        if (hasFundingInterestRate())
-            return this->sle_->at(sfFundingInterestRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfFundingInterestRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasFundingInterestRate() const
-    {
-        return this->sle_->isFieldPresent(sfFundingInterestRate);
-    }
-
-    /**
-     * @brief Get sfFundingCap (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getFundingCap() const
-    {
-        return this->sle_->at(sfFundingCap);
-    }
-
-    /**
-     * @brief Get sfLiquidationPenalty (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getLiquidationPenalty() const
-    {
-        return this->sle_->at(sfLiquidationPenalty);
-    }
-
-    /**
-     * @brief Get sfLiquidationRewardShare (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getLiquidationRewardShare() const
-    {
-        return this->sle_->at(sfLiquidationRewardShare);
-    }
-
-    /**
-     * @brief Get sfLiquidationRewardMin (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
-    getLiquidationRewardMin() const
-    {
-        if (hasLiquidationRewardMin())
-            return this->sle_->at(sfLiquidationRewardMin);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLiquidationRewardMin is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLiquidationRewardMin() const
-    {
-        return this->sle_->isFieldPresent(sfLiquidationRewardMin);
-    }
-
-    /**
-     * @brief Get sfLiquidationChunkMin (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_NUMBER::type::value_type
-    getLiquidationChunkMin() const
-    {
-        return this->sle_->at(sfLiquidationChunkMin);
-    }
-
-    /**
-     * @brief Get sfSettleStaleAfter (SoeRequired)
-     * @return The field value.
-     */
-    [[nodiscard]]
-    SF_UINT32::type::value_type
-    getSettleStaleAfter() const
-    {
-        return this->sle_->at(sfSettleStaleAfter);
-    }
-
-    /**
      * @brief Get sfIndexPrice (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -359,30 +201,6 @@ public:
     hasIndexPrice() const
     {
         return this->sle_->isFieldPresent(sfIndexPrice);
-    }
-
-    /**
-     * @brief Get sfMarkPrice (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
-    getMarkPrice() const
-    {
-        if (hasMarkPrice())
-            return this->sle_->at(sfMarkPrice);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfMarkPrice is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasMarkPrice() const
-    {
-        return this->sle_->isFieldPresent(sfMarkPrice);
     }
 
     /**
@@ -626,51 +444,27 @@ public:
     }
 
     /**
-     * @brief Get sfStaleSince (SoeOptional)
+     * @brief Get sfStatusTime (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getStaleSince() const
+    getStatusTime() const
     {
-        if (hasStaleSince())
-            return this->sle_->at(sfStaleSince);
+        if (hasStatusTime())
+            return this->sle_->at(sfStatusTime);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfStaleSince is present.
+     * @brief Check if sfStatusTime is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasStaleSince() const
+    hasStatusTime() const
     {
-        return this->sle_->isFieldPresent(sfStaleSince);
-    }
-
-    /**
-     * @brief Get sfSettledAt (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getSettledAt() const
-    {
-        if (hasSettledAt())
-            return this->sle_->at(sfSettledAt);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSettledAt is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSettledAt() const
-    {
-        return this->sle_->isFieldPresent(sfSettledAt);
+        return this->sle_->isFieldPresent(sfStatusTime);
     }
 
     /**
@@ -695,79 +489,6 @@ public:
     hasMarketStatus() const
     {
         return this->sle_->isFieldPresent(sfMarketStatus);
-    }
-
-    /**
-     * @brief Get sfSettlementPrice (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
-    getSettlementPrice() const
-    {
-        if (hasSettlementPrice())
-            return this->sle_->at(sfSettlementPrice);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSettlementPrice is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSettlementPrice() const
-    {
-        return this->sle_->isFieldPresent(sfSettlementPrice);
-    }
-
-    /**
-     * @brief Get sfPendingParameters (SoeOptional)
-     * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    std::optional<STObject>
-    getPendingParameters() const
-    {
-        if (this->sle_->isFieldPresent(sfPendingParameters))
-            return this->sle_->getFieldObject(sfPendingParameters);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPendingParameters is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPendingParameters() const
-    {
-        return this->sle_->isFieldPresent(sfPendingParameters);
-    }
-
-    /**
-     * @brief Get sfParameterEffectiveTime (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getParameterEffectiveTime() const
-    {
-        if (hasParameterEffectiveTime())
-            return this->sle_->at(sfParameterEffectiveTime);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfParameterEffectiveTime is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasParameterEffectiveTime() const
-    {
-        return this->sle_->isFieldPresent(sfParameterEffectiveTime);
     }
 
     /**
@@ -800,25 +521,15 @@ public:
      * @param baseAsset The sfBaseAsset field value.
      * @param quoteAsset The sfQuoteAsset field value.
      * @param indexOracles The sfIndexOracles field value.
-     * @param indexMaxAge The sfIndexMaxAge field value.
      * @param indexMaxLedgers The sfIndexMaxLedgers field value.
      * @param priceTick The sfPriceTick field value.
      * @param lotSize The sfLotSize field value.
      * @param marginTiers The sfMarginTiers field value.
      * @param openInterestMax The sfOpenInterestMax field value.
      * @param orderPriceBand The sfOrderPriceBand field value.
-     * @param midSpreadMax The sfMidSpreadMax field value.
-     * @param markBand The sfMarkBand field value.
-     * @param markMoveMax The sfMarkMoveMax field value.
-     * @param basisWindow The sfBasisWindow field value.
-     * @param fundingCap The sfFundingCap field value.
-     * @param liquidationPenalty The sfLiquidationPenalty field value.
-     * @param liquidationRewardShare The sfLiquidationRewardShare field value.
-     * @param liquidationChunkMin The sfLiquidationChunkMin field value.
-     * @param settleStaleAfter The sfSettleStaleAfter field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    PerpMarketBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT256::type::value_type> const& exchangeID,std::decay_t<typename SF_CURRENCY::type::value_type> const& baseAsset,std::decay_t<typename SF_CURRENCY::type::value_type> const& quoteAsset,STArray const& indexOracles,std::decay_t<typename SF_UINT32::type::value_type> const& indexMaxAge,std::decay_t<typename SF_UINT32::type::value_type> const& indexMaxLedgers,std::decay_t<typename SF_NUMBER::type::value_type> const& priceTick,std::decay_t<typename SF_NUMBER::type::value_type> const& lotSize,STArray const& marginTiers,std::decay_t<typename SF_NUMBER::type::value_type> const& openInterestMax,std::decay_t<typename SF_UINT32::type::value_type> const& orderPriceBand,std::decay_t<typename SF_UINT32::type::value_type> const& midSpreadMax,std::decay_t<typename SF_UINT32::type::value_type> const& markBand,std::decay_t<typename SF_UINT32::type::value_type> const& markMoveMax,std::decay_t<typename SF_UINT32::type::value_type> const& basisWindow,std::decay_t<typename SF_UINT32::type::value_type> const& fundingCap,std::decay_t<typename SF_UINT32::type::value_type> const& liquidationPenalty,std::decay_t<typename SF_UINT32::type::value_type> const& liquidationRewardShare,std::decay_t<typename SF_NUMBER::type::value_type> const& liquidationChunkMin,std::decay_t<typename SF_UINT32::type::value_type> const& settleStaleAfter,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    PerpMarketBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT256::type::value_type> const& exchangeID,std::decay_t<typename SF_CURRENCY::type::value_type> const& baseAsset,std::decay_t<typename SF_CURRENCY::type::value_type> const& quoteAsset,STArray const& indexOracles,std::decay_t<typename SF_UINT32::type::value_type> const& indexMaxLedgers,std::decay_t<typename SF_NUMBER::type::value_type> const& priceTick,std::decay_t<typename SF_NUMBER::type::value_type> const& lotSize,STArray const& marginTiers,std::decay_t<typename SF_NUMBER::type::value_type> const& openInterestMax,std::decay_t<typename SF_UINT32::type::value_type> const& orderPriceBand,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<PerpMarketBuilder>(ltPERP_MARKET)
     {
         setPreviousTxnID(previousTxnID);
@@ -827,22 +538,12 @@ public:
         setBaseAsset(baseAsset);
         setQuoteAsset(quoteAsset);
         setIndexOracles(indexOracles);
-        setIndexMaxAge(indexMaxAge);
         setIndexMaxLedgers(indexMaxLedgers);
         setPriceTick(priceTick);
         setLotSize(lotSize);
         setMarginTiers(marginTiers);
         setOpenInterestMax(openInterestMax);
         setOrderPriceBand(orderPriceBand);
-        setMidSpreadMax(midSpreadMax);
-        setMarkBand(markBand);
-        setMarkMoveMax(markMoveMax);
-        setBasisWindow(basisWindow);
-        setFundingCap(fundingCap);
-        setLiquidationPenalty(liquidationPenalty);
-        setLiquidationRewardShare(liquidationRewardShare);
-        setLiquidationChunkMin(liquidationChunkMin);
-        setSettleStaleAfter(settleStaleAfter);
         setOwnerNode(ownerNode);
     }
 
@@ -931,17 +632,6 @@ public:
     }
 
     /**
-     * @brief Set sfIndexMaxAge (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setIndexMaxAge(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfIndexMaxAge] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfIndexMaxLedgers (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
@@ -1008,127 +698,6 @@ public:
     }
 
     /**
-     * @brief Set sfMidSpreadMax (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setMidSpreadMax(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfMidSpreadMax] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfMarkBand (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setMarkBand(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfMarkBand] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfMarkMoveMax (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setMarkMoveMax(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfMarkMoveMax] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfBasisWindow (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setBasisWindow(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfBasisWindow] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfFundingInterestRate (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setFundingInterestRate(std::decay_t<typename SF_INT32::type::value_type> const& value)
-    {
-        object_[sfFundingInterestRate] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfFundingCap (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setFundingCap(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfFundingCap] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLiquidationPenalty (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setLiquidationPenalty(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfLiquidationPenalty] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLiquidationRewardShare (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setLiquidationRewardShare(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfLiquidationRewardShare] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLiquidationRewardMin (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setLiquidationRewardMin(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
-    {
-        object_[sfLiquidationRewardMin] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLiquidationChunkMin (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setLiquidationChunkMin(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
-    {
-        object_[sfLiquidationChunkMin] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSettleStaleAfter (SoeRequired)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setSettleStaleAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSettleStaleAfter] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfIndexPrice (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -1136,17 +705,6 @@ public:
     setIndexPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfIndexPrice] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfMarkPrice (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setMarkPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
-    {
-        object_[sfMarkPrice] = value;
         return *this;
     }
 
@@ -1261,24 +819,13 @@ public:
     }
 
     /**
-     * @brief Set sfStaleSince (SoeOptional)
+     * @brief Set sfStatusTime (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     PerpMarketBuilder&
-    setStaleSince(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setStatusTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfStaleSince] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSettledAt (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setSettledAt(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSettledAt] = value;
+        object_[sfStatusTime] = value;
         return *this;
     }
 
@@ -1290,39 +837,6 @@ public:
     setMarketStatus(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfMarketStatus] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSettlementPrice (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setSettlementPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
-    {
-        object_[sfSettlementPrice] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfPendingParameters (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setPendingParameters(STObject const& value)
-    {
-        object_.setFieldObject(sfPendingParameters, value);
-        return *this;
-    }
-
-    /**
-     * @brief Set sfParameterEffectiveTime (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpMarketBuilder&
-    setParameterEffectiveTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfParameterEffectiveTime] = value;
         return *this;
     }
 

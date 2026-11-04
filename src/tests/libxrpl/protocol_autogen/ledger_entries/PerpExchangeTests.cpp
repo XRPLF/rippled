@@ -28,16 +28,14 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const scaleValue = canonical_UINT8();
     auto const domainIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
     auto const makerFeeValue = canonical_UINT32();
     auto const takerFeeValue = canonical_UINT32();
     auto const ownerFeeShareValue = canonical_UINT32();
-    auto const vaultFeeShareValue = canonical_UINT32();
     auto const builderFeeMaxValue = canonical_UINT32();
     auto const coverRateMinimumValue = canonical_UINT32();
-    auto const vaultLossLimitValue = canonical_UINT32();
-    auto const vaultLossWindowValue = canonical_UINT32();
-    auto const parameterDelayValue = canonical_UINT32();
+    auto const liquidationPenaltyValue = canonical_UINT32();
+    auto const liquidationRewardMinValue = canonical_NUMBER();
+    auto const liquidationChunkMinValue = canonical_NUMBER();
     auto const assetsTotalValue = canonical_NUMBER();
     auto const cashTotalValue = canonical_NUMBER();
     auto const insuranceFundValue = canonical_NUMBER();
@@ -46,12 +44,8 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     auto const settlementBalanceValue = canonical_NUMBER();
     auto const badDebtValue = canonical_NUMBER();
     auto const openInterestNotionalValue = canonical_NUMBER();
-    auto const vaultLossWindowStartValue = canonical_UINT32();
-    auto const vaultLossInWindowValue = canonical_NUMBER();
     auto const marketCountValue = canonical_UINT32();
     auto const marginAccountCountValue = canonical_UINT32();
-    auto const pendingParametersValue = canonical_OBJECT();
-    auto const parameterEffectiveTimeValue = canonical_UINT32();
     auto const dataValue = canonical_VL();
     auto const ownerNodeValue = canonical_UINT64();
 
@@ -62,21 +56,19 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
         sequenceValue,
         accountValue,
         assetValue,
-        parameterDelayValue,
+        liquidationPenaltyValue,
+        liquidationChunkMinValue,
         ownerNodeValue
     };
 
     builder.setScale(scaleValue);
     builder.setDomainID(domainIDValue);
-    builder.setVaultID(vaultIDValue);
     builder.setMakerFee(makerFeeValue);
     builder.setTakerFee(takerFeeValue);
     builder.setOwnerFeeShare(ownerFeeShareValue);
-    builder.setVaultFeeShare(vaultFeeShareValue);
     builder.setBuilderFeeMax(builderFeeMaxValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
-    builder.setVaultLossLimit(vaultLossLimitValue);
-    builder.setVaultLossWindow(vaultLossWindowValue);
+    builder.setLiquidationRewardMin(liquidationRewardMinValue);
     builder.setAssetsTotal(assetsTotalValue);
     builder.setCashTotal(cashTotalValue);
     builder.setInsuranceFund(insuranceFundValue);
@@ -85,12 +77,8 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     builder.setSettlementBalance(settlementBalanceValue);
     builder.setBadDebt(badDebtValue);
     builder.setOpenInterestNotional(openInterestNotionalValue);
-    builder.setVaultLossWindowStart(vaultLossWindowStartValue);
-    builder.setVaultLossInWindow(vaultLossInWindowValue);
     builder.setMarketCount(marketCountValue);
     builder.setMarginAccountCount(marginAccountCountValue);
-    builder.setPendingParameters(pendingParametersValue);
-    builder.setParameterEffectiveTime(parameterEffectiveTimeValue);
     builder.setData(dataValue);
 
     builder.setLedgerIndex(index);
@@ -139,9 +127,15 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = parameterDelayValue;
-        auto const actual = entry.getParameterDelay();
-        expectEqualField(expected, actual, "sfParameterDelay");
+        auto const& expected = liquidationPenaltyValue;
+        auto const actual = entry.getLiquidationPenalty();
+        expectEqualField(expected, actual, "sfLiquidationPenalty");
+    }
+
+    {
+        auto const& expected = liquidationChunkMinValue;
+        auto const actual = entry.getLiquidationChunkMin();
+        expectEqualField(expected, actual, "sfLiquidationChunkMin");
     }
 
     {
@@ -164,14 +158,6 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfDomainID");
         EXPECT_TRUE(entry.hasDomainID());
-    }
-
-    {
-        auto const& expected = vaultIDValue;
-        auto const actualOpt = entry.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-        EXPECT_TRUE(entry.hasVaultID());
     }
 
     {
@@ -199,14 +185,6 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultFeeShareValue;
-        auto const actualOpt = entry.getVaultFeeShare();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultFeeShare");
-        EXPECT_TRUE(entry.hasVaultFeeShare());
-    }
-
-    {
         auto const& expected = builderFeeMaxValue;
         auto const actualOpt = entry.getBuilderFeeMax();
         ASSERT_TRUE(actualOpt.has_value());
@@ -223,19 +201,11 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossLimitValue;
-        auto const actualOpt = entry.getVaultLossLimit();
+        auto const& expected = liquidationRewardMinValue;
+        auto const actualOpt = entry.getLiquidationRewardMin();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultLossLimit");
-        EXPECT_TRUE(entry.hasVaultLossLimit());
-    }
-
-    {
-        auto const& expected = vaultLossWindowValue;
-        auto const actualOpt = entry.getVaultLossWindow();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultLossWindow");
-        EXPECT_TRUE(entry.hasVaultLossWindow());
+        expectEqualField(expected, *actualOpt, "sfLiquidationRewardMin");
+        EXPECT_TRUE(entry.hasLiquidationRewardMin());
     }
 
     {
@@ -303,22 +273,6 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossWindowStartValue;
-        auto const actualOpt = entry.getVaultLossWindowStart();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultLossWindowStart");
-        EXPECT_TRUE(entry.hasVaultLossWindowStart());
-    }
-
-    {
-        auto const& expected = vaultLossInWindowValue;
-        auto const actualOpt = entry.getVaultLossInWindow();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultLossInWindow");
-        EXPECT_TRUE(entry.hasVaultLossInWindow());
-    }
-
-    {
         auto const& expected = marketCountValue;
         auto const actualOpt = entry.getMarketCount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -332,22 +286,6 @@ TEST(PerpExchangeTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfMarginAccountCount");
         EXPECT_TRUE(entry.hasMarginAccountCount());
-    }
-
-    {
-        auto const& expected = pendingParametersValue;
-        auto const actualOpt = entry.getPendingParameters();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPendingParameters");
-        EXPECT_TRUE(entry.hasPendingParameters());
-    }
-
-    {
-        auto const& expected = parameterEffectiveTimeValue;
-        auto const actualOpt = entry.getParameterEffectiveTime();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfParameterEffectiveTime");
-        EXPECT_TRUE(entry.hasParameterEffectiveTime());
     }
 
     {
@@ -379,16 +317,14 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const scaleValue = canonical_UINT8();
     auto const domainIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
     auto const makerFeeValue = canonical_UINT32();
     auto const takerFeeValue = canonical_UINT32();
     auto const ownerFeeShareValue = canonical_UINT32();
-    auto const vaultFeeShareValue = canonical_UINT32();
     auto const builderFeeMaxValue = canonical_UINT32();
     auto const coverRateMinimumValue = canonical_UINT32();
-    auto const vaultLossLimitValue = canonical_UINT32();
-    auto const vaultLossWindowValue = canonical_UINT32();
-    auto const parameterDelayValue = canonical_UINT32();
+    auto const liquidationPenaltyValue = canonical_UINT32();
+    auto const liquidationRewardMinValue = canonical_NUMBER();
+    auto const liquidationChunkMinValue = canonical_NUMBER();
     auto const assetsTotalValue = canonical_NUMBER();
     auto const cashTotalValue = canonical_NUMBER();
     auto const insuranceFundValue = canonical_NUMBER();
@@ -397,12 +333,8 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     auto const settlementBalanceValue = canonical_NUMBER();
     auto const badDebtValue = canonical_NUMBER();
     auto const openInterestNotionalValue = canonical_NUMBER();
-    auto const vaultLossWindowStartValue = canonical_UINT32();
-    auto const vaultLossInWindowValue = canonical_NUMBER();
     auto const marketCountValue = canonical_UINT32();
     auto const marginAccountCountValue = canonical_UINT32();
-    auto const pendingParametersValue = canonical_OBJECT();
-    auto const parameterEffectiveTimeValue = canonical_UINT32();
     auto const dataValue = canonical_VL();
     auto const ownerNodeValue = canonical_UINT64();
 
@@ -416,16 +348,14 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     sle->at(sfAsset) = STIssue(sfAsset, assetValue);
     sle->at(sfScale) = scaleValue;
     sle->at(sfDomainID) = domainIDValue;
-    sle->at(sfVaultID) = vaultIDValue;
     sle->at(sfMakerFee) = makerFeeValue;
     sle->at(sfTakerFee) = takerFeeValue;
     sle->at(sfOwnerFeeShare) = ownerFeeShareValue;
-    sle->at(sfVaultFeeShare) = vaultFeeShareValue;
     sle->at(sfBuilderFeeMax) = builderFeeMaxValue;
     sle->at(sfCoverRateMinimum) = coverRateMinimumValue;
-    sle->at(sfVaultLossLimit) = vaultLossLimitValue;
-    sle->at(sfVaultLossWindow) = vaultLossWindowValue;
-    sle->at(sfParameterDelay) = parameterDelayValue;
+    sle->at(sfLiquidationPenalty) = liquidationPenaltyValue;
+    sle->at(sfLiquidationRewardMin) = liquidationRewardMinValue;
+    sle->at(sfLiquidationChunkMin) = liquidationChunkMinValue;
     sle->at(sfAssetsTotal) = assetsTotalValue;
     sle->at(sfCashTotal) = cashTotalValue;
     sle->at(sfInsuranceFund) = insuranceFundValue;
@@ -434,12 +364,8 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     sle->at(sfSettlementBalance) = settlementBalanceValue;
     sle->at(sfBadDebt) = badDebtValue;
     sle->at(sfOpenInterestNotional) = openInterestNotionalValue;
-    sle->at(sfVaultLossWindowStart) = vaultLossWindowStartValue;
-    sle->at(sfVaultLossInWindow) = vaultLossInWindowValue;
     sle->at(sfMarketCount) = marketCountValue;
     sle->at(sfMarginAccountCount) = marginAccountCountValue;
-    sle->setFieldObject(sfPendingParameters, pendingParametersValue);
-    sle->at(sfParameterEffectiveTime) = parameterEffectiveTimeValue;
     sle->at(sfData) = dataValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
 
@@ -513,13 +439,23 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = parameterDelayValue;
+        auto const& expected = liquidationPenaltyValue;
 
-        auto const fromSle = entryFromSle.getParameterDelay();
-        auto const fromBuilder = entryFromBuilder.getParameterDelay();
+        auto const fromSle = entryFromSle.getLiquidationPenalty();
+        auto const fromBuilder = entryFromBuilder.getLiquidationPenalty();
 
-        expectEqualField(expected, fromSle, "sfParameterDelay");
-        expectEqualField(expected, fromBuilder, "sfParameterDelay");
+        expectEqualField(expected, fromSle, "sfLiquidationPenalty");
+        expectEqualField(expected, fromBuilder, "sfLiquidationPenalty");
+    }
+
+    {
+        auto const& expected = liquidationChunkMinValue;
+
+        auto const fromSle = entryFromSle.getLiquidationChunkMin();
+        auto const fromBuilder = entryFromBuilder.getLiquidationChunkMin();
+
+        expectEqualField(expected, fromSle, "sfLiquidationChunkMin");
+        expectEqualField(expected, fromBuilder, "sfLiquidationChunkMin");
     }
 
     {
@@ -556,19 +492,6 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfDomainID");
         expectEqualField(expected, *fromBuilderOpt, "sfDomainID");
-    }
-
-    {
-        auto const& expected = vaultIDValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultID();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultID");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultID");
     }
 
     {
@@ -611,19 +534,6 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = vaultFeeShareValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultFeeShare();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultFeeShare();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultFeeShare");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultFeeShare");
-    }
-
-    {
         auto const& expected = builderFeeMaxValue;
 
         auto const fromSleOpt = entryFromSle.getBuilderFeeMax();
@@ -650,29 +560,16 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossLimitValue;
+        auto const& expected = liquidationRewardMinValue;
 
-        auto const fromSleOpt = entryFromSle.getVaultLossLimit();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultLossLimit();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultLossLimit");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultLossLimit");
-    }
-
-    {
-        auto const& expected = vaultLossWindowValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultLossWindow();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultLossWindow();
+        auto const fromSleOpt = entryFromSle.getLiquidationRewardMin();
+        auto const fromBuilderOpt = entryFromBuilder.getLiquidationRewardMin();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfVaultLossWindow");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultLossWindow");
+        expectEqualField(expected, *fromSleOpt, "sfLiquidationRewardMin");
+        expectEqualField(expected, *fromBuilderOpt, "sfLiquidationRewardMin");
     }
 
     {
@@ -780,32 +677,6 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = vaultLossWindowStartValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultLossWindowStart();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultLossWindowStart();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultLossWindowStart");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultLossWindowStart");
-    }
-
-    {
-        auto const& expected = vaultLossInWindowValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultLossInWindow();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultLossInWindow();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultLossInWindow");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultLossInWindow");
-    }
-
-    {
         auto const& expected = marketCountValue;
 
         auto const fromSleOpt = entryFromSle.getMarketCount();
@@ -829,32 +700,6 @@ TEST(PerpExchangeTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfMarginAccountCount");
         expectEqualField(expected, *fromBuilderOpt, "sfMarginAccountCount");
-    }
-
-    {
-        auto const& expected = pendingParametersValue;
-
-        auto const fromSleOpt = entryFromSle.getPendingParameters();
-        auto const fromBuilderOpt = entryFromBuilder.getPendingParameters();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPendingParameters");
-        expectEqualField(expected, *fromBuilderOpt, "sfPendingParameters");
-    }
-
-    {
-        auto const& expected = parameterEffectiveTimeValue;
-
-        auto const fromSleOpt = entryFromSle.getParameterEffectiveTime();
-        auto const fromBuilderOpt = entryFromBuilder.getParameterEffectiveTime();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfParameterEffectiveTime");
-        expectEqualField(expected, *fromBuilderOpt, "sfParameterEffectiveTime");
     }
 
     {
@@ -921,7 +766,8 @@ TEST(PerpExchangeTests, OptionalFieldsReturnNullopt)
     auto const sequenceValue = canonical_UINT32();
     auto const accountValue = canonical_ACCOUNT();
     auto const assetValue = canonical_ISSUE();
-    auto const parameterDelayValue = canonical_UINT32();
+    auto const liquidationPenaltyValue = canonical_UINT32();
+    auto const liquidationChunkMinValue = canonical_NUMBER();
     auto const ownerNodeValue = canonical_UINT64();
 
     PerpExchangeBuilder builder{
@@ -931,7 +777,8 @@ TEST(PerpExchangeTests, OptionalFieldsReturnNullopt)
         sequenceValue,
         accountValue,
         assetValue,
-        parameterDelayValue,
+        liquidationPenaltyValue,
+        liquidationChunkMinValue,
         ownerNodeValue
     };
 
@@ -942,24 +789,18 @@ TEST(PerpExchangeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
-    EXPECT_FALSE(entry.hasVaultID());
-    EXPECT_FALSE(entry.getVaultID().has_value());
     EXPECT_FALSE(entry.hasMakerFee());
     EXPECT_FALSE(entry.getMakerFee().has_value());
     EXPECT_FALSE(entry.hasTakerFee());
     EXPECT_FALSE(entry.getTakerFee().has_value());
     EXPECT_FALSE(entry.hasOwnerFeeShare());
     EXPECT_FALSE(entry.getOwnerFeeShare().has_value());
-    EXPECT_FALSE(entry.hasVaultFeeShare());
-    EXPECT_FALSE(entry.getVaultFeeShare().has_value());
     EXPECT_FALSE(entry.hasBuilderFeeMax());
     EXPECT_FALSE(entry.getBuilderFeeMax().has_value());
     EXPECT_FALSE(entry.hasCoverRateMinimum());
     EXPECT_FALSE(entry.getCoverRateMinimum().has_value());
-    EXPECT_FALSE(entry.hasVaultLossLimit());
-    EXPECT_FALSE(entry.getVaultLossLimit().has_value());
-    EXPECT_FALSE(entry.hasVaultLossWindow());
-    EXPECT_FALSE(entry.getVaultLossWindow().has_value());
+    EXPECT_FALSE(entry.hasLiquidationRewardMin());
+    EXPECT_FALSE(entry.getLiquidationRewardMin().has_value());
     EXPECT_FALSE(entry.hasAssetsTotal());
     EXPECT_FALSE(entry.getAssetsTotal().has_value());
     EXPECT_FALSE(entry.hasCashTotal());
@@ -976,18 +817,10 @@ TEST(PerpExchangeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getBadDebt().has_value());
     EXPECT_FALSE(entry.hasOpenInterestNotional());
     EXPECT_FALSE(entry.getOpenInterestNotional().has_value());
-    EXPECT_FALSE(entry.hasVaultLossWindowStart());
-    EXPECT_FALSE(entry.getVaultLossWindowStart().has_value());
-    EXPECT_FALSE(entry.hasVaultLossInWindow());
-    EXPECT_FALSE(entry.getVaultLossInWindow().has_value());
     EXPECT_FALSE(entry.hasMarketCount());
     EXPECT_FALSE(entry.getMarketCount().has_value());
     EXPECT_FALSE(entry.hasMarginAccountCount());
     EXPECT_FALSE(entry.getMarginAccountCount().has_value());
-    EXPECT_FALSE(entry.hasPendingParameters());
-    EXPECT_FALSE(entry.getPendingParameters().has_value());
-    EXPECT_FALSE(entry.hasParameterEffectiveTime());
-    EXPECT_FALSE(entry.getParameterEffectiveTime().has_value());
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
 }

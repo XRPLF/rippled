@@ -408,13 +408,10 @@ perpMarket(UInt256 const& key)
 }
 
 /**
- * A margin account of an account on an exchange, one per subaccount.
+ * The margin account of an account on an exchange.
  */
 Keylet
-marginAccount(
-    AccountID const& account,
-    UInt256 const& exchangeID,
-    std::uint32_t subaccount) noexcept;
+marginAccount(AccountID const& account, UInt256 const& exchangeID) noexcept;
 
 inline Keylet
 marginAccount(UInt256 const& key)

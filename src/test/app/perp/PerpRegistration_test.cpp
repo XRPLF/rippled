@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -277,7 +278,7 @@ class PerpRegistration_test : public PerpTestBase
 
         // PerpetualFutures alone switches the transaction rules to 19-digit Number.
         {
-            Env env{*this, withoutVault()};
+            Env const env{*this, withoutVault()};
             auto const& rules = env.current()->rules();
             BEAST_EXPECT(useRulesGuards(rules));
             CurrentTransactionRulesGuard const guard(rules);
@@ -285,7 +286,7 @@ class PerpRegistration_test : public PerpTestBase
             BEAST_EXPECT(holds19Digits());
         }
         {
-            Env env{*this, withoutVault() - featurePerpetualFutures};
+            Env const env{*this, withoutVault() - featurePerpetualFutures};
             CurrentTransactionRulesGuard const guard(env.current()->rules());
             BEAST_EXPECT(Number::getMantissaScale() == MantissaRange::MantissaScale::Small);
             BEAST_EXPECT(!holds19Digits());

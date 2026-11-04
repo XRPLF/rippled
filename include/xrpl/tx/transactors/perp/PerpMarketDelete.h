@@ -26,9 +26,6 @@ public:
     {
     }
 
-    static bool
-    checkExtraFeatures(PreflightContext const& ctx);
-
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
 

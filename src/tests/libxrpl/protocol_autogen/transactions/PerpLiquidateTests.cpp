@@ -32,7 +32,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderSettersRoundTrip)
     auto const marginAccountIDValue = canonical_UINT256();
     auto const marketIDValue = canonical_UINT256();
     auto const sizeValue = canonical_NUMBER();
-    auto const subaccountValue = canonical_UINT32();
 
     PerpLiquidateBuilder builder{
         accountValue,
@@ -44,7 +43,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setSize(sizeValue);
-    builder.setSubaccount(subaccountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -82,14 +80,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasSize());
     }
 
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = tx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-        EXPECT_TRUE(tx.hasSubaccount());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -109,7 +99,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderFromStTxRoundTrip)
     auto const marginAccountIDValue = canonical_UINT256();
     auto const marketIDValue = canonical_UINT256();
     auto const sizeValue = canonical_NUMBER();
-    auto const subaccountValue = canonical_UINT32();
 
     // Build an initial transaction
     PerpLiquidateBuilder initialBuilder{
@@ -121,7 +110,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setSize(sizeValue);
-    initialBuilder.setSubaccount(subaccountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -157,13 +145,6 @@ TEST(TransactionsPerpLiquidateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getSize();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSize should be present";
         expectEqualField(expected, *actualOpt, "sfSize");
-    }
-
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = rebuiltTx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
     }
 
 }
@@ -227,8 +208,6 @@ TEST(TransactionsPerpLiquidateTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasSize());
     EXPECT_FALSE(tx.getSize().has_value());
-    EXPECT_FALSE(tx.hasSubaccount());
-    EXPECT_FALSE(tx.getSubaccount().has_value());
 }
 
 }

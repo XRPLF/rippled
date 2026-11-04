@@ -160,30 +160,6 @@ public:
     }
 
     /**
-     * @brief Get sfVaultID (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getVaultID() const
-    {
-        if (hasVaultID())
-            return this->sle_->at(sfVaultID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultID() const
-    {
-        return this->sle_->isFieldPresent(sfVaultID);
-    }
-
-    /**
      * @brief Get sfMakerFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -256,30 +232,6 @@ public:
     }
 
     /**
-     * @brief Get sfVaultFeeShare (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getVaultFeeShare() const
-    {
-        if (hasVaultFeeShare())
-            return this->sle_->at(sfVaultFeeShare);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultFeeShare is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultFeeShare() const
-    {
-        return this->sle_->isFieldPresent(sfVaultFeeShare);
-    }
-
-    /**
      * @brief Get sfBuilderFeeMax (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -328,62 +280,49 @@ public:
     }
 
     /**
-     * @brief Get sfVaultLossLimit (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getVaultLossLimit() const
-    {
-        if (hasVaultLossLimit())
-            return this->sle_->at(sfVaultLossLimit);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultLossLimit is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultLossLimit() const
-    {
-        return this->sle_->isFieldPresent(sfVaultLossLimit);
-    }
-
-    /**
-     * @brief Get sfVaultLossWindow (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getVaultLossWindow() const
-    {
-        if (hasVaultLossWindow())
-            return this->sle_->at(sfVaultLossWindow);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultLossWindow is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultLossWindow() const
-    {
-        return this->sle_->isFieldPresent(sfVaultLossWindow);
-    }
-
-    /**
-     * @brief Get sfParameterDelay (SoeRequired)
+     * @brief Get sfLiquidationPenalty (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
     SF_UINT32::type::value_type
-    getParameterDelay() const
+    getLiquidationPenalty() const
     {
-        return this->sle_->at(sfParameterDelay);
+        return this->sle_->at(sfLiquidationPenalty);
+    }
+
+    /**
+     * @brief Get sfLiquidationRewardMin (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getLiquidationRewardMin() const
+    {
+        if (hasLiquidationRewardMin())
+            return this->sle_->at(sfLiquidationRewardMin);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLiquidationRewardMin is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLiquidationRewardMin() const
+    {
+        return this->sle_->isFieldPresent(sfLiquidationRewardMin);
+    }
+
+    /**
+     * @brief Get sfLiquidationChunkMin (SoeRequired)
+     * @return The field value.
+     */
+    [[nodiscard]]
+    SF_NUMBER::type::value_type
+    getLiquidationChunkMin() const
+    {
+        return this->sle_->at(sfLiquidationChunkMin);
     }
 
     /**
@@ -579,54 +518,6 @@ public:
     }
 
     /**
-     * @brief Get sfVaultLossWindowStart (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getVaultLossWindowStart() const
-    {
-        if (hasVaultLossWindowStart())
-            return this->sle_->at(sfVaultLossWindowStart);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultLossWindowStart is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultLossWindowStart() const
-    {
-        return this->sle_->isFieldPresent(sfVaultLossWindowStart);
-    }
-
-    /**
-     * @brief Get sfVaultLossInWindow (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
-    getVaultLossInWindow() const
-    {
-        if (hasVaultLossInWindow())
-            return this->sle_->at(sfVaultLossInWindow);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultLossInWindow is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultLossInWindow() const
-    {
-        return this->sle_->isFieldPresent(sfVaultLossInWindow);
-    }
-
-    /**
      * @brief Get sfMarketCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -672,55 +563,6 @@ public:
     hasMarginAccountCount() const
     {
         return this->sle_->isFieldPresent(sfMarginAccountCount);
-    }
-
-    /**
-     * @brief Get sfPendingParameters (SoeOptional)
-     * @note This is an untyped field (unknown).
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    std::optional<STObject>
-    getPendingParameters() const
-    {
-        if (this->sle_->isFieldPresent(sfPendingParameters))
-            return this->sle_->getFieldObject(sfPendingParameters);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPendingParameters is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPendingParameters() const
-    {
-        return this->sle_->isFieldPresent(sfPendingParameters);
-    }
-
-    /**
-     * @brief Get sfParameterEffectiveTime (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getParameterEffectiveTime() const
-    {
-        if (hasParameterEffectiveTime())
-            return this->sle_->at(sfParameterEffectiveTime);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfParameterEffectiveTime is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasParameterEffectiveTime() const
-    {
-        return this->sle_->isFieldPresent(sfParameterEffectiveTime);
     }
 
     /**
@@ -777,10 +619,11 @@ public:
      * @param sequence The sfSequence field value.
      * @param account The sfAccount field value.
      * @param asset The sfAsset field value.
-     * @param parameterDelay The sfParameterDelay field value.
+     * @param liquidationPenalty The sfLiquidationPenalty field value.
+     * @param liquidationChunkMin The sfLiquidationChunkMin field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    PerpExchangeBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_UINT32::type::value_type> const& parameterDelay,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    PerpExchangeBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_UINT32::type::value_type> const& liquidationPenalty,std::decay_t<typename SF_NUMBER::type::value_type> const& liquidationChunkMin,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
         : LedgerEntryBuilderBase<PerpExchangeBuilder>(ltPERP_EXCHANGE)
     {
         setPreviousTxnID(previousTxnID);
@@ -789,7 +632,8 @@ public:
         setSequence(sequence);
         setAccount(account);
         setAsset(asset);
-        setParameterDelay(parameterDelay);
+        setLiquidationPenalty(liquidationPenalty);
+        setLiquidationChunkMin(liquidationChunkMin);
         setOwnerNode(ownerNode);
     }
 
@@ -900,17 +744,6 @@ public:
     }
 
     /**
-     * @brief Set sfVaultID (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
-    {
-        object_[sfVaultID] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfMakerFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -944,17 +777,6 @@ public:
     }
 
     /**
-     * @brief Set sfVaultFeeShare (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setVaultFeeShare(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfVaultFeeShare] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfBuilderFeeMax (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -977,35 +799,35 @@ public:
     }
 
     /**
-     * @brief Set sfVaultLossLimit (SoeDefault)
+     * @brief Set sfLiquidationPenalty (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PerpExchangeBuilder&
-    setVaultLossLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLiquidationPenalty(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfVaultLossLimit] = value;
+        object_[sfLiquidationPenalty] = value;
         return *this;
     }
 
     /**
-     * @brief Set sfVaultLossWindow (SoeOptional)
+     * @brief Set sfLiquidationRewardMin (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     PerpExchangeBuilder&
-    setVaultLossWindow(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLiquidationRewardMin(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
-        object_[sfVaultLossWindow] = value;
+        object_[sfLiquidationRewardMin] = value;
         return *this;
     }
 
     /**
-     * @brief Set sfParameterDelay (SoeRequired)
+     * @brief Set sfLiquidationChunkMin (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PerpExchangeBuilder&
-    setParameterDelay(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLiquidationChunkMin(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
-        object_[sfParameterDelay] = value;
+        object_[sfLiquidationChunkMin] = value;
         return *this;
     }
 
@@ -1098,28 +920,6 @@ public:
     }
 
     /**
-     * @brief Set sfVaultLossWindowStart (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setVaultLossWindowStart(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfVaultLossWindowStart] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfVaultLossInWindow (SoeDefault)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setVaultLossInWindow(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
-    {
-        object_[sfVaultLossInWindow] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfMarketCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -1138,28 +938,6 @@ public:
     setMarginAccountCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfMarginAccountCount] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfPendingParameters (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setPendingParameters(STObject const& value)
-    {
-        object_.setFieldObject(sfPendingParameters, value);
-        return *this;
-    }
-
-    /**
-     * @brief Set sfParameterEffectiveTime (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpExchangeBuilder&
-    setParameterEffectiveTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfParameterEffectiveTime] = value;
         return *this;
     }
 

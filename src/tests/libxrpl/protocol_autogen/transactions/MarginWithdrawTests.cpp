@@ -30,7 +30,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
     auto const destinationValue = canonical_ACCOUNT();
 
@@ -43,7 +42,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
-    builder.setSubaccount(subaccountValue);
     builder.setDestination(destinationValue);
 
     auto tx = builder.build(publicKey, secretKey);
@@ -75,14 +73,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderSettersRoundTrip)
 
     // Verify optional fields
     {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = tx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-        EXPECT_TRUE(tx.hasSubaccount());
-    }
-
-    {
         auto const& expected = destinationValue;
         auto const actualOpt = tx.getDestination();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestination should be present";
@@ -107,7 +97,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const exchangeIDValue = canonical_UINT256();
-    auto const subaccountValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
     auto const destinationValue = canonical_ACCOUNT();
 
@@ -120,7 +109,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
-    initialBuilder.setSubaccount(subaccountValue);
     initialBuilder.setDestination(destinationValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
@@ -152,13 +140,6 @@ TEST(TransactionsMarginWithdrawTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = subaccountValue;
-        auto const actualOpt = rebuiltTx.getSubaccount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubaccount should be present";
-        expectEqualField(expected, *actualOpt, "sfSubaccount");
-    }
-
     {
         auto const& expected = destinationValue;
         auto const actualOpt = rebuiltTx.getDestination();
@@ -225,8 +206,6 @@ TEST(TransactionsMarginWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasSubaccount());
-    EXPECT_FALSE(tx.getSubaccount().has_value());
     EXPECT_FALSE(tx.hasDestination());
     EXPECT_FALSE(tx.getDestination().has_value());
 }

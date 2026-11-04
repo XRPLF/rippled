@@ -393,7 +393,6 @@ JSS(lp_token);                    // out: amm_info
 JSS(majority);                    // out: RPC feature
 JSS(manifest);                    // out: ValidatorInfo, Manifest
 JSS(margin_account_id);           // in: LedgerEntry; perpetual futures RPC
-JSS(mark_price);                  // out: perpetual futures RPC
 JSS(marker);                      // in/out: AccountTx, AccountOffers, AccountLines, AccountObjects,
 JSS(market_id);                   // in: LedgerEntry; perpetual futures RPC
                                   //         LedgerData
@@ -493,8 +492,6 @@ JSS(peer);                        // in: AccountLines
 JSS(peer_authorized);             // out: AccountLines
 JSS(peer_id);                     // out: RCLCxPeerPos
 JSS(peers);                       // out: InboundLedger, handlers/Peers, Overlay
-JSS(pending_parameters);          // out: perpetual futures RPC
-JSS(perp_books);                  // in: Subscribe, Unsubscribe
 JSS(peer_disconnects);            // Severed peer connection counter.
 JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
@@ -602,7 +599,6 @@ JSS(stop_history_tx_only);        // in: Unsubscribe, stop history tx stream
 JSS(streams);                     // in: Subscribe, Unsubscribe
 JSS(strict);                      // in: AccountCurrencies, AccountInfo
 JSS(sub_index);                   // in: LedgerEntry
-JSS(subaccount);                  // in: LedgerEntry; perpetual futures RPC
 JSS(subcommand);                  // in: PathFind
 JSS(subject);                     // in: LedgerEntry Credential
 JSS(success);                     // rpc

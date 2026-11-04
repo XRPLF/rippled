@@ -21,7 +21,7 @@ class PerpLiquidateBuilder;
  * Type: ttPERP_LIQUIDATE (111)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
- * Privileges: Privilege::MayModifyVault
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PerpLiquidateBuilder to construct new transactions.
@@ -93,32 +93,6 @@ public:
     hasSize() const
     {
         return this->tx_->isFieldPresent(sfSize);
-    }
-
-    /**
-     * @brief Get sfSubaccount (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getSubaccount() const
-    {
-        if (hasSubaccount())
-        {
-            return this->tx_->at(sfSubaccount);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSubaccount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSubaccount() const
-    {
-        return this->tx_->isFieldPresent(sfSubaccount);
     }
 };
 
@@ -198,17 +172,6 @@ public:
     setSize(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfSize] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSubaccount (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    PerpLiquidateBuilder&
-    setSubaccount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSubaccount] = value;
         return *this;
     }
 
