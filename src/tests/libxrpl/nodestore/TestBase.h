@@ -50,7 +50,7 @@ createPredictableBatch(std::size_t numObjects, std::uint64_t seed)
     Batch batch;
     batch.reserve(numObjects);
 
-    beast::xor_shift_engine rng(seed);
+    beast::XorShiftEngine rng(seed);
 
     for (auto i = 0uz; i < numObjects; ++i)
     {
@@ -69,7 +69,7 @@ createPredictableBatch(std::size_t numObjects, std::uint64_t seed)
             }
         }();
 
-        uint256 hash;
+        UInt256 hash;
         beast::rngfill(hash.begin(), hash.size(), rng);
 
         Blob blob(randInt(rng, kMinPayloadBytes, kMaxPayloadBytes));

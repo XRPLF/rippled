@@ -59,7 +59,7 @@ enum class ConsensusMode {
      * if we entered the round observing, but is used to indicate we did
      * have the wrongLedger at some point.
      */
-    SwitchedLedger
+    SwitchedLedger,
 };
 
 inline std::string
@@ -222,7 +222,7 @@ medianCloseOffset(ConsensusCloseTimes const& times)
 
     // Accumulate weight in time order; the first bin to reach halfWeight is
     // the (lower) weighted median. Returns true once that bin is found.
-    auto step = [&](time_point t, std::int64_t w) {
+    auto const step = [&](time_point t, std::int64_t w) {
         XRPL_ASSERT(tally < halfWeight, "xrpl::medianCloseOffset::step : median not yet found");
         tally += w;
         if (tally >= halfWeight)
@@ -267,7 +267,7 @@ enum class ConsensusState {
     No,       ///< We do not have consensus
     MovedOn,  ///< The network has consensus without us
     Expired,  ///< Consensus time limit has hard-expired
-    Yes       ///< We have consensus along with the network
+    Yes,      ///< We have consensus along with the network
 };
 
 /**
@@ -282,15 +282,15 @@ enum class ConsensusState {
 template <class Traits>
 struct ConsensusResult
 {
-    using Ledger_t = Traits::Ledger_t;
-    using TxSet_t = Traits::TxSet_t;
-    using NodeID_t = Traits::NodeID_t;
+    using LedgerT = Traits::LedgerT;
+    using TxSetT = Traits::TxSetT;
+    using NodeIDT = Traits::NodeIDT;
 
-    using Tx_t = TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
-    using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
+    using TxT = TxSetT::Tx;
+    using ProposalT = ConsensusProposal<NodeIDT, typename LedgerT::ID, typename TxSetT::ID>;
+    using DisputeT = DisputedTx<TxT, NodeIDT>;
 
-    ConsensusResult(TxSet_t&& s, Proposal_t&& p) : txns{std::move(s)}, position{std::move(p)}
+    ConsensusResult(TxSetT&& s, ProposalT&& p) : txns{std::move(s)}, position{std::move(p)}
     {
         XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
@@ -298,20 +298,20 @@ struct ConsensusResult
     /**
      * The set of transactions consensus agrees go in the ledger
      */
-    TxSet_t txns;
+    TxSetT txns;
 
     /**
      * Our proposed position on transactions/close time
      */
-    Proposal_t position;
+    ProposalT position;
 
     /**
      * Transactions which are under dispute with our peers
      */
-    hash_map<typename Tx_t::ID, Dispute_t> disputes;
+    HashMap<typename TxT::ID, DisputeT> disputes;
 
     // Set of TxSet ids we have already compared/created disputes
-    hash_set<typename TxSet_t::ID> compares;
+    HashSet<typename TxSetT::ID> compares;
 
     // Measures the duration of the establish phase for this consensus round
     ConsensusTimer roundTime;

@@ -47,7 +47,7 @@ checkInvariantsHelper(
     {
         auto checkers = getInvariantChecks();
 
-        ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+        ctx.visit([&](UInt256 const&, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
             if (txCheck)
                 txCheck->get().visitEntry(isDelete, before, after);
             (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
@@ -70,7 +70,8 @@ checkInvariantsHelper(
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
         std::array<bool, sizeof...(Is)> const finalizers{
-            {std::get<Is>(checkers).finalize(ctx.tx, result, fee, ctx.view(), ctx.journal)...}};
+            {std::get<Is>(checkers).finalize(ctx.tx, result, fee, ctx.view(), ctx.journal)...},
+        };
 
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {

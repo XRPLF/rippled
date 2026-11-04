@@ -28,6 +28,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -51,7 +52,7 @@ namespace xrpl::test {
 // Helper function that returns the reserve on an account based on
 // the passed in number of owners.
 static XRPAmount
-reserve(jtx::Env& env, std::uint32_t count)
+reserve(jtx::Env const& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count, 1);
 }
@@ -121,7 +122,7 @@ struct DepositAuth_test : public beast::unit_test::Suite
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env, &alice, &bob, &usd]() {
+        auto const failedIouPayments = [this, &env, &alice, &bob, &usd] {
             env.require(Flags(bob, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't change.
@@ -299,10 +300,10 @@ struct DepositAuth_test : public beast::unit_test::Suite
         IOU const usD1(gw1["USD"]);
         IOU const usD2(gw2["USD"]);
 
-        auto testIssuer = [&](FeatureBitset const& features,
-                              bool noRipplePrev,
-                              bool noRippleNext,
-                              bool withDepositAuth) {
+        auto const testIssuer = [&](FeatureBitset const& features,
+                                    bool noRipplePrev,
+                                    bool noRippleNext,
+                                    bool withDepositAuth) {
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, alice, bob);
@@ -320,10 +321,10 @@ struct DepositAuth_test : public beast::unit_test::Suite
             env(pay(alice, bob, usD1(10)), Path(gw1), Ter(result));
         };
 
-        auto testNonIssuer = [&](FeatureBitset const& features,
-                                 bool noRipplePrev,
-                                 bool noRippleNext,
-                                 bool withDepositAuth) {
+        auto const testNonIssuer = [&](FeatureBitset const& features,
+                                       bool noRipplePrev,
+                                       bool noRippleNext,
+                                       bool withDepositAuth) {
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, gw2, alice);
@@ -421,7 +422,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(ticket::create(alice, 2));
             std::uint32_t const aliceSeq{env.seq(alice)};
             env.close();
-            env.require(tickets(alice, 2));
+            env.require(Tickets(alice, 2));
 
             // Consume the tickets from biggest seq to smallest 'cuz we can.
             std::uint32_t aliceTicketSeq{env.seq(alice)};
@@ -430,7 +431,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(deposit::auth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
             // Alice uses a ticket but gains a preauth entry.
-            env.require(tickets(alice, 1));
+            env.require(Tickets(alice, 1));
             env.require(Owners(alice, 2));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -438,7 +439,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Remove a DepositPreauth from alice.
             env(deposit::unauth(alice, becky), ticket::Use(--aliceTicketSeq));
             env.close();
-            env.require(tickets(alice, 0));
+            env.require(Tickets(alice, 0));
             env.require(Owners(alice, 0));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             env.require(Owners(becky, 0));
@@ -608,7 +609,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env(pay(gw, alice, usd(500)));
             env.close();
 
-            env(offer(alice, XRP(100), usd(100), tfPassive), Require(offers(alice, 1)));
+            env(offer(alice, XRP(100), usd(100), tfPassive), Require(Offers(alice, 1)));
             env.close();
 
             // becky pays herself USD (10) by consuming part of alice's offer.
@@ -884,8 +885,10 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Bob setup DepositPreauth object, duplicates is not allowed
             env(deposit::authCredentials(
                     bob,
-                    {{.issuer = issuer, .credType = credType},
-                     {.issuer = issuer, .credType = credType}}),
+                    {
+                        {.issuer = issuer, .credType = credType},
+                        {.issuer = issuer, .credType = credType},
+                    }),
                 Ter(temMALFORMED));
 
             // Bob setup DepositPreauth object
@@ -1032,7 +1035,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
 
             {
                 // AuthorizeCredentials is empty
-                auto jv = deposit::authCredentials(bob, {});
+                auto const jv = deposit::authCredentials(bob, {});
                 env(jv, Ter(temARRAY_EMPTY));
             }
 
@@ -1052,7 +1055,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
 
             {
                 // empty credential type
-                auto jv = deposit::authCredentials(bob, {{.issuer = issuer, .credType = {}}});
+                auto const jv = deposit::authCredentials(bob, {{.issuer = issuer, .credType = {}}});
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -1061,24 +1064,27 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"), g("g"), h("h"),
                     i("i");
                 auto const& z = credType;
-                auto jv = deposit::authCredentials(
+                auto const jv = deposit::authCredentials(
                     bob,
-                    {{.issuer = a, .credType = z},
-                     {.issuer = b, .credType = z},
-                     {.issuer = c, .credType = z},
-                     {.issuer = d, .credType = z},
-                     {.issuer = e, .credType = z},
-                     {.issuer = f, .credType = z},
-                     {.issuer = g, .credType = z},
-                     {.issuer = h, .credType = z},
-                     {.issuer = i, .credType = z}});
+                    {
+                        {.issuer = a, .credType = z},
+                        {.issuer = b, .credType = z},
+                        {.issuer = c, .credType = z},
+                        {.issuer = d, .credType = z},
+                        {.issuer = e, .credType = z},
+                        {.issuer = f, .credType = z},
+                        {.issuer = g, .credType = z},
+                        {.issuer = h, .credType = z},
+                        {.issuer = i, .credType = z},
+                    });
                 env(jv, Ter(temARRAY_TOO_LARGE));
             }
 
             {
                 // Can't create with non-existing issuer
                 Account const rick{"rick"};
-                auto jv = deposit::authCredentials(bob, {{.issuer = rick, .credType = credType}});
+                auto const jv =
+                    deposit::authCredentials(bob, {{.issuer = rick, .credType = credType}});
                 env(jv, Ter(tecNO_ISSUER));
                 env.close();
             }
@@ -1088,7 +1094,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0, 1), john);
                 env.close();
-                auto jv =
+                auto const jv =
                     deposit::authCredentials(john, {{.issuer = issuer, .credType = credType}});
                 env(jv, Ter(tecINSUFFICIENT_RESERVE));
             }
@@ -1138,8 +1144,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                     ledgerEntryDepositPreauth(env, bob, {{.issuer = issuer, .credType = credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
-                    jDP[jss::result].isMember(jss::error) &&
-                    jDP[jss::result][jss::error] == "entryNotFound");
+                    jDP[jss::result][jss::error] == "entryNotFound" &&
+                    jDP[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDP[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }
@@ -1204,8 +1211,10 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(
                 bob,
-                {{.issuer = issuer, .credType = credType},
-                 {.issuer = issuer, .credType = credType2}}));
+                {
+                    {.issuer = issuer, .credType = credType},
+                    {.issuer = issuer, .credType = credType2},
+                }));
             env.close();
 
             {
@@ -1225,8 +1234,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                     auto const jDelCred = credentials::ledgerEntry(env, alice, issuer, credType);
                     BEAST_EXPECT(
                         jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                        jDelCred[jss::result].isMember(jss::error) &&
-                        jDelCred[jss::result][jss::error] == "entryNotFound");
+                        jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                        jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                        jDelCred[jss::result][jss::error_message] == "Entry not found.");
                 }
 
                 {
@@ -1276,8 +1286,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 auto const jDelCred = credentials::ledgerEntry(env, gw, issuer, credType);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) &&
-                    jDelCred[jss::result][jss::error] == "entryNotFound");
+                    jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                    jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDelCred[jss::result][jss::error_message] == "Entry not found.");
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, gw) == 0);
@@ -1351,8 +1362,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             auto const jDelCred = credentials::ledgerEntry(env, zelda, issuer, credType);
             BEAST_EXPECT(
                 jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                jDelCred[jss::result].isMember(jss::error) &&
-                jDelCred[jss::result][jss::error] == "entryNotFound");
+                jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                jDelCred[jss::result][jss::error_message] == "Entry not found.");
         }
     }
 
@@ -1379,7 +1391,8 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {.issuer = "e", .credType = "e"},
             {.issuer = "f", .credType = "f"},
             {.issuer = "g", .credType = "g"},
-            {.issuer = "h", .credType = "h"}};
+            {.issuer = "h", .credType = "h"},
+        };
 
         for (auto const& c : credentials)
             env.fund(XRP(5000), c.issuer);
@@ -1407,7 +1420,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 for (auto const& o : authCred)
                 {
                     auto const& c(o[jss::Credential]);
-                    auto issuer = c[jss::Issuer].asString();
+                    auto const issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
                     {

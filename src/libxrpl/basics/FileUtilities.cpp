@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cstddef>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <ios>
@@ -99,12 +100,13 @@ uniqueRandomPath(
         if (ec)
         {
             Throw<std::runtime_error>(
-                "Unable to check path '" + candidate.string() + "': " + ec.message());
+                std::format("Unable to check path '{}': {}", candidate.string(), ec.message()));
         }
         if (!exists)
             return candidate;
     }
-    Throw<std::runtime_error>("Unable to generate a unique path under '" + base.string() + "'");
+    Throw<std::runtime_error>(
+        std::format("Unable to generate a unique path under '{}'", base.string()));
 }
 
 TempDir::TempDir() : path_(uniqueRandomPath(std::filesystem::temp_directory_path()))

@@ -207,7 +207,7 @@ class STPathSet final : public STBase, public CountedObject<STPathSet>
      * as opposed to 64 bytes with an optional.  This keeps the size
      * of the STPathSet to within the `STVar::kMaxSize` limit of 72 bytes.
      */
-    std::unique_ptr<hardened_hash_set<STPath>> seen_;
+    std::unique_ptr<HardenedHashSet<STPath>> seen_;
 
 public:
     struct DeduplicationTag
@@ -215,6 +215,7 @@ public:
     };
 
     STPathSet() = default;
+
     /**
      * Deduplication tagged constructor.
      * Use when you want to ensure that the STPathSet does not contain duplicate paths.

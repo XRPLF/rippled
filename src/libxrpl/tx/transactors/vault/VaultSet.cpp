@@ -1,12 +1,15 @@
 #include <xrpl/tx/transactors/vault/VaultSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -74,6 +77,16 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // An AssetsMaximum out of range for the vault asset, e.g. XRP above
+    // STAmount::kMaxNativeN, would throw when rounded to the asset.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum]; assetMax &&
+        ctx.view.rules().enabled(fixCleanup3_5_0) &&
+        !isRepresentable(vault->at(sfAsset), *assetMax))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: max assets out of range for the asset.";
+        return tecPRECISION_LOSS;
+    }
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -110,6 +123,21 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // With featureLendingProtocolV1_2, AssetsMaximum must be exactly
+    // representable at the Vault's scale (the base grid on FixedPrecision
+    // Vaults, the live scale on existing Legacy/CashBasis Vaults), otherwise
+    // associateAsset would silently round the cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        if (auto const ter = checkAssetsMaximum(vault, *assetMax); !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return ter;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -123,7 +151,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -144,7 +172,7 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
+        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < getAssetsTotal(vault))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
@@ -178,7 +206,7 @@ VaultSet::doApply()
 }
 
 void
-VaultSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

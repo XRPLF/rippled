@@ -337,7 +337,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     Sponsorship
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return Sponsorship{std::make_shared<SLE>(std::move(object_), index)};
     }

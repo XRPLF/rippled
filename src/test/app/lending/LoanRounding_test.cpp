@@ -63,7 +63,7 @@ private:
         env.close();
 
         // Step 1: Create vault with IOU asset
-        auto asset = issuer["USD"];
+        auto const asset = issuer["USD"];
         env(trust(lender, asset(100000)));
         env(trust(borrower, asset(100000)));
         env(trust(victim, asset(100000)));
@@ -76,11 +76,12 @@ private:
             .vaultDeposit = 10000,
             .debtMax = Number{0},
             .coverRateMin = TenthBips32{1000},
-            .coverRateLiquidation = TenthBips32{2500}};
+            .coverRateLiquidation = TenthBips32{2500},
+        };
 
         auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
+        auto const loanKeyletOpt = [&] -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -297,7 +298,7 @@ private:
                 .debtMax = Number{100'000'000},
                 .coverDeposit = 500'000,
             });
-        auto const [currentSeq, vaultKeylet] = [&]() {
+        auto const [currentSeq, vaultKeylet] = [&] {
             auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::make_tuple(0u, keylet::unchecked(beast::kZero));
@@ -323,12 +324,12 @@ private:
 
         // --- RETRIEVE OBJECTS & SETUP ATTACK ---
 
-        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+        auto const borrowerBalance = [&] { return env.balance(borrower, iou); };
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
         auto const loanKeylet =
             keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(currentSeq));
-        auto const maybePeriodicPayment = [&]() -> std::optional<STAmount> {
+        auto const maybePeriodicPayment = [&] -> std::optional<STAmount> {
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return std::nullopt;
@@ -345,7 +346,7 @@ private:
         STAmount const paymentBuffer{iou, Number(1, -9)};
         STAmount const attackPayment = periodicPayment + paymentBuffer;
 
-        auto const maybeInitialVaultAssets = [&]() -> std::optional<Number> {
+        auto const maybeInitialVaultAssets = [&] -> std::optional<Number> {
             auto const vault = env.le(vaultKeylet);
             if (!BEAST_EXPECT(vault))
                 return std::nullopt;
@@ -457,7 +458,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, params);
 
         auto const loanKeylet = nextLoanKeylet(env, broker);
@@ -651,7 +653,7 @@ private:
             Number unit;                  // one scale-unit at the loan scale
         };
 
-        auto runScenario = [this](FeatureBitset features, Params const& p) -> Result {
+        auto const runScenario = [this](FeatureBitset features, Params const& p) -> Result {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -665,10 +667,12 @@ private:
                 env,
                 iouAsset,
                 lender,
-                {.vaultDeposit = 900'000,
-                 .debtMax = 0,
-                 .managementFeeRate = p.managementFeeRate,
-                 .vaultScale = p.vaultScale});
+                {
+                    .vaultDeposit = 900'000,
+                    .debtMax = 0,
+                    .managementFeeRate = p.managementFeeRate,
+                    .vaultScale = p.vaultScale,
+                });
 
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
@@ -740,7 +744,8 @@ private:
                 .managementFeeChange =
                     (loanSle ? Number{loanSle->at(sfManagementFeeOutstanding)} : Number{0}) -
                     managementFeeBefore,
-                .unit = Number{1, s.loanScale}};
+                .unit = Number{1, s.loanScale},
+            };
         };
 
         // Scenario 1: the original near-zero-rate principal reproduction
@@ -755,7 +760,8 @@ private:
             .overpayment = Number{49999998, -9},
             .overpaymentInterestRate = TenthBips32{1000},
             .overpaymentFeeRate = TenthBips32{1000},
-            .vaultScale = 1};
+            .vaultScale = 1,
+        };
 
         // With fixCleanup3_2_0 the stored principal lands exactly on the
         // ground-truth grid point: it is reduced by exactly the overpayment's
@@ -793,7 +799,8 @@ private:
             .overpayment = Number{214367363, -10},
             .overpaymentInterestRate = TenthBips32{0},
             .overpaymentFeeRate = TenthBips32{0},
-            .vaultScale = std::nullopt};
+            .vaultScale = std::nullopt,
+        };
 
         Result const feeFixed = runScenario(all_, feeCase);
         Result const feeLegacy = runScenario(all_ - fixCleanup3_2_0, feeCase);
@@ -853,10 +860,12 @@ private:
             env,
             iouAsset,
             lender,
-            {.vaultDeposit = 100'000,
-             .debtMax = 5000,
-             .managementFeeRate = TenthBips16{1000},
-             .vaultScale = 1});
+            {
+                .vaultDeposit = 100'000,
+                .debtMax = 5000,
+                .managementFeeRate = TenthBips16{1000},
+                .vaultScale = 1,
+            });
 
         auto const sleBroker = env.le(broker.brokerKeylet());
         if (!BEAST_EXPECT(sleBroker))
@@ -923,10 +932,11 @@ private:
             {.vaultDeposit = 1'000'000, .debtMax = 3'000'000, .coverDeposit = 1'000'000});
 
         Vault const v{env};
-        env(v.deposit(
-            {.depositor = depositorB,
-             .id = broker.vaultKeylet().key,
-             .amount = xrpAsset(3'000'000)}));
+        env(v.deposit({
+            .depositor = depositorB,
+            .id = broker.vaultKeylet().key,
+            .amount = xrpAsset(3'000'000),
+        }));
         env.close();
 
         auto const brokerSle = env.le(broker.brokerKeylet());
@@ -988,15 +998,18 @@ private:
                 env,
                 iouAsset,
                 iouLender,
-                {.vaultDeposit = 3'999'999,
-                 .debtMax = 4'000'000,
-                 .coverDeposit = 4'000'000,
-                 .managementFeeRate = TenthBips16{0}});
+                {
+                    .vaultDeposit = 3'999'999,
+                    .debtMax = 4'000'000,
+                    .coverDeposit = 4'000'000,
+                    .managementFeeRate = TenthBips16{0},
+                });
 
-            env(v.deposit(
-                {.depositor = iouDepositorB,
-                 .id = iouBroker.vaultKeylet().key,
-                 .amount = iouAsset(1)}));
+            env(v.deposit({
+                .depositor = iouDepositorB,
+                .id = iouBroker.vaultKeylet().key,
+                .amount = iouAsset(1),
+            }));
             env.close();
 
             auto const iouBrokerSle = env.le(iouBroker.brokerKeylet());
@@ -1031,7 +1044,7 @@ private:
             // Env::balance can't be used for shares: it resolves the issuer
             // name, and the share issuer is the vault pseudo-account, which
             // Env doesn't know.
-            auto const lenderShares = [&]() -> std::uint64_t {
+            auto const lenderShares = [&] -> std::uint64_t {
                 auto const sle = env.le(keylet::mptoken(iouShareAsset, iouLender.id()));
                 return sle ? sle->at(sfMPTAmount) : 0;
             };
@@ -1040,10 +1053,11 @@ private:
             if (!BEAST_EXPECT(iouIssuanceBefore))
                 return;
             auto const iouSharesOutstandingBefore = iouIssuanceBefore->at(sfOutstandingAmount);
-            env(v.withdraw(
-                    {.depositor = iouLender,
-                     .id = iouBroker.vaultKeylet().key,
-                     .amount = oneIouShare}),
+            env(v.withdraw({
+                    .depositor = iouLender,
+                    .id = iouBroker.vaultKeylet().key,
+                    .amount = oneIouShare,
+                }),
                 fixed ? Ter(tesSUCCESS) : Ter(tecINVARIANT_FAILED));
             env.close();
 
@@ -1106,10 +1120,12 @@ private:
             env,
             iouAsset,
             lender,
-            {.vaultDeposit = 10'000'000,
-             .debtMax = 10'000'000,
-             .coverDeposit = 1'000'000,
-             .vaultScale = 10});
+            {
+                .vaultDeposit = 10'000'000,
+                .debtMax = 10'000'000,
+                .coverDeposit = 1'000'000,
+                .vaultScale = 10,
+            });
 
         // Draw all but 100 units: AssetsAvailable drops to 100 while
         // AssetsTotal stays at 1e7 (the loan is still an asset of the vault).
@@ -1177,7 +1193,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
 
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 

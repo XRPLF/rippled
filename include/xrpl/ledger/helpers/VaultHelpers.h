@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
@@ -12,10 +14,238 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <string_view>
 
 namespace xrpl {
 
 class STTx;
+
+/**
+ * @brief Return the Vault's current assets total.
+ *
+ * FixedPrecision Vaults return AssetsAvailable plus AssetsDeployed, with no
+ * rounding to the asset's 16-digit precision: the sum is exact at Number's
+ * active 19-digit mantissa width (the large mantissa range, enabled by
+ * featureSingleAssetVault or featureLendingProtocol), rounds Downward regardless of the
+ * caller's ambient mode beyond that, and is not rounded to match the cached
+ * sfAssetsTotal field. Legacy and CashBasis Vaults return the stored
+ * AssetsTotal.
+ *
+ * @param vault The vault SLE.
+ * @return The current assets total.
+ */
+[[nodiscard]] Number
+getAssetsTotal(SLE::ConstRef vault);
+
+/**
+ * @brief A change to a FixedPrecision Vault's balances.
+ */
+struct VaultBalanceChange
+{
+    /**
+     * Signed change to AssetsAvailable. Must be the exact amount moved on the
+     * Vault pseudo-account in the same transaction. Absent means no cash
+     * moved; adjustVaultBalances then uses zero of the Vault's own asset.
+     */
+    std::optional<STAmount> cash = std::nullopt;
+
+    /**
+     * Signed change to AssetsDeployed: open Loan principal, exact.
+     */
+    Number deployed = 0;
+
+    /**
+     * Signed change to scheduled, unpaid interest (YieldUnrealized), exact.
+     */
+    Number yield = 0;
+
+    /**
+     * Signed change to impaired principal (LossUnrealized), exact.
+     */
+    Number loss = 0;
+};
+
+/**
+ * @brief Apply a balance change to a FixedPrecision Vault. The only writer of
+ * AssetsAvailable, AssetsDeployed, AssetsTotal, YieldUnrealized and
+ * LossUnrealized on these Vaults after creation.
+ *
+ * @param vault The vault SLE. Must be FixedPrecision.
+ * @param change The balance change to apply.
+ * @param j Journal for logging the fatal (tefBAD_LEDGER) case.
+ *
+ * @return tesSUCCESS; tecLIMIT_EXCEEDED if LossUnrealized would exceed
+ *         AssetsDeployed; tefBAD_LEDGER if AssetsAvailable, AssetsDeployed,
+ *         LossUnrealized or YieldUnrealized would become negative.
+ */
+[[nodiscard]] TER
+adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Journal j);
+
+/**
+ * @brief Apply a signed cash movement to a Vault of any version. FixedPrecision
+ * Vaults go through adjustVaultBalances; Legacy and CashBasis Vaults add the
+ * amount to both AssetsTotal and AssetsAvailable.
+ *
+ * @param vault The vault SLE.
+ * @param delta Signed change to AssetsAvailable; the exact amount moved on the
+ *              Vault pseudo-account.
+ * @param j Journal passed through to adjustVaultBalances.
+ *
+ * @return tesSUCCESS, or the adjustVaultBalances error for FixedPrecision Vaults.
+ */
+[[nodiscard]] TER
+adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j);
+
+/**
+ * Return the Vault's current live exponent.
+ *
+ * Legacy and CashBasis Vaults use the exponent of AssetsTotal. FixedPrecision
+ * Vaults use max(base exponent, exponent of AssetsTotal): the grid is never
+ * finer than -Scale and coarsens once AssetsTotal outgrows 16 digits there.
+ */
+[[nodiscard]] int
+getVaultScale(SLE::ConstRef vault);
+
+/**
+ * Return the Vault's base exponent.
+ *
+ * Legacy and CashBasis Vaults use their current live exponent. FixedPrecision
+ * Vaults use -Scale, or 0 for integral assets.
+ */
+[[nodiscard]] int
+getVaultBaseScale(SLE::ConstRef vault);
+
+/**
+ * Round an amount at the Vault's posterior live exponent.
+ */
+[[nodiscard]] STAmount
+roundToPosteriorVaultScale(
+    SLE::ConstRef vault,
+    STAmount const& amount,
+    Number::RoundingMode roundingMode);
+
+namespace detail {
+
+/**
+ * Return the Vault's posterior live exponent after applying an unrounded delta.
+ */
+[[nodiscard]] int
+getPosteriorVaultScale(SLE::ConstRef vault, STAmount const& delta);
+
+/**
+ * Shared grid-floor core of getVaultScale / getPosteriorVaultScale /
+ * getPosteriorBrokerCoverScale: baseScale when reference is zero, otherwise
+ * max(baseScale, scale(reference, asset)), rounded Downward regardless of
+ * the caller's ambient rounding mode.
+ */
+[[nodiscard]] int
+liveScale(Number const& reference, Asset const& asset, int baseScale);
+
+/**
+ * Shared core of getPosteriorVaultScale and getPosteriorBrokerCoverScale:
+ * the exponent reference + delta would have under version's live-scale rule
+ * (floored at baseScale for FixedPrecision, unbounded for Legacy/CashBasis).
+ *
+ * @param version The Vault's LEVersion.
+ * @param asset The Vault's underlying asset.
+ * @param baseScale The Vault's base exponent; unused outside the
+ *                   FixedPrecision case.
+ * @param reference The balance the delta is applied to (AssetsAvailable,
+ *                   AssetsTotal, or a LoanBroker's CoverAvailable).
+ * @param delta The unrounded change to reference.
+ */
+[[nodiscard]] int
+posteriorAssetScale(
+    VaultVersion version,
+    Asset const& asset,
+    int baseScale,
+    Number const& reference,
+    Number const& delta);
+
+/**
+ * Shared core of creditToPosteriorAvailableScale and
+ * creditToPosteriorBrokerCoverScale: floors reference + raw at the sum's
+ * own live scale (never finer than baseScale) and returns the difference
+ * from reference, so the delta applied is exactly what moves reference onto
+ * the floored sum. See creditToPosteriorAvailableScale's doc for why the
+ * sum, not raw alone, must be floored. raw is the exact amount; it is not
+ * rounded on its own before being added to reference. The sum and its scale
+ * are computed once, in roundingMode, so a Downward credit is always
+ * between zero and raw.
+ */
+[[nodiscard]] STAmount
+creditToPosteriorScale(
+    Asset const& asset,
+    Number const& reference,
+    int baseScale,
+    Number const& raw,
+    Number::RoundingMode roundingMode);
+
+}  // namespace detail
+
+/**
+ * Round a FixedPrecision cash inflow (LoanPay's credit, LoanManage's
+ * default cover credit) into AssetsAvailable, never AssetsTotal, which is
+ * a derived cache, by flooring the sum rather than the delta:
+ * credit equals floor16(AssetsAvailable + raw) minus AssetsAvailable, never
+ * finer than the Vault's base exponent (-Scale).
+ *
+ * Flooring only the delta at its own posterior grid is not enough: the sum
+ * can still need a 17th digit when AssetsAvailable is off the coarser grid
+ * right after crossing a power of ten. Example at Scale 6: AssetsAvailable
+ * equals 9999999999.999999 (16 digits already) and a credit of 0.000011
+ * floors to 0.00001 on its own (finer) grid, but 9999999999.999999 plus
+ * 0.00001 equals 10000000000.000009, which still needs 17 digits. Flooring
+ * the sum instead, floor16(9999999999.999999 + 0.000011) minus
+ * 9999999999.999999, is exact by construction, since STAmount's own
+ * 16-digit canonical form of the sum is what gets subtracted from.
+ *
+ * raw is taken as an exact Number: rounding it to 16 digits before adding
+ * it to AssetsAvailable could drop a tail that moves the floored sum.
+ */
+[[nodiscard]] STAmount
+creditToPosteriorAvailableScale(
+    SLE::ConstRef vault,
+    Number const& raw,
+    Number::RoundingMode roundingMode);
+
+/**
+ * Open-zone capacity ceiling: 9 * 10^(15 + baseScale).
+ *
+ * Defined only for FixedPrecision Vaults, where this is 9 * 10^(15 - P).
+ */
+[[nodiscard]] Number
+getVaultOpenLimit(SLE::ConstRef vault);
+
+/**
+ * Check whether amount is an admissible optional inflow.
+ *
+ * Legacy and CashBasis Vaults always succeed. FixedPrecision Vaults must
+ * remain at their base scale after applying the rounded amount, and the
+ * posterior capacity (AssetsTotal + YieldUnrealized + rounded amount) must
+ * stay within the Open zone.
+ *
+ * The amount is rounded toward zero at the posterior live exponent.
+ */
+[[nodiscard]] TER
+checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount);
+
+/**
+ * Open-zone capacity after adding roundedAmount: AssetsTotal + YieldUnrealized
+ * + roundedAmount, computed TowardsZero regardless of the caller's ambient
+ * rounding mode. Defined only for FixedPrecision Vaults.
+ *
+ * Shared by checkOptionalVaultInflow and LoanSet's loan-origination capacity
+ * check, which pair this formula with different scale checks (posterior vs.
+ * current), so only the capacity formula itself -- not the whole check -- is
+ * shared here.
+ *
+ * @param vault The vault SLE. Must be FixedPrecision.
+ * @param roundedAmount The amount to add, already rounded to the relevant
+ *                       posterior or base scale by the caller.
+ */
+[[nodiscard]] Number
+vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
 
 /**
  * From the perspective of a vault, return the number of shares to give
@@ -29,7 +259,7 @@ class STTx;
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
+assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -43,33 +273,95 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
 
 /**
- * Adjusts a requested asset change (`delta`) to match the decimal scale of the
- * updated total vault assets. This ensures `sfAssetsTotal`, `sfAssetsAvailable`,
+ * Adjusts a requested asset change (delta) to match the decimal scale of the
+ * updated total vault assets. This ensures sfAssetsTotal, sfAssetsAvailable,
  * and the actual asset transfer change by the exact same representable amount.
  *
  * Rounding strategy:
- * - Debits (withdrawals): Rounds down `|delta|` on the new scale to prevent
- *   paying out more than requested.
- * - Credits (deposits): Floors the resulting total asset balance and returns the
- *   difference from the current total. This prevents crediting the vault with
- *   more assets than the user deposited.
+ * - Legacy/CashBasis debits (withdrawals): rounds down the magnitude of delta
+ *   on the new scale to prevent paying out more than requested.
+ * - Legacy/CashBasis credits: floors the resulting total asset balance and
+ *   returns the difference from the current total.
+ * - FixedPrecision credits only (VaultDeposit): rounds the delta toward zero
+ *   at the scale getAssetsTotal (AssetsAvailable + AssetsDeployed, derived,
+ *   not the stored AssetsTotal cache) would have after applying delta.
+ *   FixedPrecision outflows (VaultWithdraw, VaultClawback) never call this;
+ *   they use clampVaultOutflow instead.
  *
  * Key rules:
- * - The returned magnitude never exceeds `|delta|`.
- * - Returns `tecPRECISION_LOSS` if the change is smaller than 1 ULP of the target scale
+ * - The returned magnitude never exceeds the magnitude of delta.
+ * - Returns tecPRECISION_LOSS if the change is smaller than 1 ULP of the target scale
  *   (prevents share operations when totals cannot change).
  * - For integer assets (XRP, MPT), rounding is a no-op.
  *
  * @param vault The vault ledger entry.
  * @param delta The requested signed change to sfAssetsTotal.
- * @return The rounded, positive magnitude, or `tecPRECISION_LOSS` if the
+ * @return The rounded, positive magnitude, or tecPRECISION_LOSS if the
  *         change is below representable precision.
  */
 [[nodiscard]] std::expected<STAmount, TER>
-clampToAssetsTotalScale(SLE::const_ref vault, STAmount const& delta);
+clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta);
+
+/**
+ * Outflow clamp dispatcher for VaultWithdraw and VaultClawback: rounds a
+ * negative delta to the scale appropriate for the Vault's version -- for
+ * FixedPrecision, at AssetsAvailable's own posterior scale (the balance the
+ * cash actually leaves); for Legacy/CashBasis, clampToAssetsTotalScale --
+ * so both call sites share one dispatch point. Same tecPRECISION_LOSS and
+ * integral-asset and magnitude-never-exceeds-delta rules as
+ * clampToAssetsTotalScale.
+ *
+ * @param vault The vault ledger entry.
+ * @param delta The requested signed outflow (negative).
+ * @return The rounded, positive magnitude, or tecPRECISION_LOSS if the
+ *         change is below representable precision.
+ */
+[[nodiscard]] std::expected<STAmount, TER>
+clampVaultOutflow(SLE::ConstRef vault, STAmount const& delta);
+
+/**
+ * Returns the Vault's base exponent for asset at scale, before a Vault
+ * object exists to read it from: 0 for an integral asset, -scale otherwise.
+ * Used by VaultCreate::preclaim, which only has the proposed Scale field,
+ * not yet a Vault SLE; getVaultBaseScale is the post-creation equivalent.
+ *
+ * @param asset The (prospective) Vault's underlying asset.
+ * @param scale The (prospective) Vault's sfScale value, ignored for
+ *              integral assets.
+ */
+[[nodiscard]] int
+vaultBaseScale(Asset const& asset, std::uint8_t scale);
+
+/**
+ * Returns true iff value is exactly representable both as an STAmount of
+ * asset and on the base grid at baseScale (no precision lost rounding
+ * TowardsZero at baseScale). Returns false, rather than throwing, for a value
+ * out of range for the asset. Shared representability check for
+ * VaultCreate::preclaim, VaultSet::preclaim and LoanBrokerSet::preclaim's
+ * AssetsMaximum / DebtMaximum / cover-rate field checks.
+ *
+ * @param asset The vault's underlying asset.
+ * @param value The value to check.
+ * @param baseScale The vault's base exponent (see vaultBaseScale /
+ *                  getVaultBaseScale).
+ */
+[[nodiscard]] bool
+isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
+
+/**
+ * Checks that a requested AssetsMaximum is exactly representable on the
+ * Vault's base grid, otherwise associateAsset would silently round the cap
+ * the owner asked for. Used by VaultSet::preclaim on an existing Vault.
+ *
+ * @param vault The vault ledger entry.
+ * @param amount The requested AssetsMaximum.
+ * @return tesSUCCESS, or tecPRECISION_LOSS if amount is not representable.
+ */
+[[nodiscard]] TER
+checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
 
 /**
  * Controls whether to truncate shares instead of rounding.
@@ -95,24 +387,27 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::const_ref vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
- * Returns true if debiting `amount` from `total` (the current value of a
- * vault's sfAssetsTotal or sfAssetsAvailable) would canonicalize to the
- * same STAmount value. This happens when `amount` is non-zero but too small
- * to change the stored total at STAmount's precision. Shares would still
- * move, so the ValidVault invariant would fail after apply; callers use
- * this to reject the transaction upfront instead.
+ * Reject a cash outflow that is dust (see debitIsNonZeroDust) or whose check
+ * overflows Number, which is easy to hit with a large Scale.
  *
- * @param asset The vault's underlying asset, used to canonicalize both
- *              sides the same way the ledger will when the field is stored.
- * @param total The field's current value.
- * @param amount The amount to debit. Zero always returns false; that case
- *               is rejected separately.
+ * @param vault The vault SLE.
+ * @param amount The amount to debit.
+ * @param j Journal for the debug log.
+ * @param name Transaction name used as the log prefix.
+ *
+ * @return tesSUCCESS; tecPRECISION_LOSS if amount is dust; tecPATH_DRY if the
+ *         check overflows. Overflow means the transaction cannot apply, but
+ *         ledger state is still consistent.
  */
-[[nodiscard]] bool
-debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount);
+[[nodiscard]] TER
+checkDebitNotDust(
+    SLE::ConstRef vault,
+    Number const& amount,
+    beast::Journal j,
+    std::string_view name);
 
 /**
  * From the perspective of a vault, return the number of shares to demand from
@@ -131,8 +426,8 @@ debitIsNonZeroDust(Asset const& asset, Number const& total, Number const& amount
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -152,13 +447,13 @@ assetsToSharesWithdraw(
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 /**
- * Returns true iff `account` holds all of the vault's outstanding shares —
+ * Returns true iff account holds all of the vault's outstanding shares,
  * i.e. is the sole remaining shareholder. Returns false if the account
  * holds no shares or fewer than the total outstanding.
  *
@@ -168,14 +463,16 @@ sharesToAssetsWithdraw(
  *                 both the share MPTID and the outstanding-amount total.
  */
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
- * Resolves a Vault's LEVersion, the single point every accounting touch
- * point should call to determine which recognition model (instant interest
- * recognition vs. cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1
- * activated never have sfLEVersion set, which resolves here to
- * VaultVersion::Legacy.
+ * Resolves a Vault's LEVersion.
+ *
+ * LEVersion is the single point every accounting and rounding helper
+ * should call to decide which protocol a Vault follows. It is written
+ * at VaultCreate and is not updated afterwards, so a Vault created
+ * under an older amendment keeps that behaviour after later amendments
+ * activate. Absent sfLEVersion resolves to VaultVersion::Legacy.
  *
  * @param vault The vault SLE.
  *
@@ -183,7 +480,35 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  * absent.
  */
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::const_ref vault);
+getVaultVersion(SLE::ConstRef vault);
+
+/**
+ * Decodes an already-extracted sfLEVersion value with the same range check as
+ * getVaultVersion. Usable from contexts, such as an invariant's ledger-entry
+ * snapshot, that keep the field value but not the owning SLE.
+ *
+ * @param leVersion The value of sfLEVersion, or nullopt if absent.
+ *
+ * @return The decoded LEVersion, or VaultVersion::Legacy if absent.
+ */
+[[nodiscard]] VaultVersion
+decodeVaultVersion(std::optional<std::uint8_t> leVersion);
+
+/**
+ * Resolves which LEVersion a newly-created Vault should get under the
+ * currently active amendments. This is the only place that decides Vault
+ * version policy; VaultCreate calls it instead of checking amendments
+ * directly.
+ *
+ * @param rules The active ledger rules.
+ *
+ * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_1,
+ * featureLendingProtocolV1_2 and fixCleanup3_4_0 are all enabled;
+ * VaultVersion::CashBasis
+ * once featureLendingProtocolV1_1 is enabled; VaultVersion::Legacy otherwise.
+ */
+[[nodiscard]] VaultVersion
+getVaultDefaultVersion(Rules const& rules);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
@@ -193,7 +518,7 @@ getVaultVersion(SLE::const_ref vault);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultKind
-getVaultKind(SLE::const_ref vault);
+getVaultKind(SLE::ConstRef vault);
 
 /**
  * Reads sfVaultKind from a transaction. An absent field resolves to
@@ -240,7 +565,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
  * @param vault The vault SLE.
  */
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::const_ref vault);
+getVaultPhase(ReadView const& view, SLE::ConstRef vault);
 
 /**
  * Raw-fields overload of getVaultPhase. Derives the phase from an already
@@ -295,7 +620,7 @@ enum class SuppressExpired : bool { No = false, Yes = true };
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::const_ref issuance,
+    SLE::ConstRef issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired);
 

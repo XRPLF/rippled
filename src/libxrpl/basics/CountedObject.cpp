@@ -25,7 +25,7 @@ CountedObjects::getCounts(int minimumThreshold) const
     // might be temporarily less than the actual count.
     counts.reserve(count_.load());
 
-    for (auto* ctr = head_.load(); ctr != nullptr; ctr = ctr->getNext())
+    for (auto const* ctr = head_.load(); ctr != nullptr; ctr = ctr->getNext())
     {
         if (ctr->getCount() >= minimumThreshold)
             counts.emplace_back(ctr->getName(), ctr->getCount());

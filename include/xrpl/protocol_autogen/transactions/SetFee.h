@@ -20,7 +20,7 @@ class SetFeeBuilder;
  *
  * Type: ttFEE (101)
  * Delegable: Delegation::NotDelegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

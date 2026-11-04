@@ -80,13 +80,12 @@ function(add_xrpl_crate name)
     # `cc` picks its runtime flag from `crt-static` alone, so it compiles a
     # crate's C++ with `-MT`; Debug needs `-MTd` (to match cmake/XrplCompiler.cmake).
     if(is_msvc)
-        corrosion_set_env_vars(
-            ${ARG_CRATE}
-            "$<$<CONFIG:Debug>:CXXFLAGS=-MTd>"
-        )
+        corrosion_set_env_vars(${ARG_CRATE} "$<$<CONFIG:Debug>:CXXFLAGS=-MTd>")
     endif()
-    corrosion_add_cxxbridge(${name}_cxxbridge CRATE ${ARG_CRATE} FILES
-                            ${ARG_FILES}
+    corrosion_add_cxxbridge(
+        ${name}_cxxbridge
+        CRATE ${ARG_CRATE}
+        FILES ${ARG_FILES}
     )
     # Generated cxxbridge headers don't exist at configure time; CMake 3.28+
     # validates INTERFACE_SOURCES on consuming targets. Clear it to skip the

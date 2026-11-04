@@ -68,7 +68,7 @@ public:
  *
  * @param node a node known to be a leaf (see SHAMapTreeNode::isLeaf).
  */
-inline uint256 const&
+inline UInt256 const&
 leafKey(SHAMapTreeNode const& node)
 {
     XRPL_ASSERT(node.isLeaf(), "xrpl::leafKey : node is a leaf");

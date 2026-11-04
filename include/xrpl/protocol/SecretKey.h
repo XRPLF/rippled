@@ -157,10 +157,10 @@ randomKeyPair(KeyType type);
  */
 /** @{ */
 Buffer
-signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest);
+signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest);
 
 inline Buffer
-signDigest(KeyType type, SecretKey const& sk, uint256 const& digest)
+signDigest(KeyType type, SecretKey const& sk, UInt256 const& digest)
 {
     return signDigest(derivePublicKey(type, sk), sk, digest);
 }

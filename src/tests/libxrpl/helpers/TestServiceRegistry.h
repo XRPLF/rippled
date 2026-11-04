@@ -12,8 +12,8 @@
 
 #include <boost/asio/io_context.hpp>
 
-#include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
+#include <shamap/common.h>
 
 #include <cstdint>
 #include <memory>
@@ -73,7 +73,7 @@ class TestServiceRegistry : public ServiceRegistry
 {
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
-    TestFamily family_{logs_.journal("TestFamily")};
+    tests::TestNodeFamily family_{logs_.journal("TestNodeFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
@@ -90,7 +90,7 @@ class TestServiceRegistry : public ServiceRegistry
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
 
 public:
     TestServiceRegistry() = default;
@@ -251,7 +251,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -362,7 +362,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;

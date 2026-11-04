@@ -34,7 +34,7 @@ typeName()
         name += " volatile";
     if (std::is_lvalue_reference_v<T>)
     {
-        name += "&";
+        name += '&';
     }
     else if (std::is_rvalue_reference_v<T>)
     {

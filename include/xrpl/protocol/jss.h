@@ -159,7 +159,6 @@ JSS(both);                        // in: Subscribe, Unsubscribe
 JSS(both_sides);                  // in: Subscribe, Unsubscribe
 JSS(branch);                      // out: server_info
 JSS(broadcast);                   // out: SubmitTransaction
-JSS(bridge_account);              // in: LedgerEntry
 JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
@@ -252,6 +251,9 @@ JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
 JSS(expected_ledger_size);           // out: TxQ
 JSS(expiration);                     // out: AccountOffers, AccountChannels, ValidatorList, amm_info
+JSS(gas_limit);                      // out: NetworkOPs
+JSS(bytecode_size_limit);            // out: NetworkOPs
+JSS(gas_price);                      // out: NetworkOPs
 JSS(fail_hard);                      // in: Sign, Submit
 JSS(failed);                         // out: InboundLedger
 JSS(feature);                        // in: Feature
@@ -260,7 +262,6 @@ JSS(fee_base);                       // out: NetworkOPs
 JSS(fee_div_max);                    // in: TransactionSign
 JSS(fee_level);                      // out: AccountInfo
 JSS(fee_mult_max);                   // in: TransactionSign
-JSS(fee_ref);                        // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);                     // out: NetworkOPs
 JSS(FIELDS);                         // out: RPC server_definitions
                                      // matches definitions.json format
@@ -411,6 +412,7 @@ JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mpt_issuances);               // in: Subscribe, Unsubscribe
 JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges

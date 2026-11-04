@@ -44,9 +44,6 @@ namespace xrpl {
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
@@ -219,7 +216,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
-    auto checkAmount = [&](std::optional<STAmount> const& amount, auto const& balance) -> TER {
+    auto const checkAmount = [&](std::optional<STAmount> const& amount,
+                                 auto const& balance) -> TER {
         if (amount)
         {
             if (amount > balance)
@@ -353,11 +351,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     // Due to rounding, the LPTokenBalance of the last LP
     // might not match the LP's trustline balance
-    if (sb.rules().enabled(fixAMMv1_1))
-    {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
-            return {res.error(), false};
-    }
+    if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
+        return {res.error(), false};  // LCOV_EXCL_LINE
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 
@@ -379,7 +374,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto dispatchToWithdraw = [&,
                                &amountBalance = amountBalance,
                                &amount2Balance = amount2Balance,
-                               &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
+                               &lptAMMBalance = lptAMMBalance] -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalWithdrawLimit(
@@ -435,7 +430,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         // LCOV_EXCL_STOP
     };
 
-    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+    auto const [result, newLPTokenBalance] = [&] -> std::pair<TER, STAmount> {
         try
         {
             return dispatchToWithdraw();
@@ -565,7 +560,7 @@ AMMWithdraw::withdraw(
     (void)_;
 
     auto const [amountWithdrawActual, amount2WithdrawActual, lpTokensWithdrawActual] =
-        [&]() -> std::tuple<STAmount, std::optional<STAmount>, STAmount> {
+        [&] -> std::tuple<STAmount, std::optional<STAmount>, STAmount> {
         if (withdrawAll == WithdrawAll::No)
         {
             return adjustAmountsByLPTokens(
@@ -590,7 +585,7 @@ AMMWithdraw::withdraw(
 
     // Should not happen since the only LP on last withdraw
     // has the balance set to the lp token trustline balance.
-    if (view.rules().enabled(fixAMMv1_1) && lpTokensWithdrawActual > lpTokensAMMBalance)
+    if (lpTokensWithdrawActual > lpTokensAMMBalance)
     {
         // LCOV_EXCL_START
         JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw, unexpected LP tokens: "
@@ -645,7 +640,7 @@ AMMWithdraw::withdraw(
         bool const newLPTokensZero = (lpTokensAMMBalance - lpTokensWithdrawActual) == beast::kZero;
         // newBalance2Zero can be zero if that side of the pool is frozen.
         // ignore newBalance2Zero if one-sided withdrawal.
-        bool const valid = [&]() {
+        bool const valid = [&] {
             if (!amount2WithdrawActual)
                 return newBalanceZero == newLPTokensZero;
             return newBalanceZero == newBalance2Zero && newBalance2Zero == newLPTokensZero;
@@ -667,7 +662,7 @@ AMMWithdraw::withdraw(
     // If seated after a call to sufficientReserve() then MPToken must be
     // authorized
     std::optional<Keylet> mptokenKey;
-    auto sufficientReserve = [&](Asset const& asset) -> TER {
+    auto const sufficientReserve = [&](Asset const& asset) -> TER {
         mptokenKey = std::nullopt;
         if (!enabledFixAmMv12 || isXRP(asset))
             return tesSUCCESS;
@@ -691,7 +686,7 @@ AMMWithdraw::withdraw(
                 reserveHandling == ReserveHandling::IgnoreReserve)
                 return tesSUCCESS;
 
-            auto sleAccount = view.peek(keylet::account(account));
+            auto const sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -710,7 +705,7 @@ AMMWithdraw::withdraw(
     };
 
     // Create MPToken if it doesn't exist
-    auto createMPToken = [&](Asset const& asset) -> TER {
+    auto const createMPToken = [&](Asset const& asset) -> TER {
         // If mptoken is seated then must authorize
         if (mptokenKey && account != asset.getIssuer())
         {
@@ -1220,8 +1215,10 @@ AMMWithdraw::singleWithdrawEPrice(
     // when ePrice == lptAMMBalance*f/amountBalance
     if (view.rules().enabled(fixCleanup3_3_0) && denom == beast::kZero)
         return {tecAMM_FAILED, STAmount{}};
-    auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
+    auto const tokNoRoundCb = [&] {
+        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom;
+    };
+    auto const tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
     auto const tokensAdj =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
     if (tokensAdj <= beast::kZero)
@@ -1233,8 +1230,8 @@ AMMWithdraw::singleWithdrawEPrice(
 
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
-    auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
-    auto amtProdCb = [&] { return tokensAdj / ePrice; };
+    auto const amtNoRoundCb = [&] { return tokensAdj / ePrice; };
+    auto const amtProdCb = [&] { return tokensAdj / ePrice; };
     // the adjusted tokens are factored in
     auto const amountWithdraw =
         getRoundedAsset(view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);
@@ -1263,7 +1260,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
