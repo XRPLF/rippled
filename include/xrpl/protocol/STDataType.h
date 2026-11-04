@@ -1,17 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/Buffer.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAccount.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
-#include <vector>
 
 namespace xrpl {
 

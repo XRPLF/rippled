@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STInteger.h>
@@ -9,7 +10,6 @@
 
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
-#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 #include <memory>

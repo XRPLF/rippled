@@ -20,6 +20,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>

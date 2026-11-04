@@ -38,6 +38,7 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>

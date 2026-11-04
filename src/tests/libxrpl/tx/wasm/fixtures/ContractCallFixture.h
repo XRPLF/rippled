@@ -3,9 +3,13 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
+#include <gtest/gtest.h>
 #include <tx/wasm/fixtures/WasmFixture.h>
+#include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>
 #include <expected>

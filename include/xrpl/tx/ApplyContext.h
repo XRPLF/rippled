@@ -20,8 +20,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <queue>
+#include <utility>
 
 namespace xrpl {
 

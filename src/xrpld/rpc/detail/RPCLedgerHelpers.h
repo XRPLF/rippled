@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/server/NetworkOPs.h>

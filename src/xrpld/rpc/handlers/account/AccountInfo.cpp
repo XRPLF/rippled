@@ -5,11 +5,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/basics/Blob.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -32,7 +28,6 @@
 #include <array>
 #include <cstdint>
 #include <expected>
-#include <format>
 #include <optional>
 #include <string>
 #include <string_view>

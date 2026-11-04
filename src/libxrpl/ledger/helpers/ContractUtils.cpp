@@ -22,6 +22,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>

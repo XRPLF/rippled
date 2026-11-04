@@ -4,6 +4,7 @@
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/WasmRun.h>
 
 #include <cstdint>

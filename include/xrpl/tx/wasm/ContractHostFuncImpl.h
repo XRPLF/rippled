@@ -1,8 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/wasm/ContractContext.h>
-#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <xrpl_host_functions.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string_view>
 
 namespace xrpl {
 class ContractHostFunctionsImpl : public WasmHostFunctionsImpl

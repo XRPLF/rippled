@@ -15,8 +15,6 @@
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -25,11 +23,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
-#include <xrpl/core/Job.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -39,9 +34,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <cstdint>
@@ -49,7 +41,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace xrpl::test {
