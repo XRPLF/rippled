@@ -4,9 +4,12 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -14,6 +17,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <utility>
 
 namespace xrpl {
 
@@ -50,10 +54,60 @@ PerpRefresh::preflight(PreflightContext const& ctx)
 }
 
 TER
+PerpRefresh::preclaim(PreclaimContext const& ctx)
+{
+    auto const& tx = ctx.tx;
+    if (auto const marketID = tx[~sfMarketID];
+        marketID && !ctx.view.exists(keylet::perpMarket(*marketID)))
+        return tecNO_ENTRY;
+    if (auto const accountID = tx[~sfMarginAccountID];
+        accountID && !ctx.view.exists(keylet::marginAccount(*accountID)))
+        return tecNO_ENTRY;
+    return tesSUCCESS;
+}
+
+TER
 PerpRefresh::doApply()
 {
-    // The transaction's behaviour is not built yet, so every application fails.
-    return tecINTERNAL;
+    auto const& tx = ctx_.tx;
+    if (auto const marketID = tx[~sfMarketID])
+    {
+        auto const market = view().peek(keylet::perpMarket(*marketID));
+        if (!market)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        auto const exchange = view().peek(keylet::perpExchange((*market)[sfExchangeID]));
+        if (!exchange)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        perp::refreshMarket(view(), market, exchange, j_);
+
+        // A market Stale for sfSettleStaleAfter settles at its last mark (spec 10).
+        if (tx.isFlag(tfPerpSettleStale))
+        {
+            std::uint8_t const status = (*market)[sfMarketStatus];
+            if (status == perp::kMarketSettled)
+                return tecPERP_MARKET_SETTLED;
+            if (status != perp::kMarketStale)
+                return tecNO_PERMISSION;
+            auto const now = perp::refreshTime(view());
+            std::uint32_t const staleSince = std::as_const(*market)[~sfStaleSince].value_or(now);
+            if (std::uint64_t{now} < std::uint64_t{staleSince} + (*market)[sfSettleStaleAfter])
+                return tecTOO_SOON;
+            perp::settleMarket(*market, (*market)[sfMarkPrice], now);
+            view().update(market);
+        }
+    }
+
+    if (auto const accountID = tx[~sfMarginAccountID])
+    {
+        auto const account = view().peek(keylet::marginAccount(*accountID));
+        if (!account)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        auto const exchange = view().peek(keylet::perpExchange((*account)[sfExchangeID]));
+        if (!exchange)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        return perp::settleAccount(view(), account, exchange, j_);
+    }
+    return tesSUCCESS;
 }
 
 void

@@ -459,9 +459,7 @@ PerpMarketSet::updateMarket()
             return tecPERP_STALE_PRICE;
 
         // The owner settles a Live market at its current mark (spec 10).
-        (*market)[sfMarketStatus] = perp::kMarketSettled;
-        (*market)[sfSettlementPrice] = (*market)[sfMarkPrice];
-        (*market)[sfSettledAt] = now;
+        perp::settleMarket(*market, (*market)[sfMarkPrice], now);
     }
 
     view().update(market);

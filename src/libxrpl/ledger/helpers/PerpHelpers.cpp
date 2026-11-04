@@ -371,51 +371,49 @@ refreshMarket(ApplyView& view, SLE::Ref market, SLE::Ref exchange, beast::Journa
             fundingAccrual((*market)[sfFundingRate], (*market)[sfIndexPrice], elapsed);
     }
 
-    auto const index = computeIndex(view, *market);
-    if (!index)
+    // A Settled market keeps the prices it was settled at.
+    if (status != kMarketSettled)
     {
-        JLOG(j.debug()) << "perp::refreshMarket: no index quorum for market " << market->key();
-        if (status != kMarketSettled)
+        auto const index = computeIndex(view, *market);
+        if (!index)
         {
+            JLOG(j.debug()) << "perp::refreshMarket: no index quorum for market " << market->key();
             (*market)[sfMarketStatus] = kMarketStale;
             if (!market->isFieldPresent(sfStaleSince))
                 (*market)[sfStaleSince] = t;
+            (*market)[sfFundingRate] = Number{};
         }
-        (*market)[sfFundingRate] = Number{};
-    }
-    else
-    {
-        if (status != kMarketSettled)
+        else
         {
             (*market)[sfMarketStatus] = kMarketLive;
             (*market)[~sfStaleSince] = std::nullopt;
-        }
 
-        Number const oldMark = (*market)[sfMarkPrice];
-        auto const mark = computeMark(
-            {.index = *index,
-             .prevMark = oldMark,
-             .basisEMA = (*market)[sfBasisEMA],
-             .elapsed = elapsed,
-             .bid = bestPrice(view, market->key(), false),
-             .ask = bestPrice(view, market->key(), true),
-             .basisWindow = (*market)[sfBasisWindow],
-             .midSpreadMax = (*market)[sfMidSpreadMax],
-             .markMoveMax = (*market)[sfMarkMoveMax],
-             .markBand = (*market)[sfMarkBand]});
+            Number const oldMark = (*market)[sfMarkPrice];
+            auto const mark = computeMark(
+                {.index = *index,
+                 .prevMark = oldMark,
+                 .basisEMA = (*market)[sfBasisEMA],
+                 .elapsed = elapsed,
+                 .bid = bestPrice(view, market->key(), false),
+                 .ask = bestPrice(view, market->key(), true),
+                 .basisWindow = (*market)[sfBasisWindow],
+                 .midSpreadMax = (*market)[sfMidSpreadMax],
+                 .markMoveMax = (*market)[sfMarkMoveMax],
+                 .markBand = (*market)[sfMarkBand]});
 
-        (*market)[sfIndexPrice] = *index;
-        (*market)[sfMarkPrice] = mark.mark;
-        (*market)[sfBasisEMA] = mark.basisEMA;
-        (*market)[sfFundingRate] = computeFundingRate(
-            mark.mark, *index, (*market)[sfFundingInterestRate], (*market)[sfFundingCap]);
+            (*market)[sfIndexPrice] = *index;
+            (*market)[sfMarkPrice] = mark.mark;
+            (*market)[sfBasisEMA] = mark.basisEMA;
+            (*market)[sfFundingRate] = computeFundingRate(
+                mark.mark, *index, (*market)[sfFundingInterestRate], (*market)[sfFundingCap]);
 
-        Number const notionalDelta = (*market)[sfOpenInterestLong] * (mark.mark - oldMark);
-        if (notionalDelta != Number{})
-        {
-            (*exchange)[sfOpenInterestNotional] =
-                (*exchange)[sfOpenInterestNotional] + notionalDelta;
-            exchangeChanged = true;
+            Number const notionalDelta = (*market)[sfOpenInterestLong] * (mark.mark - oldMark);
+            if (notionalDelta != Number{})
+            {
+                (*exchange)[sfOpenInterestNotional] =
+                    (*exchange)[sfOpenInterestNotional] + notionalDelta;
+                exchangeChanged = true;
+            }
         }
     }
 
@@ -519,10 +517,9 @@ settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journ
             exchange->getType() == ltPERP_EXCHANGE && (*account)[sfExchangeID] == exchange->key(),
         "xrpl::perp::settleAccount : account of the exchange");
 
-    // Every charge is on the collateral grid, so the sum is exact.
-    Number charges;
-    bool holdsPosition = false;
-    for (auto const& marketID : account->getFieldV256(sfMarkets))
+    // A copy, since a settlement close removes its market from sfMarkets.
+    STVector256 const marketIDs = account->getFieldV256(sfMarkets);
+    for (auto const& marketID : marketIDs)
     {
         auto const market = view.peek(keylet::perpMarket(marketID));
         auto const position = view.peek(keylet::marginPosition(account->key(), marketID));
@@ -533,27 +530,96 @@ settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journ
         }
 
         refreshMarket(view, market, exchange, j);
-        auto const charge = settlementCharge(*exchange, *market, *position);
-        charges = charges + charge.funding + charge.loss;
-
-        if ((*position)[sfSize] != Number{})
-            holdsPosition = true;
-        if (snapshotIndexes(*position, *market))
-            view.update(position);
+        settlePosition(view, account, position, *market, exchange);
+        if ((*market)[sfMarketStatus] == kMarketSettled)
+        {
+            if (auto const ter = closeSettledPosition(view, account, position, market, exchange, j);
+                !isTesSuccess(ter))
+                return ter;
+        }
     }
 
-    if (charges != Number{})
-    {
-        (*account)[sfCash] = (*account)[sfCash] - charges;
-        (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] - charges;
-        (*exchange)[sfSettlementBalance] = (*exchange)[sfSettlementBalance] + charges;
-        view.update(account);
-        view.update(exchange);
-    }
-
-    if (!holdsPosition)
+    auto const flat = isFlat(view, *account);
+    if (!flat)
+        return flat.error();  // LCOV_EXCL_LINE
+    if (*flat)
         repayWaterfallCredit(view, account, exchange);
     return tesSUCCESS;
+}
+
+void
+settleMarket(STLedgerEntry& market, Number const& price, std::uint32_t now)
+{
+    market[sfMarketStatus] = kMarketSettled;
+    market[sfSettlementPrice] = price;
+    market[sfSettledAt] = now;
+    market[sfFundingRate] = Number{};
+    market[~sfStaleSince] = std::nullopt;
+}
+
+std::expected<bool, TER>
+isFlat(ReadView const& view, STLedgerEntry const& account)
+{
+    for (auto const& marketID : account.getFieldV256(sfMarkets))
+    {
+        auto const position = view.read(keylet::marginPosition(account.key(), marketID));
+        if (!position)
+            return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+        if ((*position)[sfSize] != Number{})
+            return false;
+    }
+    return true;
+}
+
+TER
+closeSettledPosition(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref position,
+    SLE::Ref market,
+    SLE::Ref exchange,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        market && (*market)[sfMarketStatus] == kMarketSettled &&
+            market->isFieldPresent(sfSettlementPrice),
+        "xrpl::perp::closeSettledPosition : settled market");
+    Number const size = (*position)[sfSize];
+    if (size == Number{})
+        return tesSUCCESS;
+
+    // A gain waits out kSettlementGrace, so losses close first.
+    Number const price = (*market)[sfSettlementPrice];
+    Number gain;
+    {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        gain = roundCollateral(
+            *exchange,
+            (size * price) - (*position)[sfEntryNotional],
+            Number::RoundingMode::Downward);
+    }
+    std::uint64_t const graceEnd =
+        std::uint64_t{std::as_const(*market)[~sfSettledAt].value_or(0)} + kSettlementGrace.count();
+    if (gain > Number{} && refreshTime(view) < graceEnd)
+        return tesSUCCESS;
+
+    applyFill(view, account, position, market, exchange, -size, price);
+    if (auto const ter = deletePositionIfEmpty(view, position, j); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+
+    // A flat account with negative cash has realized its shortfall in this market.
+    auto const flat = isFlat(view, *account);
+    if (!flat)
+        return flat.error();  // LCOV_EXCL_LINE
+    if (!*flat || (*account)[sfCash] >= Number{})
+        return tesSUCCESS;
+    return runWaterfall(
+        view,
+        account,
+        exchange,
+        -Number{(*account)[sfCash]},
+        {{.market = market, .weight = Number{1}, .wasLong = size > Number{}}},
+        j);
 }
 
 void
@@ -634,8 +700,8 @@ struct MarginState
 };
 
 /**
- * With liquidation set, a Stale market is valued at its last mark and a Settled one at its
- * settlement price; otherwise every market must be Live.
+ * A Settled market is valued at its settlement price. With liquidation set, a Stale market is
+ * valued at its last mark; otherwise no market may be Stale.
  */
 [[nodiscard]] std::expected<MarginState, TER>
 marginState(
@@ -663,7 +729,7 @@ marginState(
         if (!market || (position == nullptr) || (*position)[sfMarketID] != marketID)
             return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
         std::uint8_t const status = (*market)[sfMarketStatus];
-        if (status != kMarketLive && !liquidation)
+        if (status == kMarketStale && !liquidation)
             return std::unexpected<TER>(tecPERP_STALE_PRICE);
 
         auto const charge = settlementCharge(*exchange, *market, *position);
@@ -678,6 +744,9 @@ marginState(
             state.losses = state.losses + std::min(pnl, Number{});
         }
 
+        // A Settled position has a fixed value and no orders that can fill, so no requirement.
+        if (status == kMarketSettled)
+            continue;
         auto const& tiers = market->getFieldArray(sfMarginTiers);
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         Number const worstCase =

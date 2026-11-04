@@ -38,23 +38,6 @@ rateOf(std::uint32_t tenthBips)
 }
 
 /**
- * Whether no position of the margin account has a size.
- */
-[[nodiscard]] std::expected<bool, TER>
-isFlat(ReadView const& view, STLedgerEntry const& account)
-{
-    for (auto const& marketID : account.getFieldV256(sfMarkets))
-    {
-        auto const position = view.read(keylet::marginPosition(account.key(), marketID));
-        if (!position)
-            return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
-        if ((*position)[sfSize] != Number{})
-            return false;
-    }
-    return true;
-}
-
-/**
  * The loss markets of a takeover's waterfall (spec 9.4 step 1): every market where the account
  * holds a size, weighted by that position's notional at the price liquidationSummary values it at.
  */
@@ -354,7 +337,7 @@ PerpLiquidate::doApply()
     // 6. A flat target with negative cash has realized its shortfall, which the waterfall pays.
     if (auto const ter = perp::deletePositionIfEmpty(view(), position, j_); !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
-    auto const flat = isFlat(view(), *target);
+    auto const flat = perp::isFlat(view(), *target);
     if (!flat)
         return flat.error();  // LCOV_EXCL_LINE
     if (*flat && (*target)[sfCash] < Number{})

@@ -290,16 +290,57 @@ settlementCharge(
 /**
  * Settles a margin account (spec 6.3). For each market of sfMarkets, refreshes the market, moves
  * the position's charges from sfCash and the exchange's sfCashTotal to its sfSettlementBalance,
- * and snapshots the position's funding and loss indexes. When no position has a size, then
- * repays waterfall credit (spec 9.7). A position in a Settled market is settled and stays open.
+ * and snapshots the position's funding and loss indexes; a position in a Settled market is then
+ * closed by closeSettledPosition. When no position has a size, then repays waterfall credit
+ * (spec 9.7).
  *
  * @param view The view the account and exchange were peeked from.
  * @param account The ltMARGIN_ACCOUNT.
  * @param exchange The account's ltPERP_EXCHANGE.
- * @return tesSUCCESS, or tefBAD_LEDGER when a listed market or position is missing.
+ * @return tesSUCCESS; tefBAD_LEDGER when a listed market or position is missing; or the error of
+ *         closeSettledPosition.
  */
 [[nodiscard]] TER
 settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journal j);
+
+/**
+ * Settles a market at price (spec 10): sets it Settled with sfSettlementPrice and sfSettledAt,
+ * stops funding and clears sfStaleSince. The caller writes the entry back.
+ *
+ * @param now The settlement time, sfSettledAt.
+ */
+void
+settleMarket(STLedgerEntry& market, Number const& price, std::uint32_t now);
+
+/**
+ * Whether no position of the margin account has a size.
+ *
+ * @return The answer, or tefBAD_LEDGER when a listed position is missing.
+ */
+[[nodiscard]] std::expected<bool, TER>
+isFlat(ReadView const& view, STLedgerEntry const& account);
+
+/**
+ * Closes a settled position in a Settled market at sfSettlementPrice through the fill path
+ * (spec 10, 7.5), and deletes the position when it holds no order. A close that would realize a
+ * gain is not made until kSettlementGrace after sfSettledAt. A close that leaves the account with
+ * no size and negative sfCash runs the waterfall for -sfCash with this market as the loss market
+ * (spec 9.6).
+ *
+ * @param account The position's ltMARGIN_ACCOUNT.
+ * @param position The ltMARGIN_POSITION, settled in this transaction.
+ * @param market The Settled ltPERP_MARKET.
+ * @param exchange The ltPERP_EXCHANGE.
+ * @return tesSUCCESS, or the error of the position deletion or of runWaterfall.
+ */
+[[nodiscard]] TER
+closeSettledPosition(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref position,
+    SLE::Ref market,
+    SLE::Ref exchange,
+    beast::Journal j);
 
 /**
  * Repays waterfall credit (spec 9.7): min(sfCash, sfWaterfallCredit) moves from the account's
@@ -339,9 +380,10 @@ struct MarginRequirements
 
 /**
  * A margin account's equity (spec 7.1): sfCash less its unsettled charges plus the unrealized
- * PnL of each position at its market's mark. Rounds downward. Reads only.
+ * PnL of each position at its market's mark, or at sfSettlementPrice in a Settled market.
+ * Rounds downward. Reads only.
  *
- * @return The equity, tecPERP_STALE_PRICE when a position's market is not Live, or
+ * @return The equity, tecPERP_STALE_PRICE when a position's market is Stale, or
  *         tefBAD_LEDGER when a listed entry is missing.
  */
 [[nodiscard]] std::expected<Number, TER>
@@ -350,7 +392,7 @@ accountEquity(ReadView const& view, STLedgerEntry const& account);
 /**
  * A margin account's requirements (spec 7.2) at each market's mark. The initial requirement
  * counts resting orders at their worst case. A notional above the last tier is charged the last
- * tier's rate. Reads only.
+ * tier's rate. A position in a Settled market requires nothing. Reads only.
  *
  * @return The requirements, or the errors of accountEquity.
  */
@@ -401,8 +443,8 @@ liquidationPrice(STLedgerEntry const& market);
 
 /**
  * The equity and requirements of a margin account for liquidation (spec 9.1): as marginSummary,
- * except that a position in a Stale market is valued at the market's last sfMarkPrice and one in a
- * Settled market at its sfSettlementPrice. Reads only.
+ * except that a position in a Stale market is valued at the market's last sfMarkPrice. Reads
+ * only.
  *
  * @return The summary, or tefBAD_LEDGER when a listed entry is missing.
  */

@@ -329,18 +329,16 @@ class PerpSettle_test : public PerpTestBase
         BEAST_EXPECT(bobPosition && (*bobPosition)[sfFundingIndex] == before);
 
         // More than 8 h later a keeper refreshes: 0.0005 x 100 x 28800 / 28800 = 0.05 per unit.
+        // Settling each account in the same ledger moves 100 x 0.05 = 5 from the long to the
+        // short.
         env.close(std::chrono::seconds{30'000});
-        env(Perp::refresh(carol_, t.xrp.key));
-        env.close();
-        Number const after = marketField(env, t.xrp, sfCumulativeFunding);
-        BEAST_EXPECT(after == before + Number(5, -2));
-        BEAST_EXPECT(cashOf(env, bob_, t) == Number(2'000));
-
-        // Settling each account moves 100 x 0.05 = 5 from the long to the short.
         Number const balance = exchangeField(env, t, sfSettlementBalance);
+        env(Perp::refresh(carol_, t.xrp.key));
         env(settle(carol_, bob_, t));
         env(settle(carol_, alice_, t));
         env.close();
+        Number const after = marketField(env, t.xrp, sfCumulativeFunding);
+        BEAST_EXPECT(after == before + Number(5, -2));
         BEAST_EXPECT(cashOf(env, bob_, t) == Number(1'995));
         BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'005));
         BEAST_EXPECT(exchangeField(env, t, sfSettlementBalance) == balance);
@@ -451,6 +449,7 @@ class PerpSettle_test : public PerpTestBase
             BEAST_EXPECT(market && (*market)[sfFundingRate] == Number(0));
         }
         Number const cumulative = marketField(env, t.xrp, sfCumulativeFunding);
+        auto const alicePosition = env.le(positionKeylet(alice_, t, t.xrp));
 
         // Orders and liquidations of the market are refused; cancels and deposits are not.
         env(order(alice_, t.xrp, Number(100), Number(1), tfPerpSell), Ter(tecPERP_STALE_PRICE));
@@ -461,7 +460,20 @@ class PerpSettle_test : public PerpTestBase
         deposit(env, t, alice_, 10);
         env.close();
         BEAST_EXPECT(!env.le(carolOrder));
-        BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'010));
+
+        // The refresh that found the market Stale first accrued up to 8 h while it was Live, which
+        // alice's short 10 receives with the deposit.
+        {
+            auto const exchange = env.le(t.exchange);
+            if (!BEAST_EXPECT(exchange && alicePosition))
+                return;
+            Number const received = perp::roundCollateral(
+                *exchange,
+                Number(10) * (cumulative - (*alicePosition)[sfFundingIndex]),
+                Number::RoundingMode::Downward);
+            BEAST_EXPECT(received > Number(5, -1));
+            BEAST_EXPECT(cashOf(env, alice_, t) == Number(2'010) + received);
+        }
 
         // Funding does not accrue while Stale, and the stale time is kept.
         env.close(std::chrono::seconds{3'600});
@@ -652,7 +664,7 @@ class PerpSettle_test : public PerpTestBase
         std::uint32_t const settledAt = (*market)[sfSettledAt];
         auto const grace = static_cast<std::uint32_t>(perp::kSettlementGrace.count());
 
-        // alice's short would realise +1000, so it stays open at its settled value.
+        // alice's short would realize +1000, so it stays open at its settled value.
         env(settle(alice_, alice_, t));
         env.close();
         BEAST_EXPECT(sizeOf(env, alice_, t, t.xrp) == Number(-100));

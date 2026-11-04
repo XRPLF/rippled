@@ -1569,6 +1569,7 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttMARGIN_DEPOSIT:
             case ttPERP_LIQUIDATE:
             case ttPERP_REFRESH: {
                 // Fee shares paid in and waterfall draws paid out move the vault's assets by the

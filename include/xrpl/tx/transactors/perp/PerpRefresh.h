@@ -15,7 +15,8 @@
 namespace xrpl {
 
 /**
- * Refreshes a perpetual futures market and settles a margin account.
+ * Refreshes a perpetual futures market, settles a Stale one with tfPerpSettleStale, and settles
+ * a margin account.
  */
 class PerpRefresh : public Transactor
 {
@@ -34,6 +35,9 @@ public:
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
