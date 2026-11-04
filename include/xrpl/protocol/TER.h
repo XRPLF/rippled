@@ -380,6 +380,18 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    // PerpetualFutures: 203-213 are provisional until the alphanet registry assigns them.
+    tecPERP_STALE_PRICE = 203,
+    tecPERP_PRICE_BAND = 204,
+    tecPERP_INSUFFICIENT_MARGIN = 205,
+    tecPERP_POSITION_LIMIT = 206,
+    tecPERP_OI_CAP = 207,
+    tecPERP_INSUFFICIENT_COVER = 208,
+    tecPERP_MARKET_SETTLED = 209,
+    tecPERP_MARKET_LIMIT = 210,
+    tecPERP_WATERFALL_CREDIT = 211,
+    tecPERP_HEALTHY = 212,
+    tecPERP_NO_LIQUIDITY = 213,
 };
 
 //------------------------------------------------------------------------------

@@ -120,6 +120,51 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    add(sfIndexOracle.jsonName,
+        sfIndexOracle.getCode(),
+        {
+            {sfOwner, SoeRequired},
+            {sfOracleDocumentID, SoeRequired},
+        });
+
+    add(sfMarginTier.jsonName,
+        sfMarginTier.getCode(),
+        {
+            {sfNotionalMax, SoeRequired},
+            {sfInitialMarginRate, SoeRequired},
+            {sfMaintenanceMarginRate, SoeRequired},
+        });
+
+    // The delayed parameters of an exchange or a market, queued until sfParameterEffectiveTime.
+    add(sfPendingParameters.jsonName,
+        sfPendingParameters.getCode(),
+        {
+            {sfMakerFee, SoeOptional},
+            {sfTakerFee, SoeOptional},
+            {sfOwnerFeeShare, SoeOptional},
+            {sfVaultFeeShare, SoeOptional},
+            {sfBuilderFeeMax, SoeOptional},
+            {sfCoverRateMinimum, SoeOptional},
+            {sfVaultLossLimit, SoeOptional},
+            {sfIndexOracles, SoeOptional},
+            {sfIndexMaxAge, SoeOptional},
+            {sfIndexMaxLedgers, SoeOptional},
+            {sfMarginTiers, SoeOptional},
+            {sfOpenInterestMax, SoeOptional},
+            {sfOrderPriceBand, SoeOptional},
+            {sfMidSpreadMax, SoeOptional},
+            {sfMarkBand, SoeOptional},
+            {sfMarkMoveMax, SoeOptional},
+            {sfBasisWindow, SoeOptional},
+            {sfFundingInterestRate, SoeOptional},
+            {sfFundingCap, SoeOptional},
+            {sfLiquidationPenalty, SoeOptional},
+            {sfLiquidationRewardShare, SoeOptional},
+            {sfLiquidationRewardMin, SoeOptional},
+            {sfLiquidationChunkMin, SoeOptional},
+            {sfSettleStaleAfter, SoeOptional},
+        });
 }
 
 InnerObjectFormats const&

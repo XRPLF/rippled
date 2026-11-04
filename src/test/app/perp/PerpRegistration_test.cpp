@@ -8,14 +8,17 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
@@ -27,7 +30,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -50,12 +52,15 @@ class PerpRegistration_test : public PerpTestBase
     allTransactions() const
     {
         using namespace test::jtx;
-        auto const exchangeID = keylet::perpExchange(owner_.id(), SeqProxy::sequence(5)).key;
+        auto const exchangeID = keylet::perpExchange(owner_.id(), SeqProxy::rawSequence(5)).key;
         auto const marketID = keylet::perpMarket(exchangeID, xrpCurrency(), toCurrency("USD")).key;
         auto const marginAccountID = keylet::marginAccount(alice_.id(), exchangeID, 0).key;
 
         Perp::MarketArgs const market{
-            .oracles = {{o1_.id(), 1}, {o2_.id(), 1}, {o3_.id(), 1}},
+            .oracles =
+                {{.owner = o1_.id(), .documentID = 1},
+                 {.owner = o2_.id(), .documentID = 1},
+                 {.owner = o3_.id(), .documentID = 1}},
         };
 
         return {
@@ -188,12 +193,12 @@ class PerpRegistration_test : public PerpTestBase
         Env env{*this, all_};
         fundAccounts(env);
 
-        auto const exchange = keylet::perpExchange(owner_.id(), SeqProxy::sequence(7));
+        auto const exchange = keylet::perpExchange(owner_.id(), SeqProxy::rawSequence(7));
         auto const usd = toCurrency("USD");
         auto const market = keylet::perpMarket(exchange.key, xrpCurrency(), usd);
         auto const marginAccount = keylet::marginAccount(alice_.id(), exchange.key, 3);
         auto const position = keylet::marginPosition(marginAccount.key, market.key);
-        auto const order = keylet::perpOrder(alice_.id(), SeqProxy::sequence(9));
+        auto const order = keylet::perpOrder(alice_.id(), SeqProxy::rawSequence(9));
 
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
             for (auto const& k : {exchange, market, marginAccount, position, order})
@@ -208,13 +213,14 @@ class PerpRegistration_test : public PerpTestBase
             json::Value params;
             params[jss::ledger_index] = "current";
             params[rpcName] = object;
-            auto const result = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "ledger_entry", json::to_string(params))[jss::result];
             BEAST_EXPECTS(
                 result[jss::index].asString() == to_string(expected.key),
-                std::string{rpcName.c_str()} + ": " + result.toStyledString());
+                std::string{rpcName.cStr()} + ": " + result.toStyledString());
             BEAST_EXPECTS(
-                result[jss::node][jss::LedgerEntryType].asString() == entryType,
-                std::string{rpcName.c_str()});
+                result[jss::node][sfLedgerEntryType.jsonName].asString() == entryType,
+                std::string{rpcName.cStr()});
         };
 
         {

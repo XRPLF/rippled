@@ -590,6 +590,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfPerpExchangeID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getPerpExchangeID() const
+    {
+        if (hasPerpExchangeID())
+            return this->sle_->at(sfPerpExchangeID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPerpExchangeID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPerpExchangeID() const
+    {
+        return this->sle_->isFieldPresent(sfPerpExchangeID);
+    }
 };
 
 /**
@@ -923,6 +947,17 @@ public:
     setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfLoanBrokerID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPerpExchangeID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setPerpExchangeID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfPerpExchangeID] = value;
         return *this;
     }
 

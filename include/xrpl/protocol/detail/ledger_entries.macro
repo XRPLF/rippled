@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfPerpExchangeID,         SoeOptional}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -478,6 +479,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfVaultKind,            SoeDefault},
     {sfSubscriptionDate,     SoeOptional},
     {sfRedemptionDate,       SoeOptional},
+    {sfPerpExchangeID,       SoeOptional},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
@@ -593,6 +595,155 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     // number of digits after the decimal point (excluding
     // trailing zeros).
     {sfLoanScale,                SoeDefault},
+}))
+
+// PerpetualFutures: 0x008A-0x008E are provisional until the alphanet registry assigns them.
+
+/** A ledger object representing a perpetual futures exchange and its collateral pool.
+
+    \sa keylet::perpExchange
+ */
+LEDGER_ENTRY(ltPERP_EXCHANGE, 0x008A, PerpExchange, perp_exchange, ({
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfOwner,                  SoeRequired},
+    {sfSequence,               SoeRequired},
+    {sfAccount,                SoeRequired},
+    {sfAsset,                  SoeRequired},
+    {sfScale,                  SoeDefault},
+    {sfDomainID,               SoeOptional},
+    {sfVaultID,                SoeOptional},
+    {sfMakerFee,               SoeDefault},
+    {sfTakerFee,               SoeDefault},
+    {sfOwnerFeeShare,          SoeDefault},
+    {sfVaultFeeShare,          SoeDefault},
+    {sfBuilderFeeMax,          SoeDefault},
+    {sfCoverRateMinimum,       SoeDefault},
+    {sfVaultLossLimit,         SoeDefault},
+    {sfVaultLossWindow,        SoeOptional},
+    {sfParameterDelay,         SoeRequired},
+    {sfAssetsTotal,            SoeDefault},
+    {sfCashTotal,              SoeDefault},
+    {sfInsuranceFund,          SoeDefault},
+    {sfCoverAvailable,         SoeDefault},
+    {sfOwnerFees,              SoeDefault},
+    {sfSettlementBalance,      SoeDefault},
+    {sfBadDebt,                SoeDefault},
+    {sfOpenInterestNotional,   SoeDefault},
+    {sfVaultLossWindowStart,   SoeDefault},
+    {sfVaultLossInWindow,      SoeDefault},
+    {sfMarketCount,            SoeDefault},
+    {sfMarginAccountCount,     SoeDefault},
+    {sfPendingParameters,      SoeOptional},
+    {sfParameterEffectiveTime, SoeOptional},
+    {sfData,                   SoeOptional},
+    {sfOwnerNode,              SoeRequired},
+}))
+
+/** A ledger object representing one perpetual futures market of an exchange.
+
+    \sa keylet::perpMarket
+ */
+LEDGER_ENTRY(ltPERP_MARKET, 0x008B, PerpMarket, perp_market, ({
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfExchangeID,             SoeRequired},
+    {sfBaseAsset,              SoeRequired},
+    {sfQuoteAsset,             SoeRequired},
+    {sfIndexOracles,           SoeRequired},
+    {sfIndexMaxAge,            SoeRequired},
+    {sfIndexMaxLedgers,        SoeRequired},
+    {sfPriceTick,              SoeRequired},
+    {sfLotSize,                SoeRequired},
+    {sfMarginTiers,            SoeRequired},
+    {sfOpenInterestMax,        SoeRequired},
+    {sfOrderPriceBand,         SoeRequired},
+    {sfMidSpreadMax,           SoeRequired},
+    {sfMarkBand,               SoeRequired},
+    {sfMarkMoveMax,            SoeRequired},
+    {sfBasisWindow,            SoeRequired},
+    {sfFundingInterestRate,    SoeDefault},
+    {sfFundingCap,             SoeRequired},
+    {sfLiquidationPenalty,     SoeRequired},
+    {sfLiquidationRewardShare, SoeRequired},
+    {sfLiquidationRewardMin,   SoeDefault},
+    {sfLiquidationChunkMin,    SoeRequired},
+    {sfSettleStaleAfter,       SoeRequired},
+    {sfIndexPrice,             SoeDefault},
+    {sfMarkPrice,              SoeDefault},
+    {sfBasisEMA,               SoeDefault},
+    {sfFundingRate,            SoeDefault},
+    {sfCumulativeFunding,      SoeDefault},
+    {sfLossIndexLong,          SoeDefault},
+    {sfLossIndexShort,         SoeDefault},
+    {sfOpenInterestLong,       SoeDefault},
+    {sfOpenInterestShort,      SoeDefault},
+    {sfOrderCount,             SoeDefault},
+    {sfLastRefreshTime,        SoeDefault},
+    {sfRefreshLedger,          SoeDefault},
+    {sfStaleSince,             SoeOptional},
+    {sfSettledAt,              SoeOptional},
+    {sfMarketStatus,           SoeDefault},
+    {sfSettlementPrice,        SoeOptional},
+    {sfPendingParameters,      SoeOptional},
+    {sfParameterEffectiveTime, SoeOptional},
+    {sfOwnerNode,              SoeRequired},
+}))
+
+/** A ledger object holding one account's cross-margined collateral on an exchange.
+
+    \sa keylet::marginAccount
+ */
+LEDGER_ENTRY(ltMARGIN_ACCOUNT, 0x008C, MarginAccount, margin_account, ({
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfAccount,                SoeRequired},
+    {sfExchangeID,             SoeRequired},
+    {sfSubaccount,             SoeRequired},
+    {sfCash,                   SoeDefault},
+    {sfWaterfallCredit,        SoeDefault},
+    {sfMarkets,                SoeDefault},
+    {sfOwnerNode,              SoeRequired},
+}))
+
+/** A ledger object holding a margin account's position in one perpetual futures market.
+
+    \sa keylet::marginPosition
+ */
+LEDGER_ENTRY(ltMARGIN_POSITION, 0x008D, MarginPosition, margin_position, ({
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfMarginAccountID,        SoeRequired},
+    {sfMarketID,               SoeRequired},
+    {sfSize,                   SoeDefault},
+    {sfEntryNotional,          SoeDefault},
+    {sfFundingIndex,           SoeDefault},
+    {sfLossIndex,              SoeDefault},
+    {sfOpenBuy,                SoeDefault},
+    {sfOpenSell,               SoeDefault},
+    {sfOrderCount,             SoeDefault},
+    {sfOwnerNode,              SoeRequired},
+}))
+
+/** A ledger object representing a resting order in a perpetual futures order book.
+
+    \sa keylet::perpOrder
+ */
+LEDGER_ENTRY(ltPERP_ORDER, 0x008E, PerpOrder, perp_order, ({
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfAccount,                SoeRequired},
+    {sfSequence,               SoeRequired},
+    {sfMarginAccountID,        SoeRequired},
+    {sfMarketID,               SoeRequired},
+    {sfLimitPrice,             SoeRequired},
+    {sfSize,                   SoeRequired},
+    {sfExpiration,             SoeOptional},
+    {sfBuilder,                SoeOptional},
+    {sfBuilderFee,             SoeOptional},
+    {sfBookDirectory,          SoeRequired},
+    {sfBookNode,               SoeRequired},
+    {sfOwnerNode,              SoeRequired},
 }))
 
 /** A ledger object representing a sponsorship.

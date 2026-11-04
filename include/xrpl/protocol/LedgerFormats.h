@@ -237,7 +237,14 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))                                                                 \
                                                                                                                                    \
     LEDGER_OBJECT(LoanBroker,                                                                                                      \
-        LSF_FLAG(lsfLoanBrokerPrivate, 0x00010000))
+        LSF_FLAG(lsfLoanBrokerPrivate, 0x00010000))                                                                                \
+                                                                                                                                   \
+    LEDGER_OBJECT(PerpMarket,                                                                                                      \
+        LSF_FLAG(lsfPerpIsolatedOnly, 0x00010000))                                                                                 \
+                                                                                                                                   \
+    LEDGER_OBJECT(PerpOrder,                                                                                                       \
+        LSF_FLAG(lsfPerpSell, 0x00010000)                                                                                          \
+        LSF_FLAG(lsfPerpReduceOnly, 0x00020000))
 
 // clang-format on
 

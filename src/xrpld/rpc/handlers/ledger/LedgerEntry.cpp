@@ -859,6 +859,139 @@ parseVault(
     return keylet::vault(*id, seqProxy).key;
 }
 
+static std::expected<UInt256, json::Value>
+parsePerpExchange(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return std::unexpected(seq.error());
+
+    return keylet::perpExchange(*owner, SeqProxy::rawSequence(*seq)).key;
+}
+
+/**
+ * Parses a required currency code member of a ledger_entry object.
+ */
+static std::expected<Currency, json::Value>
+requiredCurrency(json::Value const& params, json::StaticString const field)
+{
+    if (!params.isMember(field))
+        return ledger_entry_helpers::missingFieldError(field);
+
+    Currency currency;
+    if (!params[field].isString() || !toCurrency(currency, params[field].asString()) ||
+        currency == badCurrency())
+        return ledger_entry_helpers::invalidFieldError("malformedCurrency", field, "Currency");
+
+    return currency;
+}
+
+static std::expected<UInt256, json::Value>
+parsePerpMarket(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const exchangeID =
+        ledger_entry_helpers::requiredUInt256(params, jss::exchange_id, "malformedExchangeID");
+    if (!exchangeID)
+        return std::unexpected(exchangeID.error());
+
+    auto const base = requiredCurrency(params, jss::base_asset);
+    if (!base)
+        return std::unexpected(base.error());
+
+    auto const quote = requiredCurrency(params, jss::quote_asset);
+    if (!quote)
+        return std::unexpected(quote.error());
+
+    return keylet::perpMarket(*exchangeID, *base, *quote).key;
+}
+
+static std::expected<UInt256, json::Value>
+parseMarginAccount(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const exchangeID =
+        ledger_entry_helpers::requiredUInt256(params, jss::exchange_id, "malformedExchangeID");
+    if (!exchangeID)
+        return std::unexpected(exchangeID.error());
+
+    auto const subaccount =
+        ledger_entry_helpers::requiredUInt32(params, jss::subaccount, "malformedSubaccount");
+    if (!subaccount)
+        return std::unexpected(subaccount.error());
+
+    return keylet::marginAccount(*account, *exchangeID, *subaccount).key;
+}
+
+static std::expected<UInt256, json::Value>
+parseMarginPosition(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const marginAccountID = ledger_entry_helpers::requiredUInt256(
+        params, jss::margin_account_id, "malformedMarginAccountID");
+    if (!marginAccountID)
+        return std::unexpected(marginAccountID.error());
+
+    auto const marketID =
+        ledger_entry_helpers::requiredUInt256(params, jss::market_id, "malformedMarketID");
+    if (!marketID)
+        return std::unexpected(marketID.error());
+
+    return keylet::marginPosition(*marginAccountID, *marketID).key;
+}
+
+static std::expected<UInt256, json::Value>
+parsePerpOrder(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const account =
+        ledger_entry_helpers::requiredAccountID(params, jss::account, "malformedAccount");
+    if (!account)
+        return std::unexpected(account.error());
+
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return std::unexpected(seq.error());
+
+    return keylet::perpOrder(*account, SeqProxy::rawSequence(*seq)).key;
+}
+
 struct LedgerEntry
 {
     json::StaticString fieldName;

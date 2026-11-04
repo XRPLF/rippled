@@ -21,6 +21,8 @@
 #include <xrpl/ledger/entries/LoanEntry.h>             // IWYU pragma: keep
 #include <xrpl/ledger/entries/MPTokenEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/MarginAccountEntry.h>    // IWYU pragma: keep
+#include <xrpl/ledger/entries/MarginPositionEntry.h>   // IWYU pragma: keep
 #include <xrpl/ledger/entries/NFTokenOfferEntry.h>     // IWYU pragma: keep
 #include <xrpl/ledger/entries/NFTokenPageEntry.h>      // IWYU pragma: keep
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>      // IWYU pragma: keep
@@ -28,6 +30,9 @@
 #include <xrpl/ledger/entries/OracleEntry.h>              // IWYU pragma: keep
 #include <xrpl/ledger/entries/PayChannelEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/PermissionedDomainEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/PerpExchangeEntry.h>        // IWYU pragma: keep
+#include <xrpl/ledger/entries/PerpMarketEntry.h>          // IWYU pragma: keep
+#include <xrpl/ledger/entries/PerpOrderEntry.h>           // IWYU pragma: keep
 #include <xrpl/ledger/entries/RippleStateEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep

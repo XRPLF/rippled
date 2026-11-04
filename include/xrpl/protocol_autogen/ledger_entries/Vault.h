@@ -431,6 +431,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfRedemptionDate);
     }
+
+    /**
+     * @brief Get sfPerpExchangeID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getPerpExchangeID() const
+    {
+        if (hasPerpExchangeID())
+            return this->sle_->at(sfPerpExchangeID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPerpExchangeID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPerpExchangeID() const
+    {
+        return this->sle_->isFieldPresent(sfPerpExchangeID);
+    }
 };
 
 /**
@@ -715,6 +739,17 @@ public:
     setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPerpExchangeID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setPerpExchangeID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfPerpExchangeID] = value;
         return *this;
     }
 

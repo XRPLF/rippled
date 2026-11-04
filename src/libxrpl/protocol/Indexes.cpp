@@ -115,6 +115,13 @@ enum class LedgerNameSpace : std::uint16_t {
     Loan = 'L',
     Sponsorship = '>',
     TransactionProposal = 'y',
+    // PerpetualFutures: provisional until the alphanet registry assigns them.
+    PerpExchange = 'X',
+    PerpMarket = 'M',
+    MarginAccount = 'U',
+    MarginPosition = 'W',
+    PerpOrder = 'z',
+    PerpBook = 'b',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -577,6 +584,49 @@ Keylet
 loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
+}
+
+Keylet
+perpExchange(AccountID const& owner, SeqProxy const& seq) noexcept
+{
+    return perpExchange(indexHash(LedgerNameSpace::PerpExchange, owner, seq.value()));
+}
+
+Keylet
+perpMarket(UInt256 const& exchangeID, Currency const& base, Currency const& quote) noexcept
+{
+    return perpMarket(indexHash(LedgerNameSpace::PerpMarket, exchangeID, base, quote));
+}
+
+Keylet
+marginAccount(
+    AccountID const& account,
+    UInt256 const& exchangeID,
+    std::uint32_t subaccount) noexcept
+{
+    return marginAccount(
+        indexHash(LedgerNameSpace::MarginAccount, account, exchangeID, subaccount));
+}
+
+Keylet
+marginPosition(UInt256 const& marginAccountID, UInt256 const& marketID) noexcept
+{
+    return marginPosition(indexHash(LedgerNameSpace::MarginPosition, marginAccountID, marketID));
+}
+
+Keylet
+perpOrder(AccountID const& account, SeqProxy const& seq) noexcept
+{
+    return perpOrder(indexHash(LedgerNameSpace::PerpOrder, account, seq.value()));
+}
+
+Keylet
+perpBook(UInt256 const& marketID, bool sell) noexcept
+{
+    return quality(
+        {ltDIR_NODE,
+         indexHash(LedgerNameSpace::PerpBook, marketID, static_cast<std::uint8_t>(sell))},
+        0);
 }
 
 Keylet

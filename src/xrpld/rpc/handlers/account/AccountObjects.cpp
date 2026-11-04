@@ -313,6 +313,11 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::vault, .type = ltVAULT},
             {.name = jss::sponsorship, .type = ltSPONSORSHIP},
             {.name = jss::transaction_proposal, .type = ltTRANSACTION_PROPOSAL},
+            {.name = jss::perp_exchange, .type = ltPERP_EXCHANGE},
+            {.name = jss::perp_market, .type = ltPERP_MARKET},
+            {.name = jss::margin_account, .type = ltMARGIN_ACCOUNT},
+            {.name = jss::margin_position, .type = ltMARGIN_POSITION},
+            {.name = jss::perp_order, .type = ltPERP_ORDER},
         };
 
         typeFilter.emplace();
