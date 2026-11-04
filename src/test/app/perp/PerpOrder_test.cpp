@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -29,9 +30,11 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -640,6 +643,7 @@ class PerpOrder_test : public PerpTestBase
         auto subOrder = order(alice_, t.market, Number(2), Number(5), tfPerpSell);
         subOrder[sfSubaccount] = 1;
         env(subOrder);
+        env.close();
         auto const bobAsk = Perp::orderKeylet(env, bob_);
         env(order(bob_, t.market, Number(2), Number(5), tfPerpSell));
         env.close();
@@ -956,7 +960,7 @@ class PerpOrder_test : public PerpTestBase
         {
             auto const affected = meta->getFieldArray(sfAffectedNodes).size();
             log << "64-fill PerpOrderCreate affected entries: " << affected << std::endl;
-            BEAST_EXPECT(affected <= 500);
+            BEAST_EXPECT(affected <= 400);
         }
         expectAccounting(env, t);
     }
@@ -1012,6 +1016,7 @@ class PerpOrder_test : public PerpTestBase
 
         // 17 pairs: ten in document 1 of each oracle, seven in document 2.
         std::vector<std::string> bases;
+        bases.reserve(17);
         for (int i = 0; i < 17; ++i)
             bases.push_back(std::string("C") + (i < 10 ? "0" : "") + std::to_string(i));
         oracle::DataSeries first;

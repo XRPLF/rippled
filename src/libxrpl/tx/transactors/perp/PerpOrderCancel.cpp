@@ -4,10 +4,14 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -42,10 +46,36 @@ PerpOrderCancel::preflight(PreflightContext const& ctx)
 }
 
 TER
+PerpOrderCancel::preclaim(PreclaimContext const& ctx)
+{
+    auto const& tx = ctx.tx;
+    auto const account = tx[sfAccount];
+    auto const owner = tx[~sfOwner].value_or(account);
+    auto const order =
+        ctx.view.read(keylet::perpOrder(owner, SeqProxy::rawSequence(tx[sfOfferSequence])));
+    if (!order)
+        return tecNO_ENTRY;
+
+    // Another owner's order may be cancelled once expired or once its market is Settled.
+    if (owner != account && !hasExpired(ctx.view, (*order)[~sfExpiration]))
+    {
+        auto const market = ctx.view.read(keylet::perpMarket((*order)[sfMarketID]));
+        if (!market || (*market)[sfMarketStatus] != perp::kMarketSettled)
+            return tecNO_PERMISSION;
+    }
+    return tesSUCCESS;
+}
+
+TER
 PerpOrderCancel::doApply()
 {
-    // The transaction's behaviour is not built yet, so every application fails.
-    return tecINTERNAL;
+    auto const& tx = ctx_.tx;
+    auto const order = view().peek(
+        keylet::perpOrder(
+            tx[~sfOwner].value_or(accountID_), SeqProxy::rawSequence(tx[sfOfferSequence])));
+    if (!order)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    return perp::removeOrder(view(), order, j_);
 }
 
 void

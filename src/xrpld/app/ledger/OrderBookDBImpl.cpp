@@ -126,8 +126,10 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
                 return;
             }
 
+            // Perpetual futures book pages carry an exchange rate but no taker assets.
             if (sle->getType() == ltDIR_NODE && sle->isFieldPresent(sfExchangeRate) &&
-                sle->getFieldH256(sfRootIndex) == sle->key())
+                sle->getFieldH256(sfRootIndex) == sle->key() &&
+                (sle->isFieldPresent(sfTakerPaysCurrency) || sle->isFieldPresent(sfTakerPaysMPT)))
             {
                 Book book;
 

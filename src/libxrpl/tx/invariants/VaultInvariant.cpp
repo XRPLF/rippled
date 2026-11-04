@@ -1519,6 +1519,56 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttPERP_ORDER_CREATE: {
+                // A fill's vault fee share only raises the vault's assets, by the amount paid in.
+                bool result = true;
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "xrpl::ValidVault::finalize : perp fee share updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (!maybeVaultDeltaAssets)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp fee share must change vault balance";
+                    return false;  // That's all we can do
+                }
+
+                if (maybeVaultDeltaAssets->delta <= kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp fee share must increase vault balance";
+                    result = false;
+                }
+
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp fee share must not change vault shares";
+                    result = false;
+                }
+
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+                auto const vaultDeltaAssets =
+                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+                if (!checkTotalsAddUp(
+                        afterVault,
+                        beforeVault,
+                        vaultAsset,
+                        fix340Enabled,
+                        minScale,
+                        vaultDeltaAssets,
+                        maybeVaultDeltaAssets->delta,
+                        "perp fee share",
+                        j))
+                    result = false;
+
+                return result;
+            }
+
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:

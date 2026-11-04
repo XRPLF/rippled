@@ -360,4 +360,238 @@ accountRequirements(ReadView const& view, STLedgerEntry const& account);
 [[nodiscard]] std::expected<Number, TER>
 withdrawable(ReadView const& view, STLedgerEntry const& account);
 
+/**
+ * A margin account's equity and requirements (spec 7.1, 7.2), read together.
+ */
+struct MarginSummary
+{
+    Number equity;
+    MarginRequirements requirements;
+};
+
+/**
+ * The equity and requirements of a margin account, as accountEquity and accountRequirements
+ * compute them. Reads only.
+ *
+ * @param view The view the account's markets and positions are read from.
+ * @param account The ltMARGIN_ACCOUNT, or a copy of it holding values not yet written.
+ * @param position When set, an ltMARGIN_POSITION of the account used instead of the view's entry
+ *        for its market, so that a fill can be checked before it is written.
+ * @return The summary, or the errors of accountEquity.
+ */
+[[nodiscard]] std::expected<MarginSummary, TER>
+marginSummary(
+    ReadView const& view,
+    STLedgerEntry const& account,
+    STLedgerEntry const* position = nullptr);
+
+/**
+ * The book quality of an order price: the price for an ask and its inverse for a bid, so the best
+ * order of either side has the lowest key (spec 3.5).
+ */
+[[nodiscard]] std::uint64_t
+orderQuality(Number const& price, bool sell);
+
+/**
+ * Walks one side of a market's book from its best price, and within a price in arrival order.
+ *
+ * The caller deletes or partly fills each order it is given before stepping again; an order left
+ * in the book is given again, as with BookTip.
+ */
+class PerpBookTip
+{
+public:
+    /**
+     * @param view The view the book is read from.
+     * @param marketID The ltPERP_MARKET.
+     * @param sell The asks when true, the bids when false.
+     */
+    PerpBookTip(ApplyView& view, uint256 const& marketID, bool sell);
+
+    /**
+     * Moves to the first order of the best price level.
+     *
+     * @return false when the side holds no order.
+     */
+    bool
+    step();
+
+    /**
+     * The order step moved to; null when the book lists an order the ledger lacks.
+     */
+    [[nodiscard]] SLE::pointer const&
+    order() const
+    {
+        return order_;
+    }
+
+private:
+    ApplyView& view_;
+    uint256 book_;
+    uint256 end_;
+    SLE::pointer order_;
+};
+
+/**
+ * The fields of an order that rests on the book (spec 3.5).
+ */
+struct RestingOrder
+{
+    AccountID account;
+    std::uint32_t sequence{};
+    uint256 marginAccountID;
+    uint256 marketID;
+    Number price;
+    Number size;
+    bool sell{};
+    bool reduceOnly{};
+    std::optional<std::uint32_t> expiration;
+    std::optional<AccountID> builder;
+    std::optional<std::uint32_t> builderFee;
+};
+
+/**
+ * Rests an order: creates its ltPERP_ORDER in the owner directory and at the end of its price
+ * level, raises the owner count and the position's and market's sfOrderCount, and counts a
+ * non-reduce-only order in sfOpenBuy or sfOpenSell. The caller checks the reserve.
+ *
+ * @return tesSUCCESS; tecDIR_FULL; or tefBAD_LEDGER when the position, market or owner is
+ *         missing.
+ */
+[[nodiscard]] TER
+insertOrder(ApplyView& view, RestingOrder const& order, beast::Journal j);
+
+/**
+ * Deletes a resting order, reversing insertOrder, then deletes its position when that holds no
+ * size and no other order.
+ *
+ * @return tesSUCCESS, or tefBAD_LEDGER when a directory, position or market is missing.
+ */
+[[nodiscard]] TER
+removeOrder(ApplyView& view, SLE::Ref order, beast::Journal j);
+
+/**
+ * Deletes a position that holds no size and no resting order: removes it from its account's
+ * sfMarkets and its owner directory and lowers the owner count. Does nothing to any other position.
+ *
+ * @return tesSUCCESS, or tefBAD_LEDGER when the account or the directory entry is missing.
+ */
+[[nodiscard]] TER
+deletePositionIfEmpty(ApplyView& view, SLE::Ref position, beast::Journal j);
+
+/**
+ * Creates an empty position of a margin account in a market, listed in the account's sfMarkets
+ * and in its owner's directory, raising the owner count. The caller checks the reserve and the
+ * position limits.
+ *
+ * @return The position, or the error of the directory insertion.
+ */
+[[nodiscard]] std::expected<SLE::pointer, TER>
+createPosition(ApplyView& view, SLE::Ref account, STLedgerEntry const& market, beast::Journal j);
+
+/**
+ * Settles one position (spec 6.3): moves its charges from the account's sfCash and the exchange's
+ * sfCashTotal to its sfSettlementBalance and snapshots its indexes.
+ */
+void
+settlePosition(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref position,
+    STLedgerEntry const& market,
+    SLE::Ref exchange);
+
+/**
+ * Trades a signed quantity at a price into a settled position (spec 7.5), without writing it.
+ * Snapshots the funding and loss indexes when the size leaves zero or changes sign.
+ *
+ * @param position The ltMARGIN_POSITION, changed in place.
+ * @param market The position's ltPERP_MARKET, for its indexes.
+ * @param exchange The ltPERP_EXCHANGE, for the collateral grid.
+ * @param quantity Positive for a buy, negative for a sell.
+ * @return The realized PnL of the closed part, on the collateral grid rounded downward.
+ */
+[[nodiscard]] Number
+tradeIntoPosition(
+    STLedgerEntry& position,
+    STLedgerEntry const& market,
+    STLedgerEntry const& exchange,
+    Number const& quantity,
+    Number const& price);
+
+/**
+ * One fill of a position (spec 7.5): settles the position, trades quantity at price into it,
+ * moves realized PnL between sfCash, sfCashTotal and sfSettlementBalance, and moves the market's
+ * open interest and the exchange's sfOpenInterestNotional with the change in size.
+ *
+ * @param quantity Positive for a buy, negative for a sell.
+ */
+void
+applyFill(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref position,
+    SLE::Ref market,
+    SLE::Ref exchange,
+    Number const& quantity,
+    Number const& price);
+
+/**
+ * The incoming order of a match. matchOrder lowers remaining as it fills.
+ */
+struct Taker
+{
+    /**
+     * The taker's ltMARGIN_ACCOUNT and its ltMARGIN_POSITION in the market.
+     */
+    SLE::pointer account;
+    SLE::pointer position;
+    AccountID owner;
+    Number limitPrice;
+    Number remaining;
+    bool sell{};
+    bool reduceOnly{};
+    /**
+     * Stops at the first fill instead of making it.
+     */
+    bool postOnly{};
+    std::optional<AccountID> builder;
+    std::uint32_t builderFee{};
+};
+
+/**
+ * How a match ended.
+ */
+struct MatchResult
+{
+    Number filled;
+    /**
+     * A post-only taker reached an order it would fill.
+     */
+    bool crossed{};
+    /**
+     * A fill would have raised sfOpenInterestLong above sfOpenInterestMax.
+     */
+    bool capped{};
+    /**
+     * kMaxPerpFills maker orders were visited while the book still crossed.
+     */
+    bool exhausted{};
+};
+
+/**
+ * Matches a taker against the opposite side of a market's book (spec 8), at most kMaxPerpFills
+ * maker orders. Expired and self-trade makers are deleted, as are makers whose fill would leave
+ * their equity below zero, or below their initial requirement when their size grows; reduce-only
+ * makers are trimmed to their position. Each fill is made at the maker's price, charges both
+ * sides' trading and builder fees (spec 12), and reduces the taker's counted open size. The
+ * vault's fee share is paid into the bound vault when it has shares, else to the insurance fund.
+ *
+ * @param market The ltPERP_MARKET, refreshed in this ledger.
+ * @param exchange The market's ltPERP_EXCHANGE.
+ * @return The result, or a tef or tec error that fails the transaction.
+ */
+[[nodiscard]] std::expected<MatchResult, TER>
+matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, beast::Journal j);
+
 }  // namespace xrpl::perp

@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -30,6 +31,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
@@ -1260,6 +1262,22 @@ removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast:
 }
 
 static void
+removeUnfilledPerpOrders(ApplyView& view, std::vector<UInt256> const& orders, beast::Journal viewJ)
+{
+    for (auto const& index : orders)
+    {
+        if (auto const order = view.peek(keylet::perpOrder(index)))
+        {
+            if (auto const ter = perp::removeOrder(view, order, viewJ); !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error())
+                    << "removeUnfilledPerpOrders: failed to delete order. Err: " << transToken(ter);
+            }
+        }
+    }
+}
+
+static void
 removeExpiredNFTokenOffers(
     ApplyView& view,
     std::vector<UInt256> const& offers,
@@ -1481,6 +1499,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
             types.insert(ltOFFER);
+            types.insert(ltPERP_ORDER);
         }
         else if (ter == tecINCOMPLETE)
         {
@@ -1523,6 +1542,10 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                                     after->getFieldAmount(sfTakerPays))
                                 return;
 
+                            // For perp orders, only unfilled removals (where Size is unchanged)
+                            if (type == ltPERP_ORDER && (*before)[sfSize] != (*after)[sfSize])
+                                return;
+
                             deletedObjects[type].push_back(index);
                         }
                     }
@@ -1554,6 +1577,9 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
             {
                 case ltOFFER:
                     removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltPERP_ORDER:
+                    removeUnfilledPerpOrders(view(), ids, viewJ);
                     break;
                 case ltNFTOKEN_OFFER:
                     removeExpiredNFTokenOffers(view(), ids, viewJ);
