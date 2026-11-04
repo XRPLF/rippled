@@ -239,16 +239,6 @@ PerpMarketSet::preclaim(PreclaimContext const& ctx)
 namespace {
 
 /**
- * A collateral amount on the exchange's grid (spec 16), rounded down as it is paid out.
- */
-Number
-onCollateralGrid(STLedgerEntry const& exchange, Number const& value)
-{
-    return roundToAsset(
-        exchange[sfAsset], value, -int{exchange[sfScale]}, Number::RoundingMode::Downward);
-}
-
-/**
  * How a change of one market parameter is applied (spec 3.2, 4.3).
  */
 enum class ChangeClass { Delayed, DelayedUp, DelayedDown };
@@ -331,7 +321,10 @@ PerpMarketSet::createMarket()
     if (auto const interest = tx[~sfFundingInterestRate])
         (*market)[sfFundingInterestRate] = *interest;
     if (auto const rewardMin = tx[~sfLiquidationRewardMin])
-        (*market)[sfLiquidationRewardMin] = onCollateralGrid(*exchange, *rewardMin);
+    {
+        (*market)[sfLiquidationRewardMin] =
+            perp::roundCollateral(*exchange, *rewardMin, Number::RoundingMode::Downward);
+    }
     if (tx.isFlag(tfPerpIsolatedOnly))
         market->setFlag(lsfPerpIsolatedOnly);
 
@@ -414,7 +407,8 @@ PerpMarketSet::updateMarket()
             pending,
             queued,
             sfLiquidationRewardMin,
-            std::optional<Number>{onCollateralGrid(*exchange, *rewardMin)},
+            std::optional<Number>{
+                perp::roundCollateral(*exchange, *rewardMin, Number::RoundingMode::Downward)},
             ChangeClass::Delayed);
     }
 

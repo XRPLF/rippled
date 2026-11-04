@@ -8,7 +8,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -404,6 +407,282 @@ tierRequirement(Number const& notional, STArray const& tiers, bool initial)
         previousRate = rate;
     }
     return std::nullopt;
+}
+
+Number
+roundCollateral(STLedgerEntry const& exchange, Number const& value, Number::RoundingMode mode)
+{
+    Asset const asset = exchange[sfAsset];
+    return roundToAsset(asset, value, -int{exchange[sfScale]}, mode);
+}
+
+TER
+checkDomain(ReadView const& view, uint256 const& domainID, AccountID const& account)
+{
+    auto const domain = view.read(keylet::permissionedDomain(domainID));
+    if (!domain)
+        return tecNO_AUTH;
+    if ((*domain)[sfOwner] == account)
+        return tesSUCCESS;
+
+    auto const ter = credentials::validDomain(view, domainID, account);
+    if (isTesSuccess(ter) || ter == tecEXPIRED)
+        return tesSUCCESS;
+    return tecNO_AUTH;
+}
+
+TER
+verifyDomain(ApplyView& view, uint256 const& domainID, AccountID const& account, beast::Journal j)
+{
+    auto const domain = view.read(keylet::permissionedDomain(domainID));
+    if (!domain)
+        return tecNO_AUTH;
+    if ((*domain)[sfOwner] == account)
+        return tesSUCCESS;
+
+    auto const ter = verifyValidDomain(view, account, domainID, j);
+    if (isTesSuccess(ter) || ter == tecEXPIRED)
+        return ter;
+    return tecNO_AUTH;
+}
+
+SettlementCharge
+settlementCharge(
+    STLedgerEntry const& exchange,
+    STLedgerEntry const& market,
+    STLedgerEntry const& position)
+{
+    Number const size = position[sfSize];
+    if (size == Number{})
+        return {.funding = Number{}, .loss = Number{}};
+
+    Number const sideIndex = size > Number{} ? market[sfLossIndexLong] : market[sfLossIndexShort];
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    Number const funding = size * (market[sfCumulativeFunding] - position[sfFundingIndex]);
+    Number const loss = abs(size) * (sideIndex - position[sfLossIndex]);
+    return {
+        .funding = roundCollateral(exchange, funding, Number::RoundingMode::Upward),
+        .loss = roundCollateral(exchange, loss, Number::RoundingMode::Upward)};
+}
+
+TER
+settleAccount(ApplyView& view, SLE::Ref account, SLE::Ref exchange, beast::Journal j)
+{
+    XRPL_ASSERT(
+        account && account->getType() == ltMARGIN_ACCOUNT && exchange &&
+            exchange->getType() == ltPERP_EXCHANGE && (*account)[sfExchangeID] == exchange->key(),
+        "xrpl::perp::settleAccount : account of the exchange");
+
+    // Every charge is on the collateral grid, so the sum is exact.
+    Number charges;
+    bool holdsPosition = false;
+    for (auto const& marketID : account->getFieldV256(sfMarkets))
+    {
+        auto const market = view.peek(keylet::perpMarket(marketID));
+        auto const position = view.peek(keylet::marginPosition(account->key(), marketID));
+        if (!market || !position)
+        {
+            JLOG(j.fatal()) << "perp::settleAccount: missing market or position " << marketID;
+            return tefBAD_LEDGER;
+        }
+
+        refreshMarket(view, market, exchange, j);
+        auto const charge = settlementCharge(*exchange, *market, *position);
+        charges = charges + charge.funding + charge.loss;
+
+        bool changed = false;
+        Number const cumulative = (*market)[sfCumulativeFunding];
+        if ((*position)[sfFundingIndex] != cumulative)
+        {
+            (*position)[sfFundingIndex] = cumulative;
+            changed = true;
+        }
+        if (Number const size = (*position)[sfSize]; size != Number{})
+        {
+            holdsPosition = true;
+            Number const sideIndex =
+                size > Number{} ? (*market)[sfLossIndexLong] : (*market)[sfLossIndexShort];
+            if ((*position)[sfLossIndex] != sideIndex)
+            {
+                (*position)[sfLossIndex] = sideIndex;
+                changed = true;
+            }
+        }
+        if (changed)
+            view.update(position);
+    }
+
+    if (charges != Number{})
+    {
+        (*account)[sfCash] = (*account)[sfCash] - charges;
+        (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] - charges;
+        (*exchange)[sfSettlementBalance] = (*exchange)[sfSettlementBalance] + charges;
+        view.update(account);
+        view.update(exchange);
+    }
+
+    if (!holdsPosition)
+        repayWaterfallCredit(view, account, exchange);
+    return tesSUCCESS;
+}
+
+void
+repayWaterfallCredit(ApplyView& view, SLE::Ref account, SLE::Ref exchange)
+{
+    Number const credit = (*account)[sfWaterfallCredit];
+    Number const cash = (*account)[sfCash];
+    if (credit <= Number{} || cash <= Number{})
+        return;
+
+    Number const repaid = std::min(cash, credit);
+    (*account)[sfCash] = cash - repaid;
+    (*account)[sfWaterfallCredit] = credit - repaid;
+    (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] - repaid;
+    (*exchange)[sfInsuranceFund] = (*exchange)[sfInsuranceFund] + absorbBadDebt(*exchange, repaid);
+    view.update(account);
+    view.update(exchange);
+}
+
+Number
+absorbBadDebt(STLedgerEntry& exchange, Number const& amount)
+{
+    Number const badDebt = exchange[sfBadDebt];
+    Number const absorbed = std::min(badDebt, amount);
+    if (absorbed <= Number{})
+        return amount;
+    exchange[sfBadDebt] = badDebt - absorbed;
+    return amount - absorbed;
+}
+
+std::expected<Number, TER>
+withdrawalHaircut(STLedgerEntry const& exchange, Number const& amount)
+{
+    Number const badDebt = exchange[sfBadDebt];
+    if (badDebt <= Number{} || amount <= Number{})
+        return Number{};
+
+    Number const cashTotal = exchange[sfCashTotal];
+    if (cashTotal <= Number{})
+        return std::unexpected<TER>(tecPERP_INSUFFICIENT_COVER);
+
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    Number const h = std::min(Number{1}, badDebt / cashTotal);
+    Number const haircut = roundCollateral(exchange, amount * h, Number::RoundingMode::Upward);
+    return std::min({haircut, badDebt, amount});
+}
+
+namespace {
+
+/**
+ * The tiered requirement of a notional, charged at the last tier's rate above the last tier.
+ */
+[[nodiscard]] Number
+requirement(Number const& notional, STArray const& tiers, bool initial)
+{
+    if (auto const inTiers = tierRequirement(notional, tiers, initial))
+        return *inTiers;
+    if (tiers.empty())
+        return Number{};  // LCOV_EXCL_LINE
+
+    auto const& last = tiers.back();
+    Number const top = last[sfNotionalMax];
+    auto const atTop = tierRequirement(top, tiers, initial);
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    Number const rate = rateOf(last[initial ? sfInitialMarginRate : sfMaintenanceMarginRate]);
+    return atTop.value_or(Number{}) + ((notional - top) * rate);
+}
+
+/**
+ * The margin figures of an account, with its unsettled charges taken from cash.
+ */
+struct MarginState
+{
+    Number cash;
+    Number unrealized;
+    Number losses;
+    MarginRequirements requirements;
+};
+
+[[nodiscard]] std::expected<MarginState, TER>
+marginState(ReadView const& view, STLedgerEntry const& account)
+{
+    auto const exchange = view.read(keylet::perpExchange(account[sfExchangeID]));
+    if (!exchange)
+        return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+
+    MarginState state{
+        .cash = account[sfCash],
+        .unrealized = Number{},
+        .losses = Number{},
+        .requirements = {.initial = Number{}, .maintenance = Number{}}};
+    for (auto const& marketID : account.getFieldV256(sfMarkets))
+    {
+        auto const market = view.read(keylet::perpMarket(marketID));
+        auto const position = view.read(keylet::marginPosition(account.key(), marketID));
+        if (!market || !position)
+            return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+        if ((*market)[sfMarketStatus] != kMarketLive)
+            return std::unexpected<TER>(tecPERP_STALE_PRICE);
+
+        auto const charge = settlementCharge(*exchange, *market, *position);
+        state.cash = state.cash - charge.funding - charge.loss;
+
+        Number const mark = (*market)[sfMarkPrice];
+        Number const size = (*position)[sfSize];
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+            Number const pnl = (size * mark) - (*position)[sfEntryNotional];
+            state.unrealized = state.unrealized + pnl;
+            state.losses = state.losses + std::min(pnl, Number{});
+        }
+
+        auto const& tiers = market->getFieldArray(sfMarginTiers);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        Number const worstCase =
+            std::max(abs(size + (*position)[sfOpenBuy]), abs(size - (*position)[sfOpenSell]));
+        Number const initial = requirement(worstCase * mark, tiers, true);
+        Number const maintenance = requirement(abs(size) * mark, tiers, false);
+        state.requirements.initial = state.requirements.initial + initial;
+        state.requirements.maintenance = state.requirements.maintenance + maintenance;
+    }
+    return state;
+}
+
+}  // namespace
+
+std::expected<Number, TER>
+accountEquity(ReadView const& view, STLedgerEntry const& account)
+{
+    auto const state = marginState(view, account);
+    if (!state)
+        return std::unexpected(state.error());
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    return state->cash + state->unrealized;
+}
+
+std::expected<MarginRequirements, TER>
+accountRequirements(ReadView const& view, STLedgerEntry const& account)
+{
+    auto const state = marginState(view, account);
+    if (!state)
+        return std::unexpected(state.error());
+    return state->requirements;
+}
+
+std::expected<Number, TER>
+withdrawable(ReadView const& view, STLedgerEntry const& account)
+{
+    auto const exchange = view.read(keylet::perpExchange(account[sfExchangeID]));
+    auto const state = marginState(view, account);
+    if (!state)
+        return std::unexpected(state.error());
+    if (!exchange)
+        return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    Number const limit =
+        std::min(state->cash, state->cash + state->losses - state->requirements.initial);
+    return roundCollateral(*exchange, limit, Number::RoundingMode::Downward);
 }
 
 }  // namespace xrpl::perp

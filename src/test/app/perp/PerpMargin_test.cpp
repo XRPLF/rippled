@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/permissioned_dex.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/rate.h>
@@ -838,6 +839,35 @@ class PerpMargin_test : public PerpTestBase
         expectAccounting(env, t.exchange);
     }
 
+    void
+    testMptCollateral()
+    {
+        testcase("MPT collateral");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        fundAccounts(env);
+        MPTTester mpt{env, gw_, kMptInitNoFund};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = alice_});
+        mpt.pay(gw_, alice_, 1'000);
+        auto const exchange = createExchange(env, owner_, Asset{mpt});
+
+        env(Perp::deposit(alice_, exchange.key, mpt(100)));
+        env.close();
+        BEAST_EXPECT(mpt.getBalance(alice_) == 900);
+        BEAST_EXPECT(cashOf(env, marginKeylet(alice_, exchange)) == Number(100));
+        expectAccounting(env, exchange);
+
+        // A third party without an MPToken cannot be paid; the owner can.
+        auto toBob = Perp::withdraw(alice_, exchange.key, mpt(10));
+        toBob[sfDestination] = bob_.human();
+        env(toBob, Ter(tecNO_AUTH));
+        env(Perp::withdraw(alice_, exchange.key, mpt(40)));
+        env.close();
+        BEAST_EXPECT(mpt.getBalance(alice_) == 940);
+        expectAccounting(env, exchange);
+    }
+
 public:
     void
     run() override
@@ -853,6 +883,7 @@ public:
         testOwnerFees();
         testDeleteAccount();
         testIouTransferRateWaived();
+        testMptCollateral();
         testSettlement();
     }
 };
