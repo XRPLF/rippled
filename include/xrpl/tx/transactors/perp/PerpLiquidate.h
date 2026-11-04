@@ -15,7 +15,9 @@
 namespace xrpl {
 
 /**
- * Liquidates a position of a margin account below its maintenance margin.
+ * Liquidates a position of a margin account below its maintenance margin (spec 9): in book mode
+ * the position is sold into the book, in takeover mode the liquidator takes it over at the mark,
+ * and the loss waterfall pays any shortfall.
  */
 class PerpLiquidate : public Transactor
 {
@@ -34,6 +36,9 @@ public:
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;

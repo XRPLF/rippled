@@ -51,15 +51,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-private:
-    /**
-     * Creates the account's position in the market, within the position limits (spec 4.7 step 5).
-     *
-     * @return tesSUCCESS with position set, or tecPERP_POSITION_LIMIT.
-     */
-    TER
-    openPosition(SLE::Ref account, SLE::Ref market, SLE::pointer& position);
 };
 
 }  // namespace xrpl

@@ -1569,6 +1569,57 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttPERP_LIQUIDATE:
+            case ttPERP_REFRESH: {
+                // Fee shares paid in and waterfall draws paid out move the vault's assets by the
+                // amount transferred, and never its shares.
+                bool result = true;
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "xrpl::ValidVault::finalize : perp waterfall updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp waterfall must not change vault shares";
+                    result = false;
+                }
+
+                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (!maybeVaultDeltaAssets)
+                {
+                    if (beforeVault.assetsTotal != afterVault.assetsTotal ||
+                        beforeVault.assetsAvailable != afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: perp waterfall must not change vault assets "
+                            "without a transfer";
+                        result = false;
+                    }
+                    return result;
+                }
+
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+                auto const vaultDeltaAssets =
+                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+                if (!checkTotalsAddUp(
+                        afterVault,
+                        beforeVault,
+                        vaultAsset,
+                        fix340Enabled,
+                        minScale,
+                        vaultDeltaAssets,
+                        maybeVaultDeltaAssets->delta,
+                        "perp waterfall",
+                        j))
+                    result = false;
+
+                return result;
+            }
+
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:

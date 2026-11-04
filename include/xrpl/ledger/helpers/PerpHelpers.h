@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <vector>
 
 namespace xrpl::perp {
 
@@ -58,6 +59,12 @@ fitsQualityKey(Number const& price)
         ++digits;
     return digits <= kMaxPriceDigits;
 }
+
+/**
+ * Whether value is a whole multiple of a positive step.
+ */
+[[nodiscard]] bool
+isMultiple(Number const& value, Number const& step);
 
 /**
  * Seconds of funding one sfFundingRate covers: rates are quoted per 8 hours.
@@ -386,6 +393,23 @@ marginSummary(
     STLedgerEntry const* position = nullptr);
 
 /**
+ * The price liquidation values a market's positions at (spec 9.1): the settlement price in a
+ * Settled market, else the last sfMarkPrice, which a Stale market keeps.
+ */
+[[nodiscard]] Number
+liquidationPrice(STLedgerEntry const& market);
+
+/**
+ * The equity and requirements of a margin account for liquidation (spec 9.1): as marginSummary,
+ * except that a position in a Stale market is valued at the market's last sfMarkPrice and one in a
+ * Settled market at its sfSettlementPrice. Reads only.
+ *
+ * @return The summary, or tefBAD_LEDGER when a listed entry is missing.
+ */
+[[nodiscard]] std::expected<MarginSummary, TER>
+liquidationSummary(ReadView const& view, STLedgerEntry const& account);
+
+/**
  * The book quality of an order price: the price for an ask and its inverse for a bid, so the best
  * order of either side has the lowest key (spec 3.5).
  */
@@ -480,6 +504,16 @@ removeOrder(ApplyView& view, SLE::Ref order, beast::Journal j);
 deletePositionIfEmpty(ApplyView& view, SLE::Ref position, beast::Journal j);
 
 /**
+ * Creates an account's position in a market within the position limits (spec 4.7 step 5): at most
+ * kMaxMarginPositions positions, and a position in an isolated-only market only as the account's
+ * single position. The caller checks the reserve.
+ *
+ * @return The position; tecPERP_POSITION_LIMIT; or the error of createPosition.
+ */
+[[nodiscard]] std::expected<SLE::pointer, TER>
+openPosition(ApplyView& view, SLE::Ref account, STLedgerEntry const& market, beast::Journal j);
+
+/**
  * Creates an empty position of a margin account in a market, listed in the account's sfMarkets
  * and in its owner's directory, raising the owner count. The caller checks the reserve and the
  * position limits.
@@ -557,6 +591,10 @@ struct Taker
     bool postOnly{};
     std::optional<AccountID> builder;
     std::uint32_t builderFee{};
+    /**
+     * Charges the taker no trading fee, as a book-mode liquidation (spec 9.3).
+     */
+    bool noTakerFee{};
 };
 
 /**
@@ -593,5 +631,47 @@ struct MatchResult
  */
 [[nodiscard]] std::expected<MatchResult, TER>
 matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, beast::Journal j);
+
+/**
+ * A market that bears a waterfall shortfall through its loss index (spec 9.6 step 4).
+ */
+struct LossMarket
+{
+    /**
+     * The ltPERP_MARKET, peeked from the waterfall's view.
+     */
+    SLE::pointer market;
+    /**
+     * The account's share of the shortfall in this market: its position's notional at the mark.
+     */
+    Number weight;
+    /**
+     * Whether the account's position in the market was long, so that the shorts pay.
+     */
+    bool wasLong{};
+};
+
+/**
+ * Pays a margin account's shortfall (spec 9.6). The sources are taken in order, each giving
+ * min(remaining, what it has): the insurance fund; the owner's cover; the bound vault, at most
+ * sfVaultLossLimit of its assets per sfVaultLossWindow and at most its sfAssetsAvailable; the loss
+ * index of the opposite side of each loss market, split by weight; and bad debt. The whole
+ * shortfall is credited to the account's sfCash and the exchange's sfCashTotal, and the amount the
+ * first four sources paid to its sfWaterfallCredit.
+ *
+ * @param account The ltMARGIN_ACCOUNT.
+ * @param exchange The account's ltPERP_EXCHANGE.
+ * @param shortfall The positive amount to pay, on the collateral grid.
+ * @param lossMarkets The markets whose opposite side bears the loss index step.
+ * @return tesSUCCESS, or the error of the vault transfer.
+ */
+[[nodiscard]] TER
+runWaterfall(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref exchange,
+    Number const& shortfall,
+    std::vector<LossMarket> const& lossMarkets,
+    beast::Journal j);
 
 }  // namespace xrpl::perp

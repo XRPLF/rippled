@@ -21,7 +21,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STVector256.h>
@@ -204,7 +203,7 @@ class PerpLiquidate_test : public PerpTestBase
      * Opens a position of size between a buyer and a seller at price: the maker rests first and
      * the taker fills it in the next ledger.
      */
-    void
+    static void
     trade(
         Env& env,
         Keylet const& market,
@@ -521,12 +520,13 @@ class PerpLiquidate_test : public PerpTestBase
         // The Stale market itself cannot be liquidated.
         env(liquidate(liq_, alice_, t, t.eth, tfPerpLiquidateToBook), Ter(tecPERP_STALE_PRICE));
         env.close();
-        auto const eth = env.le(t.eth);
-        BEAST_EXPECT(eth && (*eth)[sfMarketStatus] == perp::kMarketStale);
 
         // ETH counts at its last mark 100, so equity is -400 as with a Live ETH market.
         env(liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateToBook));
         env.close();
+        auto const eth = env.le(t.eth);
+        BEAST_EXPECT(eth && (*eth)[sfMarketStatus] == perp::kMarketStale);
+        BEAST_EXPECT(eth && (*eth)[sfMarkPrice] == Number(100));
         BEAST_EXPECT(!env.le(positionKeylet(alice_, t, t.xrp)));
         BEAST_EXPECT(sizeOf(env, alice_, t, t.eth) == Number(10));
         BEAST_EXPECT(cashOf(env, alice_, t) == Number(-200));

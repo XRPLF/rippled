@@ -10,7 +10,6 @@
 #include <xrpl/ledger/helpers/PerpHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -26,21 +25,6 @@
 #include <cstdint>
 
 namespace xrpl {
-
-namespace {
-
-/**
- * Whether value is a whole multiple of a positive step.
- */
-[[nodiscard]] bool
-isMultiple(Number const& value, Number const& step)
-{
-    NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
-    Number const steps = value / step;
-    return steps == steps.truncate() && steps * step == value;
-}
-
-}  // namespace
 
 bool
 PerpOrderCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -125,31 +109,6 @@ PerpOrderCreate::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-PerpOrderCreate::openPosition(SLE::Ref account, SLE::Ref market, SLE::pointer& position)
-{
-    // A position counts against kMaxMarginPositions, and isolated-only markets stand alone.
-    auto const& markets = account->getFieldV256(sfMarkets);
-    if (markets.size() >= perp::kMaxMarginPositions)
-        return tecPERP_POSITION_LIMIT;
-    if (market->isFlag(lsfPerpIsolatedOnly) && !markets.empty())
-        return tecPERP_POSITION_LIMIT;
-    for (auto const& marketID : markets)
-    {
-        auto const other = view().read(keylet::perpMarket(marketID));
-        if (!other)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-        if (other->isFlag(lsfPerpIsolatedOnly))
-            return tecPERP_POSITION_LIMIT;
-    }
-
-    auto const created = perp::createPosition(view(), account, *market, j_);
-    if (!created)
-        return created.error();  // LCOV_EXCL_LINE
-    position = *created;
-    return tesSUCCESS;
-}
-
-TER
 PerpOrderCreate::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -195,7 +154,8 @@ PerpOrderCreate::doApply()
         return ter;
 
     // 4. Tick, lot, price band, domain and reduce-only checks.
-    if (!isMultiple(price, (*market)[sfPriceTick]) || !isMultiple(size, (*market)[sfLotSize]))
+    if (!perp::isMultiple(price, (*market)[sfPriceTick]) ||
+        !perp::isMultiple(size, (*market)[sfLotSize]))
         return tecPRECISION_LOSS;
     {
         NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
@@ -221,8 +181,10 @@ PerpOrderCreate::doApply()
     // 5. A new position obeys the position limits.
     if (!position)
     {
-        if (auto const ter = openPosition(account, market, position); !isTesSuccess(ter))
-            return ter;
+        auto const opened = perp::openPosition(view(), account, *market, j_);
+        if (!opened)
+            return opened.error();
+        position = *opened;
     }
 
     // 6. The order is counted, and pending in sfOrderCount so its position outlives matching.

@@ -88,6 +88,14 @@ snapshotIndexes(STLedgerEntry& position, STLedgerEntry const& market)
 
 }  // namespace
 
+bool
+isMultiple(Number const& value, Number const& step)
+{
+    NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
+    Number const steps = value / step;
+    return steps == steps.truncate() && steps * step == value;
+}
+
 std::uint32_t
 refreshTime(ReadView const& view)
 {
@@ -625,11 +633,16 @@ struct MarginState
     MarginRequirements requirements;
 };
 
+/**
+ * With liquidation set, a Stale market is valued at its last mark and a Settled one at its
+ * settlement price; otherwise every market must be Live.
+ */
 [[nodiscard]] std::expected<MarginState, TER>
 marginState(
     ReadView const& view,
     STLedgerEntry const& account,
-    STLedgerEntry const* override = nullptr)
+    STLedgerEntry const* override = nullptr,
+    bool liquidation = false)
 {
     auto const exchange = view.read(keylet::perpExchange(account[sfExchangeID]));
     if (!exchange)
@@ -649,13 +662,14 @@ marginState(
         STLedgerEntry const* position = read ? read.get() : override;
         if (!market || (position == nullptr) || (*position)[sfMarketID] != marketID)
             return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
-        if ((*market)[sfMarketStatus] != kMarketLive)
+        std::uint8_t const status = (*market)[sfMarketStatus];
+        if (status != kMarketLive && !liquidation)
             return std::unexpected<TER>(tecPERP_STALE_PRICE);
 
         auto const charge = settlementCharge(*exchange, *market, *position);
         state.cash = state.cash - charge.funding - charge.loss;
 
-        Number const mark = (*market)[sfMarkPrice];
+        Number const mark = liquidationPrice(*market);
         Number const size = (*position)[sfSize];
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
@@ -717,6 +731,28 @@ std::expected<MarginSummary, TER>
 marginSummary(ReadView const& view, STLedgerEntry const& account, STLedgerEntry const* position)
 {
     auto const state = marginState(view, account, position);
+    if (!state)
+        return std::unexpected(state.error());
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    return MarginSummary{
+        .equity = state->cash + state->unrealized, .requirements = state->requirements};
+}
+
+Number
+liquidationPrice(STLedgerEntry const& market)
+{
+    if (market[sfMarketStatus] == kMarketSettled)
+    {
+        if (auto const settlement = market[~sfSettlementPrice])
+            return *settlement;
+    }
+    return market[sfMarkPrice];
+}
+
+std::expected<MarginSummary, TER>
+liquidationSummary(ReadView const& view, STLedgerEntry const& account)
+{
+    auto const state = marginState(view, account, nullptr, true);
     if (!state)
         return std::unexpected(state.error());
     NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
@@ -878,6 +914,25 @@ deletePositionIfEmpty(ApplyView& view, SLE::Ref position, beast::Journal j)
     view.erase(position);
     view.update(account);
     return tesSUCCESS;
+}
+
+std::expected<SLE::pointer, TER>
+openPosition(ApplyView& view, SLE::Ref account, STLedgerEntry const& market, beast::Journal j)
+{
+    auto const& markets = account->getFieldV256(sfMarkets);
+    if (markets.size() >= kMaxMarginPositions)
+        return std::unexpected<TER>(tecPERP_POSITION_LIMIT);
+    if (market.isFlag(lsfPerpIsolatedOnly) && !markets.empty())
+        return std::unexpected<TER>(tecPERP_POSITION_LIMIT);
+    for (auto const& marketID : markets)
+    {
+        auto const other = view.read(keylet::perpMarket(marketID));
+        if (!other)
+            return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+        if (other->isFlag(lsfPerpIsolatedOnly))
+            return std::unexpected<TER>(tecPERP_POSITION_LIMIT);
+    }
+    return createPosition(view, account, market, j);
 }
 
 std::expected<SLE::pointer, TER>
@@ -1314,7 +1369,7 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
             exchange,
             taker.account,
             notional,
-            (*exchange)[sfTakerFee],
+            taker.noTakerFee ? 0 : std::uint32_t{(*exchange)[sfTakerFee]},
             taker.builder,
             taker.builderFee,
             vaultFees);
@@ -1361,6 +1416,205 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
     }
     associateAsset(*exchange, (*exchange)[sfAsset]);
     return result;
+}
+
+namespace {
+
+/**
+ * Draws up to wanted from the exchange's bound vault into its pseudo-account (spec 9.6 step 3):
+ * at most sfVaultLossLimit of the vault's assets less sfVaultLossInWindow, restarting the window
+ * once sfVaultLossWindow has passed, and at most the vault's sfAssetsAvailable.
+ *
+ * @return The amount drawn, on the collateral grid; or the error of the transfer.
+ */
+[[nodiscard]] std::expected<Number, TER>
+drawVault(ApplyView& view, SLE::Ref exchange, Number const& wanted, beast::Journal j)
+{
+    auto const vault = view.peek(keylet::vault((*exchange)[sfVaultID]));
+    if (!vault)
+        return std::unexpected<TER>(tefBAD_LEDGER);  // LCOV_EXCL_LINE
+
+    std::uint32_t const now = refreshTime(view);
+    std::uint32_t start = (*exchange)[sfVaultLossWindowStart];
+    Number inWindow = (*exchange)[sfVaultLossInWindow];
+    if (std::uint64_t{now} >=
+        std::uint64_t{start} + std::as_const(*exchange)[~sfVaultLossWindow].value_or(0))
+    {
+        start = now;
+        inWindow = Number{};
+    }
+
+    Number allowance;
+    {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        allowance = roundCollateral(
+                        *exchange,
+                        getAssetsTotal(vault) * rateOf((*exchange)[sfVaultLossLimit]),
+                        Number::RoundingMode::Downward) -
+            inWindow;
+    }
+    Number const cap = std::min(allowance, Number{(*vault)[sfAssetsAvailable]});
+    Number const draw =
+        roundCollateral(*exchange, std::min(wanted, cap), Number::RoundingMode::Downward);
+    if (draw <= Number{})
+        return Number{};
+
+    // The vault rounds the outflow onto its own grid; an amount below its precision is skipped.
+    Asset const asset = (*exchange)[sfAsset];
+    auto const clamped = clampVaultOutflow(vault, STAmount{asset, -draw});
+    if (!clamped)
+        return Number{};
+    Number const drawn =
+        roundCollateral(*exchange, Number{*clamped}, Number::RoundingMode::Downward);
+    if (drawn <= Number{})
+        return Number{};  // LCOV_EXCL_LINE
+
+    STAmount const amount{asset, drawn};
+    if (auto const ter = accountSend(
+            view,
+            (*vault)[sfAccount],
+            (*exchange)[sfAccount],
+            amount,
+            j,
+            {},
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return std::unexpected(ter);
+    if (auto const ter = adjustVaultCash(vault, -amount, j); !isTesSuccess(ter))
+        return std::unexpected(ter);  // LCOV_EXCL_LINE
+    associateAsset(*vault, asset);
+    view.update(vault);
+
+    (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] + drawn;
+    (*exchange)[sfVaultLossWindowStart] = start;
+    (*exchange)[sfVaultLossInWindow] = inWindow + drawn;
+    return drawn;
+}
+
+/**
+ * Raises the opposite side's loss index of each loss market by its share of remaining over that
+ * side's open interest (spec 9.6 step 4). Shares follow the weights, rounded downward onto the
+ * collateral grid, with the rounding remainder on the first heaviest market.
+ *
+ * @return The amount the loss indexes took; a market with no opposite open interest takes nothing.
+ */
+[[nodiscard]] Number
+chargeLossIndexes(
+    ApplyView& view,
+    SLE::Ref exchange,
+    Number const& remaining,
+    std::vector<LossMarket> const& lossMarkets)
+{
+    Number totalWeight;
+    std::size_t heaviest = lossMarkets.size();
+    for (std::size_t i = 0; i < lossMarkets.size(); ++i)
+    {
+        Number const weight = lossMarkets[i].weight;
+        if (weight <= Number{})
+            continue;
+        totalWeight = totalWeight + weight;
+        if (heaviest == lossMarkets.size() || weight > lossMarkets[heaviest].weight)
+            heaviest = i;
+    }
+    if (totalWeight <= Number{})
+        return Number{};
+
+    std::vector<Number> shares(lossMarkets.size());
+    Number assigned;
+    {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        for (std::size_t i = 0; i < lossMarkets.size(); ++i)
+        {
+            if (lossMarkets[i].weight <= Number{})
+                continue;
+            shares[i] = roundCollateral(
+                *exchange,
+                remaining * lossMarkets[i].weight / totalWeight,
+                Number::RoundingMode::Downward);
+            assigned = assigned + shares[i];
+        }
+    }
+    shares[heaviest] = shares[heaviest] + (remaining - assigned);
+
+    Number charged;
+    for (std::size_t i = 0; i < lossMarkets.size(); ++i)
+    {
+        auto const& lossMarket = lossMarkets[i];
+        if (shares[i] <= Number{})
+            continue;
+        auto const& market = lossMarket.market;
+        Number const opposite =
+            lossMarket.wasLong ? (*market)[sfOpenInterestShort] : (*market)[sfOpenInterestLong];
+        if (opposite <= Number{})
+            continue;
+
+        // The rise rounds upward, so the side's charges cover at least its share.
+        auto const& index = lossMarket.wasLong ? sfLossIndexShort : sfLossIndexLong;
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        (*market)[index] = (*market)[index] + (shares[i] / opposite);
+        view.update(market);
+        (*exchange)[sfSettlementBalance] = (*exchange)[sfSettlementBalance] - shares[i];
+        charged = charged + shares[i];
+    }
+    return charged;
+}
+
+}  // namespace
+
+TER
+runWaterfall(
+    ApplyView& view,
+    SLE::Ref account,
+    SLE::Ref exchange,
+    Number const& shortfall,
+    std::vector<LossMarket> const& lossMarkets,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        account && account->getType() == ltMARGIN_ACCOUNT && exchange &&
+            exchange->getType() == ltPERP_EXCHANGE && (*account)[sfExchangeID] == exchange->key(),
+        "xrpl::perp::runWaterfall : account of the exchange");
+    if (shortfall <= Number{})
+        return tesSUCCESS;
+
+    Number remaining = shortfall;
+
+    // 1-2. The insurance fund, then the owner's cover.
+    for (auto const* field : {&sfInsuranceFund, &sfCoverAvailable})
+    {
+        Number const held = (*exchange)[*field];
+        Number const taken = std::min(remaining, held);
+        if (taken <= Number{})
+            continue;
+        (*exchange)[*field] = held - taken;
+        remaining = remaining - taken;
+    }
+
+    // 3. The bound vault.
+    if (remaining > Number{} && exchange->isFieldPresent(sfVaultID))
+    {
+        auto const drawn = drawVault(view, exchange, remaining, j);
+        if (!drawn)
+            return drawn.error();
+        remaining = remaining - *drawn;
+    }
+
+    // 4. The opposite sides' loss indexes.
+    if (remaining > Number{})
+        remaining = remaining - chargeLossIndexes(view, exchange, remaining, lossMarkets);
+
+    // 5. Bad debt, recovered by the withdrawal haircut.
+    if (remaining > Number{})
+        (*exchange)[sfBadDebt] = (*exchange)[sfBadDebt] + remaining;
+
+    (*account)[sfCash] = (*account)[sfCash] + shortfall;
+    (*account)[sfWaterfallCredit] = (*account)[sfWaterfallCredit] + (shortfall - remaining);
+    (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] + shortfall;
+    associateAsset(*account, (*exchange)[sfAsset]);
+    associateAsset(*exchange, (*exchange)[sfAsset]);
+    view.update(account);
+    view.update(exchange);
+    return tesSUCCESS;
 }
 
 }  // namespace xrpl::perp
