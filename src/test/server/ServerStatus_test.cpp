@@ -306,33 +306,57 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             // 1 - FAILS with wrong pass
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user, *password + "_")[jss::result];
-            BEAST_EXPECT(jrr["error"] == protoWs ? "forbidden" : "noPermission");
-            BEAST_EXPECT(
-                jrr["error_message"] == protoWs ? "Bad credentials."
-                                                : "You don't have permission for this command.");
+            if (protoWs)
+            {
+                BEAST_EXPECT(jrr[jss::error] == "forbidden");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcForbidden);
+                BEAST_EXPECT(jrr[jss::error_message] == "Bad credentials.");
+            }
+            else
+            {
+                BEAST_EXPECT(jrr.isNull());
+            }
 
             // 2 - FAILS with password in an object
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user, *password, true)[jss::result];
-            BEAST_EXPECT(jrr["error"] == protoWs ? "forbidden" : "noPermission");
-            BEAST_EXPECT(
-                jrr["error_message"] == protoWs ? "Bad credentials."
-                                                : "You don't have permission for this command.");
+            if (protoWs)
+            {
+                BEAST_EXPECT(jrr[jss::error] == "forbidden");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcForbidden);
+                BEAST_EXPECT(jrr[jss::error_message] == "Bad credentials.");
+            }
+            else
+            {
+                BEAST_EXPECT(jrr.isNull());
+            }
 
             // 3 - FAILS with wrong user
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user + "_", *password)[jss::result];
-            BEAST_EXPECT(jrr["error"] == protoWs ? "forbidden" : "noPermission");
-            BEAST_EXPECT(
-                jrr["error_message"] == protoWs ? "Bad credentials."
-                                                : "You don't have permission for this command.");
+            if (protoWs)
+            {
+                BEAST_EXPECT(jrr[jss::error] == "forbidden");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcForbidden);
+                BEAST_EXPECT(jrr[jss::error_message] == "Bad credentials.");
+            }
+            else
+            {
+                BEAST_EXPECT(jrr.isNull());
+            }
 
             // 4 - FAILS no credentials
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
-            BEAST_EXPECT(jrr["error"] == protoWs ? "forbidden" : "noPermission");
-            BEAST_EXPECT(
-                jrr["error_message"] == protoWs ? "Bad credentials."
-                                                : "You don't have permission for this command.");
+            if (protoWs)
+            {
+                BEAST_EXPECT(jrr[jss::error] == "forbidden");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcForbidden);
+                BEAST_EXPECT(jrr[jss::error_message] == "Bad credentials.");
+            }
+            else
+            {
+                BEAST_EXPECT(jrr.isNull());
+            }
 
             // 5 - SUCCEEDS with proper credentials
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -353,10 +377,16 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         {
             // 1 - FAILS - admin disabled
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
-            BEAST_EXPECT(jrr["error"] == protoWs ? "forbidden" : "noPermission");
-            BEAST_EXPECT(
-                jrr["error_message"] == protoWs ? "Bad credentials."
-                                                : "You don't have permission for this command.");
+            if (protoWs)
+            {
+                BEAST_EXPECT(jrr[jss::error] == "forbidden");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcForbidden);
+                BEAST_EXPECT(jrr[jss::error_message] == "Bad credentials.");
+            }
+            else
+            {
+                BEAST_EXPECT(jrr.isNull());
+            }
         }
     }
 
@@ -730,7 +760,9 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         {  // send invalid json
             auto resp = sendAndParse("NOT JSON");
-            BEAST_EXPECT(resp.isMember(jss::error) && resp[jss::error] == "jsonInvalid");
+            BEAST_EXPECT(resp[jss::error] == "jsonInvalid");
+            BEAST_EXPECT(!resp.isMember(jss::error_code));
+            BEAST_EXPECT(resp[jss::error_message].isNull());
             BEAST_EXPECT(!resp.isMember(jss::status));
         }
 
@@ -739,8 +771,10 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::command] = "foo";
             jv[jss::method] = "bar";
             auto resp = sendAndParse(to_string(jv));
-            BEAST_EXPECT(resp.isMember(jss::error) && resp[jss::error] == "missingCommand");
-            BEAST_EXPECT(resp.isMember(jss::status) && resp[jss::status] == "error");
+            BEAST_EXPECT(resp[jss::status] == "error");
+            BEAST_EXPECT(resp[jss::error] == "missingCommand");
+            BEAST_EXPECT(!resp.isMember(jss::error_code));
+            BEAST_EXPECT(resp[jss::error_message].isNull());
         }
 
         {  // send a ping (not an error)

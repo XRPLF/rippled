@@ -173,7 +173,9 @@ public:
             jvParams[jss::limit] = 0u;
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(jrr.isMember(jss::error_message));
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
         }
     }
 
@@ -195,9 +197,9 @@ public:
         {
             // no account field
             auto const jrr = env.rpc("account_offers");
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "badSyntax");
             BEAST_EXPECT(jrr[jss::error_code] == RpcBadSyntax);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Syntax error.");
         }
 
@@ -226,9 +228,9 @@ public:
             jvParams[jss::account] = "";
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
             BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
             BEAST_EXPECT(jrr[jss::validated] == false);
@@ -237,9 +239,9 @@ public:
         {
             // bogus account value
             auto const jrr = env.rpc("account_offers", Account("bogus").human())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::error_code] == RpcActNotFound);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
         }
 
@@ -250,9 +252,9 @@ public:
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
 
@@ -263,9 +265,9 @@ public:
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECTS(
                 jrr[jss::error_message] == "Invalid field 'marker'.", jrr.toStyledString());
         }
@@ -277,9 +279,9 @@ public:
             jvParams[jss::marker] = 1;
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not string.");
         }
 
@@ -290,9 +292,9 @@ public:
             jvParams[jss::ledger_index] = 10u;
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
-            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
 

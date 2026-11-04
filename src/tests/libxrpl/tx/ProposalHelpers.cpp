@@ -48,6 +48,13 @@ TEST(ProposalHelpers, plain_payment_is_valid)
     EXPECT_TRUE(proposal::isValidProposalTxnType(txOfType(ttPAYMENT)));
 }
 
+// No TransactionType at all. STTx construction rejects this first, but the
+// helper takes any STObject, so it must return false rather than throw.
+TEST(ProposalHelpers, typeless_object_is_rejected)
+{
+    EXPECT_FALSE(proposal::isValidProposalTxnType(STObject{sfGeneric}));
+}
+
 // A nested TransactionProposalCreate. In practice STTx construction rejects
 // this earlier (the payload lacks TransactionProposalCreate's own template
 // fields), but the defense here re-checks that guard so the two cannot

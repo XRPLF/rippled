@@ -1,14 +1,16 @@
 # This workflow runs all workflows to build and test the code on various Linux
 # flavors, as well as on MacOS and Windows, on a scheduled basis, on merge into
-# the 'develop' or 'release*' branches, or when requested manually. Upon pushes
-# to the develop branch it also uploads the libxrpl recipe to the Conan remote.
+# the 'develop', 'release/*' or 'staging/*' branches, or when requested
+# manually. Upon pushes to the develop branch, it also uploads the libxrpl
+# recipe to the Conan remote.
 name: Trigger
 
 on:
   push:
     branches:
       - "develop"
-      - "release*"
+      - "release/*"
+      - "staging/*"
     paths:
       # These paths are unique to `on-trigger.yml`.
       - ".github/workflows/on-trigger.yml"
@@ -62,9 +64,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # When a PR is merged into the develop branch it will be assigned a unique
+  # When a PR is merged into the develop branch, it will be assigned a unique
   # group identifier, so execution will continue even if another PR is merged
-  # while it is still running. In all other cases the group identifier is shared
+  # while it is still running. In all other cases, the group identifier is shared
   # per branch, so that any in-progress runs are cancelled when a new commit is
   # pushed.
   group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
@@ -98,7 +100,7 @@ jobs:
       # However, we do not enable ccache for events targeting a release branch,
       # to protect against the rare case that the output produced by ccache is
       # not identical to a regular compilation.
-      ccache_enabled: ${{ github.repository_owner == 'XRPLF' && !startsWith(github.ref, 'refs/heads/release') }}
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' && !startsWith(github.ref, 'refs/heads/release/') }}
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

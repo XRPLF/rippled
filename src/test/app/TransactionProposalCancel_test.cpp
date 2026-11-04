@@ -20,6 +20,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -215,8 +216,9 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     }
 
     // The target account may refuse any proposal made for it, at any point in
-    // its lifecycle, without owning the object: anyone can create a proposal
-    // against any account and tie up one of its tickets (On-Chain Cosigner spec §7.2).
+    // its lifecycle, without owning the object: any of its signers, an
+    // authorized delegate, or that delegate's signers can create one and tie
+    // up one of its tickets (XLS-0103 §7.2).
     void
     testTargetCancel(FeatureBitset features)
     {
@@ -683,6 +685,25 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
             BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         }
+
+        // Paying with a ticket changes none of that. The failed cancel still
+        // consumes carol's ticket, and nothing else moves: the proposal and
+        // its reserve stay as they were.
+        {
+            uint256 const proposalID = makeProposal(env, alice, target, bob);
+            std::uint32_t const cancelTicket = proposal::createTicket(env, carol);
+            auto const aliceOwnerCount = ownerCount(env, alice);
+
+            env(proposal::cancel(carol, proposalID),
+                ticket::Use(cancelTicket),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(!env.le(keylet::ticket(carol.id(), SeqProxy::rawTicket(cancelTicket))));
+            BEAST_EXPECT(ownerCount(env, alice) == aliceOwnerCount);
+            BEAST_EXPECT(ownerCount(env, carol) == 0);
+        }
     }
 
     // A Cancel works as an inner Batch transaction, where each inner runs its
@@ -1012,15 +1033,25 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         {
             json::Value noTicket;
             noTicket[jss::account] = target.human();
-            BEAST_EXPECT(ledgerEntry(noTicket)[jss::error] == "malformedRequest");
+            auto const noTicketResult = ledgerEntry(noTicket);
+            BEAST_EXPECT(noTicketResult[jss::error] == "malformedRequest");
+            BEAST_EXPECT(noTicketResult[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(noTicketResult[jss::error_message] == "Missing field 'ticket_seq'.");
 
             json::Value noAccount;
             noAccount[jss::ticket_seq] = ticketSeq;
-            BEAST_EXPECT(ledgerEntry(noAccount)[jss::error] == "malformedRequest");
+            auto const noAccountResult = ledgerEntry(noAccount);
+            BEAST_EXPECT(noAccountResult[jss::error] == "malformedRequest");
+            BEAST_EXPECT(noAccountResult[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(noAccountResult[jss::error_message] == "Missing field 'account'.");
 
             json::Value badAccount = byPair;
             badAccount[jss::account] = "not an account";
-            BEAST_EXPECT(ledgerEntry(badAccount)[jss::error] == "malformedAddress");
+            auto const badAccountResult = ledgerEntry(badAccount);
+            BEAST_EXPECT(badAccountResult[jss::error] == "malformedAddress");
+            BEAST_EXPECT(badAccountResult[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                badAccountResult[jss::error_message] == "Invalid field 'account', not AccountID.");
         }
 
         // Listed for the proposer, who owns it, and not for the target.
@@ -1037,6 +1068,8 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         {
             auto const jrr = ledgerEntry(byPair);
             BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
             BEAST_EXPECT(!jrr.isMember(jss::node));
             BEAST_EXPECT(jrr[jss::index] == to_string(proposalID));
         }

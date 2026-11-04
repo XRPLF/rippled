@@ -132,8 +132,21 @@ private:
         std::chrono::seconds effectiveOverlap = detail::kDefaultEffectiveOverlap;
         int expectedRefreshMin = 0;
     };
+
+    /**
+     * Serve each configured list from its own publisher server, fetch them all
+     * through one ValidatorSite and check what it reports for each site.
+     *
+     * @param good Directory the cache files are written to.
+     * @param paths One server per entry, with what to serve and what to expect.
+     * @param requestTimeout How long the ValidatorSite waits for a response
+     * before it reports that the request took too long.
+     */
     void
-    testFetchList(detail::DirGuard const& good, std::vector<FetchListConfig> const& paths)
+    testFetchList(
+        detail::DirGuard const& good,
+        std::vector<FetchListConfig> const& paths,
+        std::chrono::seconds requestTimeout = std::chrono::seconds{12})
     {
         testcase << "Fetch list - "
                  << boost::algorithm::join(
@@ -211,10 +224,10 @@ private:
 
         BEAST_EXPECT(trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
-        // Normally, tests will only need a fraction of this time,
-        // but sometimes DNS resolution takes an inordinate amount
-        // of time, so the test will just wait.
-        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, 12s);
+        // Normally, tests will only need a fraction of the default timeout,
+        // but sometimes DNS resolution takes an inordinate amount of time, so
+        // the test will just wait.
+        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, requestTimeout);
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
@@ -586,18 +599,19 @@ public:
                         .failApply = true,
                     },
                 });
-            // timeout
+            // timeout: the server answers 1s after the request times out
             testFetchList(
                 good,
                 {
                     {
-                        .path = "/sleep/13",
+                        .path = "/sleep/2",
                         .msg = "took too long",
                         .ssl = ssl,
                         .failFetch = true,
                         .failApply = true,
                     },
-                });
+                },
+                std::chrono::seconds{1});
             // bad manifest format using known versions
             // * Retrieves a v1 formatted list claiming version 2
             testFetchList(

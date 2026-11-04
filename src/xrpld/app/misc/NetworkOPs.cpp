@@ -2653,15 +2653,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
-
-        if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
-
-        if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
-
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP && baseFeeXRP->native())
@@ -2674,6 +2665,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
+
+        if (auto const gasLimit = ~val->at(~sfGasLimit); gasLimit)
+            jvObj[jss::gas_limit] = *gasLimit;
+
+        if (auto const bytecodeSizeLimit = ~val->at(~sfBytecodeSizeLimit); bytecodeSizeLimit)
+            jvObj[jss::bytecode_size_limit] = *bytecodeSizeLimit;
+
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
 
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
@@ -3130,11 +3130,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = json::UInt(lpClosed->header().seq);
         l[jss::hash] = to_string(lpClosed->header().hash);
 
+        bool const smartEscrowEnabled = lpClosed->rules().enabled(featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
             l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
             l[jss::close_time] =
                 json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         }
@@ -3143,6 +3150,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
 
             if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
@@ -3373,11 +3386,15 @@ NetworkOPsImp::publishLedgerStreams(
 
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (!lpAccepted->rules().enabled(featureXRPFees))
-            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
+        if (lpAccepted->rules().enabled(featureSmartEscrow))
+        {
+            jvObj[jss::gas_limit] = lpAccepted->fees().gasLimit;
+            jvObj[jss::bytecode_size_limit] = lpAccepted->fees().bytecodeSizeLimit;
+            jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
+        }
 
         jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
 
@@ -4697,12 +4714,16 @@ NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
-        if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
+        if (lpClosed->rules().enabled(featureSmartEscrow))
+        {
+            jvResult[jss::gas_limit] = lpClosed->fees().gasLimit;
+            jvResult[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
+        }
     }
 
     if ((mode_ >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
