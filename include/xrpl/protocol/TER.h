@@ -133,7 +133,6 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_MPT,
     temBAD_CIPHERTEXT,
     temINVALID_BYTECODE,
-    temTEMP_DISABLED,
 };
 
 //------------------------------------------------------------------------------
@@ -184,6 +183,8 @@ enum TEFcodes : TERUnderlyingType {
     tefBAD_PATH_COUNT,
     tefNO_BYTECODE,
     tefBYTECODE_NOT_INCLUDED,
+    tefTEMP_DISABLED,
+    tefEXCEEDS_LIMIT,
 };
 
 //------------------------------------------------------------------------------

@@ -38,6 +38,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -159,6 +160,8 @@ class Delegate_test : public beast::unit_test::Suite
         env.close();
         auto const jle = delegate::entry(env, gw, alice);
         BEAST_EXPECT(jle[jss::result][jss::error] == "entryNotFound");
+        BEAST_EXPECT(jle[jss::result][jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jle[jss::result][jss::error_message] == "Entry not found.");
 
         // alice can delegate permissions to gw as well
         env(delegate::set(alice, gw, permissions));
@@ -167,6 +170,8 @@ class Delegate_test : public beast::unit_test::Suite
         auto const response = delegate::entry(env, gw, alice);
         // alice has not been granted any permissions by gw
         BEAST_EXPECT(response[jss::result][jss::error] == "entryNotFound");
+        BEAST_EXPECT(response[jss::result][jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(response[jss::result][jss::error_message] == "Entry not found.");
     }
 
     void
@@ -2780,9 +2785,11 @@ class Delegate_test : public beast::unit_test::Suite
             jv[jss::secret] = bob.name();
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
-                jrr[jss::error_message].asString().contains(
-                    "A Signer may not be the transaction's Account"));
+                jrr[jss::error_message] ==
+                "A Signer may not be the transaction's Account (" + bob.human() + ").");
         }
     }
 
@@ -2837,20 +2844,6 @@ class Delegate_test : public beast::unit_test::Suite
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, UInt256> txRequiredFeatures{
             {"AMMClawback", featureAMMClawback},
-            {"AMMCreate", featureAMM},
-            {"AMMDeposit", featureAMM},
-            {"AMMWithdraw", featureAMM},
-            {"AMMVote", featureAMM},
-            {"AMMBid", featureAMM},
-            {"AMMDelete", featureAMM},
-            {"XChainCreateClaimID", featureXChainBridge},
-            {"XChainCommit", featureXChainBridge},
-            {"XChainClaim", featureXChainBridge},
-            {"XChainAccountCreateCommit", featureXChainBridge},
-            {"XChainAddClaimAttestation", featureXChainBridge},
-            {"XChainAddAccountCreateAttestation", featureXChainBridge},
-            {"XChainModifyBridge", featureXChainBridge},
-            {"XChainCreateBridge", featureXChainBridge},
             {"DIDSet", featureDID},
             {"DIDDelete", featureDID},
             {"OracleSet", featurePriceOracle},
@@ -3007,7 +3000,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 57;
+        std::size_t const expectedDelegableCount = 49;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

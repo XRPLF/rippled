@@ -85,6 +85,9 @@ ConfidentialMPTHolderKeyUpdate::preflight(PreflightContext const& ctx)
     if (hasInbox && ctx.tx[sfConfidentialBalanceInbox].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
+    // TODO: Check the sfZKProof length for each mode once the proof sizes are available from
+    // mpt-crypto.
+
     if (!isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
         return temMALFORMED;
 
@@ -143,6 +146,9 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFlag(tfHolderKeyRecovery) && sleMptoken->isFieldPresent(sfRecoveryKey))
         return tecNO_PERMISSION;
 
+    // TODO: Verify sfZKProof. Rotation mode proves the new spending and inbox ciphertexts hold the
+    // same amounts as the current ones under the new key; Recovery mode proves knowledge of the
+    // private key for the new sfHolderEncryptionKey.
     return tesSUCCESS;
 }
 
