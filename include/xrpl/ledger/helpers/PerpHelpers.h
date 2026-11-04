@@ -179,6 +179,29 @@ bool
 applyPendingParameters(STLedgerEntry& entry, std::uint32_t now);
 
 /**
+ * The time a change queued at now takes effect: now plus delay, saturating at the largest time.
+ */
+[[nodiscard]] std::uint32_t
+parameterEffectiveTime(std::uint32_t now, std::uint32_t delay);
+
+/**
+ * A copy of an ltPERP_EXCHANGE or ltPERP_MARKET with its queued parameter change applied: the
+ * parameters the entry holds once the change takes effect.
+ */
+[[nodiscard]] STLedgerEntry
+eventualParameters(STLedgerEntry const& entry);
+
+/**
+ * Whether replacing a market's margin tiers loosens them (spec 4.3): the new tiers allow a larger
+ * notional, or require less initial or maintenance margin at some notional both allow.
+ *
+ * @param current sfMarginTiers of the market, ascending in sfNotionalMax.
+ * @param proposed The replacement, ascending in sfNotionalMax.
+ */
+[[nodiscard]] bool
+tiersLoosen(STArray const& current, STArray const& proposed);
+
+/**
  * Refreshes a market once per ledger (spec 5.4 steps 1-7): applies due parameter changes of the
  * market and its exchange, accrues funding while Live, and recomputes the index, mark and
  * funding rate, moving the exchange's sfOpenInterestNotional with the mark. Without index

@@ -1483,6 +1483,42 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttPERP_EXCHANGE_SET:
+            case ttPERP_EXCHANGE_DELETE: {
+                // Binding or unbinding a backstop vault writes only sfPerpExchangeID.
+                bool result = true;
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "xrpl::ValidVault::finalize : perp exchange updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                if (deltaAssets(afterVault.pseudoId))
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp exchange binding must not change vault balance";
+                    result = false;
+                }
+
+                if (beforeVault.assetsTotal != afterVault.assetsTotal ||
+                    beforeVault.assetsAvailable != afterVault.assetsAvailable)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp exchange binding must not change vault assets";
+                    result = false;
+                }
+
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: perp exchange binding must not change vault shares";
+                    result = false;
+                }
+
+                return result;
+            }
+
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:

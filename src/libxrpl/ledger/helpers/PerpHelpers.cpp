@@ -25,6 +25,7 @@
 #include <array>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -246,6 +247,52 @@ applyPendingParameters(STLedgerEntry& entry, std::uint32_t now)
     entry.makeFieldAbsent(sfPendingParameters);
     entry.makeFieldAbsent(sfParameterEffectiveTime);
     return true;
+}
+
+std::uint32_t
+parameterEffectiveTime(std::uint32_t now, std::uint32_t delay)
+{
+    std::uint64_t const effective = std::uint64_t{now} + delay;
+    return static_cast<std::uint32_t>(
+        std::min<std::uint64_t>(effective, std::numeric_limits<std::uint32_t>::max()));
+}
+
+STLedgerEntry
+eventualParameters(STLedgerEntry const& entry)
+{
+    STLedgerEntry eventual{entry};
+    applyPendingParameters(eventual, std::numeric_limits<std::uint32_t>::max());
+    return eventual;
+}
+
+bool
+tiersLoosen(STArray const& current, STArray const& proposed)
+{
+    if (current.empty() || proposed.empty())
+        return !proposed.empty();
+
+    Number const proposedMax = proposed.back()[sfNotionalMax];
+    if (proposedMax > current.back()[sfNotionalMax])
+        return true;
+
+    // Both requirements are linear between tier bounds, so comparing at every bound suffices.
+    for (auto const* tiers : {&current, &proposed})
+    {
+        for (auto const& tier : *tiers)
+        {
+            Number const bound = tier[sfNotionalMax];
+            if (bound > proposedMax)
+                continue;
+            for (bool const initial : {true, false})
+            {
+                auto const before = tierRequirement(bound, current, initial);
+                auto const after = tierRequirement(bound, proposed, initial);
+                if (before && after && *after < *before)
+                    return true;
+            }
+        }
+    }
+    return false;
 }
 
 void

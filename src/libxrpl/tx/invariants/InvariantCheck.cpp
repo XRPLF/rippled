@@ -1031,7 +1031,7 @@ isHolding(SLE const& entry, Asset const& asset, AccountID const& account)
 }
 
 // Whether `entry`, linked into the owner directory of `pseudo`, belongs to the
-// AMM, Vault or LoanBroker that the pseudo-account was created for.
+// AMM, Vault, LoanBroker or PerpExchange that the pseudo-account was created for.
 static bool
 isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry)
 {
@@ -1082,6 +1082,12 @@ isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry
             return false;  // LCOV_EXCL_LINE
         auto const vault = view.read(keylet::vault((*broker)[sfVaultID]));
         return vault && isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
+    }
+
+    if (pseudo.isFieldPresent(sfPerpExchangeID))
+    {
+        auto const exchange = view.read(keylet::perpExchange(pseudo[sfPerpExchangeID]));
+        return exchange && isHolding(entry, (*exchange)[sfAsset], pseudoAcctID);
     }
 
     // A new pseudo-account kind must say what it owns.
@@ -1444,6 +1450,7 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::ConstRef before, SLE::Con
         case ltAMM:
         case ltVAULT:
         case ltLOAN_BROKER:
+        case ltPERP_EXCHANGE:
             deletedObjSles_.push_back(before);
             break;
         default:

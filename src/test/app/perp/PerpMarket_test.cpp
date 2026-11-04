@@ -113,7 +113,7 @@ class PerpMarket_test : public PerpTestBase
         // tfPerpIsolatedOnly sets the market flag on creation.
         auto const isolated = createExchange(env, owner_, usd_);
         world.oracles[2].set(oracle::UpdateArg{.series = {{"XRP", "USD", 22, 1}}});
-        auto jv = Perp::marketSet(owner_, isolated.key, args);
+        auto jv = Perp::marketSet(owner_, isolated.key, marketArgs());
         jv[jss::Flags] = tfPerpIsolatedOnly;
         env(jv);
         env.close();

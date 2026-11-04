@@ -35,6 +35,9 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
     TER
     doApply() override;
 
@@ -48,6 +51,13 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    TER
+    createExchange();
+
+    TER
+    updateExchange();
 };
 
 }  // namespace xrpl
