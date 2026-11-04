@@ -40,6 +40,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/applySteps.h>
 
@@ -5014,6 +5015,29 @@ struct Subscription_test : public beast::unit_test::Suite
     }
 
     void
+    testKeyletNamespace(FeatureBitset features)
+    {
+        testcase("subscription keylet uses namespace k");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        Env env{*this, features};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(subscription::create(alice, bob, XRP(10), 100s), Ter(tesSUCCESS));
+        env.close();
+
+        // The subscription lives at sha512Half('k', account, destination, sequence).
+        UInt256 const expected = sha512Half(std::uint16_t('k'), alice.id(), bob.id(), seq);
+        BEAST_EXPECT(keylet::subscription(alice.id(), bob.id(), seq).key == expected);
+        BEAST_EXPECT(env.le(keylet::subscription(expected)) != nullptr);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -5086,6 +5110,7 @@ public:
         using namespace test::jtx;
         auto const sa = testableAmendments() | featureSubscription;
         testWithFeats(sa);
+        testKeyletNamespace(sa);
     }
 };
 
