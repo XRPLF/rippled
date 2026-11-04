@@ -540,6 +540,30 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kMarginAccountInfo,
+        .valueMethod = Method::of<&byRef<&doMarginAccountInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPerpBookOrders,
+        .valueMethod = Method::of<&byRef<&doPerpBookOrders>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPerpExchangeInfo,
+        .valueMethod = Method::of<&byRef<&doPerpExchangeInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
+        .name = method::kPerpMarketInfo,
+        .valueMethod = Method::of<&byRef<&doPerpMarketInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
         .name = method::kVaultInfo,
         .valueMethod = Method::of<&byRef<&doVaultInfo>>(),
         .role = Role::USER,

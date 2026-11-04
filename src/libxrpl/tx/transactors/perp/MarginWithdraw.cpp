@@ -90,18 +90,8 @@ MarginWithdraw::preclaim(PreclaimContext const& ctx)
         if (rounded > available)
             return tecINSUFFICIENT_FUNDS;
 
-        // Cover may fall to sfCoverRateMinimum of the open-interest notional, rounded up.
-        if (cover)
-        {
-            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-            Number const minimum = perp::roundCollateral(
-                *exchange,
-                Number{(*exchange)[sfCoverRateMinimum]} / Number{perp::kRateUnity} *
-                    (*exchange)[sfOpenInterestNotional],
-                Number::RoundingMode::Upward);
-            if (available - rounded < minimum)
-                return tecPERP_INSUFFICIENT_COVER;
-        }
+        if (cover && available - rounded < perp::coverMinimum(*exchange))
+            return tecPERP_INSUFFICIENT_COVER;
     }
     else if (!ctx.view.exists(keylet::marginAccount(account, exchange->key())))
     {

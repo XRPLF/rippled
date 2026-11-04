@@ -196,6 +196,17 @@ refreshMarket(ApplyView& view, SLE::Ref market, SLE::Ref exchange, beast::Journa
 tierRequirement(Number const& notional, STArray const& tiers, bool initial);
 
 /**
+ * The margin requirement of a notional under a market's tiers (spec 7.2), charged at the last
+ * tier's rate above the last tier, as margin checks apply it. Rounds upward.
+ *
+ * @param notional The non-negative position notional.
+ * @param tiers sfMarginTiers, ascending in sfNotionalMax.
+ * @param initial Whether to use sfInitialMarginRate rather than sfMaintenanceMarginRate.
+ */
+[[nodiscard]] Number
+marginRequirement(Number const& notional, STArray const& tiers, bool initial);
+
+/**
  * A collateral amount on the exchange's grid (spec 16): drops for XRP, units for an MPT and
  * multiples of 10^-sfScale for an IOU.
  *
@@ -317,6 +328,30 @@ repayWaterfallCredit(ApplyView& view, SLE::Ref account, SLE::Ref exchange);
  */
 [[nodiscard]] Number
 absorbBadDebt(STLedgerEntry& exchange, Number const& amount);
+
+/**
+ * The share of a margin withdrawal kept against bad debt (spec 9.6 step 4):
+ * h = min(1, sfBadDebt / sfCashTotal), rounded upward.
+ *
+ * @return The share, zero without bad debt; tecPERP_INSUFFICIENT_COVER when there is bad debt and
+ *         sfCashTotal is not positive, so that withdrawals wait.
+ */
+[[nodiscard]] std::expected<Number, TER>
+haircutRate(STLedgerEntry const& exchange);
+
+/**
+ * The cover an exchange must keep (spec 4.6): sfCoverRateMinimum of sfOpenInterestNotional,
+ * rounded upward onto the collateral grid.
+ */
+[[nodiscard]] Number
+coverMinimum(STLedgerEntry const& exchange);
+
+/**
+ * The most cover the owner may withdraw (spec 4.6): sfCoverAvailable above coverMinimum, and
+ * nothing while there is bad debt. Never negative.
+ */
+[[nodiscard]] Number
+withdrawableCover(STLedgerEntry const& exchange);
 
 /**
  * The part of a margin withdrawal kept against bad debt (spec 9.6 step 4): amount times

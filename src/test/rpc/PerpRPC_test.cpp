@@ -337,14 +337,16 @@ class PerpRPC_test : public beast::unit_test::Suite
         json::Value byAccount;
         byAccount[jss::account] = bob_.human();
         byAccount[jss::exchange_id] = to_string(t.exchange.key);
+        byAccount[jss::ledger_index] = env.closed()->seq();
         result = rpc(env, "margin_account_info", byAccount);
         if (BEAST_EXPECT(result[jss::positions].size() == 1))
         {
             auto const& position = result[jss::positions][0u];
             BEAST_EXPECT(position[jss::size] == "-4000");
             BEAST_EXPECT(position[jss::entry_price] == "2");
-            BEAST_EXPECT(
-                position[jss::estimated_liquidation_price] == str(Number{9'000} / Number{4'200}));
+            BEAST_EXPECTS(
+                position[jss::estimated_liquidation_price] == str(Number{9'000} / Number{4'200}),
+                position[jss::estimated_liquidation_price].asString());
         }
 
         // At index 2.05 alice gains 200 less funding; the RPC values are what settling the
@@ -611,6 +613,7 @@ class PerpRPC_test : public beast::unit_test::Suite
         expectError(rpc(env, "perp_book_orders", book), "invalidParams");
 
         // A marker from the other side's book is refused.
+        book.removeMember(jss::marker);
         book[jss::side] = "ask";
         book[jss::limit] = 1;
         auto const asks = rpc(env, "perp_book_orders", book);

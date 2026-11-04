@@ -541,10 +541,10 @@ absorbBadDebt(STLedgerEntry& exchange, Number const& amount)
 }
 
 std::expected<Number, TER>
-withdrawalHaircut(STLedgerEntry const& exchange, Number const& amount)
+haircutRate(STLedgerEntry const& exchange)
 {
     Number const badDebt = exchange[sfBadDebt];
-    if (badDebt <= Number{} || amount <= Number{})
+    if (badDebt <= Number{})
         return Number{};
 
     Number const cashTotal = exchange[sfCashTotal];
@@ -552,18 +552,45 @@ withdrawalHaircut(STLedgerEntry const& exchange, Number const& amount)
         return std::unexpected<TER>(tecPERP_INSUFFICIENT_COVER);
 
     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    Number const h = std::min(Number{1}, badDebt / cashTotal);
-    Number const haircut = roundCollateral(exchange, amount * h, Number::RoundingMode::Upward);
-    return std::min({haircut, badDebt, amount});
+    return std::min(Number{1}, badDebt / cashTotal);
 }
 
-namespace {
+Number
+coverMinimum(STLedgerEntry const& exchange)
+{
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    return roundCollateral(
+        exchange,
+        Number{exchange[sfCoverRateMinimum]} / Number{kRateUnity} *
+            exchange[sfOpenInterestNotional],
+        Number::RoundingMode::Upward);
+}
 
-/**
- * The tiered requirement of a notional, charged at the last tier's rate above the last tier.
- */
-[[nodiscard]] Number
-requirement(Number const& notional, STArray const& tiers, bool initial)
+Number
+withdrawableCover(STLedgerEntry const& exchange)
+{
+    if (exchange[sfBadDebt] > Number{})
+        return Number{};
+    return std::max(Number{}, exchange[sfCoverAvailable] - coverMinimum(exchange));
+}
+
+std::expected<Number, TER>
+withdrawalHaircut(STLedgerEntry const& exchange, Number const& amount)
+{
+    if (amount <= Number{})
+        return Number{};
+
+    auto const h = haircutRate(exchange);
+    if (!h || *h == Number{})
+        return h;
+
+    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+    Number const haircut = roundCollateral(exchange, amount * *h, Number::RoundingMode::Upward);
+    return std::min({haircut, Number{exchange[sfBadDebt]}, amount});
+}
+
+Number
+marginRequirement(Number const& notional, STArray const& tiers, bool initial)
 {
     if (auto const inTiers = tierRequirement(notional, tiers, initial))
         return *inTiers;
@@ -577,6 +604,8 @@ requirement(Number const& notional, STArray const& tiers, bool initial)
     Number const rate = rateOf(last[initial ? sfInitialMarginRate : sfMaintenanceMarginRate]);
     return atTop.value_or(Number{}) + ((notional - top) * rate);
 }
+
+namespace {
 
 /**
  * The margin figures of an account, with its unsettled charges taken from cash.
@@ -641,8 +670,8 @@ marginState(
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         Number const worstCase =
             std::max(abs(size + (*position)[sfOpenBuy]), abs(size - (*position)[sfOpenSell]));
-        Number const initial = requirement(worstCase * index, tiers, true);
-        Number const maintenance = requirement(abs(size) * index, tiers, false);
+        Number const initial = marginRequirement(worstCase * index, tiers, true);
+        Number const maintenance = marginRequirement(abs(size) * index, tiers, false);
         state.requirements.initial = state.requirements.initial + initial;
         state.requirements.maintenance = state.requirements.maintenance + maintenance;
     }
