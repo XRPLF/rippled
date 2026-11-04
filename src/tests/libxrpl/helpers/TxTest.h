@@ -7,7 +7,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -299,7 +298,7 @@ public:
      * @brief Get the closed (base) ledger view.
      * @return A const reference to the closed ledger.
      */
-    [[nodiscard]] ReadView const&
+    [[nodiscard]] Ledger const&
     getClosedLedger() const;
 
     /**
