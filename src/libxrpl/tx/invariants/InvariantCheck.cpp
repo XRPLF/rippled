@@ -1289,8 +1289,9 @@ NoModifiedUnmodifiableFields::finalize(
         // featureLendingProtocol gates enforcement, not detection: changes are
         // always logged, but the transaction is only failed once the amendment
         // is enabled. Type-specific field lists may add their own gates (see
-        // ltVAULT).
-        bool const enforce = view.rules().enabled(featureLendingProtocol);
+        // ltVAULT); the perpetual futures entries enforce under
+        // featurePerpetualFutures.
+        bool enforce = view.rules().enabled(featureLendingProtocol);
         bool bad = kFieldChanged(before, after, sfLedgerEntryType) ||
             kFieldChanged(before, after, sfLedgerIndex);
         switch (type)
@@ -1379,6 +1380,60 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfAccount) ||
                         kFieldChanged(before, after, sfShareMPTID);
                 }
+                break;
+            case ltPERP_EXCHANGE:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfOwner) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfAsset) ||
+                    kFieldChanged(before, after, sfScale) ||
+                    kFieldChanged(before, after, sfDomainID) ||
+                    kFieldChanged(before, after, sfVaultID) ||
+                    kFieldChanged(before, after, sfVaultLossWindow) ||
+                    kFieldChanged(before, after, sfParameterDelay) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltPERP_MARKET:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfExchangeID) ||
+                    kFieldChanged(before, after, sfBaseAsset) ||
+                    kFieldChanged(before, after, sfQuoteAsset) ||
+                    kFieldChanged(before, after, sfPriceTick) ||
+                    kFieldChanged(before, after, sfLotSize) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltMARGIN_ACCOUNT:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfExchangeID) ||
+                    kFieldChanged(before, after, sfSubaccount) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltMARGIN_POSITION:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfMarginAccountID) ||
+                    kFieldChanged(before, after, sfMarketID) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltPERP_ORDER:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfMarginAccountID) ||
+                    kFieldChanged(before, after, sfMarketID) ||
+                    kFieldChanged(before, after, sfLimitPrice) ||
+                    kFieldChanged(before, after, sfExpiration) ||
+                    kFieldChanged(before, after, sfBuilder) ||
+                    kFieldChanged(before, after, sfBuilderFee) ||
+                    kFieldChanged(before, after, sfBookDirectory) ||
+                    kFieldChanged(before, after, sfBookNode) ||
+                    kFieldChanged(before, after, sfOwnerNode);
                 break;
             default:
                 break;
