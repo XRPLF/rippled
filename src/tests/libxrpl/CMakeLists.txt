@@ -54,7 +54,7 @@ function(xrpl_add_test_dir name)
     endif()
     isolate_headers(
         ${target}
-        "${CMAKE_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/${name}"
         PUBLIC
     )

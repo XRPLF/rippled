@@ -12,7 +12,7 @@ set_target_properties(
 # The server headers are not a library, so the whole src tree is on the include
 # path. That also makes this binary's own test headers available under their
 # canonical path, <tests/xrpld/<module>/...>, like the libxrpl tests.
-target_include_directories(xrpld_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_include_directories(xrpld_tests PRIVATE "${PROJECT_SOURCE_DIR}/src")
 target_link_libraries(
     xrpld_tests
     PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
