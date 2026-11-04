@@ -18,7 +18,7 @@ class MarginDepositBuilder;
 /**
  * @brief Transaction: MarginDeposit
  *
- * Type: ttMARGIN_DEPOSIT (107)
+ * Type: ttMARGIN_DEPOSIT (235)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

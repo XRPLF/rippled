@@ -18,7 +18,7 @@ class PerpExchangeBuilder;
 /**
  * @brief Ledger Entry: PerpExchange
  *
- * Type: ltPERP_EXCHANGE (0x008A)
+ * Type: ltPERP_EXCHANGE (0x020F)
  * RPC Name: perp_exchange
  *
  * Immutable wrapper around SLE providing type-safe field access.

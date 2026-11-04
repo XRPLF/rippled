@@ -18,7 +18,7 @@ class PerpOrderCancelBuilder;
 /**
  * @brief Transaction: PerpOrderCancel
  *
- * Type: ttPERP_ORDER_CANCEL (110)
+ * Type: ttPERP_ORDER_CANCEL (238)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

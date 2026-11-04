@@ -18,7 +18,7 @@ class MarginPositionBuilder;
 /**
  * @brief Ledger Entry: MarginPosition
  *
- * Type: ltMARGIN_POSITION (0x008D)
+ * Type: ltMARGIN_POSITION (0x0212)
  * RPC Name: margin_position
  *
  * Immutable wrapper around SLE providing type-safe field access.

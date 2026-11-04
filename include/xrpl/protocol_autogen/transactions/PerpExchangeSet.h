@@ -18,7 +18,7 @@ class PerpExchangeSetBuilder;
 /**
  * @brief Transaction: PerpExchangeSet
  *
- * Type: ttPERP_EXCHANGE_SET (103)
+ * Type: ttPERP_EXCHANGE_SET (231)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt

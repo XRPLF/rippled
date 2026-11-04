@@ -596,13 +596,13 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfLoanScale,                SoeDefault},
 }))
 
-// PerpetualFutures: 0x008A-0x008E are provisional until the alphanet registry assigns them.
+// PerpetualFutures: alphanet registry block 0x020F-0x0213.
 
 /** A ledger object representing a perpetual futures exchange and its collateral pool.
 
     \sa keylet::perpExchange
  */
-LEDGER_ENTRY(ltPERP_EXCHANGE, 0x008A, PerpExchange, perp_exchange, ({
+LEDGER_ENTRY(ltPERP_EXCHANGE, 0x020F, PerpExchange, perp_exchange, ({
     {sfPreviousTxnID,          SoeRequired},
     {sfPreviousTxnLgrSeq,      SoeRequired},
     {sfOwner,                  SoeRequired},
@@ -637,7 +637,7 @@ LEDGER_ENTRY(ltPERP_EXCHANGE, 0x008A, PerpExchange, perp_exchange, ({
 
     \sa keylet::perpMarket
  */
-LEDGER_ENTRY(ltPERP_MARKET, 0x008B, PerpMarket, perp_market, ({
+LEDGER_ENTRY(ltPERP_MARKET, 0x0210, PerpMarket, perp_market, ({
     {sfPreviousTxnID,          SoeRequired},
     {sfPreviousTxnLgrSeq,      SoeRequired},
     {sfExchangeID,             SoeRequired},
@@ -670,7 +670,7 @@ LEDGER_ENTRY(ltPERP_MARKET, 0x008B, PerpMarket, perp_market, ({
 
     \sa keylet::marginAccount
  */
-LEDGER_ENTRY(ltMARGIN_ACCOUNT, 0x008C, MarginAccount, margin_account, ({
+LEDGER_ENTRY(ltMARGIN_ACCOUNT, 0x0211, MarginAccount, margin_account, ({
     {sfPreviousTxnID,          SoeRequired},
     {sfPreviousTxnLgrSeq,      SoeRequired},
     {sfAccount,                SoeRequired},
@@ -685,7 +685,7 @@ LEDGER_ENTRY(ltMARGIN_ACCOUNT, 0x008C, MarginAccount, margin_account, ({
 
     \sa keylet::marginPosition
  */
-LEDGER_ENTRY(ltMARGIN_POSITION, 0x008D, MarginPosition, margin_position, ({
+LEDGER_ENTRY(ltMARGIN_POSITION, 0x0212, MarginPosition, margin_position, ({
     {sfPreviousTxnID,          SoeRequired},
     {sfPreviousTxnLgrSeq,      SoeRequired},
     {sfMarginAccountID,        SoeRequired},
@@ -704,7 +704,7 @@ LEDGER_ENTRY(ltMARGIN_POSITION, 0x008D, MarginPosition, margin_position, ({
 
     \sa keylet::perpOrder
  */
-LEDGER_ENTRY(ltPERP_ORDER, 0x008E, PerpOrder, perp_order, ({
+LEDGER_ENTRY(ltPERP_ORDER, 0x0213, PerpOrder, perp_order, ({
     {sfPreviousTxnID,          SoeRequired},
     {sfPreviousTxnLgrSeq,      SoeRequired},
     {sfAccount,                SoeRequired},

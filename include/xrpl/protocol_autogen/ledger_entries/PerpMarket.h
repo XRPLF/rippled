@@ -18,7 +18,7 @@ class PerpMarketBuilder;
 /**
  * @brief Ledger Entry: PerpMarket
  *
- * Type: ltPERP_MARKET (0x008B)
+ * Type: ltPERP_MARKET (0x0210)
  * RPC Name: perp_market
  *
  * Immutable wrapper around SLE providing type-safe field access.

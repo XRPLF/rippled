@@ -1082,13 +1082,13 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
     {sfProposalID, SoeRequired},
 }))
 
-/** PerpetualFutures: 103-112 are provisional until the alphanet registry assigns them. */
+/** PerpetualFutures: alphanet registry block 231-240. */
 
 /** This transaction creates or updates a perpetual futures exchange. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpExchangeSet.h>
 #endif
-TRANSACTION(ttPERP_EXCHANGE_SET, 103, PerpExchangeSet,
+TRANSACTION(ttPERP_EXCHANGE_SET, 231, PerpExchangeSet,
     ({
         .amendment = featurePerpetualFutures,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
@@ -1113,7 +1113,7 @@ TRANSACTION(ttPERP_EXCHANGE_SET, 103, PerpExchangeSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpExchangeDelete.h>
 #endif
-TRANSACTION(ttPERP_EXCHANGE_DELETE, 104, PerpExchangeDelete,
+TRANSACTION(ttPERP_EXCHANGE_DELETE, 232, PerpExchangeDelete,
     ({
         .amendment = featurePerpetualFutures,
         .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
@@ -1126,7 +1126,7 @@ TRANSACTION(ttPERP_EXCHANGE_DELETE, 104, PerpExchangeDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpMarketSet.h>
 #endif
-TRANSACTION(ttPERP_MARKET_SET, 105, PerpMarketSet,
+TRANSACTION(ttPERP_MARKET_SET, 233, PerpMarketSet,
     ({
         .amendment = featurePerpetualFutures,
     }),
@@ -1148,7 +1148,7 @@ TRANSACTION(ttPERP_MARKET_SET, 105, PerpMarketSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpMarketDelete.h>
 #endif
-TRANSACTION(ttPERP_MARKET_DELETE, 106, PerpMarketDelete,
+TRANSACTION(ttPERP_MARKET_DELETE, 234, PerpMarketDelete,
     ({
         .amendment = featurePerpetualFutures,
     }),
@@ -1160,7 +1160,7 @@ TRANSACTION(ttPERP_MARKET_DELETE, 106, PerpMarketDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/MarginDeposit.h>
 #endif
-TRANSACTION(ttMARGIN_DEPOSIT, 107, MarginDeposit,
+TRANSACTION(ttMARGIN_DEPOSIT, 235, MarginDeposit,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
@@ -1174,7 +1174,7 @@ TRANSACTION(ttMARGIN_DEPOSIT, 107, MarginDeposit,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/MarginWithdraw.h>
 #endif
-TRANSACTION(ttMARGIN_WITHDRAW, 108, MarginWithdraw,
+TRANSACTION(ttMARGIN_WITHDRAW, 236, MarginWithdraw,
     ({
         .amendment = featurePerpetualFutures,
         .privileges = Privilege::MayAuthorizeMpt,
@@ -1189,7 +1189,7 @@ TRANSACTION(ttMARGIN_WITHDRAW, 108, MarginWithdraw,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpOrderCreate.h>
 #endif
-TRANSACTION(ttPERP_ORDER_CREATE, 109, PerpOrderCreate,
+TRANSACTION(ttPERP_ORDER_CREATE, 237, PerpOrderCreate,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
@@ -1208,7 +1208,7 @@ TRANSACTION(ttPERP_ORDER_CREATE, 109, PerpOrderCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpOrderCancel.h>
 #endif
-TRANSACTION(ttPERP_ORDER_CANCEL, 110, PerpOrderCancel,
+TRANSACTION(ttPERP_ORDER_CANCEL, 238, PerpOrderCancel,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
@@ -1222,7 +1222,7 @@ TRANSACTION(ttPERP_ORDER_CANCEL, 110, PerpOrderCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpLiquidate.h>
 #endif
-TRANSACTION(ttPERP_LIQUIDATE, 111, PerpLiquidate,
+TRANSACTION(ttPERP_LIQUIDATE, 239, PerpLiquidate,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,
@@ -1237,7 +1237,7 @@ TRANSACTION(ttPERP_LIQUIDATE, 111, PerpLiquidate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/perp/PerpRefresh.h>
 #endif
-TRANSACTION(ttPERP_REFRESH, 112, PerpRefresh,
+TRANSACTION(ttPERP_REFRESH, 240, PerpRefresh,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featurePerpetualFutures,

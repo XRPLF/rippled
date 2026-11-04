@@ -18,7 +18,7 @@ class PerpMarketDeleteBuilder;
 /**
  * @brief Transaction: PerpMarketDelete
  *
- * Type: ttPERP_MARKET_DELETE (106)
+ * Type: ttPERP_MARKET_DELETE (234)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

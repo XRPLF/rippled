@@ -18,7 +18,7 @@ class PerpRefreshBuilder;
 /**
  * @brief Transaction: PerpRefresh
  *
- * Type: ttPERP_REFRESH (112)
+ * Type: ttPERP_REFRESH (240)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

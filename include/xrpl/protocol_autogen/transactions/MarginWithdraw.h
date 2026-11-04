@@ -18,7 +18,7 @@ class MarginWithdrawBuilder;
 /**
  * @brief Transaction: MarginWithdraw
  *
- * Type: ttMARGIN_WITHDRAW (108)
+ * Type: ttMARGIN_WITHDRAW (236)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::MayAuthorizeMpt

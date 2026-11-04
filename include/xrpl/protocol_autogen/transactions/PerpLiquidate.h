@@ -18,7 +18,7 @@ class PerpLiquidateBuilder;
 /**
  * @brief Transaction: PerpLiquidate
  *
- * Type: ttPERP_LIQUIDATE (111)
+ * Type: ttPERP_LIQUIDATE (239)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

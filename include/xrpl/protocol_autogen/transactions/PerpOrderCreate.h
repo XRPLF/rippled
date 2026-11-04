@@ -18,7 +18,7 @@ class PerpOrderCreateBuilder;
 /**
  * @brief Transaction: PerpOrderCreate
  *
- * Type: ttPERP_ORDER_CREATE (109)
+ * Type: ttPERP_ORDER_CREATE (237)
  * Delegable: Delegation::Delegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

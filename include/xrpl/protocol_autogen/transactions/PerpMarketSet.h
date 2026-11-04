@@ -18,7 +18,7 @@ class PerpMarketSetBuilder;
 /**
  * @brief Transaction: PerpMarketSet
  *
- * Type: ttPERP_MARKET_SET (105)
+ * Type: ttPERP_MARKET_SET (233)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::NoPriv

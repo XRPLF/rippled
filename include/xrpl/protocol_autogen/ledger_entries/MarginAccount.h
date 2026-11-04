@@ -18,7 +18,7 @@ class MarginAccountBuilder;
 /**
  * @brief Ledger Entry: MarginAccount
  *
- * Type: ltMARGIN_ACCOUNT (0x008C)
+ * Type: ltMARGIN_ACCOUNT (0x0211)
  * RPC Name: margin_account
  *
  * Immutable wrapper around SLE providing type-safe field access.

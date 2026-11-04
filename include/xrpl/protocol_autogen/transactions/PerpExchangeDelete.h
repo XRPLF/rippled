@@ -18,7 +18,7 @@ class PerpExchangeDeleteBuilder;
 /**
  * @brief Transaction: PerpExchangeDelete
  *
- * Type: ttPERP_EXCHANGE_DELETE (104)
+ * Type: ttPERP_EXCHANGE_DELETE (232)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePerpetualFutures
  * Privileges: Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt

@@ -115,13 +115,13 @@ enum class LedgerNameSpace : std::uint16_t {
     Loan = 'L',
     Sponsorship = '>',
     TransactionProposal = 'y',
-    // PerpetualFutures: provisional until the alphanet registry assigns them.
-    PerpExchange = 'X',
-    PerpMarket = 'M',
-    MarginAccount = 'U',
-    MarginPosition = 'W',
-    PerpOrder = 'z',
-    PerpBook = 'b',
+    // PerpetualFutures: alphanet registry namespaces 2-7.
+    PerpExchange = '2',
+    PerpMarket = '3',
+    MarginAccount = '4',
+    MarginPosition = '5',
+    PerpOrder = '6',
+    PerpBook = '7',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',

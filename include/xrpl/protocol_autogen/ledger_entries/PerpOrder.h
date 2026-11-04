@@ -18,7 +18,7 @@ class PerpOrderBuilder;
 /**
  * @brief Ledger Entry: PerpOrder
  *
- * Type: ltPERP_ORDER (0x008E)
+ * Type: ltPERP_ORDER (0x0213)
  * RPC Name: perp_order
  *
  * Immutable wrapper around SLE providing type-safe field access.
