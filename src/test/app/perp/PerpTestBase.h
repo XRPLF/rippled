@@ -81,11 +81,13 @@ protected:
     }
 
     /**
-     * Funds the accounts, writes oracles o1, o2 and o3 quoting XRP/USD at 2.0,
-     * and creates the owner's USD vault.
+     * Funds the accounts, writes oracles o1, o2 and o3 quoting series (XRP/USD at 2.0 by
+     * default), and creates the owner's USD vault.
      */
     World
-    setupMarketWorld(Env& env) const
+    setupMarketWorld(
+        Env& env,
+        test::jtx::oracle::DataSeries const& series = {{"XRP", "USD", 20, 1}}) const
     {
         using namespace test::jtx;
         fundAccounts(env);
@@ -94,9 +96,7 @@ protected:
         for (auto const& provider : {o1_, o2_, o3_})
         {
             world.oracles.emplace_back(
-                env,
-                oracle::CreateArg{
-                    .owner = provider.id(), .documentID = 1, .series = {{"XRP", "USD", 20, 1}}});
+                env, oracle::CreateArg{.owner = provider.id(), .documentID = 1, .series = series});
         }
         env.close();
 
