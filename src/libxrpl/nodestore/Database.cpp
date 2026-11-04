@@ -143,10 +143,12 @@ Database::isStopping() const
 /**
  * Close the read queue and wait for the read threads to exit.
  *
- * Every read still queued is completed with no object before stop() returns,
- * so every caller gets exactly one callback. The callbacks run on the
- * calling thread with readLock_ released, since a callback may post or wait
- * on other reads.
+ * The call that closes the queue completes every read still queued with no
+ * object before it returns, so every caller gets exactly one callback. The
+ * callbacks run on the calling thread with readLock_ released, since a
+ * callback may post or wait on other reads. A concurrent second call waits
+ * only for the read threads, so it may return while the first call is still
+ * delivering those callbacks.
  */
 void
 Database::stop()
