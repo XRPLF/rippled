@@ -38,7 +38,7 @@ constexpr auto kWritesThenRejects = std::string_view{R"wat(
 constexpr std::int32_t kRejectCode = -256;
 
 // Enough to run the contract; the test is about persistence, not budgets.
-constexpr std::uint32_t kAllowance = 100'000;
+constexpr std::uint32_t kRejectAllowance = 100'000;
 
 struct DataOnReject : testing::Test
 {
@@ -67,9 +67,9 @@ struct DataOnReject : testing::Test
     finish()
     {
         auto builder = transactions::EscrowFinishBuilder{alice, alice, escrowSeq};
-        builder.setGas(kAllowance);
+        builder.setGas(kRejectAllowance);
 
-        return env.submitAndClose(builder, alice, escrowFinishFee(env, kAllowance));
+        return env.submitAndClose(builder, alice, escrowFinishFee(env, kRejectAllowance));
     }
 };
 
@@ -115,7 +115,7 @@ TEST_F(DataOnReject, gas_is_charged_and_reported_for_a_rejected_run)
 
     auto const used = meta.getFieldU32(sfGasUsed);
     EXPECT_GT(used, 0U);
-    EXPECT_LE(used, kAllowance) << "the engine cannot spend more than it was given";
+    EXPECT_LE(used, kRejectAllowance) << "the engine cannot spend more than it was given";
 }
 
 }  // namespace
