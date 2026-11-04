@@ -189,7 +189,7 @@ doNoRippleCheck(rpc::JsonContext& context)
     if (transactions)
         result[jss::transactions] = std::move(jvTransactions);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeMediumBurdenRpc;
     return result;
 }
 
