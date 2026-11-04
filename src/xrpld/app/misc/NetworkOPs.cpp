@@ -32,6 +32,7 @@
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
@@ -2677,15 +2678,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
-
-        if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
-
-        if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
-
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP && baseFeeXRP->native())
@@ -3419,8 +3411,6 @@ NetworkOPsImp::publishLedgerStreams(
 
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (!lpAccepted->rules().enabled(featureXRPFees))
-            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
@@ -4846,8 +4836,6 @@ NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
-        if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
@@ -5090,6 +5078,19 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 
 #ifndef USE_NEW_BOOK_PAGE
 
+// Same as std::min(takerPays, multiply(funded, rate, asset)), but compares
+// before building the amount, so an unrepresentable product is never built.
+// multiply() uses this same Number product (the rate is a quality, never
+// native or MPT), so the result is unchanged.
+static STAmount
+takerPaysFunded(STAmount const& takerPays, STAmount const& takerGetsFunded, STAmount const& rate)
+{
+    Number const product = Number{takerGetsFunded} * Number{rate};
+    if (product >= Number{takerPays})
+        return takerPays;
+    return STAmount{takerPays.asset(), product};
+}
+
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
 //            work, but it demonstrated poor performance.
 //
@@ -5291,8 +5292,7 @@ NetworkOPsImp::getBookPage(
                     saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-                    std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
+                    takerPaysFunded(saTakerPays, saTakerGetsFunded, saDirRate)
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 

@@ -425,7 +425,6 @@ class AMMCalc_test : public beast::unit_test::Suite
                                 pool->first,
                                 Quality{offer->first},
                                 fee,
-                                env.current()->rules(),
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
                         {

@@ -15,7 +15,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <gtest/gtest.h>
@@ -141,13 +140,6 @@ canonical_VL()
 {
     static constexpr std::array<std::uint8_t, 3> data{{'a', 'b', 'c'}};
     return BlobValue{data.data(), data.size()};
-}
-
-using XChainBridgeValue = std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type>;
-inline XChainBridgeValue
-canonical_XCHAIN_BRIDGE()
-{
-    return XChainBridgeValue{xrpAccount(), xrpIssue(), xrpAccount(), xrpIssue()};
 }
 
 using JsonValue = std::decay_t<typename SF_JSON::type::value_type>;

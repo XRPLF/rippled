@@ -6,10 +6,6 @@
 
 namespace xrpl {
 
-// Deprecated constant for backwards compatibility with pre-XRPFees amendment.
-// This was the reference fee units used in the old fee calculation.
-inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
-
 // Number of micro-drops in one drop.
 inline constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
@@ -74,6 +70,11 @@ struct Fees
     Fees(Fees const&) = default;
     Fees&
     operator=(Fees const&) = default;
+
+    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
+        : base{base}, reserve{reserve}, increment{increment}
+    {
+    }
 
     Fees(
         XRPAmount base,

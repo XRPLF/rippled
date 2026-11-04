@@ -35,26 +35,26 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
+    , viewRef_(view_.emplace(&base_.view(), flags_))
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
-    view_.emplace(&base_.view(), flags_);
 }
 
 void
 ApplyContext::discard()
 {
     base_.discard();
-    view_.emplace(&base_.view(), flags_);
+    viewRef_ = view_.emplace(&base_.view(), flags_);
 }
 
 void
 ApplyContext::finalize()
 {
     base_.commit();
-    view_.emplace(&base_.view(), flags_);
+    viewRef_ = view_.emplace(&base_.view(), flags_);
 }
 
 std::optional<TxMeta>
@@ -65,18 +65,14 @@ ApplyContext::apply(TER ter)
     if (ter != tecINTERNAL)
     {
         if (vmReturnCode_.has_value())
-        {
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-            view_->setVMReturnCode(*vmReturnCode_);
-        }
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->setGasUsed(gasUsed_);
+            viewRef_.get().setVMReturnCode(*vmReturnCode_);
+        viewRef_.get().setGasUsed(gasUsed_);
     }
     // Only a successful call's events are recorded.
-    if (view_.has_value() && contractEvents_.has_value() && isTesSuccess(ter))
-        view_->setContractEvents(*contractEvents_);
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_.view(), tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    if (contractEvents_.has_value() && isTesSuccess(ter))
+        viewRef_.get().setContractEvents(*contractEvents_);
+    return viewRef_.get().apply(
+        base_.view(), tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 void
@@ -89,14 +85,14 @@ ApplyContext::addOrderBook(Book const& book)
 std::size_t
 ApplyContext::size()
 {
-    return view_->size();  // NOLINT(bugprone-unchecked-optional-access)
+    return viewRef_.get().size();
 }
 
 void
 ApplyContext::visit(
     std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
-    view_->visit(base_.view(), func);  // NOLINT(bugprone-unchecked-optional-access)
+    viewRef_.get().visit(base_.view(), func);
 }
 
 }  // namespace xrpl

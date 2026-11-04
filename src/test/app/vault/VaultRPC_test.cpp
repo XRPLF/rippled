@@ -172,7 +172,7 @@ private:
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = to_string(UInt256(42));
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "entryNotFound");
+            checkError(jvVault[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
@@ -182,7 +182,7 @@ private:
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = 1'000'000;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "entryNotFound");
+            checkError(jvVault[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
@@ -191,7 +191,11 @@ private:
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = 42;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedRequest");
+            checkError(
+                jvVault[jss::result],
+                "malformedRequest",
+                RpcInvalidParams,
+                "Invalid field 'vault', not hex string or object.");
         }
 
         {
@@ -201,7 +205,11 @@ private:
             jvParams[jss::vault][jss::owner] = 42;
             jvParams[jss::vault][jss::seq] = sequence;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedOwner");
+            checkError(
+                jvVault[jss::result],
+                "malformedOwner",
+                RpcInvalidParams,
+                "Invalid field 'owner', not AccountID.");
         }
 
         {
@@ -211,7 +219,11 @@ private:
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = "foo";
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedRequest");
+            checkError(
+                jvVault[jss::result],
+                "malformedRequest",
+                RpcInvalidParams,
+                "Invalid field 'seq', not number.");
         }
 
         {
@@ -221,7 +233,11 @@ private:
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = -1;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedRequest");
+            checkError(
+                jvVault[jss::result],
+                "malformedRequest",
+                RpcInvalidParams,
+                "Invalid field 'seq', not number.");
         }
 
         {
@@ -231,7 +247,11 @@ private:
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = 1e20;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedRequest");
+            checkError(
+                jvVault[jss::result],
+                "malformedRequest",
+                RpcInvalidParams,
+                "Invalid field 'seq', not number.");
         }
 
         {
@@ -241,7 +261,11 @@ private:
             jvParams[jss::vault][jss::owner] = issuer.human();
             jvParams[jss::vault][jss::seq] = true;
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(jvVault[jss::result][jss::error].asString() == "malformedRequest");
+            checkError(
+                jvVault[jss::result],
+                "malformedRequest",
+                RpcInvalidParams,
+                "Invalid field 'seq', not number.");
         }
 
         {
@@ -500,8 +524,8 @@ private:
 
         {
             testcase("RPC vault_info command line invalid index");
-            json::Value jv = env.rpc("vault_info", "foobar", "validated");
-            BEAST_EXPECT(jv[jss::error].asString() == "invalidParams");
+            json::Value const jv = env.rpc("vault_info", "foobar", "validated");
+            checkError(jv, "invalidParams", RpcInvalidParams, "Invalid parameters.");
         }
 
         {
@@ -519,7 +543,7 @@ private:
         {
             testcase("RPC vault_info command line invalid ledger");
             json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
-            BEAST_EXPECT(jv[jss::result][jss::error].asString() == "lgrNotFound");
+            checkError(jv[jss::result], "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
     }
 

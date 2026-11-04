@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
 #include <expected>
@@ -48,6 +49,8 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -97,6 +100,30 @@ bool
 isOwnerDirNodeField(SField const& field)
 {
     return std::ranges::contains(kOwnerDirNodeFields, &field);
+}
+
+std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker)
+{
+    auto const comma = marker.find(',');
+    if (comma == std::string_view::npos)
+        return std::nullopt;
+
+    uint256 startAfter;
+    if (!startAfter.parseHex(marker.substr(0, comma)))
+        return std::nullopt;
+
+    auto hint = marker.substr(comma + 1);
+    hint = hint.substr(0, hint.find(','));
+    if (hint.starts_with('+'))
+        hint.remove_prefix(1);
+
+    std::uint64_t startHint = 0;
+    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
+    if (ec != std::errc{} || end != hint.data() + hint.size())
+        return std::nullopt;
+
+    return std::pair{startAfter, startHint};
 }
 
 bool
@@ -188,6 +215,14 @@ parseMPTIssuanceIDs(json::Value const& jvArray)
     return result;
 }
 
+unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role)
+{
+    if (isUnlimited(role))
+        return limit;
+    return std::clamp(limit, range.rmin, range.rmax);
+}
+
 std::optional<json::Value>
 readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
 {
@@ -203,9 +238,7 @@ readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext
     if (limit == 0)
         return rpc::invalidFieldError(jss::limit);
 
-    if (!isUnlimited(context.role))
-        limit = std::max(range.rmin, std::min(range.rmax, limit));
-
+    limit = clampLimit(limit, range, context.role);
     return std::nullopt;
 }
 

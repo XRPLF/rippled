@@ -85,7 +85,6 @@ ServerDefinitions::translate(std::string const& inp)
         {"NOTPRESENT", "NotPresent"},
         {"PATHSET", "PathSet"},
         {"VL", "Blob"},
-        {"XCHAIN_BRIDGE", "XChainBridge"},
         {"DATATYPE", "DataType"},
     };
 

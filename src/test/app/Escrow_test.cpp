@@ -1681,9 +1681,9 @@ public:
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - fixCleanup3_5_0);
         testWithFeats(all - featureSmartEscrow);
         testWithFeats(all - featureTokenEscrow - featureSmartEscrow);
-        testWithFeats(all - fixCleanup3_5_0);
         testTags(all - fixIncludeKeyletFields);
     }
 };

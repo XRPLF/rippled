@@ -174,13 +174,13 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (std::optional<uint64_t> const allowance = tx[~sfGas]; allowance)
+    if (auto const allowance = tx[~sfGas]; allowance)
     {
         // The extra fee is the allowance in drops, rounded up to the nearest
-        // whole drop.
-        // Integer math rounds down by default, so we add 1 to round up.
-        uint64_t const allowanceFee =
-            (((*allowance) * view.fees().gasPrice) / microDropsPerDrop) + 1;
+        // whole drop. Widen before multiplying: both factors are 32-bit.
+        std::uint64_t const allowanceFee =
+            ((std::uint64_t{*allowance} * view.fees().gasPrice) + microDropsPerDrop - 1) /
+            microDropsPerDrop;
         extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
@@ -215,18 +215,20 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                     return tefBYTECODE_NOT_INCLUDED;
                 }
 
-                // Earliest step with a view. A `tem` here still claims no fee.
+                // The limits are voted, so they can change between ledgers.
+                // A `tef`, unlike a `tem`, does not mark the transaction bad
+                // for the hold time.
                 auto const& fees = ctx.view.fees();
                 if (isBytecodeExecutionDisabled(fees))
                 {
                     JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-                    return temTEMP_DISABLED;
+                    return tefTEMP_DISABLED;
                 }
 
                 if (ctx.tx[sfGas] > fees.gasLimit)
                 {
                     JLOG(ctx.j.debug()) << "Gas over voted limit: " << ctx.tx[sfGas];
-                    return temBAD_LIMIT;
+                    return tefEXCEEDS_LIMIT;
                 }
             }
             else

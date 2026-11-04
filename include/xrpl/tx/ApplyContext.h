@@ -58,6 +58,10 @@ public:
         XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
+    // viewRef_ points into view_, so a copied or moved context would alias the original.
+    ApplyContext(ApplyContext const&) = delete;
+    ApplyContext(ApplyContext&&) = delete;
+
     std::reference_wrapper<ServiceRegistry> registry;
     STTx const& tx;
     TER const preclaimResult;
@@ -73,20 +77,20 @@ public:
     ApplyView&
     view()
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return viewRef_.get();
     }
 
     [[nodiscard]] ApplyView const&
     view() const
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return viewRef_.get();
     }
 
     // VFALCO Unfortunately this is necessary
     RawView&
     rawView()
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return viewRef_.get();
     }
 
     [[nodiscard]] ApplyFlags const&
@@ -101,8 +105,7 @@ public:
     void
     deliver(STAmount const& amount)
     {
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->deliver(amount);
+        viewRef_.get().deliver(amount);
     }
 
     /**
@@ -184,8 +187,7 @@ public:
     void
     destroyXRP(XRPAmount const& fee)
     {
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->rawDestroyXRP(fee);
+        viewRef_.get().rawDestroyXRP(fee);
     }
 
     /**
@@ -199,16 +201,17 @@ public:
     ApplyViewContext
     getApplyViewContext()
     {
-        XRPL_ASSERT(
-            view_.has_value(),
-            "xrpl::ApplyContext::getApplyViewContext : view_ emplaced in constructor");
-        return {.view = *view_, .tx = tx};
+        return {.view = viewRef_.get(), .tx = tx};
     }
 
 private:
     OpenViewSandbox base_;
     ApplyFlags flags_;
+
+    // view_ and viewRef_ always represent the same view. Update viewRef_ whenever view_ is
+    // re-emplaced.
     std::optional<ApplyViewImpl> view_;
+    std::reference_wrapper<ApplyViewImpl> viewRef_;
 
     // The ID of the batch transaction we are executing under, if set.
     std::optional<UInt256 const> parentBatchId_;

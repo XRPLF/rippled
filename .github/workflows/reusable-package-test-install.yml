@@ -95,11 +95,15 @@ jobs:
           apt-get update -qq
           apt-get install -y "./${PACKAGE}"
 
+      # Rocky Linux and AlmaLinux pick a mirror from a mirrorlist, and now and
+      # then get one that serves the repository metadata at a few hundred kB/s,
+      # which alone outlasts the job's timeout. dnf only abandons a mirror below
+      # 1000 B/s for 30 s, so raise that floor to fail over to the next one fast.
       - name: Install the RPM
         if: ${{ inputs.package_type == 'rpm' }}
         env:
           PACKAGE: ${{ steps.find.outputs.package }}
-        run: dnf install -y "./${PACKAGE}"
+        run: dnf install -y --setopt=minrate=1M --setopt=timeout=10 "./${PACKAGE}"
 
       - name: Run xrpld
         run: xrpld --version

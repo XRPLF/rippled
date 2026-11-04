@@ -105,6 +105,7 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -205,6 +206,7 @@ words:
   - mpts
   - mpt
   - mtgox
+  - mudhra
   - multisig
   - multisign
   - multisigned
@@ -328,7 +330,6 @@ words:
   - sttx
   - stvar
   - stvector
-  - stxchainattestations
   - summands
   - superpeer
   - superpeers
@@ -355,6 +356,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undeserializable
   - unergonomic
   - unfetched
   - unfindable
@@ -389,7 +391,6 @@ words:
   - writeme
   - wsrch
   - wthread
-  - xbridge
   - xchain
   - xcrun
   - xfloat
