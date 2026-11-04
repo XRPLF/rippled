@@ -184,6 +184,14 @@ Perp::refresh(Account const& account, uint256 const& marketID)
     return jv;
 }
 
+json::Value
+Perp::refreshAccount(Account const& account, uint256 const& marginAccountID)
+{
+    auto jv = base(jss::PerpRefresh, account);
+    jv[sfMarginAccountID] = to_string(marginAccountID);
+    return jv;
+}
+
 Keylet
 Perp::exchangeKeylet(Env& env, Account const& owner)
 {

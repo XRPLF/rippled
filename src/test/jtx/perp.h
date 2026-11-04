@@ -141,6 +141,12 @@ struct Perp
     refresh(Account const& account, uint256 const& marketID);
 
     /**
+     * PerpRefresh settling marginAccountID, with no market named.
+     */
+    static json::Value
+    refreshAccount(Account const& account, uint256 const& marginAccountID);
+
+    /**
      * The exchange owner's next PerpExchangeSet creates, at its next sequence.
      */
     static Keylet
