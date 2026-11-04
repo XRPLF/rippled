@@ -30,14 +30,14 @@ struct FunctionParamImpl : ContractHostFixture
     }
 };
 
-TEST_F(FunctionParamImpl, AnIntegerComesBackLittleEndian)
+TEST_F(FunctionParamImpl, an_integer_comes_back_little_endian)
 {
     auto const contractHost = host({param(std::uint32_t{0x01020304})});
 
     expectValue(contractHost->functionParam(0, STI_UINT32), (Bytes{0x04, 0x03, 0x02, 0x01}));
 }
 
-TEST_F(FunctionParamImpl, EachIndexAnswersItsOwnParameter)
+TEST_F(FunctionParamImpl, each_index_answers_its_own_parameter)
 {
     auto const contractHost =
         host({param(std::uint8_t{1}), param(std::uint8_t{2}), param(std::uint8_t{3})});
@@ -47,21 +47,21 @@ TEST_F(FunctionParamImpl, EachIndexAnswersItsOwnParameter)
     expectValue(contractHost->functionParam(2, STI_UINT8), Bytes{3});
 }
 
-TEST_F(FunctionParamImpl, AParameterOfAnotherTypeIsRefused)
+TEST_F(FunctionParamImpl, a_parameter_of_another_type_is_refused)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 
     expectError(contractHost->functionParam(0, STI_UINT8), HostFunctionError::InvalidParams);
 }
 
-TEST_F(FunctionParamImpl, AnIndexPastTheEndIsOutOfBounds)
+TEST_F(FunctionParamImpl, an_index_past_the_end_is_out_of_bounds)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 
     expectError(contractHost->functionParam(1, STI_UINT32), HostFunctionError::IndexOutOfBounds);
 }
 
-TEST_F(FunctionParamImpl, TheInstancesParametersAreADifferentTable)
+TEST_F(FunctionParamImpl, the_instances_parameters_are_a_different_table)
 {
     auto const contractHost = host({param(std::uint32_t{7})});
 

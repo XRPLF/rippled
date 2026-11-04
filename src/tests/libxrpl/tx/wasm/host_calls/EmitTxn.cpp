@@ -75,7 +75,7 @@ struct EmitTxnCall : ContractCallTest
     }
 };
 
-TEST_F(EmitTxnCall, TheGuestsBytesReachTheHostAsATransaction)
+TEST_F(EmitTxnCall, the_guests_bytes_reach_the_host_as_a_transaction)
 {
     EXPECT_CALL(host, emitTxn(StTxIdIs(transaction().getTransactionID())))
         .WillOnce(Return(TERtoInt(tesSUCCESS)));
@@ -85,21 +85,21 @@ TEST_F(EmitTxnCall, TheGuestsBytesReachTheHostAsATransaction)
 
 // The TER travels in the buffer because it may be negative, and a negative return is a host
 // error. This is the case that would otherwise have stopped the run.
-TEST_F(EmitTxnCall, ANegativeTerArrivesIntact)
+TEST_F(EmitTxnCall, a_negative_ter_arrives_intact)
 {
     EXPECT_CALL(host, emitTxn).WillOnce(Return(TERtoInt(tefPAST_SEQ)));
 
     EXPECT_EQ(hostAnswer(), TERtoInt(tefPAST_SEQ));
 }
 
-TEST_F(EmitTxnCall, BytesThatAreNotATransactionAreRefusedWithoutAskingTheHost)
+TEST_F(EmitTxnCall, bytes_that_are_not_a_transaction_are_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, emitTxn).Times(0);
 
     EXPECT_EQ(hostAnswer("not_a_transaction"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EmitTxnCall, HostErrorBecomesContractReturnValue)
+TEST_F(EmitTxnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, emitTxn)
         .WillOnce(Return(std::unexpected(HostFunctionError::SubmitTxnFailure)));

@@ -44,7 +44,7 @@ struct GetDataNestedObjectFieldCall : ContractCallTest
     }
 };
 
-TEST_F(GetDataNestedObjectFieldCall, TheOuterKeyIsTheFirstRegion)
+TEST_F(GetDataNestedObjectFieldCall, the_outer_key_is_the_first_region)
 {
     EXPECT_CALL(
         host, getDataNestedObjectField(AccountIs(account()), BytesAre("stats"), BytesAre("score")))
@@ -53,7 +53,7 @@ TEST_F(GetDataNestedObjectFieldCall, TheOuterKeyIsTheFirstRegion)
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d);
 }
 
-TEST_F(GetDataNestedObjectFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(GetDataNestedObjectFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getDataNestedObjectField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidField)));

@@ -29,7 +29,7 @@ struct SetDataArrayElementFieldImpl : ContractHostFixture
     }
 };
 
-TEST_F(SetDataArrayElementFieldImpl, EachElementKeepsItsOwnValue)
+TEST_F(SetDataArrayElementFieldImpl, each_element_keeps_its_own_value)
 {
     auto const contractHost = host();
 
@@ -42,7 +42,7 @@ TEST_F(SetDataArrayElementFieldImpl, EachElementKeepsItsOwnValue)
         contractHost->getDataArrayElementField(alice.id(), 1, "amount"), serialization(u32(20)));
 }
 
-TEST_F(SetDataArrayElementFieldImpl, OneElementHoldsSeveralKeys)
+TEST_F(SetDataArrayElementFieldImpl, one_element_holds_several_keys)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "amount", u32(10)));
@@ -54,7 +54,7 @@ TEST_F(SetDataArrayElementFieldImpl, OneElementHoldsSeveralKeys)
         contractHost->getDataArrayElementField(alice.id(), 0, "kind"), serialization(u8(2)));
 }
 
-TEST_F(SetDataArrayElementFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
+TEST_F(SetDataArrayElementFieldImpl, what_is_finalized_is_visible_to_the_next_call)
 {
     {
         auto const contractHost = host();
@@ -67,7 +67,7 @@ TEST_F(SetDataArrayElementFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
 
 // An object is not an array. A contract that has written a key cannot then write an element,
 // and is told so rather than having its object replaced by a list.
-TEST_F(SetDataArrayElementFieldImpl, AnObjectIsNotAnArray)
+TEST_F(SetDataArrayElementFieldImpl, an_object_is_not_an_array)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "count", u32(1)));
@@ -79,7 +79,7 @@ TEST_F(SetDataArrayElementFieldImpl, AnObjectIsNotAnArray)
         logged().find("setDataArrayElementField: Invalid state: not an array"), std::string::npos);
 }
 
-TEST_F(SetDataArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotThere)
+TEST_F(SetDataArrayElementFieldImpl, an_element_that_was_never_written_is_not_there)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "amount", u32(10)));
@@ -89,7 +89,7 @@ TEST_F(SetDataArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotThere)
         HostFunctionError::InvalidField);
 }
 
-TEST_F(SetDataArrayElementFieldImpl, AKeyThatIsNotInTheElementIsNotAField)
+TEST_F(SetDataArrayElementFieldImpl, a_key_that_is_not_in_the_element_is_not_a_field)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "amount", u32(10)));
@@ -99,7 +99,7 @@ TEST_F(SetDataArrayElementFieldImpl, AKeyThatIsNotInTheElementIsNotAField)
         HostFunctionError::InvalidField);
 }
 
-TEST_F(SetDataArrayElementFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
+TEST_F(SetDataArrayElementFieldImpl, an_account_that_does_not_exist_cannot_be_written_to)
 {
     expectError(
         host()->setDataArrayElementField(Account{"ghost"}.id(), 0, "amount", u32(1)),

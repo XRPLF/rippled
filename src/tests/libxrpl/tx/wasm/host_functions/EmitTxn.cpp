@@ -66,7 +66,7 @@ struct EmitTxnImpl : ContractHostFixture
     }
 };
 
-TEST_F(EmitTxnImpl, APaymentTheLedgerAcceptsIsQueued)
+TEST_F(EmitTxnImpl, a_payment_the_ledger_accepts_is_queued)
 {
     auto const contractHost = host();
 
@@ -76,7 +76,7 @@ TEST_F(EmitTxnImpl, APaymentTheLedgerAcceptsIsQueued)
 
 // A contract does not have to mark what it emits as an inner transaction: the host marks it,
 // on a copy, and the transaction is applied like any other.
-TEST_F(EmitTxnImpl, ATransactionWithoutTheInnerFlagIsMarkedAndEmitted)
+TEST_F(EmitTxnImpl, a_transaction_without_the_inner_flag_is_marked_and_emitted)
 {
     auto const contractHost = host();
 
@@ -89,7 +89,7 @@ TEST_F(EmitTxnImpl, ATransactionWithoutTheInnerFlagIsMarkedAndEmitted)
 
 // One the contract did mark keeps the flag, which is what the transactor reads to know it is
 // applying an inner transaction.
-TEST_F(EmitTxnImpl, AnEmittedTransactionCarriesTheInnerFlag)
+TEST_F(EmitTxnImpl, an_emitted_transaction_carries_the_inner_flag)
 {
     auto const contractHost = host();
 
@@ -101,7 +101,7 @@ TEST_F(EmitTxnImpl, AnEmittedTransactionCarriesTheInnerFlag)
 
 // The sequence is the contract's own, and the ledger checks it like any other: a stale one
 // is refused with the code that says so.
-TEST_F(EmitTxnImpl, AStaleSequenceIsRefused)
+TEST_F(EmitTxnImpl, a_stale_sequence_is_refused)
 {
     auto const contractHost = host();
 

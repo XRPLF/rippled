@@ -77,13 +77,13 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     if (fees.gasLimit == 0)
     {
         JLOG(ctx.j.trace()) << "ContractCall: WASM runtime deactivated by fee voting.";
-        return temTEMP_DISABLED;
+        return tefTEMP_DISABLED;
     }
 
     if (ctx.tx[sfGas] > fees.gasLimit)
     {
         JLOG(ctx.j.trace()) << "ContractCall: Gas over the voted limit: " << ctx.tx[sfGas];
-        return temBAD_LIMIT;
+        return tefEXCEEDS_LIMIT;
     }
 
     AccountID const account = ctx.tx[sfAccount];

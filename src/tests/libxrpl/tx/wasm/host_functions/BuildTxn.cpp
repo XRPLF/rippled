@@ -26,7 +26,7 @@ struct BuildTxnImpl : ContractHostFixture
     }
 };
 
-TEST_F(BuildTxnImpl, TheFirstTransactionIsIndexZeroAndEachIsItsOwn)
+TEST_F(BuildTxnImpl, the_first_transaction_is_index_zero_and_each_is_its_own)
 {
     auto const contractHost = host();
 
@@ -38,7 +38,7 @@ TEST_F(BuildTxnImpl, TheFirstTransactionIsIndexZeroAndEachIsItsOwn)
 
 // Everything the contract does not get to choose: who is sending, in what order, for what
 // fee, and that this is an inner transaction rather than one a network saw.
-TEST_F(BuildTxnImpl, ATransactionIsStampedWithTheContractsOwnIdentity)
+TEST_F(BuildTxnImpl, a_transaction_is_stamped_with_the_contracts_own_identity)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -53,7 +53,7 @@ TEST_F(BuildTxnImpl, ATransactionIsStampedWithTheContractsOwnIdentity)
 
 // Successive transactions take successive sequence numbers, so a contract can emit more
 // than one without each invalidating the next.
-TEST_F(BuildTxnImpl, EachTransactionTakesTheNextSequence)
+TEST_F(BuildTxnImpl, each_transaction_takes_the_next_sequence)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -66,7 +66,7 @@ TEST_F(BuildTxnImpl, EachTransactionTakesTheNextSequence)
 
 // A transaction type a contract may not emit is refused here rather than at the emit, so
 // nothing is built that could not be sent.
-TEST_F(BuildTxnImpl, ATypeAContractMayNotEmitIsRefused)
+TEST_F(BuildTxnImpl, a_type_a_contract_may_not_emit_is_refused)
 {
     expectError(host()->buildTxn(ttCONTRACT_CALL), HostFunctionError::SubmitTxnFailure);
 }

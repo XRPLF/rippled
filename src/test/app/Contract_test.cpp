@@ -1646,7 +1646,7 @@ class Contract_test : public beast::unit_test::Suite
             env(contract::create(alice, overLimit),
                 contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overLimit)),
-                Ter(temMALFORMED));
+                Ter(tefEXCEEDS_LIMIT));
 
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
@@ -1657,7 +1657,7 @@ class Contract_test : public beast::unit_test::Suite
             env(contract::modify(alice, contractAccount, overLimit),
                 contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overLimit)),
-                Ter(temMALFORMED));
+                Ter(tefEXCEEDS_LIMIT));
 
             // Past the protocol ceiling it is malformed, whatever the vote.
             auto const overCeiling = contract::wasmOfSize(kMaxBytecodeSizeLimit + 1, "base");
@@ -1682,7 +1682,7 @@ class Contract_test : public beast::unit_test::Suite
             env(contract::create(alice, baseContractWasm_),
                 contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, baseContractWasm_)),
-                Ter(temTEMP_DISABLED));
+                Ter(tefTEMP_DISABLED));
         }
     }
 
@@ -1757,7 +1757,7 @@ class Contract_test : public beast::unit_test::Suite
             env(contract::call(bob, contractAccount, "base"),
                 escrow::Gas(gasLimit + 1),
                 Fee(callFeeFor(env, gasLimit + 1)),
-                Ter(temBAD_LIMIT));
+                Ter(tefEXCEEDS_LIMIT));
 
             // Zero, and over the protocol ceiling, are malformed.
             env(contract::call(bob, contractAccount, "base"),
@@ -1804,7 +1804,7 @@ class Contract_test : public beast::unit_test::Suite
             env(contract::call(bob, contractAccount, "base"),
                 escrow::Gas(1'000),
                 Fee(callFeeFor(env, 1'000)),
-                Ter(temTEMP_DISABLED));
+                Ter(tefTEMP_DISABLED));
         }
     }
 

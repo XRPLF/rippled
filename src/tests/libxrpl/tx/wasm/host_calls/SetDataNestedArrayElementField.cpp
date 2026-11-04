@@ -42,7 +42,7 @@ struct SetDataNestedArrayElementFieldCall : ContractCallTest
     }
 };
 
-TEST_F(SetDataNestedArrayElementFieldCall, EveryArgumentArrivesInItsOwnPlace)
+TEST_F(SetDataNestedArrayElementFieldCall, every_argument_arrives_in_its_own_place)
 {
     EXPECT_CALL(
         host,
@@ -57,7 +57,7 @@ TEST_F(SetDataNestedArrayElementFieldCall, EveryArgumentArrivesInItsOwnPlace)
     EXPECT_EQ(hostAnswer(), 0);
 }
 
-TEST_F(SetDataNestedArrayElementFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(SetDataNestedArrayElementFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, setDataNestedArrayElementField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));

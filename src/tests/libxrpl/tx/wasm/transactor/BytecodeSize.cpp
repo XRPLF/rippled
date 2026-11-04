@@ -72,7 +72,7 @@ TEST(BytecodeSize, a_module_over_the_limit_is_refused)
     auto const wasm = codeHeavyModule(110'000);
     ASSERT_GT(wasm.size(), env.getOpenLedger().fees().bytecodeSizeLimit);
 
-    EXPECT_EQ(createEscrowWith(env, alice, wasm), temMALFORMED);
+    EXPECT_EQ(createEscrowWith(env, alice, wasm), tefEXCEEDS_LIMIT);
 }
 
 // The limit is on the module, not the code section — moving the bulk into a data segment
@@ -85,7 +85,7 @@ TEST(BytecodeSize, a_data_segment_counts_toward_the_limit)
     auto const wasm = dataHeavyModule(110'000);
     ASSERT_GT(wasm.size(), env.getOpenLedger().fees().bytecodeSizeLimit);
 
-    EXPECT_EQ(createEscrowWith(env, alice, wasm), temMALFORMED);
+    EXPECT_EQ(createEscrowWith(env, alice, wasm), tefEXCEEDS_LIMIT);
 }
 
 // The limit is a fee setting, so it moves. If raising it admits nothing new, some other cap

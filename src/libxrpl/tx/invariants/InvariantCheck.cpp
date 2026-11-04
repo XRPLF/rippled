@@ -1084,6 +1084,11 @@ isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry
         return vault && isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
     }
 
+    // A contract owns its Contract entry and, through the transactions it emits, may hold
+    // anything an ordinary account can.
+    if (pseudo.isFieldPresent(sfContractID))
+        return true;
+
     // A new pseudo-account kind must say what it owns.
     return false;  // LCOV_EXCL_LINE
 }

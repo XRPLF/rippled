@@ -38,7 +38,7 @@ struct AddTxnFieldImpl : ContractHostFixture
 // An account field carries its length before its id, which is what `STAccount` reads. The
 // bare 20 bytes are not a field, and a contract that writes them is told so rather than
 // having them stored as something else.
-TEST_F(AddTxnFieldImpl, ABareAccountIdIsNotAnAccountField)
+TEST_F(AddTxnFieldImpl, a_bare_account_id_is_not_an_account_field)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -49,7 +49,7 @@ TEST_F(AddTxnFieldImpl, ABareAccountIdIsNotAnAccountField)
     EXPECT_NE(logged().find("addTxnField: Invalid value"), std::string::npos);
 }
 
-TEST_F(AddTxnFieldImpl, AFieldIsDeserializedOntoTheTransaction)
+TEST_F(AddTxnFieldImpl, a_field_is_deserialized_onto_the_transaction)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -64,7 +64,7 @@ TEST_F(AddTxnFieldImpl, AFieldIsDeserializedOntoTheTransaction)
     EXPECT_EQ(built.getAccountID(sfDestination), carol.id());
 }
 
-TEST_F(AddTxnFieldImpl, SettingAFieldTwiceKeepsTheLastValue)
+TEST_F(AddTxnFieldImpl, setting_a_field_twice_keeps_the_last_value)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -79,7 +79,7 @@ TEST_F(AddTxnFieldImpl, SettingAFieldTwiceKeepsTheLastValue)
 
 // A field the transaction's own format does not name is refused, so a contract cannot
 // assemble something that could never be applied.
-TEST_F(AddTxnFieldImpl, AFieldTheTransactionTypeDoesNotHaveIsRefused)
+TEST_F(AddTxnFieldImpl, a_field_the_transaction_type_does_not_have_is_refused)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
@@ -91,7 +91,7 @@ TEST_F(AddTxnFieldImpl, AFieldTheTransactionTypeDoesNotHaveIsRefused)
     EXPECT_NE(logged().find("not allowed in transaction type"), std::string::npos);
 }
 
-TEST_F(AddTxnFieldImpl, AnIndexNamingNoTransactionIsOutOfBounds)
+TEST_F(AddTxnFieldImpl, an_index_naming_no_transaction_is_out_of_bounds)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));

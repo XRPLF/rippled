@@ -89,7 +89,7 @@ struct ContractEmitE2e : ContractVmTest
     }
 };
 
-TEST_F(ContractEmitE2e, AContractBuildsAPaymentAndEmitsIt)
+TEST_F(ContractEmitE2e, a_contract_builds_a_payment_and_emits_it)
 {
     auto const contractHost = makeContractHost({contract.id(), alice.id()});
 

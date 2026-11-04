@@ -30,7 +30,7 @@ struct SetDataNestedArrayElementFieldImpl : ContractHostFixture
     }
 };
 
-TEST_F(SetDataNestedArrayElementFieldImpl, EachElementKeepsItsOwnValue)
+TEST_F(SetDataNestedArrayElementFieldImpl, each_element_keeps_its_own_value)
 {
     auto const contractHost = host();
 
@@ -47,7 +47,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, EachElementKeepsItsOwnValue)
         serialization(u32(77)));
 }
 
-TEST_F(SetDataNestedArrayElementFieldImpl, OneElementHoldsSeveralKeys)
+TEST_F(SetDataNestedArrayElementFieldImpl, one_element_holds_several_keys)
 {
     auto const contractHost = host();
     ASSERT_TRUE(
@@ -62,7 +62,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, OneElementHoldsSeveralKeys)
 
 // Two arrays under two keys are two arrays: an element of one is not an element of the
 // other, which is what having the outer key on the wire is for.
-TEST_F(SetDataNestedArrayElementFieldImpl, ArraysUnderDifferentKeysAreSeparate)
+TEST_F(SetDataNestedArrayElementFieldImpl, arrays_under_different_keys_are_separate)
 {
     auto const contractHost = host();
     ASSERT_TRUE(
@@ -78,7 +78,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, ArraysUnderDifferentKeysAreSeparate)
         serialization(u32(77)));
 }
 
-TEST_F(SetDataNestedArrayElementFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
+TEST_F(SetDataNestedArrayElementFieldImpl, what_is_finalized_is_visible_to_the_next_call)
 {
     {
         auto const contractHost = host();
@@ -93,7 +93,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall
 }
 
 // The data object holds the array, so the object itself may not be one.
-TEST_F(SetDataNestedArrayElementFieldImpl, AnArrayRootHasNoKeyToHoldAnArrayUnder)
+TEST_F(SetDataNestedArrayElementFieldImpl, an_array_root_has_no_key_to_hold_an_array_under)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "first", u8(1)));
@@ -104,7 +104,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, AnArrayRootHasNoKeyToHoldAnArrayUnder
     EXPECT_NE(logged().find("setDataNestedArrayElementField: Invalid state"), std::string::npos);
 }
 
-TEST_F(SetDataNestedArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotThere)
+TEST_F(SetDataNestedArrayElementFieldImpl, an_element_that_was_never_written_is_not_there)
 {
     auto const contractHost = host();
     ASSERT_TRUE(
@@ -115,7 +115,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotTher
         HostFunctionError::InvalidField);
 }
 
-TEST_F(SetDataNestedArrayElementFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
+TEST_F(SetDataNestedArrayElementFieldImpl, an_account_that_does_not_exist_cannot_be_written_to)
 {
     expectError(
         host()->setDataNestedArrayElementField(Account{"ghost"}.id(), "items", 0, "id", u32(1)),

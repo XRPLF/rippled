@@ -53,7 +53,7 @@ struct ContractEventE2e : ContractVmTest
     }
 };
 
-TEST_F(ContractEventE2e, AGuestSerializedEventReachesTheEvents)
+TEST_F(ContractEventE2e, a_guest_serialized_event_reaches_the_events)
 {
     auto const contractHost = makeContractHost({contract.id(), alice.id()});
 

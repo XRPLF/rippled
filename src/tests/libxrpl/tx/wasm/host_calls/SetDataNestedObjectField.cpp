@@ -43,7 +43,7 @@ struct SetDataNestedObjectFieldCall : ContractCallTest
     }
 };
 
-TEST_F(SetDataNestedObjectFieldCall, TheOuterKeyComesFirstAndTheValueIsDecoded)
+TEST_F(SetDataNestedObjectFieldCall, the_outer_key_comes_first_and_the_value_is_decoded)
 {
     EXPECT_CALL(
         host,
@@ -57,7 +57,7 @@ TEST_F(SetDataNestedObjectFieldCall, TheOuterKeyComesFirstAndTheValueIsDecoded)
     EXPECT_EQ(hostAnswer(), 0);
 }
 
-TEST_F(SetDataNestedObjectFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(SetDataNestedObjectFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, setDataNestedObjectField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));

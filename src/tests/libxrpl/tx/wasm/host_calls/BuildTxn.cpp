@@ -38,7 +38,7 @@ struct BuildTxnCall : ContractCallTest
     }
 };
 
-TEST_F(BuildTxnCall, TheTypeReachesTheHostAndTheIndexComesBack)
+TEST_F(BuildTxnCall, the_type_reaches_the_host_and_the_index_comes_back)
 {
     EXPECT_CALL(host, buildTxn(static_cast<std::uint16_t>(ttPAYMENT))).WillOnce(Return(3));
 
@@ -47,21 +47,21 @@ TEST_F(BuildTxnCall, TheTypeReachesTheHostAndTheIndexComesBack)
 
 // Narrowing an out-of-range type would ask the host to build something else entirely, so it
 // is refused instead.
-TEST_F(BuildTxnCall, ATypeThatDoesNotFitIsRefusedWithoutAskingTheHost)
+TEST_F(BuildTxnCall, a_type_that_does_not_fit_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, buildTxn).Times(0);
 
     EXPECT_EQ(hostAnswer("type_too_large"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(BuildTxnCall, ANegativeTypeIsRefusedWithoutAskingTheHost)
+TEST_F(BuildTxnCall, a_negative_type_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, buildTxn).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_type"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(BuildTxnCall, HostErrorBecomesContractReturnValue)
+TEST_F(BuildTxnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, buildTxn)
         .WillOnce(Return(std::unexpected(HostFunctionError::SubmitTxnFailure)));

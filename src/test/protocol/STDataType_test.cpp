@@ -126,7 +126,6 @@ struct STDataType_test : public beast::unit_test::Suite
             {.type = STI_OBJECT, .expectedHex = "000E"},
             {.type = STI_ARRAY, .expectedHex = "000F"},
             {.type = STI_ISSUE, .expectedHex = "0018"},
-            {.type = STI_XCHAIN_BRIDGE, .expectedHex = "0019"},
             {.type = STI_CURRENCY, .expectedHex = "001A"},
             {.type = STI_UINT192, .expectedHex = "0015"},
             {.type = STI_NUMBER, .expectedHex = "0009"},

@@ -36,7 +36,7 @@ struct SetDataObjectFieldImpl : ContractHostFixture
     }
 };
 
-TEST_F(SetDataObjectFieldImpl, WhatIsStoredIsWhatIsReadBack)
+TEST_F(SetDataObjectFieldImpl, what_is_stored_is_what_is_read_back)
 {
     auto const contractHost = host();
 
@@ -49,7 +49,7 @@ TEST_F(SetDataObjectFieldImpl, WhatIsStoredIsWhatIsReadBack)
 
 // The cache is what makes a contract's own writes visible to its own reads: nothing has
 // reached the ledger at this point, and the data object may not even exist yet.
-TEST_F(SetDataObjectFieldImpl, AWriteIsVisibleToALaterReadInTheSameRun)
+TEST_F(SetDataObjectFieldImpl, a_write_is_visible_to_a_later_read_in_the_same_run)
 {
     auto const contractHost = host();
 
@@ -61,7 +61,7 @@ TEST_F(SetDataObjectFieldImpl, AWriteIsVisibleToALaterReadInTheSameRun)
     EXPECT_EQ(data.toBlob(), expected.toBlob());
 }
 
-TEST_F(SetDataObjectFieldImpl, StoringTwiceUnderOneKeyKeepsTheLastValue)
+TEST_F(SetDataObjectFieldImpl, storing_twice_under_one_key_keeps_the_last_value)
 {
     auto const contractHost = host();
 
@@ -71,7 +71,7 @@ TEST_F(SetDataObjectFieldImpl, StoringTwiceUnderOneKeyKeepsTheLastValue)
     expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(4)));
 }
 
-TEST_F(SetDataObjectFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
+TEST_F(SetDataObjectFieldImpl, what_is_finalized_is_visible_to_the_next_call)
 {
     {
         auto const contractHost = host();
@@ -86,20 +86,20 @@ TEST_F(SetDataObjectFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
     expectValue(host()->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
 }
 
-TEST_F(SetDataObjectFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
+TEST_F(SetDataObjectFieldImpl, an_account_that_does_not_exist_cannot_be_written_to)
 {
     expectError(
         host()->setDataObjectField(Account{"ghost"}.id(), "count", u32(1)),
         HostFunctionError::InvalidAccount);
 }
 
-TEST_F(SetDataObjectFieldImpl, AnAccountWithNoDataObjectHasNoFieldToRead)
+TEST_F(SetDataObjectFieldImpl, an_account_with_no_data_object_has_no_field_to_read)
 {
     expectError(
         host()->getDataObjectField(alice.id(), "count"), HostFunctionError::LedgerObjNotFound);
 }
 
-TEST_F(SetDataObjectFieldImpl, AKeyThatWasNeverStoredIsNotAField)
+TEST_F(SetDataObjectFieldImpl, a_key_that_was_never_stored_is_not_a_field)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "count", u32(3)));
@@ -110,7 +110,7 @@ TEST_F(SetDataObjectFieldImpl, AKeyThatWasNeverStoredIsNotAField)
 
 // An account whose data object is an array is not one an object field can be stored in, and
 // the contract is told so rather than having its array replaced.
-TEST_F(SetDataObjectFieldImpl, AnArrayIsNotAnObject)
+TEST_F(SetDataObjectFieldImpl, an_array_is_not_an_object)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "first", u8(1)));
@@ -122,7 +122,7 @@ TEST_F(SetDataObjectFieldImpl, AnArrayIsNotAnObject)
 
 // The owner pays the data object's reserve, so an account with nothing spare cannot be
 // written to at all — the contract cannot spend someone else's reserve for them.
-TEST_F(SetDataObjectFieldImpl, AnOwnerWithNoSpareReserveIsRefused)
+TEST_F(SetDataObjectFieldImpl, an_owner_with_no_spare_reserve_is_refused)
 {
     auto const poor = fund("poor", XRP(10));
 

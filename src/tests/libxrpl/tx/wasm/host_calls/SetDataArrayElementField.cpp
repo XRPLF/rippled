@@ -49,7 +49,7 @@ struct SetDataArrayElementFieldCall : ContractCallTest
     }
 };
 
-TEST_F(SetDataArrayElementFieldCall, TheKeyTheIndexAndTheValueAllArrive)
+TEST_F(SetDataArrayElementFieldCall, the_key_the_index_and_the_value_all_arrive)
 {
     EXPECT_CALL(
         host,
@@ -60,7 +60,7 @@ TEST_F(SetDataArrayElementFieldCall, TheKeyTheIndexAndTheValueAllArrive)
     EXPECT_EQ(hostAnswer(), 0);
 }
 
-TEST_F(SetDataArrayElementFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost)
+TEST_F(SetDataArrayElementFieldCall, a_negative_index_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, setDataArrayElementField).Times(0);
 
@@ -68,14 +68,14 @@ TEST_F(SetDataArrayElementFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost
 }
 
 // A value is one type code and that type's bytes; a byte past them is not part of it.
-TEST_F(SetDataArrayElementFieldCall, AValueWithBytesLeftOverIsRefused)
+TEST_F(SetDataArrayElementFieldCall, a_value_with_bytes_left_over_is_refused)
 {
     EXPECT_CALL(host, setDataArrayElementField).Times(0);
 
     EXPECT_EQ(hostAnswer("value_with_extra_byte"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SetDataArrayElementFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(SetDataArrayElementFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, setDataArrayElementField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));

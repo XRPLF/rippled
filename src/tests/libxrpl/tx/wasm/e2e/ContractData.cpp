@@ -67,7 +67,7 @@ struct ContractDataE2e : ContractVmTest
     }
 };
 
-TEST_F(ContractDataE2e, AValueIsWrittenWithItsTypeAndReadBackWithoutIt)
+TEST_F(ContractDataE2e, a_value_is_written_with_its_type_and_read_back_without_it)
 {
     auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
@@ -86,7 +86,7 @@ TEST_F(ContractDataE2e, AValueIsWrittenWithItsTypeAndReadBackWithoutIt)
 // The other shape the data calls have, and the one a guest and a host can most easily get
 // backwards: a scalar index sitting between two regions. Writing element 1 and reading
 // element 1 is not enough — writing 0 and 1 and reading them apart is.
-TEST_F(ContractDataE2e, AnIndexBetweenTheRegionsSelectsTheElement)
+TEST_F(ContractDataE2e, an_index_between_the_regions_selects_the_element)
 {
     auto const id = alice.id();
     std::string account;

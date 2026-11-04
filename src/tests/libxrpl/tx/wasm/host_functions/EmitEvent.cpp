@@ -34,7 +34,7 @@ struct EmitEventImpl : ContractHostFixture
     }
 };
 
-TEST_F(EmitEventImpl, AnEventIsRecordedWithItsName)
+TEST_F(EmitEventImpl, an_event_is_recorded_with_its_name)
 {
     auto const contractHost = host();
 
@@ -47,7 +47,7 @@ TEST_F(EmitEventImpl, AnEventIsRecordedWithItsName)
 }
 
 // Every event is kept in the order emitted; a name used twice is two events.
-TEST_F(EmitEventImpl, EveryEventIsKeptInTheOrderEmitted)
+TEST_F(EmitEventImpl, every_event_is_kept_in_the_order_emitted)
 {
     auto const contractHost = host();
     auto const second = STJson{STJson::Map{{"count", u32(99)}}};

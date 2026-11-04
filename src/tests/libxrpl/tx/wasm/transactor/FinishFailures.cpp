@@ -119,7 +119,7 @@ TEST_F(FinishFailures, an_allowance_past_the_gas_limit_is_refused)
     auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
     builder.setGas(1'001);
 
-    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temBAD_LIMIT);
+    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, tefEXCEEDS_LIMIT);
 }
 
 // A zero gas limit turns the runtime off.
@@ -135,7 +135,7 @@ TEST_F(FinishFailures, a_zero_gas_limit_disables_finishing)
     auto builder = transactions::EscrowFinishBuilder{carol, alice, seq};
     builder.setGas(1'000);
 
-    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, temTEMP_DISABLED);
+    EXPECT_EQ(env.submit(builder, carol, XRPAmount{10'000'000}).ter, tefTEMP_DISABLED);
 }
 
 // The other rung: zeroing the size limit stops new uploads but must leave an existing escrow

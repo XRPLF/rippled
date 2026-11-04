@@ -28,7 +28,7 @@ struct SetDataNestedObjectFieldImpl : ContractHostFixture
     }
 };
 
-TEST_F(SetDataNestedObjectFieldImpl, WhatIsStoredIsWhatIsReadBack)
+TEST_F(SetDataNestedObjectFieldImpl, what_is_stored_is_what_is_read_back)
 {
     auto const contractHost = host();
 
@@ -41,7 +41,7 @@ TEST_F(SetDataNestedObjectFieldImpl, WhatIsStoredIsWhatIsReadBack)
 
 // The outer key comes first. Read under the swapped pair and there is nothing there, which
 // is what a contract that got the order wrong would see.
-TEST_F(SetDataNestedObjectFieldImpl, TheOuterKeyIsTheFirstOne)
+TEST_F(SetDataNestedObjectFieldImpl, the_outer_key_is_the_first_one)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataNestedObjectField(alice.id(), "stats", "score", u32(1)));
@@ -51,7 +51,7 @@ TEST_F(SetDataNestedObjectFieldImpl, TheOuterKeyIsTheFirstOne)
         HostFunctionError::InvalidField);
 }
 
-TEST_F(SetDataNestedObjectFieldImpl, OneObjectHoldsSeveralKeys)
+TEST_F(SetDataNestedObjectFieldImpl, one_object_holds_several_keys)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataNestedObjectField(alice.id(), "stats", "score", u32(1)));
@@ -65,7 +65,7 @@ TEST_F(SetDataNestedObjectFieldImpl, OneObjectHoldsSeveralKeys)
         serialization(u32(2)));
 }
 
-TEST_F(SetDataNestedObjectFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
+TEST_F(SetDataNestedObjectFieldImpl, what_is_finalized_is_visible_to_the_next_call)
 {
     {
         auto const contractHost = host();
@@ -78,7 +78,7 @@ TEST_F(SetDataNestedObjectFieldImpl, WhatIsFinalizedIsVisibleToTheNextCall)
         host()->getDataNestedObjectField(alice.id(), "stats", "score"), serialization(u32(9999)));
 }
 
-TEST_F(SetDataNestedObjectFieldImpl, AnArrayIsNotAnObject)
+TEST_F(SetDataNestedObjectFieldImpl, an_array_is_not_an_object)
 {
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "first", u8(1)));
@@ -90,7 +90,7 @@ TEST_F(SetDataNestedObjectFieldImpl, AnArrayIsNotAnObject)
         logged().find("setDataNestedObjectField: Invalid state: not an object"), std::string::npos);
 }
 
-TEST_F(SetDataNestedObjectFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
+TEST_F(SetDataNestedObjectFieldImpl, an_account_that_does_not_exist_cannot_be_written_to)
 {
     expectError(
         host()->setDataNestedObjectField(Account{"ghost"}.id(), "stats", "score", u32(1)),

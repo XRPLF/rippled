@@ -209,14 +209,14 @@ ContractCreate::checkContractCode(Fees const& fees, STTx const& tx, beast::Journ
     if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
     {
         JLOG(j.trace()) << "Contract: WASM upload deactivated by fee voting.";
-        return temTEMP_DISABLED;
+        return tefTEMP_DISABLED;
     }
 
     if (wasmBytes.size() > fees.bytecodeSizeLimit)
     {
         JLOG(j.trace()) << "Contract: ContractCode over the configured size limit: "
                         << wasmBytes.size();
-        return temMALFORMED;
+        return tefEXCEEDS_LIMIT;
     }
 
     // Screen the module once per function the ABI names, so each is a callable entry point.

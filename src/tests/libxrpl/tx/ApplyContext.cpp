@@ -105,6 +105,8 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     auto const meta = ctx.apply(tesSUCCESS);
     ASSERT_TRUE(meta.has_value());
     EXPECT_FALSE(meta->getDeliveredAmount().has_value());
+    // apply() writes into the context's sandbox; finalize() commits it to the open view.
+    ctx.finalize();
     EXPECT_FALSE(open.exists(keylet::unchecked(stale->key())));
     EXPECT_TRUE(open.exists(keylet::unchecked(fresh->key())));
     auto const applied = open.read(keylet::account(alice_.id()));

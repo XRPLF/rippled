@@ -46,7 +46,7 @@ struct AddTxnFieldCall : ContractCallTest
     }
 };
 
-TEST_F(AddTxnFieldCall, TheFieldCodeBecomesAnSFieldAndTheBytesArrive)
+TEST_F(AddTxnFieldCall, the_field_code_becomes_an_s_field_and_the_bytes_arrive)
 {
     auto const amount = Bytes{0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0};
     EXPECT_CALL(host, addTxnField(1U, Ref(sfAmount), SliceIs(amount))).WillOnce(Return(0));
@@ -56,21 +56,21 @@ TEST_F(AddTxnFieldCall, TheFieldCodeBecomesAnSFieldAndTheBytesArrive)
 
 // A code the protocol does not name has no `SField` to translate to, so the host is never
 // asked which field the contract meant.
-TEST_F(AddTxnFieldCall, AnUnknownFieldCodeIsRefusedWithoutAskingTheHost)
+TEST_F(AddTxnFieldCall, an_unknown_field_code_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, addTxnField).Times(0);
 
     EXPECT_EQ(hostAnswer("unknown_field"), hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(AddTxnFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost)
+TEST_F(AddTxnFieldCall, a_negative_index_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, addTxnField).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_index"), hfErrorToInt(HostFunctionError::IndexOutOfBounds));
 }
 
-TEST_F(AddTxnFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(AddTxnFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, addTxnField)
         .WillOnce(Return(std::unexpected(HostFunctionError::FieldNotFound)));

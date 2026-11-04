@@ -39,7 +39,7 @@ struct GetDataObjectFieldImpl : ContractHostFixture
     }
 };
 
-TEST_F(GetDataObjectFieldImpl, EveryWidthComesBackAsItsCanonicalBytes)
+TEST_F(GetDataObjectFieldImpl, every_width_comes_back_as_its_canonical_bytes)
 {
     store("value_u8", u8(42));
     store("value_u16", u16(1234));
@@ -58,14 +58,14 @@ TEST_F(GetDataObjectFieldImpl, EveryWidthComesBackAsItsCanonicalBytes)
 // An integer's canonical serialization is big-endian, which is the opposite of what
 // `instance_param` answers with. The two live side by side in the ABI, so this is asserted
 // against the bytes rather than against a helper that could share the mistake.
-TEST_F(GetDataObjectFieldImpl, AnIntegerComesBackBigEndian)
+TEST_F(GetDataObjectFieldImpl, an_integer_comes_back_big_endian)
 {
     store("count", u32(0x01020304));
 
     expectValue(host()->getDataObjectField(alice.id(), "count"), (Bytes{0x01, 0x02, 0x03, 0x04}));
 }
 
-TEST_F(GetDataObjectFieldImpl, AnAccountIsItsLengthAndItsTwentyBytes)
+TEST_F(GetDataObjectFieldImpl, an_account_is_its_length_and_its_twenty_bytes)
 {
     store("owner", acct(contract.id()));
 
@@ -74,20 +74,22 @@ TEST_F(GetDataObjectFieldImpl, AnAccountIsItsLengthAndItsTwentyBytes)
     expectValue(host()->getDataObjectField(alice.id(), "owner"), expected);
 }
 
-TEST_F(GetDataObjectFieldImpl, AnAccountWithNoDataObjectHasNothingToRead)
+TEST_F(GetDataObjectFieldImpl, an_account_with_no_data_object_has_nothing_to_read)
 {
     expectError(
         host()->getDataObjectField(alice.id(), "count"), HostFunctionError::LedgerObjNotFound);
 }
 
-TEST_F(GetDataObjectFieldImpl, AKeyThatIsNotThereIsNotAField)
+TEST_F(GetDataObjectFieldImpl, a_key_that_is_not_there_is_not_a_field)
 {
     store("count", u32(3));
 
     expectError(host()->getDataObjectField(alice.id(), "absent"), HostFunctionError::InvalidField);
 }
 
-TEST_F(GetDataObjectFieldImpl, AnAccountThatDoesNotExistIsRefusedBeforeItsDataIsLookedFor)
+TEST_F(
+    GetDataObjectFieldImpl,
+    an_account_that_does_not_exist_is_refused_before_its_data_is_looked_for)
 {
     expectError(
         host()->getDataObjectField(Account{"ghost"}.id(), "count"),

@@ -43,7 +43,7 @@ struct InstanceParamCall : ContractCallTest
     }
 };
 
-TEST_F(InstanceParamCall, TheIndexAndTypeReachTheHostAndTheBytesComeBack)
+TEST_F(InstanceParamCall, the_index_and_type_reach_the_host_and_the_bytes_come_back)
 {
     EXPECT_CALL(host, instanceParam(2U, STI_UINT32))
         .WillOnce(Return(Bytes{0x0d, 0x0c, 0x0b, 0x0a}));
@@ -51,7 +51,7 @@ TEST_F(InstanceParamCall, TheIndexAndTypeReachTheHostAndTheBytesComeBack)
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d) << "the value's bytes, read back little-endian";
 }
 
-TEST_F(InstanceParamCall, TheAnswerIsTheValuesLength)
+TEST_F(InstanceParamCall, the_answer_is_the_values_length)
 {
     EXPECT_CALL(host, instanceParam).WillOnce(Return(Bytes{1, 2, 3, 4}));
 
@@ -60,14 +60,14 @@ TEST_F(InstanceParamCall, TheAnswerIsTheValuesLength)
 
 // A negative index is out of range, not a very large one: casting it would ask the host
 // about a parameter no contract could have meant.
-TEST_F(InstanceParamCall, ANegativeIndexIsRefusedWithoutAskingTheHost)
+TEST_F(InstanceParamCall, a_negative_index_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, instanceParam).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_index"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(InstanceParamCall, HostErrorBecomesContractReturnValue)
+TEST_F(InstanceParamCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, instanceParam)
         .WillOnce(Return(std::unexpected(HostFunctionError::IndexOutOfBounds)));

@@ -50,7 +50,7 @@ struct GetDataArrayElementFieldCall : ContractCallTest
     }
 };
 
-TEST_F(GetDataArrayElementFieldCall, TheKeyIsTheRegionAndTheIndexIsTheScalar)
+TEST_F(GetDataArrayElementFieldCall, the_key_is_the_region_and_the_index_is_the_scalar)
 {
     EXPECT_CALL(host, getDataArrayElementField(AccountIs(account()), 7U, BytesAre("amount")))
         .WillOnce(Return(Bytes{0x0d, 0x0c, 0x0b, 0x0a}));
@@ -58,14 +58,14 @@ TEST_F(GetDataArrayElementFieldCall, TheKeyIsTheRegionAndTheIndexIsTheScalar)
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d);
 }
 
-TEST_F(GetDataArrayElementFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost)
+TEST_F(GetDataArrayElementFieldCall, a_negative_index_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, getDataArrayElementField).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_index"), hfErrorToInt(HostFunctionError::IndexOutOfBounds));
 }
 
-TEST_F(GetDataArrayElementFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(GetDataArrayElementFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getDataArrayElementField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));

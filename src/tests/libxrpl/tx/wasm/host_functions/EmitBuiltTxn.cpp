@@ -53,7 +53,7 @@ struct EmitBuiltTxnImpl : ContractHostFixture
     }
 };
 
-TEST_F(EmitBuiltTxnImpl, APaymentTheLedgerAcceptsIsQueuedAndPaid)
+TEST_F(EmitBuiltTxnImpl, a_payment_the_ledger_accepts_is_queued_and_paid)
 {
     auto const contractHost = host();
     buildPayment(contractHost, carol.id(), XRP(192));
@@ -65,7 +65,7 @@ TEST_F(EmitBuiltTxnImpl, APaymentTheLedgerAcceptsIsQueuedAndPaid)
 
 // The emitted transaction is applied against a view the contract's later calls see, so a
 // second emit is priced against the balance the first one left.
-TEST_F(EmitBuiltTxnImpl, ASecondEmitSeesWhatTheFirstSpent)
+TEST_F(EmitBuiltTxnImpl, a_second_emit_sees_what_the_first_spent)
 {
     auto const contractHost = host();
     buildPayment(contractHost, carol.id(), XRP(192));
@@ -84,7 +84,7 @@ TEST_F(EmitBuiltTxnImpl, ASecondEmitSeesWhatTheFirstSpent)
 //
 // This is the code that motivated writing the TER to a buffer rather than returning it: it is
 // negative, and a negative return is read as a host error.
-TEST_F(EmitBuiltTxnImpl, APaymentTheAccountCannotAffordIsReportedAsItsTec)
+TEST_F(EmitBuiltTxnImpl, a_payment_the_account_cannot_afford_is_reported_as_its_tec)
 {
     auto const contractHost = host();
     buildPayment(contractHost, carol.id(), XRP(1'000'000));
@@ -97,7 +97,7 @@ TEST_F(EmitBuiltTxnImpl, APaymentTheAccountCannotAffordIsReportedAsItsTec)
 // A transaction missing a field its type requires never becomes a transaction, and the
 // contract is told so: `SubmitTxnFailure` is a refusal it can act on, where the run-stopping
 // `InternalFatal` would have reported a node fault for a mistake of its own.
-TEST_F(EmitBuiltTxnImpl, ATransactionMissingARequiredFieldIsRefused)
+TEST_F(EmitBuiltTxnImpl, a_transaction_missing_a_required_field_is_refused)
 {
     auto const contractHost = host();
     auto const amount = WasmLedger::toBytes(STAmount{XRP(1)});
@@ -112,7 +112,7 @@ TEST_F(EmitBuiltTxnImpl, ATransactionMissingARequiredFieldIsRefused)
 
 // A refusal leaves the transaction where it was, so the contract can supply what was missing
 // and emit the same index again.
-TEST_F(EmitBuiltTxnImpl, ARefusedTransactionCanBeCorrectedAndEmitted)
+TEST_F(EmitBuiltTxnImpl, a_refused_transaction_can_be_corrected_and_emitted)
 {
     auto const contractHost = host();
     auto const amount = WasmLedger::toBytes(STAmount{XRP(192)});
@@ -126,7 +126,7 @@ TEST_F(EmitBuiltTxnImpl, ARefusedTransactionCanBeCorrectedAndEmitted)
     expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tesSUCCESS));
 }
 
-TEST_F(EmitBuiltTxnImpl, AnIndexNamingNoTransactionIsOutOfBounds)
+TEST_F(EmitBuiltTxnImpl, an_index_naming_no_transaction_is_out_of_bounds)
 {
     expectError(host()->emitBuiltTxn(0), HostFunctionError::IndexOutOfBounds);
     EXPECT_NE(logged().find("emitBuiltTxn: index out of bounds"), std::string::npos);

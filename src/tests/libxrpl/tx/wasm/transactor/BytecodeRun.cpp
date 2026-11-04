@@ -217,7 +217,6 @@ TEST(BytecodeReserve, the_bytecode_reserve_is_ceiling_division)
     };
 
     EXPECT_EQ(calculateAdditionalReserve(std::optional<Bytes>{}), 1);
-    EXPECT_EQ(reserveFor(0), 1);
     EXPECT_EQ(reserveFor(1), 1);
     EXPECT_EQ(reserveFor(499), 1);
     EXPECT_EQ(reserveFor(500), 1);

@@ -60,28 +60,28 @@ struct EmitEventCall : ContractCallTest
     }
 };
 
-TEST_F(EmitEventCall, TheNameAndTheDecodedObjectReachTheHost)
+TEST_F(EmitEventCall, the_name_and_the_decoded_object_reach_the_host)
 {
     EXPECT_CALL(host, emitEvent(BytesAre("transferred"), EventJsonEq(event()))).WillOnce(Return(0));
 
     EXPECT_EQ(hostAnswer(), 0);
 }
 
-TEST_F(EmitEventCall, BytesThatAreNotAnObjectAreRefusedWithoutAskingTheHost)
+TEST_F(EmitEventCall, bytes_that_are_not_an_object_are_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, emitEvent).Times(0);
 
     EXPECT_EQ(hostAnswer("not_an_object"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EmitEventCall, AnEmptyRegionIsNotAnObject)
+TEST_F(EmitEventCall, an_empty_region_is_not_an_object)
 {
     EXPECT_CALL(host, emitEvent).Times(0);
 
     EXPECT_EQ(hostAnswer("empty_data"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(EmitEventCall, HostErrorBecomesContractReturnValue)
+TEST_F(EmitEventCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, emitEvent).WillOnce(Return(std::unexpected(HostFunctionError::InvalidState)));
 

@@ -52,7 +52,7 @@ struct GetDataObjectFieldCall : ContractCallTest
     }
 };
 
-TEST_F(GetDataObjectFieldCall, TheAccountAndKeyReachTheHostAndTheValueComesBack)
+TEST_F(GetDataObjectFieldCall, the_account_and_key_reach_the_host_and_the_value_comes_back)
 {
     EXPECT_CALL(host, getDataObjectField(AccountIs(account()), BytesAre("count")))
         .WillOnce(Return(Bytes{0x0d, 0x0c, 0x0b, 0x0a}));
@@ -60,21 +60,23 @@ TEST_F(GetDataObjectFieldCall, TheAccountAndKeyReachTheHostAndTheValueComesBack)
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d);
 }
 
-TEST_F(GetDataObjectFieldCall, AnAccountRegionOfTheWrongLengthIsRefusedWithoutAskingTheHost)
+TEST_F(
+    GetDataObjectFieldCall,
+    an_account_region_of_the_wrong_length_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, getDataObjectField).Times(0);
 
     EXPECT_EQ(hostAnswer("short_account"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(GetDataObjectFieldCall, AKeyThatIsNotTextIsRefusedWithoutAskingTheHost)
+TEST_F(GetDataObjectFieldCall, a_key_that_is_not_text_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, getDataObjectField).Times(0);
 
     EXPECT_EQ(hostAnswer("invalid_key"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(GetDataObjectFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(GetDataObjectFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getDataObjectField)
         .WillOnce(Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));

@@ -47,7 +47,7 @@ struct GetDataNestedArrayElementFieldCall : ContractCallTest
     }
 };
 
-TEST_F(GetDataNestedArrayElementFieldCall, EachRegionAndTheIndexArriveInOrder)
+TEST_F(GetDataNestedArrayElementFieldCall, each_region_and_the_index_arrive_in_order)
 {
     EXPECT_CALL(
         host,
@@ -58,14 +58,14 @@ TEST_F(GetDataNestedArrayElementFieldCall, EachRegionAndTheIndexArriveInOrder)
     EXPECT_EQ(hostAnswer(), 0x0a0b0c0d);
 }
 
-TEST_F(GetDataNestedArrayElementFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost)
+TEST_F(GetDataNestedArrayElementFieldCall, a_negative_index_is_refused_without_asking_the_host)
 {
     EXPECT_CALL(host, getDataNestedArrayElementField).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_index"), hfErrorToInt(HostFunctionError::IndexOutOfBounds));
 }
 
-TEST_F(GetDataNestedArrayElementFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(GetDataNestedArrayElementFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getDataNestedArrayElementField)
         .WillOnce(Return(std::unexpected(HostFunctionError::InvalidField)));
