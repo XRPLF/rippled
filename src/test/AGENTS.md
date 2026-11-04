@@ -2,4 +2,4 @@
 
 See [README.md](./README.md) for basic `--unittest` invocation.
 
-Shared test setup/helper code used by more than one test file belongs in `jtx/`, not copy-pasted across test files.
+Don't copy-paste test helpers across test files. Shared transaction-building helpers belong in `jtx/`. Other shared code can stay near its users (e.g. `unit_test/SuiteJournal.h`, `app/lending/LoanTestBase.h`).
