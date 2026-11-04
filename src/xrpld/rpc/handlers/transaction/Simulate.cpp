@@ -320,7 +320,7 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
 json::Value
 doSimulate(rpc::JsonContext& context)
 {
-    context.loadType = resource::kFeeMediumBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     json::Value txJson;  // the tx as a JSON
 
