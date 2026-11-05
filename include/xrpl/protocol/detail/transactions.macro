@@ -1187,7 +1187,7 @@ TRANSACTION(ttWITHDRAW_PREAUTH, 213, WithdrawPreauth,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/firewall/FirewallLimitSet.h>
 #endif
-TRANSACTION(ttFIREWALL_LIMIT_SET, 214, FirewallLimitSet,
+TRANSACTION(ttFIREWALL_LIMIT_SET, 241, FirewallLimitSet,
     ({.amendment = featureFirewallLimits, .firewall = FirewallAction::Allow}),
     ({
     {sfAsset,                 SoeRequired, SoeMptSupported},

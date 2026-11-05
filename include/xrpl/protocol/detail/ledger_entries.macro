@@ -663,7 +663,7 @@ LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0205, WithdrawPreauth, withdraw_pre
     account per period, for every transaction of the owner or for one signer.
     \sa keylet::firewallLimit
  */
-LEDGER_ENTRY(ltFIREWALL_LIMIT, 0x0206, FirewallLimit, firewall_limit, ({
+LEDGER_ENTRY(ltFIREWALL_LIMIT, 0x0214, FirewallLimit, firewall_limit, ({
     {sfOwner,                SoeRequired},
     {sfAsset,                SoeRequired},
     {sfLimitSigner,          SoeOptional},

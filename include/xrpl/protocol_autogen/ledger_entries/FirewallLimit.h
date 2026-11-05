@@ -18,7 +18,7 @@ class FirewallLimitBuilder;
 /**
  * @brief Ledger Entry: FirewallLimit
  *
- * Type: ltFIREWALL_LIMIT (0x0206)
+ * Type: ltFIREWALL_LIMIT (0x0214)
  * RPC Name: firewall_limit
  *
  * Immutable wrapper around SLE providing type-safe field access.

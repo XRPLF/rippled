@@ -118,7 +118,7 @@ enum class LedgerNameSpace : std::uint16_t {
     TransactionProposal = 'y',
     Firewall = 'U',
     WithdrawPreauth = 'W',
-    FirewallLimit = 'F',
+    FirewallLimit = '8',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',

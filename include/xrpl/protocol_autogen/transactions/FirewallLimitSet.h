@@ -18,7 +18,7 @@ class FirewallLimitSetBuilder;
 /**
  * @brief Transaction: FirewallLimitSet
  *
- * Type: ttFIREWALL_LIMIT_SET (214)
+ * Type: ttFIREWALL_LIMIT_SET (241)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureFirewallLimits
  * Privileges: Privilege::NoPriv
