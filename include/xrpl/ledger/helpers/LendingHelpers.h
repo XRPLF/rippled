@@ -11,6 +11,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -176,6 +177,77 @@ static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
+
+/**
+ * Assets a vault earns per second from a loan at its current principal
+ * outstanding: the loan's interest less the broker's management fee, which
+ * is the share of each payment's interest the vault receives.
+ *
+ * Equation (27) of XLS-66 is linear in elapsed time, and sfPaymentInterval
+ * cancels out of it, so a loan's accrual rate depends only on its principal,
+ * its interest rate and its broker's sfManagementFeeRate, which is fixed when
+ * the broker is created. Principal is flat between payments, which makes the
+ * rate piecewise-constant with breakpoints exactly at the events that update
+ * it, so summing it across a vault's loans is exact, not an approximation.
+ *
+ * @param loanSle The Loan SLE.
+ * @param brokerSle The LoanBroker SLE the loan belongs to.
+ */
+inline Number
+loanAccrualRate(SLE::ConstRef loanSle, SLE::ConstRef brokerSle)
+{
+    Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+    if (interestRate == TenthBips32{0} || principalOutstanding <= Number{})
+        return Number{};
+
+    Number const interest = tenthBipsOfValue(principalOutstanding, interestRate);
+    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    return (interest - tenthBipsOfValue(interest, managementFeeRate)) / Number{kSecondsInYear};
+}
+
+/**
+ * Scheduled interest a loan still owes its vault, net of the broker's
+ * management fee.
+ *
+ * @param loanSle The Loan SLE.
+ */
+inline Number
+loanInterestOutstanding(SLE::ConstRef loanSle)
+{
+    return Number{loanSle->at(sfTotalValueOutstanding)} - loanSle->at(sfPrincipalOutstanding) -
+        loanSle->at(sfManagementFeeOutstanding);
+}
+
+/**
+ * Settle a loan on an accrual vault at the ledger's close time: the interest
+ * it earned at its accrual rate since its sfLastAccrualTime, capped at the
+ * interest it still owes and rounded down at the loan's scale, moves from the
+ * vault's sfUnearnedInterest into the loan's sfAccruedInterest and the vault's
+ * sfAssetsTotal (rounded down onto sfAssetsTotal's grid). The loan's clock
+ * moves to the close time and sfAccrualAnchor with it. An impaired loan earns
+ * nothing and is not in the anchor, so only its clock moves.
+ *
+ * @param view The ledger view, for the close time.
+ * @param loanSle The Loan SLE.
+ * @param brokerSle The LoanBroker SLE the loan belongs to.
+ * @param vaultSle The Vault SLE the loan lends from.
+ */
+void
+accrueLoan(ReadView const& view, SLE::Ref loanSle, SLE::ConstRef brokerSle, SLE::Ref vaultSle);
+
+/**
+ * Change a vault's sfAccrualRate by delta for a loan whose clock reads the
+ * ledger's close time, moving sfAccrualAnchor by delta times that time so the
+ * vault's accrued interest does not jump. A vault left with no rate has its
+ * anchor reset.
+ *
+ * @param view The ledger view, for the close time.
+ * @param vaultSle The Vault SLE.
+ * @param delta The change in the vault's accrual rate.
+ */
+void
+adjustAccrualRate(ReadView const& view, SLE::Ref vaultSle, Number const& delta);
 
 /**
  * Ensure the periodic payment is always rounded consistently

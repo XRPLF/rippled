@@ -587,8 +587,26 @@ private:
         // Baseline: LP V1.1 disabled -> open-ended vault + broker succeeds.
         build(all_, tesSUCCESS, tesSUCCESS);
 
-        // LP V1.1 enabled -> open-ended vault + broker rejected on create.
-        build(all_ | featureLendingProtocolV1_1, tecNO_PERMISSION);
+        // LP V1.1 enabled, V1.2 disabled -> open-ended vault + broker rejected
+        // on create.
+        build(
+            (all_ - featureVaultContinuousAccrual) | featureLendingProtocolV1_1, tecNO_PERMISSION);
+
+        // Continuous accrual -> a vault created under it prices by accrual,
+        // which has no step to front-run, so an open-ended vault may host a
+        // broker again.
+        build(
+            (all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1 |
+                featureVaultContinuousAccrual,
+            tesSUCCESS,
+            tesSUCCESS);
+
+        // A FixedPrecision vault cannot use accrual, so it defaults to cash
+        // basis and keeps the closed-ended requirement.
+        build(
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2 |
+                featureVaultContinuousAccrual,
+            tecNO_PERMISSION);
     }
 
     void

@@ -39,6 +39,12 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const dealingIntervalValue = canonical_UINT32();
+    auto const dealingWindowValue = canonical_UINT32();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
+    auto const accountingMethodValue = canonical_UINT8();
 
     VaultCreateBuilder builder{
         accountValue,
@@ -57,6 +63,12 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     builder.setVaultKind(vaultKindValue);
     builder.setSubscriptionDate(subscriptionDateValue);
     builder.setRedemptionDate(redemptionDateValue);
+    builder.setDealingInterval(dealingIntervalValue);
+    builder.setDealingWindow(dealingWindowValue);
+    builder.setDepositFee(depositFeeValue);
+    builder.setRedemptionFee(redemptionFeeValue);
+    builder.setRedemptionPeriod(redemptionPeriodValue);
+    builder.setAccountingMethod(accountingMethodValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -152,6 +164,54 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasRedemptionDate());
     }
 
+    {
+        auto const& expected = dealingIntervalValue;
+        auto const actualOpt = tx.getDealingInterval();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDealingInterval should be present";
+        expectEqualField(expected, *actualOpt, "sfDealingInterval");
+        EXPECT_TRUE(tx.hasDealingInterval());
+    }
+
+    {
+        auto const& expected = dealingWindowValue;
+        auto const actualOpt = tx.getDealingWindow();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDealingWindow should be present";
+        expectEqualField(expected, *actualOpt, "sfDealingWindow");
+        EXPECT_TRUE(tx.hasDealingWindow());
+    }
+
+    {
+        auto const& expected = depositFeeValue;
+        auto const actualOpt = tx.getDepositFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDepositFee should be present";
+        expectEqualField(expected, *actualOpt, "sfDepositFee");
+        EXPECT_TRUE(tx.hasDepositFee());
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+        auto const actualOpt = tx.getRedemptionFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionFee should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionFee");
+        EXPECT_TRUE(tx.hasRedemptionFee());
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+        auto const actualOpt = tx.getRedemptionPeriod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionPeriod should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionPeriod");
+        EXPECT_TRUE(tx.hasRedemptionPeriod());
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+        auto const actualOpt = tx.getAccountingMethod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAccountingMethod should be present";
+        expectEqualField(expected, *actualOpt, "sfAccountingMethod");
+        EXPECT_TRUE(tx.hasAccountingMethod());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -178,6 +238,12 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const dealingIntervalValue = canonical_UINT32();
+    auto const dealingWindowValue = canonical_UINT32();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
+    auto const accountingMethodValue = canonical_UINT8();
 
     // Build an initial transaction
     VaultCreateBuilder initialBuilder{
@@ -196,6 +262,12 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setVaultKind(vaultKindValue);
     initialBuilder.setSubscriptionDate(subscriptionDateValue);
     initialBuilder.setRedemptionDate(redemptionDateValue);
+    initialBuilder.setDealingInterval(dealingIntervalValue);
+    initialBuilder.setDealingWindow(dealingWindowValue);
+    initialBuilder.setDepositFee(depositFeeValue);
+    initialBuilder.setRedemptionFee(redemptionFeeValue);
+    initialBuilder.setRedemptionPeriod(redemptionPeriodValue);
+    initialBuilder.setAccountingMethod(accountingMethodValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -283,6 +355,48 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfRedemptionDate");
     }
 
+    {
+        auto const& expected = dealingIntervalValue;
+        auto const actualOpt = rebuiltTx.getDealingInterval();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDealingInterval should be present";
+        expectEqualField(expected, *actualOpt, "sfDealingInterval");
+    }
+
+    {
+        auto const& expected = dealingWindowValue;
+        auto const actualOpt = rebuiltTx.getDealingWindow();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDealingWindow should be present";
+        expectEqualField(expected, *actualOpt, "sfDealingWindow");
+    }
+
+    {
+        auto const& expected = depositFeeValue;
+        auto const actualOpt = rebuiltTx.getDepositFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDepositFee should be present";
+        expectEqualField(expected, *actualOpt, "sfDepositFee");
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+        auto const actualOpt = rebuiltTx.getRedemptionFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionFee should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionFee");
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+        auto const actualOpt = rebuiltTx.getRedemptionPeriod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionPeriod should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionPeriod");
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+        auto const actualOpt = rebuiltTx.getAccountingMethod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAccountingMethod should be present";
+        expectEqualField(expected, *actualOpt, "sfAccountingMethod");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -358,6 +472,18 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getSubscriptionDate().has_value());
     EXPECT_FALSE(tx.hasRedemptionDate());
     EXPECT_FALSE(tx.getRedemptionDate().has_value());
+    EXPECT_FALSE(tx.hasDealingInterval());
+    EXPECT_FALSE(tx.getDealingInterval().has_value());
+    EXPECT_FALSE(tx.hasDealingWindow());
+    EXPECT_FALSE(tx.getDealingWindow().has_value());
+    EXPECT_FALSE(tx.hasDepositFee());
+    EXPECT_FALSE(tx.getDepositFee().has_value());
+    EXPECT_FALSE(tx.hasRedemptionFee());
+    EXPECT_FALSE(tx.getRedemptionFee().has_value());
+    EXPECT_FALSE(tx.hasRedemptionPeriod());
+    EXPECT_FALSE(tx.getRedemptionPeriod().has_value());
+    EXPECT_FALSE(tx.hasAccountingMethod());
+    EXPECT_FALSE(tx.getAccountingMethod().has_value());
 }
 
 }

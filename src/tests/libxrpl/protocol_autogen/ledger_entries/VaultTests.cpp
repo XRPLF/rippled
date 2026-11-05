@@ -34,13 +34,25 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const lossUnrealizedValue = canonical_NUMBER();
     auto const yieldUnrealizedValue = canonical_NUMBER();
     auto const assetsDeployedValue = canonical_NUMBER();
+    auto const unearnedInterestValue = canonical_NUMBER();
+    auto const accrualRateValue = canonical_NUMBER();
+    auto const accrualAnchorValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
+    auto const accountingMethodValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const dealingIntervalValue = canonical_UINT32();
+    auto const dealingWindowValue = canonical_UINT32();
+    auto const struckPriceValue = canonical_NUMBER();
+    auto const struckDepositPriceValue = canonical_NUMBER();
+    auto const struckUntilValue = canonical_UINT32();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -61,11 +73,23 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setYieldUnrealized(yieldUnrealizedValue);
     builder.setAssetsDeployed(assetsDeployedValue);
+    builder.setUnearnedInterest(unearnedInterestValue);
+    builder.setAccrualRate(accrualRateValue);
+    builder.setAccrualAnchor(accrualAnchorValue);
+    builder.setAccountingMethod(accountingMethodValue);
     builder.setScale(scaleValue);
     builder.setLEVersion(lEVersionValue);
     builder.setVaultKind(vaultKindValue);
     builder.setSubscriptionDate(subscriptionDateValue);
     builder.setRedemptionDate(redemptionDateValue);
+    builder.setDealingInterval(dealingIntervalValue);
+    builder.setDealingWindow(dealingWindowValue);
+    builder.setStruckPrice(struckPriceValue);
+    builder.setStruckDepositPrice(struckDepositPriceValue);
+    builder.setStruckUntil(struckUntilValue);
+    builder.setDepositFee(depositFeeValue);
+    builder.setRedemptionFee(redemptionFeeValue);
+    builder.setRedemptionPeriod(redemptionPeriodValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -187,6 +211,38 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = unearnedInterestValue;
+        auto const actualOpt = entry.getUnearnedInterest();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfUnearnedInterest");
+        EXPECT_TRUE(entry.hasUnearnedInterest());
+    }
+
+    {
+        auto const& expected = accrualRateValue;
+        auto const actualOpt = entry.getAccrualRate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccrualRate");
+        EXPECT_TRUE(entry.hasAccrualRate());
+    }
+
+    {
+        auto const& expected = accrualAnchorValue;
+        auto const actualOpt = entry.getAccrualAnchor();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccrualAnchor");
+        EXPECT_TRUE(entry.hasAccrualAnchor());
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+        auto const actualOpt = entry.getAccountingMethod();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccountingMethod");
+        EXPECT_TRUE(entry.hasAccountingMethod());
+    }
+
+    {
         auto const& expected = scaleValue;
         auto const actualOpt = entry.getScale();
         ASSERT_TRUE(actualOpt.has_value());
@@ -226,6 +282,70 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRedemptionDate());
     }
 
+    {
+        auto const& expected = dealingIntervalValue;
+        auto const actualOpt = entry.getDealingInterval();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDealingInterval");
+        EXPECT_TRUE(entry.hasDealingInterval());
+    }
+
+    {
+        auto const& expected = dealingWindowValue;
+        auto const actualOpt = entry.getDealingWindow();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDealingWindow");
+        EXPECT_TRUE(entry.hasDealingWindow());
+    }
+
+    {
+        auto const& expected = struckPriceValue;
+        auto const actualOpt = entry.getStruckPrice();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfStruckPrice");
+        EXPECT_TRUE(entry.hasStruckPrice());
+    }
+
+    {
+        auto const& expected = struckDepositPriceValue;
+        auto const actualOpt = entry.getStruckDepositPrice();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfStruckDepositPrice");
+        EXPECT_TRUE(entry.hasStruckDepositPrice());
+    }
+
+    {
+        auto const& expected = struckUntilValue;
+        auto const actualOpt = entry.getStruckUntil();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfStruckUntil");
+        EXPECT_TRUE(entry.hasStruckUntil());
+    }
+
+    {
+        auto const& expected = depositFeeValue;
+        auto const actualOpt = entry.getDepositFee();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDepositFee");
+        EXPECT_TRUE(entry.hasDepositFee());
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+        auto const actualOpt = entry.getRedemptionFee();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionFee");
+        EXPECT_TRUE(entry.hasRedemptionFee());
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+        auto const actualOpt = entry.getRedemptionPeriod();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionPeriod");
+        EXPECT_TRUE(entry.hasRedemptionPeriod());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -253,13 +373,25 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const lossUnrealizedValue = canonical_NUMBER();
     auto const yieldUnrealizedValue = canonical_NUMBER();
     auto const assetsDeployedValue = canonical_NUMBER();
+    auto const unearnedInterestValue = canonical_NUMBER();
+    auto const accrualRateValue = canonical_NUMBER();
+    auto const accrualAnchorValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
+    auto const accountingMethodValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const dealingIntervalValue = canonical_UINT32();
+    auto const dealingWindowValue = canonical_UINT32();
+    auto const struckPriceValue = canonical_NUMBER();
+    auto const struckDepositPriceValue = canonical_NUMBER();
+    auto const struckUntilValue = canonical_UINT32();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -277,13 +409,25 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfLossUnrealized) = lossUnrealizedValue;
     sle->at(sfYieldUnrealized) = yieldUnrealizedValue;
     sle->at(sfAssetsDeployed) = assetsDeployedValue;
+    sle->at(sfUnearnedInterest) = unearnedInterestValue;
+    sle->at(sfAccrualRate) = accrualRateValue;
+    sle->at(sfAccrualAnchor) = accrualAnchorValue;
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
+    sle->at(sfAccountingMethod) = accountingMethodValue;
     sle->at(sfScale) = scaleValue;
     sle->at(sfLEVersion) = lEVersionValue;
     sle->at(sfVaultKind) = vaultKindValue;
     sle->at(sfSubscriptionDate) = subscriptionDateValue;
     sle->at(sfRedemptionDate) = redemptionDateValue;
+    sle->at(sfDealingInterval) = dealingIntervalValue;
+    sle->at(sfDealingWindow) = dealingWindowValue;
+    sle->at(sfStruckPrice) = struckPriceValue;
+    sle->at(sfStruckDepositPrice) = struckDepositPriceValue;
+    sle->at(sfStruckUntil) = struckUntilValue;
+    sle->at(sfDepositFee) = depositFeeValue;
+    sle->at(sfRedemptionFee) = redemptionFeeValue;
+    sle->at(sfRedemptionPeriod) = redemptionPeriodValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -476,6 +620,58 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = unearnedInterestValue;
+
+        auto const fromSleOpt = entryFromSle.getUnearnedInterest();
+        auto const fromBuilderOpt = entryFromBuilder.getUnearnedInterest();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfUnearnedInterest");
+        expectEqualField(expected, *fromBuilderOpt, "sfUnearnedInterest");
+    }
+
+    {
+        auto const& expected = accrualRateValue;
+
+        auto const fromSleOpt = entryFromSle.getAccrualRate();
+        auto const fromBuilderOpt = entryFromBuilder.getAccrualRate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccrualRate");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccrualRate");
+    }
+
+    {
+        auto const& expected = accrualAnchorValue;
+
+        auto const fromSleOpt = entryFromSle.getAccrualAnchor();
+        auto const fromBuilderOpt = entryFromBuilder.getAccrualAnchor();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccrualAnchor");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccrualAnchor");
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+
+        auto const fromSleOpt = entryFromSle.getAccountingMethod();
+        auto const fromBuilderOpt = entryFromBuilder.getAccountingMethod();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccountingMethod");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccountingMethod");
+    }
+
+    {
         auto const& expected = scaleValue;
 
         auto const fromSleOpt = entryFromSle.getScale();
@@ -538,6 +734,110 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfRedemptionDate");
         expectEqualField(expected, *fromBuilderOpt, "sfRedemptionDate");
+    }
+
+    {
+        auto const& expected = dealingIntervalValue;
+
+        auto const fromSleOpt = entryFromSle.getDealingInterval();
+        auto const fromBuilderOpt = entryFromBuilder.getDealingInterval();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDealingInterval");
+        expectEqualField(expected, *fromBuilderOpt, "sfDealingInterval");
+    }
+
+    {
+        auto const& expected = dealingWindowValue;
+
+        auto const fromSleOpt = entryFromSle.getDealingWindow();
+        auto const fromBuilderOpt = entryFromBuilder.getDealingWindow();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDealingWindow");
+        expectEqualField(expected, *fromBuilderOpt, "sfDealingWindow");
+    }
+
+    {
+        auto const& expected = struckPriceValue;
+
+        auto const fromSleOpt = entryFromSle.getStruckPrice();
+        auto const fromBuilderOpt = entryFromBuilder.getStruckPrice();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfStruckPrice");
+        expectEqualField(expected, *fromBuilderOpt, "sfStruckPrice");
+    }
+
+    {
+        auto const& expected = struckDepositPriceValue;
+
+        auto const fromSleOpt = entryFromSle.getStruckDepositPrice();
+        auto const fromBuilderOpt = entryFromBuilder.getStruckDepositPrice();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfStruckDepositPrice");
+        expectEqualField(expected, *fromBuilderOpt, "sfStruckDepositPrice");
+    }
+
+    {
+        auto const& expected = struckUntilValue;
+
+        auto const fromSleOpt = entryFromSle.getStruckUntil();
+        auto const fromBuilderOpt = entryFromBuilder.getStruckUntil();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfStruckUntil");
+        expectEqualField(expected, *fromBuilderOpt, "sfStruckUntil");
+    }
+
+    {
+        auto const& expected = depositFeeValue;
+
+        auto const fromSleOpt = entryFromSle.getDepositFee();
+        auto const fromBuilderOpt = entryFromBuilder.getDepositFee();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDepositFee");
+        expectEqualField(expected, *fromBuilderOpt, "sfDepositFee");
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionFee();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionFee();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionFee");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionFee");
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionPeriod();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionPeriod();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionPeriod");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionPeriod");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -624,6 +924,14 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getYieldUnrealized().has_value());
     EXPECT_FALSE(entry.hasAssetsDeployed());
     EXPECT_FALSE(entry.getAssetsDeployed().has_value());
+    EXPECT_FALSE(entry.hasUnearnedInterest());
+    EXPECT_FALSE(entry.getUnearnedInterest().has_value());
+    EXPECT_FALSE(entry.hasAccrualRate());
+    EXPECT_FALSE(entry.getAccrualRate().has_value());
+    EXPECT_FALSE(entry.hasAccrualAnchor());
+    EXPECT_FALSE(entry.getAccrualAnchor().has_value());
+    EXPECT_FALSE(entry.hasAccountingMethod());
+    EXPECT_FALSE(entry.getAccountingMethod().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasLEVersion());
@@ -634,5 +942,21 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getSubscriptionDate().has_value());
     EXPECT_FALSE(entry.hasRedemptionDate());
     EXPECT_FALSE(entry.getRedemptionDate().has_value());
+    EXPECT_FALSE(entry.hasDealingInterval());
+    EXPECT_FALSE(entry.getDealingInterval().has_value());
+    EXPECT_FALSE(entry.hasDealingWindow());
+    EXPECT_FALSE(entry.getDealingWindow().has_value());
+    EXPECT_FALSE(entry.hasStruckPrice());
+    EXPECT_FALSE(entry.getStruckPrice().has_value());
+    EXPECT_FALSE(entry.hasStruckDepositPrice());
+    EXPECT_FALSE(entry.getStruckDepositPrice().has_value());
+    EXPECT_FALSE(entry.hasStruckUntil());
+    EXPECT_FALSE(entry.getStruckUntil().has_value());
+    EXPECT_FALSE(entry.hasDepositFee());
+    EXPECT_FALSE(entry.getDepositFee().has_value());
+    EXPECT_FALSE(entry.hasRedemptionFee());
+    EXPECT_FALSE(entry.getRedemptionFee().has_value());
+    EXPECT_FALSE(entry.hasRedemptionPeriod());
+    EXPECT_FALSE(entry.getRedemptionPeriod().has_value());
 }
 }

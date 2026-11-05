@@ -257,12 +257,36 @@ LoanManage::defaultLoan(
         return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, j);
 
     auto const vaultAsset = *vaultSle->at(sfAsset);
+
+    // Settle this loan, then stop it accruing if impairment has not already.
+    bool const continuousAccrual = view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
+    if (continuousAccrual && !loanSle->isFlag(lsfLoanImpaired))
+    {
+        accrueLoan(view, loanSle, brokerSle, vaultSle);
+        adjustAccrualRate(view, vaultSle, -loanAccrualRate(loanSle, brokerSle));
+    }
+
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
     Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
+
+    // The loan's scheduled interest the clock has not recognized will never be
+    // earned, so it leaves the budget.
+    if (continuousAccrual)
+    {
+        Number const unrecognized =
+            loanInterestOutstanding(loanSle) - loanSle->at(sfAccruedInterest);
+        auto unearnedProxy = vaultSle->at(sfUnearnedInterest);
+        if (unrecognized > Number{})
+        {
+            unearnedProxy =
+                *unearnedProxy > unrecognized ? *unearnedProxy - unrecognized : Number{};
+        }
+    }
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -383,6 +407,7 @@ LoanManage::defaultLoan(
     loanSle->at(sfPaymentRemaining) = 0;
     loanSle->at(sfPrincipalOutstanding) = 0;
     loanSle->at(sfManagementFeeOutstanding) = 0;
+    loanSle->at(sfAccruedInterest) = Number{};
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
@@ -404,6 +429,7 @@ TER
 LoanManage::impairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
+    SLE::ConstRef brokerSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -414,6 +440,17 @@ LoanManage::impairLoan(
     {
         JLOG(j.warn()) << "Cannot impair a loan that is not late";
         return tecTOO_SOON;
+    }
+
+    // Settle this loan before the loss is measured, so the interest its clock
+    // recognized is in AssetsTotal and in its sfAccruedInterest and the paper
+    // loss covers it; then stop it accruing. Continuing to accrue on a loan
+    // that may never pay is the Legacy defect in miniature.
+    if (view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+    {
+        accrueLoan(view, loanSle, brokerSle, vaultSle);
+        adjustAccrualRate(view, vaultSle, -loanAccrualRate(loanSle, brokerSle));
     }
 
     bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
@@ -450,6 +487,7 @@ LoanManage::impairLoan(
             return tecLIMIT_EXCEEDED;  // LCOV_EXCL_LINE
         }
     }
+
     view.update(vaultSle);
 
     // Update the Loan object
@@ -473,6 +511,7 @@ LoanManage::impairLoan(
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
+    SLE::ConstRef brokerSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -502,6 +541,15 @@ LoanManage::unimpairLoan(
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
         adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+    }
+
+    // The impaired interval earns nothing: restart this loan's clock now and
+    // take its rate back on.
+    if (view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+    {
+        loanSle->at(sfLastAccrualTime) = view.parentCloseTime().time_since_epoch().count();
+        adjustAccrualRate(view, vaultSle, loanAccrualRate(loanSle, brokerSle));
     }
 
     view.update(vaultSle);
@@ -559,12 +607,19 @@ LoanManage::doApply()
         if (tx.isFlag(tfLoanDefault))
             return defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
         if (tx.isFlag(tfLoanImpair))
-            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return impairLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
-            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return unimpairLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
         // NoOp, as described above.
         return tesSUCCESS;
     }();
+
+    // A rolling vault's price struck earlier in this window no longer reflects a
+    // vault whose value the impairment, its reversal or the default just moved.
+    // The no-flag path moves no value, so it leaves the struck prices alone.
+    if (isTesSuccess(result) && view.rules().enabled(featureVaultContinuousAccrual) &&
+        (tx.isFlag(tfLoanDefault) || tx.isFlag(tfLoanImpair) || tx.isFlag(tfLoanUnimpair)))
+        refreshStruckPrice(view, vaultSle);
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
     // path. Post-amendment, we call associateAsset on all successful paths.

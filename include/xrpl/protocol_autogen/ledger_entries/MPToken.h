@@ -387,6 +387,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfRecoveryKey);
     }
+
+    /**
+     * @brief Get sfRedemptionAfter (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionAfter() const
+    {
+        if (hasRedemptionAfter())
+            return this->sle_->at(sfRedemptionAfter);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionAfter is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionAfter() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionAfter);
+    }
 };
 
 /**
@@ -619,6 +643,17 @@ public:
     setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfRecoveryKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionAfter (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setRedemptionAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionAfter] = value;
         return *this;
     }
 

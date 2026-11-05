@@ -454,3 +454,23 @@ TYPED_SFIELD(sfClientDataJSON,              VL,     252)
 UNTYPED_SFIELD(sfPasskeySignature,       OBJECT,    254, SField::kSmdDefault, SField::kNotSigning)
 UNTYPED_SFIELD(sfPasskey,                OBJECT,    253)
 UNTYPED_SFIELD(sfPasskeys,               ARRAY,     254)
+TYPED_SFIELD(sfAccountingMethod,         UINT8,     254)
+TYPED_SFIELD(sfLastAccrualTime,          UINT32,    251)
+TYPED_SFIELD(sfDealingInterval,          UINT32,    250)
+TYPED_SFIELD(sfDealingWindow,            UINT32,    249)
+TYPED_SFIELD(sfStruckUntil,              UINT32,    248)
+TYPED_SFIELD(sfDepositFee,               UINT32,    247)
+TYPED_SFIELD(sfRedemptionFee,            UINT32,    246)
+TYPED_SFIELD(sfRedemptionPeriod,         UINT32,    245)
+TYPED_SFIELD(sfRedemptionAfter,          UINT32,    244)
+TYPED_SFIELD(sfUnearnedInterest,         NUMBER,     254, SField::kSmdNeedsAsset | SField::kSmdDefault)
+// Assets earned per second, summed over a vault's performing loans. A rate,
+// not an amount, so it carries no asset association.
+TYPED_SFIELD(sfAccrualRate,              NUMBER,     253, SField::kSmdDefault)
+TYPED_SFIELD(sfStruckPrice,              NUMBER,     252, SField::kSmdDefault)
+TYPED_SFIELD(sfAccruedInterest,          NUMBER,     251, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfStruckDepositPrice,       NUMBER,     250, SField::kSmdDefault)
+// Sum over a vault's accruing loans of each loan's accrual rate times its
+// sfLastAccrualTime: the vault's accrued interest at a time t is
+// sfAccrualRate * t minus this.
+TYPED_SFIELD(sfAccrualAnchor,            NUMBER,     249, SField::kSmdDefault)

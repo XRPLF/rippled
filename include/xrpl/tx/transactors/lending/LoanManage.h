@@ -76,6 +76,7 @@ public:
     impairLoan(
         ApplyView& view,
         SLE::Ref loanSle,
+        SLE::ConstRef brokerSle,
         SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
@@ -87,6 +88,7 @@ public:
     unimpairLoan(
         ApplyView& view,
         SLE::Ref loanSle,
+        SLE::ConstRef brokerSle,
         SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);

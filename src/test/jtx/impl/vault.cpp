@@ -41,6 +41,18 @@ Vault::create(CreateArgs const& args) const
         jv[sfRedemptionDate] = *args.redemptionDate;
     if (args.leVersion)
         jv[sfLEVersion] = std::to_underlying(*args.leVersion);
+    if (args.dealingInterval)
+        jv[sfDealingInterval] = *args.dealingInterval;
+    if (args.dealingWindow)
+        jv[sfDealingWindow] = *args.dealingWindow;
+    if (args.depositFee)
+        jv[sfDepositFee] = *args.depositFee;
+    if (args.redemptionFee)
+        jv[sfRedemptionFee] = *args.redemptionFee;
+    if (args.redemptionPeriod)
+        jv[sfRedemptionPeriod] = *args.redemptionPeriod;
+    if (args.accountingMethod)
+        jv[sfAccountingMethod] = *args.accountingMethod;
     return {jv, keylet};
 }
 

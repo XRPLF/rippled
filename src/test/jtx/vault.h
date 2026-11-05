@@ -36,6 +36,18 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
         std::optional<VaultVersion> leVersion =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> dealingInterval =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> dealingWindow =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> depositFee =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> redemptionFee =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint32_t> redemptionPeriod =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        std::optional<std::uint8_t> accountingMethod =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /**

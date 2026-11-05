@@ -33,6 +33,9 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const domainIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
 
     VaultSetBuilder builder{
         accountValue,
@@ -45,6 +48,9 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setDomainID(domainIDValue);
     builder.setData(dataValue);
+    builder.setDepositFee(depositFeeValue);
+    builder.setRedemptionFee(redemptionFeeValue);
+    builder.setRedemptionPeriod(redemptionPeriodValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -92,6 +98,30 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasData());
     }
 
+    {
+        auto const& expected = depositFeeValue;
+        auto const actualOpt = tx.getDepositFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDepositFee should be present";
+        expectEqualField(expected, *actualOpt, "sfDepositFee");
+        EXPECT_TRUE(tx.hasDepositFee());
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+        auto const actualOpt = tx.getRedemptionFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionFee should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionFee");
+        EXPECT_TRUE(tx.hasRedemptionFee());
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+        auto const actualOpt = tx.getRedemptionPeriod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionPeriod should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionPeriod");
+        EXPECT_TRUE(tx.hasRedemptionPeriod());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -112,6 +142,9 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const domainIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const depositFeeValue = canonical_UINT32();
+    auto const redemptionFeeValue = canonical_UINT32();
+    auto const redemptionPeriodValue = canonical_UINT32();
 
     // Build an initial transaction
     VaultSetBuilder initialBuilder{
@@ -124,6 +157,9 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setAssetsMaximum(assetsMaximumValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setData(dataValue);
+    initialBuilder.setDepositFee(depositFeeValue);
+    initialBuilder.setRedemptionFee(redemptionFeeValue);
+    initialBuilder.setRedemptionPeriod(redemptionPeriodValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -167,6 +203,27 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
+    }
+
+    {
+        auto const& expected = depositFeeValue;
+        auto const actualOpt = rebuiltTx.getDepositFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDepositFee should be present";
+        expectEqualField(expected, *actualOpt, "sfDepositFee");
+    }
+
+    {
+        auto const& expected = redemptionFeeValue;
+        auto const actualOpt = rebuiltTx.getRedemptionFee();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionFee should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionFee");
+    }
+
+    {
+        auto const& expected = redemptionPeriodValue;
+        auto const actualOpt = rebuiltTx.getRedemptionPeriod();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionPeriod should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionPeriod");
     }
 
 }
@@ -232,6 +289,12 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDomainID().has_value());
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasDepositFee());
+    EXPECT_FALSE(tx.getDepositFee().has_value());
+    EXPECT_FALSE(tx.hasRedemptionFee());
+    EXPECT_FALSE(tx.getRedemptionFee().has_value());
+    EXPECT_FALSE(tx.hasRedemptionPeriod());
+    EXPECT_FALSE(tx.getRedemptionPeriod().has_value());
 }
 
 }

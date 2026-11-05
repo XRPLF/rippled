@@ -1,0 +1,1293 @@
+#include <test/app/lending/LoanTestBase.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/vault.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
+
+#include <chrono>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <tuple>
+
+namespace xrpl::test {
+
+/**
+ * Continuous accrual, XLS Vault Continuous Accrual sections 4.1 to 4.3. Accrual
+ * needs a CashBasis Vault, so featureLendingProtocolV1_2 stays off.
+ */
+class LoanAccrual_test : public LoanTestBase
+{
+private:
+    // Origination takes on the loan's interest as a budget and a rate, and
+    // leaves AssetsTotal alone: nothing has been earned yet.
+    void
+    testAccrualLoanSetOrigination()
+    {
+        testcase("accrual: LoanSet origination");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultBefore);
+        if (!vaultBefore)
+            return;
+        Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+        BEAST_EXPECT(vaultBefore->at(sfUnearnedInterest) == Number{});
+        BEAST_EXPECT(vaultBefore->at(sfAccrualRate) == Number{});
+
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBefore);
+        if (!brokerBefore)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(loanSle && vaultAfter);
+        if (!loanSle || !vaultAfter)
+            return;
+
+        Number const interestDue =
+            Number{loanSle->at(sfTotalValueOutstanding)} - loanSle->at(sfPrincipalOutstanding);
+        BEAST_EXPECT(interestDue > Number{});
+
+        // Nothing earned yet, so AssetsTotal has not moved.
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+        // The whole of the loan's interest is now the budget the clock may draw
+        // down, and the vault carries the loan's rate.
+        BEAST_EXPECT(vaultAfter->at(sfUnearnedInterest) == interestDue);
+        BEAST_EXPECT(vaultAfter->at(sfAccrualRate) > Number{});
+        BEAST_EXPECT(vaultAfter->at(sfAccrualAnchor) > Number{});
+        BEAST_EXPECT(loanSle->at(sfLastAccrualTime) > 0u);
+    }
+
+    // The single most important case in the specification: an on-time payment
+    // must not credit interest the clock has already recognized.
+    void
+    testAccrualLoanPayDoesNotDoubleCount()
+    {
+        testcase("accrual: on-time LoanPay does not double count");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBefore);
+        if (!brokerBefore)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence)));
+
+        std::uint32_t const paymentInterval = 600;
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(paymentInterval),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+
+        // Stand just inside the first period, so nearly all of it has been
+        // recognized by the clock and the payment is still on time.
+        env.close(NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) - 30}});
+
+        auto const vaultAtDue = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultAtDue);
+        if (!vaultAtDue)
+            return;
+        Number const assetsTotalAtDue = vaultAtDue->at(sfAssetsTotal);
+        Number const unearnedAtDue = vaultAtDue->at(sfUnearnedInterest);
+
+        auto const loanAtDue = env.le(loanKeylet);
+        BEAST_EXPECT(loanAtDue);
+        if (!loanAtDue)
+            return;
+        Number const principalBefore = loanAtDue->at(sfPrincipalOutstanding);
+
+        // The stored periodic payment is unrounded; a payment must cover it, so
+        // round up to the loan's scale.
+        STAmount const paymentAmount{
+            broker.asset.raw(),
+            roundToAsset(
+                broker.asset.raw(),
+                Number{loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale),
+                Number::RoundingMode::Upward)};
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterPay = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultAfterPay);
+        if (!vaultAfterPay)
+            return;
+
+        Number const assetsGained = Number{vaultAfterPay->at(sfAssetsTotal)} - assetsTotalAtDue;
+
+        // The interest this payment actually carried: with no management fee,
+        // whatever did not reduce the principal.
+        auto const loanAfterPay = env.le(loanKeylet);
+        BEAST_EXPECT(loanAfterPay);
+        if (!loanAfterPay)
+            return;
+        Number const principalPaid =
+            principalBefore - Number{loanAfterPay->at(sfPrincipalOutstanding)};
+        Number const interestPaid = Number{paymentAmount} - principalPaid;
+        BEAST_EXPECT(interestPaid > Number{});
+
+        // Settling at the payment credits what the clock earned over the period,
+        // and the payment itself adds only the remainder the clock had not yet
+        // reached. Were the received interest credited again on top, the vault
+        // would gain about twice the interest paid: that is the double count
+        // this accounting exists to avoid.
+        BEAST_EXPECT(assetsGained > Number{});
+        BEAST_EXPECT(assetsGained < interestPaid + (interestPaid / Number{2}));
+
+        // The budget shrinks: the period just paid is no longer owed.
+        BEAST_EXPECT(vaultAfterPay->at(sfUnearnedInterest) < unearnedAtDue);
+        // Never negative, whatever the rounding.
+        BEAST_EXPECT(vaultAfterPay->at(sfUnearnedInterest) >= Number{});
+        BEAST_EXPECT(vaultAfterPay->at(sfAccrualRate) >= Number{});
+    }
+
+    // Impairing a loan stops it accruing; clearing the impairment takes its rate back on.
+    void
+    testAccrualImpairHaltsAccrual()
+    {
+        testcase("accrual: impair halts accrual");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBefore);
+        if (!brokerBefore)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        auto const vaultLent = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(loanSle && vaultLent);
+        if (!loanSle || !vaultLent)
+            return;
+        Number const rateWhileLending = vaultLent->at(sfAccrualRate);
+        BEAST_EXPECT(rateWhileLending > Number{});
+
+        // A loan can only be impaired once it is late.
+        env.close(NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 60}});
+
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultImpaired = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultImpaired);
+        if (!vaultImpaired)
+            return;
+        // The vault carries only this loan, so its rate falls to nothing.
+        BEAST_EXPECT(vaultImpaired->at(sfAccrualRate) < rateWhileLending);
+        BEAST_EXPECT(vaultImpaired->at(sfAccrualRate) == Number{});
+
+        // An impaired loan earns nothing, so the budget does not move while it
+        // stays impaired.
+        Number const unearnedImpaired = vaultImpaired->at(sfUnearnedInterest);
+        Number const assetsImpaired = vaultImpaired->at(sfAssetsTotal);
+        env.close(
+            NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 100'000}});
+        {
+            auto const vaultIdle = env.le(broker.vaultKeylet());
+            BEAST_EXPECT(vaultIdle);
+            if (!vaultIdle)
+                return;
+            BEAST_EXPECT(vaultIdle->at(sfUnearnedInterest) == unearnedImpaired);
+            BEAST_EXPECT(vaultIdle->at(sfAssetsTotal) == assetsImpaired);
+        }
+
+        env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultRestored = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultRestored);
+        if (!vaultRestored)
+            return;
+        BEAST_EXPECT(vaultRestored->at(sfAccrualRate) == rateWhileLending);
+    }
+
+    // Default takes the loan's rate off the vault and its unrecognized interest
+    // out of the budget, whether or not the loan was impaired first, so the
+    // vault recognizes nothing more for a loan that is gone.
+    void
+    testAccrualDefaultStopsAccrual(bool impairFirst)
+    {
+        testcase(
+            std::string("accrual: default stops accrual") +
+            (impairFirst ? " (impaired)" : " (never impaired)"));
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBefore);
+        if (!brokerBefore)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+
+        if (impairFirst)
+        {
+            env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
+            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Past the grace period, so the loan can be defaulted.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultDefaulted = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultDefaulted);
+        if (!vaultDefaulted)
+            return;
+        // The vault carried only this loan, so nothing is left accruing and no
+        // interest is left to recognize.
+        BEAST_EXPECT(vaultDefaulted->at(sfAccrualRate) == Number{});
+        BEAST_EXPECT(vaultDefaulted->at(sfUnearnedInterest) == Number{});
+        BEAST_EXPECT(vaultDefaulted->at(sfLossUnrealized) == Number{});
+
+        // Time passing recognizes nothing more.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 100'000}});
+        auto const vaultLater = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultLater);
+        if (!vaultLater)
+            return;
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultLater) == Number{});
+        BEAST_EXPECT(vaultLater->at(sfAssetsTotal) == vaultDefaulted->at(sfAssetsTotal));
+    }
+
+    // With several loans on the vault, impairing or defaulting one leaves the
+    // others' rates and budget in place, and defaulting all clears the vault.
+    void
+    testAccrualSeveralLoans()
+    {
+        testcase("accrual: several loans, one at a time");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        TenthBips32 const interestRate{percentageToTenthBips(12)};
+
+        auto const originate = [&](std::int64_t principal) -> Keylet {
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            BEAST_EXPECT(brokerSle);
+            if (!brokerSle)
+                return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
+            auto const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+            env(set(borrower, broker.brokerID, xrpAsset(principal).value()),
+                kCounterparty(lender),
+                kInterestRate(interestRate),
+                kPaymentTotal(4),
+                kPaymentInterval(600),
+                kGracePeriod(60),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            return loanKeylet;
+        };
+        // All loans in one ledger, so they share a due date.
+        Keylet const first = originate(10'000);
+        Keylet const second = originate(20'000);
+        Keylet const third = originate(30'000);
+        env.close();
+
+        auto const firstSle = env.le(first);
+        auto const secondSle = env.le(second);
+        BEAST_EXPECT(firstSle && secondSle);
+        if (!firstSle || !secondSle)
+            return;
+        std::uint32_t const dueDate = firstSle->at(sfNextPaymentDueDate);
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        Number const firstRate = loanAccrualRate(firstSle, brokerSle);
+        Number const secondRate = loanAccrualRate(secondSle, brokerSle);
+
+        auto const vault = [&] { return env.le(broker.vaultKeylet()); };
+        auto const lending = vault();
+        BEAST_EXPECT(lending);
+        if (!lending)
+            return;
+        BEAST_EXPECT(secondRate > Number{});
+        // What impairing the first leaves, computed as LoanManage computes it.
+        Number const rateLeft = Number{lending->at(sfAccrualRate)} - firstRate;
+
+        // Impairing the first leaves the others' rates accruing.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
+        env(manage(lender, first.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+        if (auto const v = vault(); BEAST_EXPECT(v))
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft);
+
+        // Defaulting the first leaves the others' budget for them to earn.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
+        env(manage(lender, first.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+        if (auto const v = vault(); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft);
+            BEAST_EXPECT(v->at(sfUnearnedInterest) > Number{});
+        }
+
+        // Defaulting the second, never impaired, takes only its own rate off.
+        env(manage(lender, second.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+        if (auto const v = vault(); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft - secondRate);
+            BEAST_EXPECT(v->at(sfAccrualRate) > Number{});
+        }
+
+        // Defaulting the third, never impaired, clears the vault.
+        env(manage(lender, third.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+        if (auto const v = vault(); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAccrualRate) == Number{});
+            BEAST_EXPECT(v->at(sfUnearnedInterest) == Number{});
+        }
+    }
+
+    // A loan in its last period with a management fee owes the vault less
+    // interest than the clock recognized for the period, so its default leaves
+    // nothing in the budget.
+    void
+    testAccrualDefaultLastPeriodWithFee()
+    {
+        testcase("accrual: default in the last period with a management fee");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{10'000},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(1),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        env.close(
+            NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAccrualRate) == Number{});
+        BEAST_EXPECT(vaultSle->at(sfUnearnedInterest) == Number{});
+    }
+
+    // Past the end of a loan's schedule the clock has nothing left to
+    // recognize, so accrued interest stops at the budget.
+    void
+    testAccrualCappedByBudget()
+    {
+        testcase("accrual: capped by the budget");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Far past the four periods the loan was ever going to earn.
+        env.close(env.now() + std::chrono::seconds{100'000});
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfUnearnedInterest) > Number{});
+        BEAST_EXPECT(
+            vaultAccruedInterest(*env.current(), vaultSle) ==
+            Number{vaultSle->at(sfUnearnedInterest)});
+    }
+
+    // Without the amendment a lending vault keeps cash basis and none of the
+    // loan transactions touch accrual state.
+    void
+    testAccrualOffWithoutAmendment()
+    {
+        testcase("accrual: off without the amendment");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+        };
+
+        Env env{
+            *this,
+            testableAmendments() - featureLendingProtocolV1_2 - featureVaultContinuousAccrual};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+
+        STAmount const paymentAmount{
+            broker.asset.raw(),
+            roundToAsset(
+                broker.asset.raw(),
+                Number{loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale),
+                Number::RoundingMode::Upward)};
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+
+        auto const paidSle = env.le(loanKeylet);
+        BEAST_EXPECT(paidSle);
+        if (!paidSle)
+            return;
+        std::uint32_t const dueDate = paidSle->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+        env(manage(lender, loanKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+        env.close();
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(!vaultSle->isFieldPresent(sfAccountingMethod));
+        BEAST_EXPECT(!vaultSle->isFieldPresent(sfAccrualRate));
+        BEAST_EXPECT(!vaultSle->isFieldPresent(sfUnearnedInterest));
+        BEAST_EXPECT(!vaultSle->isFieldPresent(sfAccrualAnchor));
+    }
+
+    // A read in the ledger a loan settled has no elapsed time to add.
+    void
+    testAccrualSameLedgerPricing()
+    {
+        testcase("accrual: pricing in the settling ledger");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+
+        // Same open ledger as the LoanSet that started the loan's clock.
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAccrualRate) > Number{});
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultSle) == Number{});
+        env.close();
+
+        // A ledger later the same read has time to add.
+        env.close();
+        auto const vaultLater = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultLater);
+        if (!vaultLater)
+            return;
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultLater) > Number{});
+    }
+
+    // In a loan's last period, rounding can leave the loan owing no more
+    // interest than the period's recognized amount. A default then has nothing
+    // left to take out of the budget, and still clears the vault's accrual.
+    void
+    testAccrualDefaultLastPeriodRounding()
+    {
+        testcase("accrual: default in the last period, recognized at or past the remainder");
+        using namespace jtx;
+        using namespace loan;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"], 1};
+        for (auto const& holder : {lender, borrower})
+        {
+            env(trust(holder, usd(10'000'000)));
+            env.close();
+            env(pay(issuer, holder, usd(1'000'000)));
+            env.close();
+        }
+
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{1'000},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+        BrokerInfo const broker{createVaultAndBroker(env, usd, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        std::uint32_t const interval = 600;
+        env(set(borrower, broker.brokerID, usd(1'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(10)}),
+            kPaymentTotal(2),
+            kPaymentInterval(interval),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Pay the first period, leaving the last.
+        {
+            auto const loanSle = env.le(loanKeylet);
+            BEAST_EXPECT(loanSle);
+            if (!loanSle)
+                return;
+            STAmount const paymentAmount{
+                usd.raw(),
+                roundToAsset(
+                    usd.raw(),
+                    Number{loanSle->at(sfPeriodicPayment)},
+                    loanSle->at(sfLoanScale),
+                    Number::RoundingMode::Upward)};
+            env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        auto const loanSle = env.le(loanKeylet);
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(loanSle && vaultBefore);
+        if (!loanSle || !vaultBefore)
+            return;
+        BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 1);
+
+        // The interest the loan still owes the vault is no more than the
+        // period's recognized amount, as loanVaultExposure books it.
+        Number const remainingInterest = Number{loanSle->at(sfTotalValueOutstanding)} -
+            loanSle->at(sfPrincipalOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+        Number const recognized = roundToAsset(
+            usd.raw(),
+            loanAccrualRate(loanSle, brokerSle) * Number{interval},
+            getVaultScale(vaultBefore),
+            Number::RoundingMode::Downward);
+        BEAST_EXPECT(remainingInterest <= recognized);
+
+        env.close(
+            NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultAfter);
+        if (!vaultAfter)
+            return;
+        BEAST_EXPECT(vaultAfter->at(sfAccrualRate) == Number{});
+        BEAST_EXPECT(vaultAfter->at(sfUnearnedInterest) == Number{});
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == Number{});
+
+        // With its only loan gone and no cover, the vault holds its cash and
+        // nothing else: AssetsTotal is AssetsAvailable up to the rounding the
+        // clock leaves in the last digits of AssetsTotal, never below it.
+        Number const assetsTotal = vaultAfter->at(sfAssetsTotal);
+        Number const assetsAvailable = vaultAfter->at(sfAssetsAvailable);
+        BEAST_EXPECT(assetsTotal >= assetsAvailable);
+        Number const lastDigits{1, -9};
+        BEAST_EXPECT(assetsTotal - assetsAvailable < lastDigits);
+    }
+
+    void
+    testAccrualLateDefaultBacked()
+    {
+        testcase("accrual: a late default leaves no unbacked assets");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        if (!brokerSle)
+        {
+            fail("setup: no LoanBroker");
+            return;
+        }
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        std::uint32_t const interval = 600;
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(interval),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!loanSle)
+        {
+            fail("setup: no Loan");
+            return;
+        }
+        std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+        Number const periodInterest = loanAccrualRate(loanSle, brokerSle) * Number{interval};
+        if (periodInterest <= Number{})
+        {
+            fail("setup: loan accrues nothing");
+            return;
+        }
+
+        // The borrower pays nothing; the broker defaults one full period after the due date.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + interval}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        if (!vaultSle)
+        {
+            fail("setup: no Vault");
+            return;
+        }
+
+        // The Vault's only loan is gone and it had no cover, so its total is its cash.
+        Number const unbacked =
+            Number{vaultSle->at(sfAssetsTotal)} - Number{vaultSle->at(sfAssetsAvailable)};
+        BEAST_EXPECT(unbacked < periodInterest / Number{100});
+    }
+    void
+    testAccrualPrepaymentRecognizedOnce()
+    {
+        testcase("accrual: a prepayment is recognized once");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        auto const vaultStart = env.le(broker.vaultKeylet());
+        if (!brokerSle || !vaultStart)
+        {
+            fail("setup: broker or vault missing");
+            return;
+        }
+        if (getAccountingMethod(vaultStart) != kVaultAccountingAccrual)
+        {
+            fail("setup: vault is not an accrual vault");
+            return;
+        }
+        Number const assetsTotalStart = vaultStart->at(sfAssetsTotal);
+        Number const assetsAvailableStart = vaultStart->at(sfAssetsAvailable);
+
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSet = env.le(loanKeylet);
+        if (!loanSet)
+        {
+            fail("setup: loan missing");
+            return;
+        }
+        // Slack for the clock windows the schedule does not line up with: the
+        // ledger before the loan's start and the 30 seconds before each due
+        // date. Two minutes at the origination rate covers them.
+        Number const slack = loanAccrualRate(loanSet, brokerSle) * Number{120};
+
+        auto const roundedUp = [&](Number const& value) {
+            return STAmount{
+                broker.asset.raw(),
+                roundToAsset(
+                    broker.asset.raw(),
+                    value,
+                    loanSet->at(sfLoanScale),
+                    Number::RoundingMode::Upward)};
+        };
+        STAmount const periodic = roundedUp(Number{loanSet->at(sfPeriodicPayment)});
+
+        // One regular LoanPay, on time, carrying two periodic payments.
+        env(pay(borrower, loanKeylet.key, periodic + periodic), Ter(tesSUCCESS));
+        env.close();
+
+        auto const prepaid = env.le(loanKeylet);
+        if (!prepaid || prepaid->at(sfPaymentRemaining) != 2)
+        {
+            fail("setup: the payment did not settle two periods");
+            return;
+        }
+
+        // Third period, paid just before its due date.
+        env.close(NetClock::time_point{NetClock::duration{prepaid->at(sfNextPaymentDueDate) - 30}});
+        env(pay(borrower, loanKeylet.key, periodic), Ter(tesSUCCESS));
+        env.close();
+
+        auto const last = env.le(loanKeylet);
+        if (!last || last->at(sfPaymentRemaining) != 1)
+        {
+            fail("setup: the third period was not settled");
+            return;
+        }
+
+        // Last period, paid just before its due date for the whole remainder.
+        env.close(NetClock::time_point{NetClock::duration{last->at(sfNextPaymentDueDate) - 30}});
+        env(pay(borrower, loanKeylet.key, roundedUp(Number{last->at(sfTotalValueOutstanding)})),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const repaid = env.le(loanKeylet);
+        auto const vaultEnd = env.le(broker.vaultKeylet());
+        if (!repaid || !vaultEnd || repaid->at(sfPaymentRemaining) != 0 ||
+            Number{repaid->at(sfPrincipalOutstanding)} != Number{})
+        {
+            fail("setup: the loan was not repaid in full");
+            return;
+        }
+
+        // With the loan repaid, the vault's cash has grown by exactly the
+        // interest it received; sfAssetsTotal must not have grown by more.
+        Number const totalGain = Number{vaultEnd->at(sfAssetsTotal)} - assetsTotalStart;
+        Number const cashGain = Number{vaultEnd->at(sfAssetsAvailable)} - assetsAvailableStart;
+        Number const overCredit = totalGain - cashGain;
+
+        BEAST_EXPECT(overCredit < slack);
+    }
+    void
+    testAccrualZeroInterestPayment()
+    {
+        testcase("accrual: a zero-interest payment beside an accruing loan");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        // Originates one loan; an absent rate leaves sfInterestRate at 0.
+        auto const originate = [&](std::optional<TenthBips32> rate) -> std::optional<Keylet> {
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!brokerSle)
+                return std::nullopt;
+            Keylet const loanKeylet =
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+            if (rate)
+            {
+                env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+                    kCounterparty(lender),
+                    kInterestRate(*rate),
+                    kPaymentTotal(4),
+                    kPaymentInterval(600),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+                    kCounterparty(lender),
+                    kPaymentTotal(4),
+                    kPaymentInterval(600),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(tesSUCCESS));
+            }
+            return loanKeylet;
+        };
+
+        // Both loans in one ledger, so they share a due date.
+        auto const accruing = originate(TenthBips32{percentageToTenthBips(12)});
+        auto const zeroRate = originate(std::nullopt);
+        env.close();
+        if (!accruing || !zeroRate)
+        {
+            fail("setup: broker not found");
+            return;
+        }
+
+        auto const vaultLent = env.le(broker.vaultKeylet());
+        auto const zeroLoan = env.le(*zeroRate);
+        if (!vaultLent || !zeroLoan)
+        {
+            fail("setup: vault or loan not found");
+            return;
+        }
+        if (getAccountingMethod(vaultLent) != kVaultAccountingAccrual ||
+            vaultLent->at(sfAccrualRate) <= Number{} ||
+            vaultLent->at(sfUnearnedInterest) <= Number{} || zeroLoan->at(sfInterestRate) != 0)
+        {
+            fail("setup: vault is not accruing or the loan carries interest");
+            return;
+        }
+
+        // Stand inside the first period, so the vault accrues the other loan's
+        // interest for the elapsed seconds and the payment is on time.
+        env.close(
+            NetClock::time_point{NetClock::duration{zeroLoan->at(sfNextPaymentDueDate) - 30}});
+
+        STAmount const paymentAmount{
+            broker.asset.raw(),
+            roundToAsset(
+                broker.asset.raw(),
+                Number{zeroLoan->at(sfPeriodicPayment)},
+                zeroLoan->at(sfLoanScale),
+                Number::RoundingMode::Upward)};
+        env(pay(borrower, zeroRate->key, paymentAmount), Ter(std::ignore));
+        TER const result = env.ter();
+        env.close();
+
+        BEAST_EXPECT(result == tesSUCCESS);
+    }
+
+    // A loan earning less than one drop between two ledgers recognizes nothing:
+    // the vault prices no accrued interest, and a payment settles none.
+    void
+    testAccrualBelowOneDrop()
+    {
+        testcase("accrual: interest below one drop recognizes nothing");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        // 100 XRP at 1% earns about 0.03 drops a second.
+        env(set(borrower, broker.brokerID, xrpAsset(100).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(1)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        STAmount const paymentAmount{
+            broker.asset.raw(),
+            roundToAsset(
+                broker.asset.raw(),
+                Number{loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale),
+                Number::RoundingMode::Upward)};
+
+        // A payment in the ledger that made the loan finds no time elapsed.
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+        {
+            auto const loanPaid = env.le(loanKeylet);
+            BEAST_EXPECT(loanPaid && loanPaid->at(sfAccruedInterest) == Number{});
+        }
+
+        // One ledger on, the vault has earned well under a drop.
+        env.close();
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAccrualRate) > Number{});
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultSle) == Number{});
+
+        // A payment then settles nothing on the loan's own clock.
+        Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+        auto const loanAfter = env.le(loanKeylet);
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(loanAfter && vaultAfter);
+        if (!loanAfter || !vaultAfter)
+            return;
+        BEAST_EXPECT(loanAfter->at(sfAccruedInterest) == Number{});
+        BEAST_EXPECT(Number{vaultAfter->at(sfAssetsTotal)} > assetsTotalBefore);
+    }
+
+public:
+    void
+    run() override
+    {
+        testAccrualLateDefaultBacked();
+        testAccrualPrepaymentRecognizedOnce();
+        testAccrualZeroInterestPayment();
+        testAccrualBelowOneDrop();
+        testAccrualLoanSetOrigination();
+        testAccrualLoanPayDoesNotDoubleCount();
+        testAccrualImpairHaltsAccrual();
+        testAccrualDefaultStopsAccrual(false);
+        testAccrualDefaultStopsAccrual(true);
+        testAccrualSeveralLoans();
+        testAccrualDefaultLastPeriodWithFee();
+        testAccrualCappedByBudget();
+        testAccrualDefaultLastPeriodRounding();
+        testAccrualOffWithoutAmendment();
+        testAccrualSameLedgerPricing();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(LoanAccrual, tx, xrpl);
+
+}  // namespace xrpl::test

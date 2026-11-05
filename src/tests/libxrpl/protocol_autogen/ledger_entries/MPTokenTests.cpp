@@ -37,6 +37,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerMirrorEncryptionKeyValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
+    auto const redemptionAfterValue = canonical_UINT32();
 
     MPTokenBuilder builder{
         accountValue,
@@ -58,6 +59,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerMirrorEncryptionKey(issuerMirrorEncryptionKeyValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setRecoveryKey(recoveryKeyValue);
+    builder.setRedemptionAfter(redemptionAfterValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -194,6 +196,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRecoveryKey());
     }
 
+    {
+        auto const& expected = redemptionAfterValue;
+        auto const actualOpt = entry.getRedemptionAfter();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfRedemptionAfter");
+        EXPECT_TRUE(entry.hasRedemptionAfter());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -224,6 +234,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerMirrorEncryptionKeyValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
+    auto const redemptionAfterValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -244,6 +255,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerMirrorEncryptionKey) = issuerMirrorEncryptionKeyValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
     sle->at(sfRecoveryKey) = recoveryKeyValue;
+    sle->at(sfRedemptionAfter) = redemptionAfterValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -460,6 +472,19 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfRecoveryKey");
     }
 
+    {
+        auto const& expected = redemptionAfterValue;
+
+        auto const fromSleOpt = entryFromSle.getRedemptionAfter();
+        auto const fromBuilderOpt = entryFromBuilder.getRedemptionAfter();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfRedemptionAfter");
+        expectEqualField(expected, *fromBuilderOpt, "sfRedemptionAfter");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -546,5 +571,7 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasRecoveryKey());
     EXPECT_FALSE(entry.getRecoveryKey().has_value());
+    EXPECT_FALSE(entry.hasRedemptionAfter());
+    EXPECT_FALSE(entry.getRedemptionAfter().has_value());
 }
 }

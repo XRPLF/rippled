@@ -431,7 +431,8 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        if (auto const ret = LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, brokerSle, vaultSle, asset, j_))
         {
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE
@@ -454,6 +455,19 @@ LoanPay::doApply()
             return LoanPaymentType::Overpayment;
         return LoanPaymentType::Regular;
     }();
+
+    // An accrual vault has recognized this loan's interest by its clock up to
+    // now. Settle the loan before loanMakePayment moves it on.
+    bool const accrualVault = view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
+    Number rateBefore{};
+    Number interestOutstandingBefore{};
+    if (accrualVault)
+    {
+        accrueLoan(view, loanSle, brokerSle, vaultSle);
+        rateBefore = loanAccrualRate(loanSle, brokerSle);
+        interestOutstandingBefore = loanInterestOutstanding(loanSle);
+    }
 
     std::expected<LoanPaymentParts, TER> const paymentParts =
         loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
@@ -496,6 +510,27 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
+    // The interest this payment retires from the loan's schedule settles what
+    // the clock already recognized for it first; only the rest of the interest
+    // paid is new to AssetsTotal, and the rest of the retired interest leaves
+    // the budget. Then take the loan's new rate.
+    Number recognizedConsumed{};
+    if (accrualVault)
+    {
+        Number const retired = interestOutstandingBefore - loanInterestOutstanding(loanSle);
+        Number const accrued = loanSle->at(sfAccruedInterest);
+        if (retired > Number{})
+            recognizedConsumed = accrued < retired ? accrued : retired;
+        loanSle->at(sfAccruedInterest) = accrued - recognizedConsumed;
+
+        Number const released = retired - recognizedConsumed;
+        auto unearnedProxy = vaultSle->at(sfUnearnedInterest);
+        if (released > Number{})
+            unearnedProxy = *unearnedProxy > released ? *unearnedProxy - released : Number{};
+
+        adjustAccrualRate(view, vaultSle, loanAccrualRate(loanSle, brokerSle) - rateBefore);
+    }
+
     //------------------------------------------------------
     // LoanBroker object state changes
     view.update(brokerSle);
@@ -507,8 +542,11 @@ LoanPay::doApply()
     auto const deltas = loanPaymentDeltas(vaultSle, *paymentParts);
     // FixedPrecision never writes sfAssetsTotal directly, so assetsTotalDelta
     // (cash_basis's interestPaid) is unused here and only meaningful for
-    // Legacy/CashBasis below.
-    Number const assetsTotalDelta = fixedPrecision ? kNumZero : deltas.assetsTotalDelta;
+    // Legacy/CashBasis below. An accrual vault credits only the part of the
+    // payment's interest the clock has not already recognized;
+    // recognizedConsumed is zero on any other vault.
+    Number const assetsTotalDelta =
+        fixedPrecision ? kNumZero : deltas.assetsTotalDelta - recognizedConsumed;
     Number const debtTotalDelta = deltas.debtTotalDelta;
     STAmount const totalPaidToVaultRounded = fixedPrecision
         // Pass the exact Number sum: rounding it to 16 digits first could drop
