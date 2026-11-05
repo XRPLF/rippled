@@ -642,6 +642,17 @@ LEDGER_ENTRY(ltBENEFICIARY, 0x0200, Beneficiary, beneficiary, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
+/** A ledger object representing a passkey list.
+
+    \sa keylet::passkeyList
+ */
+LEDGER_ENTRY(ltPASSKEY_LIST, 0x0201, PasskeyList, passkey_list, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfPasskeys,             SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

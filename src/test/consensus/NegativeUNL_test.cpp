@@ -1,4 +1,5 @@
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
@@ -12,6 +13,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
@@ -510,10 +512,48 @@ class NegativeUNL_test : public beast::unit_test::Suite
         }
     }
 
+    // A UNLModify naming a P-256 validator key fails as an invalid key, as before
+    // P-256 existed, until the Passkey amendment is enabled.
+    void
+    testP256Validator()
+    {
+        for (bool const passkey : {false, true})
+        {
+            testcase(
+                std::string("UNLModify with a P256 validator key: ") +
+                (passkey ? "Passkey enabled" : "Passkey disabled"));
+
+            auto const all = jtx::testableAmendments();
+            jtx::Env env(*this, passkey ? all : all - featurePasskey);
+            auto l = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<UInt256>{},
+                env.app().getNodeFamily());
+            for (auto i = 0; i < 256 - 1; ++i)
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
+
+            jtx::Account const validator{"validator", KeyType::P256};
+            OpenView accum(&*l);
+            auto const res = apply(
+                env.app(),
+                accum,
+                createTx(true, l->seq(), validator.pk()),
+                ApplyFlags::TapNone,
+                env.journal);
+            BEAST_EXPECT(res.ter == (passkey ? TER{tesSUCCESS} : TER{tefFAILURE}));
+        }
+    }
+
+public:
     void
     run() override
     {
         testNegativeUNL();
+        testP256Validator();
     }
 };
 

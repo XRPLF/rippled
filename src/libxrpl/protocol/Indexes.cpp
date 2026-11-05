@@ -113,6 +113,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Vault = 'V',
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
+    PasskeyList = 'G',
     Sponsorship = '>',
     TransactionProposal = 'y',
     Beneficiary = 'F',
@@ -598,6 +599,18 @@ Keylet
 permissionedDomain(UInt256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+static Keylet
+passkeyList(AccountID const& account, std::uint32_t page) noexcept
+{
+    return {ltPASSKEY_LIST, indexHash(LedgerNameSpace::PasskeyList, account, page)};
+}
+
+Keylet
+passkeyList(AccountID const& account) noexcept
+{
+    return passkeyList(account, 0);
 }
 
 }  // namespace keylet

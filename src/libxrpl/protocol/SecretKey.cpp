@@ -17,13 +17,20 @@
 
 #include <boost/utility/string_view.hpp>
 
+#include <openssl/bn.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/obj_mac.h>
+
 #include <ed25519.h>
 #include <secp256k1.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -204,6 +211,59 @@ public:
 
 }  // namespace detail
 
+namespace {
+
+// An EC_KEY on P-256 holding the secret scalar `sk`.
+std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)>
+p256PrivateKey(SecretKey const& sk)
+{
+    std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> key{
+        EC_KEY_new_by_curve_name(NID_X9_62_prime256v1), &EC_KEY_free};
+    std::unique_ptr<BIGNUM, decltype(&BN_clear_free)> const scalar{
+        BN_bin2bn(sk.data(), static_cast<int>(sk.size()), nullptr), &BN_clear_free};
+    // LCOV_EXCL_START
+    if (key == nullptr || scalar == nullptr || EC_KEY_set_private_key(key.get(), scalar.get()) != 1)
+    {
+        logicError("P-256: cannot load the secret key");
+    }
+    // LCOV_EXCL_STOP
+    return key;
+}
+
+// Replaces s with n - s when s is above half the group order, the form verify refuses.
+void
+normalizeLowS(ECDSA_SIG& sig, EC_KEY const& key)
+{
+    BIGNUM const* r = nullptr;
+    BIGNUM const* s = nullptr;
+    ECDSA_SIG_get0(&sig, &r, &s);
+    BIGNUM const* const order = EC_GROUP_get0_order(EC_KEY_get0_group(&key));
+    std::unique_ptr<BIGNUM, decltype(&BN_free)> const half{BN_dup(order), &BN_free};
+    // LCOV_EXCL_START
+    if (half == nullptr || BN_rshift1(half.get(), half.get()) != 1)
+    {
+        logicError("sign: cannot compute half the P-256 order");
+    }
+    // LCOV_EXCL_STOP
+    if (BN_cmp(s, half.get()) <= 0)
+        return;
+
+    // ECDSA_SIG_set0 takes ownership of both numbers only when it succeeds.
+    BIGNUM* const lowS = BN_new();
+    BIGNUM* const rCopy = BN_dup(r);
+    // LCOV_EXCL_START
+    if (lowS == nullptr || rCopy == nullptr || BN_sub(lowS, order, s) != 1 ||
+        ECDSA_SIG_set0(&sig, rCopy, lowS) != 1)
+    {
+        BN_free(lowS);
+        BN_free(rCopy);
+        logicError("sign: cannot normalize a P-256 signature");
+    }
+    // LCOV_EXCL_STOP
+}
+
+}  // namespace
+
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest)
 {
@@ -265,6 +325,33 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             return Buffer{sig, len};
         }
+        case KeyType::P256: {
+            auto const digest = sha256(m);
+            auto const key = p256PrivateKey(sk);
+            std::unique_ptr<ECDSA_SIG, decltype(&ECDSA_SIG_free)> const sig{
+                ECDSA_do_sign(digest.data(), static_cast<int>(digest.size()), key.get()),
+                &ECDSA_SIG_free};
+
+            // A P-256 DER signature is at most 72 bytes.
+            std::array<unsigned char, 72> der{};
+            unsigned char* out = der.data();
+            // LCOV_EXCL_START
+            if (sig == nullptr)
+            {
+                logicError("sign: cannot produce a P-256 signature");
+            }
+            // LCOV_EXCL_STOP
+            normalizeLowS(*sig, *key);
+            int const len = i2d_ECDSA_SIG(sig.get(), nullptr);
+            // LCOV_EXCL_START
+            if (len <= 0 || len > static_cast<int>(der.size()) ||
+                i2d_ECDSA_SIG(sig.get(), &out) != len)
+            {
+                logicError("sign: cannot produce a P-256 signature");
+            }
+            // LCOV_EXCL_STOP
+            return Buffer{der.data(), static_cast<std::size_t>(len)};
+        }
         default:
             logicError("sign: invalid type");
     }
@@ -292,6 +379,14 @@ generateSecretKey(KeyType type, Seed const& seed)
     }
 
     if (type == KeyType::Secp256k1)
+    {
+        auto key = detail::deriveDeterministicRootKey(seed);
+        SecretKey const sk{Slice{key.data(), key.size()}};
+        secureErase(key.data(), key.size());
+        return sk;
+    }
+
+    if (type == KeyType::P256)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
         SecretKey const sk{Slice{key.data(), key.size()}};
@@ -329,6 +424,36 @@ derivePublicKey(KeyType type, SecretKey const& sk)
             ed25519_publickey(sk.data(), &buf[1]);
             return PublicKey(Slice{buf, sizeof(buf)});
         }
+        case KeyType::P256: {
+            auto const key = p256PrivateKey(sk);
+            EC_GROUP const* const group = EC_KEY_get0_group(key.get());
+            std::unique_ptr<EC_POINT, decltype(&EC_POINT_free)> const point{
+                EC_POINT_new(group), &EC_POINT_free};
+            std::unique_ptr<BIGNUM, decltype(&BN_free)> const x{BN_new(), &BN_free};
+            std::unique_ptr<BIGNUM, decltype(&BN_free)> const y{BN_new(), &BN_free};
+
+            // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.
+            std::array<unsigned char, 65> buf{};
+            buf[0] = 0xF6;
+            // LCOV_EXCL_START
+            if (point == nullptr || x == nullptr || y == nullptr ||
+                EC_POINT_mul(
+                    group,
+                    point.get(),
+                    EC_KEY_get0_private_key(key.get()),
+                    nullptr,
+                    nullptr,
+                    nullptr) != 1 ||
+                EC_POINT_get_affine_coordinates(group, point.get(), x.get(), y.get(), nullptr) !=
+                    1 ||
+                BN_bn2binpad(x.get(), &buf[1], 32) != 32 ||
+                BN_bn2binpad(y.get(), &buf[33], 32) != 32)
+            {
+                logicError("derivePublicKey: cannot compute the P-256 public key");
+            }
+            // LCOV_EXCL_STOP
+            return PublicKey{Slice{buf.data(), buf.size()}};
+        }
         default:
             logicError("derivePublicKey: bad key type");
     };
@@ -342,6 +467,10 @@ generateKeyPair(KeyType type, Seed const& seed)
         case KeyType::Secp256k1: {
             detail::Generator const g(seed);
             return g(0);
+        }
+        case KeyType::P256: {
+            auto const sk = generateSecretKey(type, seed);
+            return {derivePublicKey(type, sk), sk};
         }
         default:
         case KeyType::Ed25519: {

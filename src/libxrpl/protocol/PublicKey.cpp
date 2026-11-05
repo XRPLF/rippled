@@ -4,8 +4,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
@@ -13,12 +16,20 @@
 
 #include <boost/multiprecision/number.hpp>
 
+#include <openssl/bn.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/obj_mac.h>
+
 #include <ed25519.h>
 #include <secp256k1.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -175,21 +186,22 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < kSize)
+    if (slice.size() > kMaxSize)
     {
         logicError(
-            "PublicKey::PublicKey - Input slice cannot be an undersized "
+            "PublicKey::PublicKey - Input slice cannot be an oversized "
             "buffer");
     }
 
     if (!publicKeyType(slice))
         logicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), kSize);
+    size_ = slice.size();
+    std::memcpy(buf_, slice.data(), size_);
 }
 
-PublicKey::PublicKey(PublicKey const& other)
+PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
 {
-    std::memcpy(buf_, other.buf_, kSize);
+    std::memcpy(buf_, other.buf_, size_);
 }
 
 PublicKey&
@@ -197,7 +209,8 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        std::memcpy(buf_, other.buf_, kSize);
+        size_ = other.size_;
+        std::memcpy(buf_, other.buf_, size_);
     }
 
     return *this;
@@ -217,7 +230,19 @@ publicKeyType(Slice const& slice)
             return KeyType::Secp256k1;
     }
 
+    if (slice.size() == 65 && slice[0] == 0xF6)
+        return KeyType::P256;
+
     return std::nullopt;
+}
+
+std::optional<KeyType>
+enabledPublicKeyType(Slice const& slice, Rules const& rules)
+{
+    auto const type = publicKeyType(slice);
+    if (type == KeyType::P256 && !rules.enabled(featurePasskey))
+        return std::nullopt;
+    return type;
 }
 
 bool
@@ -268,6 +293,91 @@ verifyDigest(
                &pubkeyImp) == 1;
 }
 
+namespace {
+
+struct ECDSASignature
+{
+    std::array<std::uint8_t, 32> r{};
+    std::array<std::uint8_t, 32> s{};
+};
+
+// Half the P-256 group order, (n - 1) / 2, big-endian; a low-S signature has s at most this.
+constexpr std::array<std::uint8_t, 32> kP256HalfOrder{
+    0x7F, 0xFF, 0xFF, 0xFF, 0x80, 0x00, 0x00, 0x00, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xDE, 0x73, 0x7D, 0x56, 0xD3, 0x8B, 0xCF, 0x42, 0x79, 0xDC, 0xE5, 0x61, 0x7E, 0x31, 0x92, 0xA8,
+};
+
+// Right-aligns a minimal DER INTEGER into 32 bytes; false when it is wider than 32 bytes.
+bool
+copyInteger(Slice integer, std::array<std::uint8_t, 32>& out) noexcept
+{
+    // sigPart allows a leading zero only where it keeps the high bit from reading as a sign.
+    if (integer[0] == 0x00)
+        integer += 1;
+    if (integer.size() > out.size())
+        return false;
+    std::memcpy(out.data() + (out.size() - integer.size()), integer.data(), integer.size());
+    return true;
+}
+
+// Parses a strict DER SEQUENCE { INTEGER r, INTEGER s }: minimal INTEGERs, a SEQUENCE
+// length that covers exactly the rest, and nothing after s. A signature has one encoding.
+std::optional<ECDSASignature>
+parseDERSignature(Slice const& der)
+{
+    if (der.size() < 8 || der.size() > 72 || der[0] != 0x30 || der[1] != der.size() - 2)
+        return std::nullopt;
+
+    Slice rest = der + 2;
+    auto const r = sigPart(rest);
+    auto const s = sigPart(rest);
+    ECDSASignature result;
+    if (!r || !s || !rest.empty() || !copyInteger(*r, result.r) || !copyInteger(*s, result.s))
+        return std::nullopt;
+    return result;
+}
+
+// Verifies an ECDSA signature over a SHA-256 digest with the P-256 point (x, y).
+bool
+verifyP256ECDSA(
+    Sha256Hasher::result_type const& digest,
+    ECDSASignature const& sig,
+    std::uint8_t const* x,
+    std::uint8_t const* y) noexcept
+{
+    std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> const key{
+        EC_KEY_new_by_curve_name(NID_X9_62_prime256v1), &EC_KEY_free};
+    std::unique_ptr<BIGNUM, decltype(&BN_free)> const bnX{BN_bin2bn(x, 32, nullptr), &BN_free};
+    std::unique_ptr<BIGNUM, decltype(&BN_free)> const bnY{BN_bin2bn(y, 32, nullptr), &BN_free};
+    std::unique_ptr<ECDSA_SIG, decltype(&ECDSA_SIG_free)> const ecdsaSig{
+        ECDSA_SIG_new(), &ECDSA_SIG_free};
+    // LCOV_EXCL_START
+    if (key == nullptr || bnX == nullptr || bnY == nullptr || ecdsaSig == nullptr)
+        return false;
+    // LCOV_EXCL_STOP
+
+    // Refuses coordinates that are not a point on the curve.
+    if (EC_KEY_set_public_key_affine_coordinates(key.get(), bnX.get(), bnY.get()) != 1)
+        return false;
+
+    // ECDSA_SIG_set0 takes ownership of r and s only when it succeeds.
+    BIGNUM* const r = BN_bin2bn(sig.r.data(), 32, nullptr);
+    BIGNUM* const s = BN_bin2bn(sig.s.data(), 32, nullptr);
+    // LCOV_EXCL_START
+    if (ECDSA_SIG_set0(ecdsaSig.get(), r, s) != 1)
+    {
+        BN_free(r);
+        BN_free(s);
+        return false;
+    }
+    // LCOV_EXCL_STOP
+
+    return ECDSA_do_verify(
+               digest.data(), static_cast<int>(digest.size()), ecdsaSig.get(), key.get()) == 1;
+}
+
+}  // namespace
+
 bool
 verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
@@ -288,6 +398,17 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // first strip that prefix.
             return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
+        XRPL_ASSERT(*type == KeyType::P256, "xrpl::verify : P-256 is the remaining key type");
+        auto const parsedSig = parseDERSignature(sig);
+        if (!parsedSig)
+            return false;
+
+        // Only the low-S form of (r, s) and (r, n - s) is accepted, so it cannot be swapped.
+        if (std::ranges::lexicographical_compare(kP256HalfOrder, parsedSig->s))
+            return false;
+
+        // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.
+        return verifyP256ECDSA(sha256(m), *parsedSig, publicKey.data() + 1, publicKey.data() + 33);
     }
     return false;
 }

@@ -63,7 +63,7 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         return temDST_IS_SRC;
 
-    if (!publicKeyType(ctx.tx[sfPublicKey]))
+    if (!enabledPublicKeyType(ctx.tx[sfPublicKey], ctx.rules))
         return temMALFORMED;
 
     return tesSUCCESS;

@@ -36,10 +36,11 @@ namespace xrpl {
  * information needed to determine the cryptosystem
  * parameters used is stored inside the key.
  *
- * As of this writing two systems are supported:
+ * As of this writing three systems are supported:
  *
  *     secp256k1
  *     ed25519
+ *     p256
  *
  * secp256k1 public keys consist of a 33 byte
  * compressed public key, with the lead byte equal
@@ -52,10 +53,12 @@ namespace xrpl {
 class PublicKey
 {
 protected:
-    // All the constructed public keys are valid, non-empty and contain 33
-    // bytes of data.
-    static constexpr std::size_t kSize = 33;
-    std::uint8_t buf_[kSize]{};  // should be large enough
+    // All the constructed public keys are valid and non-empty. secp256k1
+    // and ed25519 keys hold 33 bytes of data; uncompressed p256 keys hold
+    // 65 bytes.
+    static constexpr std::size_t kMaxSize = 65;
+    std::uint8_t buf_[kMaxSize]{};  // should be large enough
+    std::size_t size_ = 0;
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -81,10 +84,10 @@ public:
         return buf_;
     }
 
-    static std::size_t
-    size() noexcept
+    [[nodiscard]] std::size_t
+    size() const noexcept
     {
-        return kSize;
+        return size_;
     }
 
     [[nodiscard]] const_iterator
@@ -102,19 +105,19 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + size_;
     }
 
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + size_;
     }
 
     [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, kSize};
+        return {buf_, size_};
     }
 
     operator Slice() const noexcept
@@ -132,7 +135,7 @@ operator<<(std::ostream& os, PublicKey const& pk);
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool
@@ -228,6 +231,17 @@ publicKeyType(PublicKey const& publicKey)
     return publicKeyType(publicKey.slice());
 }
 /** @} */
+
+class Rules;
+
+/**
+ * Returns the type of public key the ledger's rules accept.
+ *
+ * @return std::nullopt for an unknown key type, and for a P-256 key while
+ *         featurePasskey is not enabled.
+ */
+[[nodiscard]] std::optional<KeyType>
+enabledPublicKeyType(Slice const& slice, Rules const& rules);
 
 /**
  * Verify a secp256k1 signature on the digest of a message.

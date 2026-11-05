@@ -26,6 +26,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/account/SetPasskeyList.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
@@ -186,6 +187,18 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
+TER
+removePasskeyListFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    UInt256 const&,
+    SLE::Ref sleDel,
+    beast::Journal j)
+{
+    return SetPasskeyList::deleteSLE(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -212,6 +225,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltPASSKEY_LIST:
+            return removePasskeyListFromLedger;
         default:
             return nullptr;
     }
