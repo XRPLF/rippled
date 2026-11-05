@@ -535,7 +535,8 @@ class InvariantsFirewall_test : public InvariantsBase
         using namespace jtx;
 
         doInvariantCheck(
-            {"Invariant failed: a firewall limit was deleted by a charge"},
+            {"Invariant failed: a firewall limit was removed other than by its owner's "
+             "FirewallLimitSet"},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 moveXrp(ac, a1.id(), a2.id(), XRP(5));
                 auto const [limit, field] = peekLimit(ac, a1.id(), xrpIssue());

@@ -44,7 +44,11 @@ public:
  * plus the measured charge, and a positive charge never takes a limit over its
  * LimitAmount or lets out an asset the firewall refuses. A FirewallLimitSet
  * keeps what was spent and keeps the firewall's LimitCount equal to its limit
- * fields, and a failed transaction changes no limit.
+ * fields.
+ *
+ * A limit field appears only through a successful FirewallLimitSet of its
+ * owner, disappears only through one with tfLimitDelete, and otherwise changes
+ * only in a successful transaction of its owner.
  */
 class ValidFirewallOutflow
 {
@@ -58,6 +62,9 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
+    [[nodiscard]] bool
+    checkLimitFields(STTx const& tx, TER result, beast::Journal const& j) const;
+
     [[nodiscard]] bool
     checkLimitSet(ReadView const& view, AccountID const& owner, beast::Journal const& j) const;
 
