@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -25,9 +24,6 @@ private:
 
     TER
     bridgeOffers(SLE::Ref buy, SLE::Ref sell);
-
-    TER
-    transferNFToken(AccountID const& buyer, AccountID const& seller, UInt256 const& nfTokenID);
 
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;

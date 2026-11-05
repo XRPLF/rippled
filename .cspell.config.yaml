@@ -69,6 +69,8 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - cbindgen
+  - cdylib
   - canonicalised
   - cctools
   - changespq
@@ -107,6 +109,7 @@ words:
   - deleteme
   - demultiplexer
   - deserializaton
+  - desugars
   - desync
   - desynced
   - determ
@@ -116,7 +119,7 @@ words:
   - dsymutil
   - dxrpl
   - elgamal
-  - enabled
+  - emittance
   - enablerepo
   - endmacro
   - envrc
@@ -133,6 +136,7 @@ words:
   - gcov
   - gcovr
   - ghead
+  - gmock
   - Gnutella
   - godexsoft
   - gpgcheck
@@ -142,7 +146,9 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - impls
   - inequation
+  - initialiser
   - Injectivity
   - insuf
   - insuff
@@ -178,6 +184,7 @@ words:
   - lsmf
   - ltype
   - mathbunnyru
+  - maxima
   - mcmodel
   - MEMORYSTATUSEX
   - MPTAMM
@@ -197,6 +204,7 @@ words:
   - mptokenissuance
   - mptokens
   - mpts
+  - mpt
   - mtgox
   - mudhra
   - multisig
@@ -254,6 +262,7 @@ words:
   - pyparsing
   - qalloc
   - qbsprofile
+  - qself
   - queuable
   - Raphson
   - rcflags
@@ -311,7 +320,9 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stjson
   - stnum
+  - stnumber
   - stobj
   - stobject
   - stpath
@@ -352,6 +363,7 @@ words:
   - unflatten
   - unfund
   - unimpair
+  - unmetered
   - unroutable
   - unscalable
   - unserviced
@@ -372,6 +384,8 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - wasmparser
+  - Werror
   - wextra
   - wptr
   - writeme
@@ -379,9 +393,11 @@ words:
   - wthread
   - xchain
   - xcrun
+  - xfloat
   - ximinez
   - XMACRO
   - xored
+  - xrp
   - xrpkuwait
   - xrpl
   - xrpld

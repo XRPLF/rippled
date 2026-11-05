@@ -7,17 +7,23 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OpenViewSandbox.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <queue>
+#include <utility>
 
 namespace xrpl {
 
@@ -64,6 +70,12 @@ public:
     XRPAmount const baseFee;
     beast::Journal const journal;
 
+    OpenView&
+    openView()
+    {
+        return base_.view();
+    }
+
     ApplyView&
     view()
     {
@@ -99,10 +111,58 @@ public:
     }
 
     /**
+     * Sets the gas used in the metadata
+     */
+    void
+    setGasUsed(std::uint32_t const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    /**
+     * Sets the gas used in the metadata
+     */
+    void
+    setVMReturnCode(std::int32_t const vmReturnCode)
+    {
+        vmReturnCode_ = vmReturnCode;
+    }
+
+    /**
+     * Sets the contract events for the metadata of a successful transaction
+     */
+    void
+    setContractEvents(STArray events)
+    {
+        contractEvents_ = std::move(events);
+    }
+
+    /**
+     * Sets the transactions emitted by this transaction
+     */
+    void
+    setEmittedTxns(std::queue<std::shared_ptr<STTx const>> const emittedTxns)
+    {
+        emittedTxns_ = emittedTxns;
+    }
+
+    std::queue<std::shared_ptr<STTx const>>
+    getEmittedTxns()
+    {
+        return emittedTxns_;
+    }
+
+    /**
      * Discard changes and start fresh.
      */
     void
     discard();
+
+    /**
+     * Finalize changes.
+     */
+    void
+    finalize();
 
     /**
      * Apply the transaction result to the base.
@@ -147,7 +207,7 @@ public:
     }
 
 private:
-    OpenView& base_;
+    OpenViewSandbox base_;
     ApplyFlags flags_;
 
     // view_ and viewRef_ always represent the same view. Update viewRef_ whenever view_ is
@@ -157,6 +217,10 @@ private:
 
     // The ID of the batch transaction we are executing under, if set.
     std::optional<UInt256 const> parentBatchId_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> vmReturnCode_;
+    std::optional<STArray> contractEvents_;
+    std::queue<std::shared_ptr<STTx const>> emittedTxns_;
 };
 
 }  // namespace xrpl

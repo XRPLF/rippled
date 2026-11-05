@@ -161,4 +161,12 @@ checkTrustlineDeepFrozen(
     beast::Journal const j,
     Issue const& issue);
 
+TER
+transferNFToken(
+    ApplyView& view,
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID,
+    beast::Journal j);
+
 }  // namespace xrpl::nft

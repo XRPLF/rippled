@@ -33,6 +33,7 @@ inline constexpr std::string_view kChannelAuthorize{"channel_authorize"};
 inline constexpr std::string_view kChannelVerify{"channel_verify"};
 inline constexpr std::string_view kConnect{"connect"};
 inline constexpr std::string_view kConsensusInfo{"consensus_info"};
+inline constexpr std::string_view kContractInfo{"contract_info"};
 inline constexpr std::string_view kDepositAuthorized{"deposit_authorized"};
 inline constexpr std::string_view kFeature{"feature"};
 inline constexpr std::string_view kFee{"fee"};

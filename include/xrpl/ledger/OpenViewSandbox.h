@@ -1,0 +1,86 @@
+#pragma once
+
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+
+namespace xrpl {
+
+class OpenViewSandbox
+{
+private:
+    OpenView& parent_;
+    std::unique_ptr<OpenView> sandbox_;
+
+public:
+    using key_type = ReadView::key_type;
+
+    OpenViewSandbox(OpenView& parent)
+        : parent_(parent), sandbox_(std::make_unique<OpenView>(kBatchView, parent))
+    {
+    }
+
+    void
+    rawErase(std::shared_ptr<SLE> const& sle)
+    {
+        sandbox_->rawErase(sle);
+    }
+
+    void
+    rawInsert(std::shared_ptr<SLE> const& sle)
+    {
+        sandbox_->rawInsert(sle);
+    }
+
+    void
+    rawReplace(std::shared_ptr<SLE> const& sle)
+    {
+        sandbox_->rawReplace(sle);
+    }
+
+    void
+    rawDestroyXRP(XRPAmount const& fee)
+    {
+        sandbox_->rawDestroyXRP(fee);
+    }
+
+    void
+    rawTxInsert(
+        key_type const& key,
+        std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData)
+    {
+        sandbox_->rawTxInsert(key, txn, metaData);
+    }
+
+    void
+    commit()
+    {
+        sandbox_->apply(parent_);
+        sandbox_ = std::make_unique<OpenView>(kBatchView, parent_);
+    }
+
+    void
+    discard()
+    {
+        sandbox_ = std::make_unique<OpenView>(kBatchView, parent_);
+    }
+
+    [[nodiscard]] OpenView const&
+    view() const
+    {
+        return *sandbox_;
+    }
+
+    OpenView&
+    view()
+    {
+        return *sandbox_;
+    }
+};
+
+}  // namespace xrpl

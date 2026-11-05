@@ -1,0 +1,113 @@
+#pragma once
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/tx/wasm/ContractContext.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <xrpl_host_functions.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string_view>
+
+namespace xrpl {
+class ContractHostFunctionsImpl : public WasmHostFunctionsImpl
+{
+    ContractContext& contractCtx_;
+    uint256 const contractId_ = contractCtx_.result.contractKeylet.key;
+
+public:
+    // Constructor for contract-specific functionality
+    ContractHostFunctionsImpl(ContractContext& contractContext)
+        : WasmHostFunctionsImpl(contractContext.applyCtx, contractContext.result.contractKeylet)
+        , contractCtx_(contractContext)
+    {
+    }
+
+    // std::expected<Bytes, HostFunctionError>
+    // getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t
+    // stTypeId);
+
+    // TODO: `updateData` is inherited from the escrow host and is not refused here, so a
+    // contract calling `set_data` is told how many bytes it stored and then has them
+    // dropped: `ContractCall::doApply` never drains `getData()`. Refusing it needs an error
+    // a contract can read, which `Unimplemented` is not — see the note in HostFunc.h.
+    std::expected<Bytes, HostFunctionError>
+    instanceParam(std::uint32_t index, std::uint32_t stTypeId) override;
+
+    std::expected<Bytes, HostFunctionError>
+    functionParam(std::uint32_t index, std::uint32_t stTypeId) override;
+
+    std::expected<Bytes, HostFunctionError>
+    getDataObjectField(AccountID const& account, std::string_view const& key) override;
+
+    std::expected<Bytes, HostFunctionError>
+    getDataNestedObjectField(
+        AccountID const& account,
+        std::string_view const& key,
+        std::string_view const& nestedKey) override;
+
+    std::expected<Bytes, HostFunctionError>
+    getDataArrayElementField(AccountID const& account, size_t index, std::string_view const& key)
+        override;
+
+    std::expected<Bytes, HostFunctionError>
+    getDataNestedArrayElementField(
+        AccountID const& account,
+        std::string_view const& key,
+        size_t index,
+        std::string_view const& nestedKey) override;
+
+    std::expected<int32_t, HostFunctionError>
+    setDataObjectField(
+        AccountID const& account,
+        std::string_view const& key,
+        STJson::Value const& value) override;
+
+    std::expected<int32_t, HostFunctionError>
+    setDataNestedObjectField(
+        AccountID const& account,
+        std::string_view const& nestedKey,
+        std::string_view const& key,
+        STJson::Value const& value) override;
+
+    std::expected<int32_t, HostFunctionError>
+    setDataArrayElementField(
+        AccountID const& account,
+        size_t index,
+        std::string_view const& key,
+        STJson::Value const& value) override;
+
+    std::expected<int32_t, HostFunctionError>
+    setDataNestedArrayElementField(
+        AccountID const& account,
+        std::string_view const& key,
+        size_t index,
+        std::string_view const& nestedKey,
+        STJson::Value const& value) override;
+
+    std::expected<int32_t, HostFunctionError>
+    buildTxn(std::uint16_t const& txType) override;
+
+    std::expected<int32_t, HostFunctionError>
+    addTxnField(std::uint32_t const& index, SField const& field, Slice const& data) override;
+
+    std::expected<int32_t, HostFunctionError>
+    emitBuiltTxn(std::uint32_t const& index) override;
+
+    std::expected<int32_t, HostFunctionError>
+    emitTxn(std::shared_ptr<STTx const> const& stxPtr) override;
+
+    std::expected<int32_t, HostFunctionError>
+    emitEvent(std::string_view const& eventName, STJson const& eventData) override;
+};
+
+}  // namespace xrpl

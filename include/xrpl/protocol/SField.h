@@ -33,6 +33,9 @@ class STInteger;
 class STNumber;
 class STVector256;
 class STCurrency;
+class STData;
+class STDataType;
+class STJson;
 
 // NOLINTBEGIN(readability-identifier-naming)
 #pragma push_macro("XMACRO")
@@ -72,6 +75,9 @@ class STCurrency;
     STYPE(STI_ISSUE, 24)                          \
     /* 25 is reserved */                          \
     STYPE(STI_CURRENCY, 26)                       \
+    STYPE(STI_DATA, 27)                           \
+    STYPE(STI_DATATYPE, 28)                       \
+    STYPE(STI_JSON, 29)                           \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
@@ -360,6 +366,9 @@ using SF_CURRENCY = TypedField<STCurrency>;
 using SF_NUMBER = TypedField<STNumber>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
+using SF_DATA = TypedField<STData>;
+using SF_DATATYPE = TypedField<STDataType>;
+using SF_JSON = TypedField<STJson>;
 // NOLINTEND(readability-identifier-naming)
 
 //------------------------------------------------------------------------------

@@ -35,7 +35,7 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
-    , viewRef_(view_.emplace(&base_, flags_))
+    , viewRef_(view_.emplace(&base_.view(), flags_))
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
@@ -46,14 +46,33 @@ ApplyContext::ApplyContext(
 void
 ApplyContext::discard()
 {
-    viewRef_ = view_.emplace(&base_, flags_);
+    base_.discard();
+    viewRef_ = view_.emplace(&base_.view(), flags_);
+}
+
+void
+ApplyContext::finalize()
+{
+    base_.commit();
+    viewRef_ = view_.emplace(&base_.view(), flags_);
 }
 
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
+    // tecINTERNAL reports an xrpld bug, not a result: nothing the VM recorded
+    // before we hit it belongs in the metadata.
+    if (ter != tecINTERNAL)
+    {
+        if (vmReturnCode_.has_value())
+            viewRef_.get().setVMReturnCode(*vmReturnCode_);
+        viewRef_.get().setGasUsed(gasUsed_);
+    }
+    // Only a successful call's events are recorded.
+    if (contractEvents_.has_value() && isTesSuccess(ter))
+        viewRef_.get().setContractEvents(*contractEvents_);
     return viewRef_.get().apply(
-        base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+        base_.view(), tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 void
@@ -73,7 +92,7 @@ void
 ApplyContext::visit(
     std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
-    viewRef_.get().visit(base_, func);
+    viewRef_.get().visit(base_.view(), func);
 }
 
 }  // namespace xrpl

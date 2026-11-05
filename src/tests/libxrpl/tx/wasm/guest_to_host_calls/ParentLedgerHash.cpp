@@ -1,0 +1,50 @@
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <tx/wasm/fixtures/GuestToHostCallFixture.h>
+
+#include <cstdint>
+#include <string>
+
+namespace xrpl::test {
+
+using testing::Return;
+
+// parent_ldgr_hash — no input, 32 bytes written out.
+struct ParentLedgerHashGuest : GuestToHostCallTest
+{
+    static constexpr std::int32_t kOutAt = 0;
+    static constexpr std::int32_t kHashLen = static_cast<std::int32_t>(uint256::size());
+
+    static constexpr Arg kOut = Arg::outRegion(kOutAt, kHashLen);
+
+    // A hash whose first four bytes are distinctive, so the guest's `i32.load` of them
+    // cannot pass by accident.
+    Bytes const hashBytes = [] {
+        Bytes bytes(uint256::size(), 0xab);
+        bytes[0] = 0x0d;
+        bytes[1] = 0x0c;
+        bytes[2] = 0x0b;
+        bytes[3] = 0x0a;
+        return bytes;
+    }();
+    Hash const hash = uint256::fromVoid(hashBytes.data());
+
+    [[nodiscard]] static std::string
+    watFor(Arg outArg, Answer answer = Answer::WrittenBytes)
+    {
+        return hostCallWat("parent_ldgr_hash", {outArg}, {}, answer);
+    }
+};
+
+TEST_F(ParentLedgerHashGuest, hash_reaches_the_guests_out_region)
+{
+    EXPECT_CALL(host, getParentLedgerHash()).WillOnce(Return(hash));
+
+    auto const wat = watFor(kOut);
+    EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the hash's first four bytes, little-endian";
+}
+
+}  // namespace xrpl::test

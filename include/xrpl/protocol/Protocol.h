@@ -404,6 +404,11 @@ constexpr std::uint8_t kMaxAssetCheckDepth = 5;
 constexpr std::size_t kMaxWasmDataLength = 1 * 1024;  // 1KB
 
 /**
+ * Maximum amount of data transfer across hostfunction<->wasm border.
+ */
+constexpr std::size_t kWasmTransferLimit = 1 << 20;  // 1MB
+
+/**
  * A ledger index.
  */
 using LedgerIndex = std::uint32_t;

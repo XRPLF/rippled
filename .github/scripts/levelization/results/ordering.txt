@@ -1,6 +1,9 @@
 benchmarks.libxrpl > xrpl.basics
 benchmarks.libxrpl > xrpl.config
 benchmarks.libxrpl > xrpl.nodestore
+benchmarks.libxrpl > xrpl.protocol
+benchmarks.libxrpl > xrpl.protocol_autogen
+benchmarks.libxrpl > xrpl.tx
 libxrpl.basics > xrpl.basics
 libxrpl.conditions > xrpl.basics
 libxrpl.conditions > xrpl.conditions
@@ -15,6 +18,7 @@ libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
+libxrpl.ledger > xrpl.core
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
 libxrpl.ledger > xrpl.nodestore
@@ -210,6 +214,7 @@ xrpl.core > xrpl.json
 xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
+xrpl.ledger > xrpl.core
 xrpl.ledger > xrpl.json
 xrpl.ledger > xrpl.nodestore
 xrpl.ledger > xrpl.protocol

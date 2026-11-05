@@ -304,7 +304,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *      on-ledger are non-negative. This is due to implementation details of
  *      several operations which use unsigned arithmetic internally. This is
  *      sufficient to represent all valid XRP values (where the absolute value
- *      can not exceed kInitialXRP: 10^17), and MPT values (where the absolute
+ *      can not exceed kInitialXrp: 10^17), and MPT values (where the absolute
  *      value can not exceed maxMPTokenAmount: 2^63-1).
  *
  * ---- Mantissa Range Switching ----
@@ -450,6 +450,12 @@ public:
     }
 
     friend constexpr bool
+    operator!=(Number const& x, Number const& y) noexcept
+    {
+        return !(x == y);
+    }
+
+    friend constexpr bool
     operator<(Number const& l, Number const& r) noexcept
     {
         bool const lneg = l.negative_;
@@ -543,8 +549,21 @@ public:
     setround(RoundingMode inMode);
 
     /**
-     * Returns which mantissa scale is currently in use for normalization.
+     * Convert an integer to a RoundingMode, validating that it is in range.
      *
+     * Returns std::nullopt if the value does not correspond to a valid
+     * RoundingMode.
+     */
+    static std::optional<RoundingMode>
+    checkedRoundingMode(int mode) noexcept
+    {
+        if (mode < static_cast<int>(RoundingMode::ToNearest) ||
+            mode > static_cast<int>(RoundingMode::Upward))
+            return std::nullopt;
+        return static_cast<RoundingMode>(mode);
+    }
+
+    /**
      * If you think you need to call this outside of unit tests, no you don't.
      */
     static MantissaRange::MantissaScale

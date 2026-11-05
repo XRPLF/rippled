@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -139,6 +140,13 @@ canonical_VL()
 {
     static constexpr std::array<std::uint8_t, 3> data{{'a', 'b', 'c'}};
     return BlobValue{data.data(), data.size()};
+}
+
+using JsonValue = std::decay_t<typename SF_JSON::type::value_type>;
+inline JsonValue
+canonical_JSON()
+{
+    return JsonValue{};
 }
 
 // Untyped field canonical values

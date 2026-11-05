@@ -18,6 +18,7 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
@@ -233,6 +234,10 @@ public:
     getFieldI32(SField const& field) const;
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
+    [[nodiscard]] STData
+    getFieldData(SField const& field) const;
+    [[nodiscard]] STDataType
+    getFieldDataType(SField const& field) const;
 
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
@@ -251,6 +256,8 @@ public:
     getFieldCurrency(SField const& field) const;
     [[nodiscard]] STNumber const&
     getFieldNumber(SField const& field) const;
+    [[nodiscard]] STJson const&
+    getFieldJson(SField const& field) const;
 
     /**
      * Get the value of a field.
@@ -364,6 +371,12 @@ public:
     void
     set(STBase&& v);
 
+    /**
+     * Set `sfield` from `data`, which must hold exactly one serialized value of its type.
+     */
+    void
+    addFieldFromSlice(SField const& sfield, Slice const& data);
+
     void
     setFieldU8(SField const& field, unsigned char);
     void
@@ -404,6 +417,8 @@ public:
     setFieldArray(SField const& field, STArray const& v);
     void
     setFieldObject(SField const& field, STObject const& v);
+    void
+    setFieldJson(SField const& field, STJson const& v);
 
     template <class Tag>
     void

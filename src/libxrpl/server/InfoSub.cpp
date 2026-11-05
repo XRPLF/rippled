@@ -102,6 +102,14 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
 
+    // Contract-event subscriptions are torn down inline, keyed on seq_, like books
+    // below: one brief lock each, through the internal variant so nothing is
+    // written back to contractEventSubscriptions_ on this partially-destroyed object.
+    for (auto const& contractAccount : contractEventSubscriptions_)
+    {
+        safeUnsub(seq_, [&] { source_.unsubContractEventsInternal(seq_, contractAccount); }, j);
+    }
+
     // MPT subscriptions are torn down inline here, keyed on seq_, like books
     // below. The set is capped; each unsubMPTInternal takes mptLock_ for a
     // single O(1) erase and releases it, so a competing MPT publish can
@@ -177,7 +185,8 @@ std::size_t
 InfoSub::subscriptionCount(ScopedLock const&) const
 {
     return normalSubscriptions_.size() + realTimeSubscriptions_.size() +
-        accountHistorySubscriptions_.size() + mptSubscriptions_.size();
+        accountHistorySubscriptions_.size() + mptSubscriptions_.size() +
+        contractEventSubscriptions_.size();
 }
 
 std::size_t
@@ -272,6 +281,36 @@ InfoSub::hasAccountHistorySubscription(AccountID const& account) const
 {
     std::scoped_lock const sl(lock_);
     return accountHistorySubscriptions_.contains(account);
+}
+
+bool
+InfoSub::tryReserveContractEventSubscriptions(
+    HashSet<AccountID> const& contractAccounts,
+    std::size_t cap)
+{
+    // One lock hold covers the count, the check and the insert.
+    std::scoped_lock const sl(lock_);
+
+    // Contracts already followed are not charged again.
+    std::size_t additional = 0;
+    for (auto const& contractAccount : contractAccounts)
+    {
+        if (!contractEventSubscriptions_.contains(contractAccount))
+            ++additional;
+    }
+
+    if (exceedsSubscriptionCap(subscriptionCount(sl), additional, cap))
+        return false;
+
+    contractEventSubscriptions_.insert(contractAccounts.begin(), contractAccounts.end());
+    return true;
+}
+
+void
+InfoSub::deleteContractEventSubscription(AccountID const& contractAccount)
+{
+    std::scoped_lock const sl(lock_);
+    contractEventSubscriptions_.erase(contractAccount);
 }
 
 void

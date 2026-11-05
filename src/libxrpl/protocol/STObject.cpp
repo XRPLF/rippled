@@ -21,8 +21,11 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -645,6 +648,20 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+STData
+STObject::getFieldData(SField const& field) const
+{
+    STData const empty{field};
+    return getFieldByConstRef<STData>(field, empty);
+}
+
+STDataType
+STObject::getFieldDataType(SField const& field) const
+{
+    STDataType const empty{field};
+    return getFieldByConstRef<STDataType>(field, empty);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -705,6 +722,13 @@ STObject::getFieldNumber(SField const& field) const
     return getFieldByConstRef<STNumber>(field, kEmpty);
 }
 
+STJson const&
+STObject::getFieldJson(SField const& field) const
+{
+    static STJson const kEmpty{field};
+    return getFieldByConstRef<STJson>(field, kEmpty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
@@ -725,6 +749,16 @@ STObject::set(STBase&& v)
             Throw<std::runtime_error>("missing field in templated STObject");
         v_.emplace_back(std::move(v));
     }
+}
+
+void
+STObject::addFieldFromSlice(SField const& sfield, Slice const& data)
+{
+    SerialIter sit(data);
+    detail::STVar element(sit, sfield);
+    if (!sit.empty())
+        Throw<std::runtime_error>("Field has trailing bytes");
+    set(std::move(element.get()));
 }
 
 void
@@ -837,6 +871,12 @@ STObject::setFieldArray(SField const& field, STArray const& v)
 
 void
 STObject::setFieldObject(SField const& field, STObject const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldJson(SField const& field, STJson const& v)
 {
     setFieldUsingAssignment(field, v);
 }

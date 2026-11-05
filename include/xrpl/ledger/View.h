@@ -283,6 +283,27 @@ doWithdraw(
     STAmount const& sourceAmount,
     beast::Journal j);
 
+enum class SendIssuerHandling { IhSenderNotAllowed, IhReceiverNotAllowed, IhIgnore };
+enum class SendEscrowHandling { EhIgnore, EhCheck };
+enum class SendAuthHandling { AhCheckSender, AhCheckReceiver, AhBoth, AhNeither };
+enum class SendFreezeHandling { FhCheckSender, FhCheckReceiver, FhBoth, FhNeither };
+enum class SendTransferHandling { ThIgnore, ThCheck };
+enum class SendBalanceHandling { BhIgnore, BhCheck };
+
+TER
+canTransferFT(
+    ReadView const& view,
+    AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
+    beast::Journal j,
+    SendIssuerHandling issuerHandling,
+    SendEscrowHandling escrowHandling,
+    SendAuthHandling authHandling,
+    SendFreezeHandling freezeHandling,
+    SendTransferHandling transferHandling,
+    SendBalanceHandling balanceHandling);
+
 /**
  * Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

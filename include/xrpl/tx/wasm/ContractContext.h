@@ -1,0 +1,105 @@
+#pragma once
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/tx/ApplyContext.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <queue>
+#include <string>
+#include <vector>
+
+namespace xrpl {
+
+struct ParameterValueVec
+{
+    STData const value;
+};
+
+struct FunctionParameterValueVecWithName
+{
+    Blob const name;
+    STData const value;
+};
+
+struct ParameterTypeVec
+{
+    STDataType const type;
+};
+
+std::vector<ParameterValueVec>
+getParameterValueVec(STArray const& functionParameters);
+
+std::vector<ParameterTypeVec>
+getParameterTypeVec(STArray const& functionParameters);
+
+struct ContractResult
+{
+    uint256 const contractHash;          // Hash of the contract code
+    Keylet const contractKeylet;         // Keylet for the contract instance
+    Keylet const contractSourceKeylet;   // Keylet for the contract source
+    Keylet const contractAccountKeylet;  // Keylet for the contract account
+    AccountID const contractAccount;     // AccountID of the contract account
+    std::uint32_t nextSequence;          // Next sequence number for the contract account
+    AccountID const otxnAccount;         // AccountID for the originating transaction
+    uint256 const otxnId;                // ID for the originating transaction
+    std::string exitReason;
+    int64_t exitCode{-1};
+    ContractDataMap dataMap{};
+    ContractEvents events;
+    std::queue<std::shared_ptr<STTx const>> emittedTxns;
+    std::size_t changedDataCount{0};
+};
+
+struct ContractContext
+{
+    ApplyContext& applyCtx;
+    std::vector<ParameterValueVec> instanceParameters;
+    std::vector<ParameterValueVec> functionParameters;
+    std::vector<STObject> builtTxns;
+    int64_t expectedEtxnCount{-1};      // expected emitted transaction count
+    std::map<uint256, bool> nonceUsed;  // nonces used in this execution
+    uint32_t generation = 0;            // generation of the contract being executed
+    uint64_t burden = 0;                // computational burden used
+    ContractResult result;
+
+    /**
+     * Persistent view used to track cumulative state from emitted
+     * transactions so that successive emits within the same WASM
+     * execution see the correct sequence numbers, balances, etc.
+     */
+    std::optional<OpenView> emitView;
+
+    /**
+     * Return the emit view, lazily creating it on first use.
+     *
+     * The view is layered on top of the transactor's ApplyViewImpl
+     * (applyCtx.view()) so that reads automatically fall through to
+     * the transactor's pending state (e.g. the tfSendAmount balance
+     * transfer, consumed sequence number, paid fee) without needing
+     * to manually copy SLE changes.
+     */
+    OpenView&
+    getEmitView()
+    {
+        if (!emitView)
+            emitView.emplace(static_cast<ReadView const*>(&applyCtx.view()));
+        return *emitView;
+    }
+};
+
+}  // namespace xrpl

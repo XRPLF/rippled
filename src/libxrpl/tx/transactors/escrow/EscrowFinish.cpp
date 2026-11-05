@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -27,11 +28,16 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <system_error>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -101,6 +107,9 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -152,9 +161,6 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
             }
         }
     }
-
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
-        return err;
 
     return tesSUCCESS;
 }
@@ -363,17 +369,64 @@ EscrowFinish::doApply()
     // Execute custom release function
     if ((*escrow)[~sfBytecode])
     {
-        // TODO(SmartEscrow): run the escrow's contract here once the WASM
-        // engine lands. That change also brings with it the reporting the run
-        // produces - the gas it consumed and the code it returned, in the
-        // transaction metadata - and the tecBYTECODE_REJECTED result that lets
-        // a rejected escrow survive with the data the contract wrote.
-        //
-        // Until then an escrow carrying bytecode can be created, funded and
-        // cancelled, but not finished. Reachable only under featureSmartEscrow,
-        // which is Supported::No.
-        JLOG(j_.debug()) << "EscrowFinish: no WASM engine to run the escrow's bytecode";
-        return tecFAILED_PROCESSING;
+        JLOG(j_.trace()) << "The escrow has a finish function, running WASM code...";
+        // WASM execution
+        auto const wasmStr = escrow->getFieldVL(sfBytecode);
+        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+        WasmHostFunctionsImpl ledgerDataProvider(ctx_, escrow.keylet());
+
+        if (!ctx_.tx.isFieldPresent(sfGas))
+        {
+            // already checked above, this check is just in case
+            return tecINTERNAL;
+        }
+        std::uint32_t const allowance = ctx_.tx[sfGas];
+        auto const re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
+        JLOG(j_.trace()) << "Escrow WASM ran";
+
+        // Gas consumed, reported in the tx metadata whenever the engine has a
+        // trustworthy number: a completed run, out of gas, or a wasm fault.
+        std::optional<std::int64_t> const cost = re.has_value() ? re->cost : re.error().cost;
+        if (cost.has_value())
+        {
+            // The engine cannot spend more than it was given.
+            if (*cost < 0 || *cost > allowance)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            // Out of gas burns the whole allowance. The engine stops at the last
+            // instruction it can afford, so its own count can be a little less.
+            bool const outOfGas = !re.has_value() && re.error().ter == tecOUT_OF_GAS;
+            ctx_.setGasUsed(outOfGas ? allowance : static_cast<std::uint32_t>(*cost));
+        }
+
+        if (!re.has_value())
+        {
+            // No return code, and any data it wrote goes away with the view.
+            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error().ter);
+            return re.error().ter;
+        }
+
+        auto const reValue = re->result;
+        JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue) << ", cost: " << re->cost;
+
+        ctx_.setVMReturnCode(reValue);
+
+        // Only matters on a reject, where the escrow survives:
+        // Transactor::processPersistentChanges replays this after the reset.
+        if (auto const& data = ledgerDataProvider.getData(); data.has_value())
+        {
+            if (data->size() > kMaxWasmDataLength)
+            {
+                // should already be checked in the updateData host function
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
+            escrow->setFieldVL(sfData, makeSlice(*data));
+            escrow.update();
+        }
+
+        // 0 or negative is a contract-defined reject code, reported as sfVMReturnCode.
+        if (reValue <= 0)
+            return tecBYTECODE_REJECTED;
     }
 
     AccountID const account = (*escrow)[sfAccount];

@@ -188,6 +188,9 @@ JSS(confidential_balance_inbox);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
 JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
+JSS(contract_account);               // in: LedgerEntry, out: ContractInfo
+JSS(contract_events);                // in: Subscribe, Unsubscribe
+JSS(contract_hash);                  // in: LedgerEntry
 JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs
@@ -246,6 +249,7 @@ JSS(errored);                        //
 JSS(error_code);                     // out: error
 JSS(error_exception);                // out: Submit
 JSS(error_message);                  // out: error
+JSS(events);                         // in: Subscribe; out: NetworkOPs
 JSS(expand);                         // in: handler/Ledger
 JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
@@ -279,6 +283,8 @@ JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
 JSS(fullbelow_size);                 // out: GetCounts
+JSS(function);                       // in: ContractInfo
+JSS(functions);                      // out: ContractInfo
 JSS(gateway);                        // in: noripple_check
 JSS(git);                            // out: server_info
 JSS(good);                           // out: RPCVersion
@@ -564,6 +570,7 @@ JSS(size);                        // out: get_aggregate_price
 JSS(snapshot);                    // in: Subscribe
 JSS(source_account);              // in: PathRequest, RipplePathFind
 JSS(source_amount);               // in: PathRequest, RipplePathFind
+JSS(source_code_uri);             // out: ContractInfo
 JSS(source_currencies);           // in: PathRequest, RipplePathFind
 JSS(source_tag);                  // out: AccountChannels
 JSS(sponsee);                     // in: LedgerEntry
@@ -665,6 +672,7 @@ JSS(url_password);                // in: Subscribe
 JSS(url_username);                // in: Subscribe
 JSS(urlgravatar);                 //
 JSS(user);                        // in: noripple_check
+JSS(user_data);                   // out: ContractInfo
 JSS(username);                    // in: Subscribe
 JSS(validated);                   // out: NetworkOPs, RPCHelpers, AccountTx*, Tx
 JSS(validator_list_expires);      // out: NetworkOps, ValidatorList

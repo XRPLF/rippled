@@ -226,6 +226,13 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kContractInfo,
+        .valueMethod = Method::of<&byRef<&doContractInfo>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+        .hasCommandLineForm = false,
+    },
+    {
         .name = method::kDepositAuthorized,
         .valueMethod = Method::of<&handle<DepositAuthorizedHandler>>(),
         .role = Role::USER,

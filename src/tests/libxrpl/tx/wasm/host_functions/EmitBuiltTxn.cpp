@@ -1,0 +1,200 @@
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
+#include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
+
+#include <cstdint>
+
+namespace xrpl::test {
+
+// emit_built_txn — applying a transaction the contract assembled.
+//
+// The answer is a TER rather than a `HostFunctionError`: a transaction the ledger refuses is
+// something the contract is told about and may act on, not a fault in the call.
+struct EmitBuiltTxnImpl : ContractHostFixture
+{
+    Account const alice = fund("alice");
+
+    // The contract's account pays what it emits, so it is funded well above its reserve.
+    Account const contract = fund("contract", XRP(2000));
+    Account const carol = fund("carol");
+
+    ContractHost
+    host()
+    {
+        return makeTracingContractHost({contract.id(), alice.id()});
+    }
+
+    // A payment of `amount` from the contract to carol, built through the host as a contract
+    // would build it.
+    static void
+    buildPayment(ContractHost const& contractHost, AccountID const& destination, STAmount amount)
+    {
+        auto const amountBytes = WasmLedger::toBytes(amount);
+        auto const destinationBytes = accountField(destination);
+        ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+        ASSERT_TRUE(
+            contractHost->addTxnField(0, sfAmount, Slice{amountBytes.data(), amountBytes.size()}));
+        ASSERT_TRUE(contractHost->addTxnField(
+            0, sfDestination, Slice{destinationBytes.data(), destinationBytes.size()}));
+    }
+};
+
+TEST_F(EmitBuiltTxnImpl, a_payment_the_ledger_accepts_is_queued_and_paid)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(192));
+
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tesSUCCESS));
+    EXPECT_EQ(contractHost.context().result.emittedTxns.size(), 1U)
+        << "an accepted transaction is queued for the transactor to apply";
+}
+
+// The emitted transaction is applied against a view the contract's later calls see, so a
+// second emit is priced against the balance the first one left.
+TEST_F(EmitBuiltTxnImpl, a_second_emit_sees_what_the_first_spent)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(192));
+    ASSERT_TRUE(contractHost->emitBuiltTxn(0));
+
+    auto const& emitView = contractHost.context().emitView;
+    ASSERT_TRUE(emitView.has_value());
+    auto const emitted = emitView->read(keylet::account(contract.id()));
+    ASSERT_NE(emitted, nullptr);
+    EXPECT_LT(emitted->getFieldAmount(sfBalance), STAmount{XRP(2000)});
+}
+
+// A payment the contract cannot afford still reaches the ledger: a `tec` claims a fee, so it
+// is a real transaction and is queued like any other. What the contract gets is the code,
+// which is how it learns the payment did not happen.
+//
+// This is the code that motivated writing the TER to a buffer rather than returning it: it is
+// negative, and a negative return is read as a host error.
+TEST_F(EmitBuiltTxnImpl, a_payment_the_account_cannot_afford_is_reported_as_its_tec)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1'000'000));
+
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tecUNFUNDED_PAYMENT));
+    EXPECT_EQ(contractHost.context().result.emittedTxns.size(), 1U)
+        << "a fee-claiming transaction belongs on the ledger";
+}
+
+// A transaction missing a field its type requires never becomes a transaction, and the
+// contract is told so: `SubmitTxnFailure` is a refusal it can act on, where the run-stopping
+// `InternalFatal` would have reported a node fault for a mistake of its own.
+TEST_F(EmitBuiltTxnImpl, a_transaction_missing_a_required_field_is_refused)
+{
+    auto const contractHost = host();
+    auto const amount = WasmLedger::toBytes(STAmount{XRP(1)});
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+    ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, Slice{amount.data(), amount.size()}));
+
+    // No destination, so the payment cannot be built as one.
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    EXPECT_NE(logged().find("emitBuiltTxn: Failed to build transaction"), std::string::npos);
+}
+
+// A refusal leaves the transaction where it was, so the contract can supply what was missing
+// and emit the same index again.
+TEST_F(EmitBuiltTxnImpl, a_refused_transaction_can_be_corrected_and_emitted)
+{
+    auto const contractHost = host();
+    auto const amount = WasmLedger::toBytes(STAmount{XRP(192)});
+    auto const destination = accountField(carol.id());
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+    ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, Slice{amount.data(), amount.size()}));
+    ASSERT_FALSE(contractHost->emitBuiltTxn(0));
+
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfDestination, Slice{destination.data(), destination.size()}));
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tesSUCCESS));
+}
+
+TEST_F(EmitBuiltTxnImpl, an_index_naming_no_transaction_is_out_of_bounds)
+{
+    expectError(host()->emitBuiltTxn(0), HostFunctionError::IndexOutOfBounds);
+    EXPECT_NE(logged().find("emitBuiltTxn: index out of bounds"), std::string::npos);
+}
+
+// A built transaction cannot be turned into a type the contract may not build: rewriting its
+// TransactionType does not get a key onto the pseudo-account.
+TEST_F(EmitBuiltTxnImpl, a_type_rewritten_to_one_a_contract_may_not_emit_is_refused)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+
+    Bytes const regularKeySet{0x00, static_cast<std::uint8_t>(ttREGULAR_KEY_SET)};
+    auto const key = accountField(carol.id());
+    // TransactionType is a field of every format, so it can be rewritten like any other.
+    ASSERT_TRUE(contractHost->addTxnField(0, sfTransactionType, Slice{regularKeySet.data(), 2}));
+    ASSERT_TRUE(contractHost->addTxnField(0, sfRegularKey, Slice{key.data(), key.size()}));
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    EXPECT_FALSE(
+        ledger.getOpenLedger().read(keylet::account(contract.id()))->isFieldPresent(sfRegularKey));
+}
+
+// A built transaction whose Account was rewritten is not the contract's to emit.
+TEST_F(EmitBuiltTxnImpl, a_transaction_from_another_account_is_refused)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const other = accountField(alice.id());
+    ASSERT_TRUE(contractHost->addTxnField(0, sfAccount, Slice{other.data(), other.size()}));
+
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// One the ledger does not apply at all, such as a stale sequence, is reported and not queued.
+TEST_F(EmitBuiltTxnImpl, a_transaction_the_ledger_does_not_apply_is_not_queued)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const sequence =
+        ledger.getOpenLedger().read(keylet::account(contract.id()))->getFieldU32(sfSequence);
+    Bytes const stale{
+        0,
+        0,
+        static_cast<std::uint8_t>((sequence - 1) >> 8),
+        static_cast<std::uint8_t>(sequence - 1),
+    };
+    ASSERT_TRUE(contractHost->addTxnField(0, sfSequence, Slice{stale.data(), stale.size()}));
+
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tefPAST_SEQ));
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// A sponsor added after build_txn is refused the same way as one in a whole transaction.
+TEST_F(EmitBuiltTxnImpl, a_sponsor_added_by_add_txn_field_is_refused)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const sponsorBytes = accountField(carol.id());
+    auto const flagBytes = WasmLedger::toBytes(static_cast<std::uint32_t>(spfSponsorFee));
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfSponsor, Slice{sponsorBytes.data(), sponsorBytes.size()}));
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfSponsorFlags, Slice{flagBytes.data(), flagBytes.size()}));
+
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+}  // namespace xrpl::test

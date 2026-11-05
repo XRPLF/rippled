@@ -1,0 +1,87 @@
+#pragma once
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/detail/STVar.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
+
+namespace xrpl {
+
+class STDataType final : public STBase
+{
+private:
+    std::uint16_t innerType_;
+    bool default_{true};
+
+public:
+    using value_type = STDataType;  // Although not directly holding a single value
+
+    STDataType(SField const& n);
+    STDataType(SField const& n, SerializedTypeID);
+
+    STDataType(SerialIter& sit, SField const& name);
+
+    [[nodiscard]] SerializedTypeID
+    getSType() const override;
+
+    [[nodiscard]] std::string
+    getInnerTypeString() const;
+
+    [[nodiscard]] std::string
+    getText() const override;
+
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
+
+    void
+    add(Serializer& s) const override;
+
+    [[nodiscard]] bool
+    isEquivalent(STBase const& t) const override;
+
+    [[nodiscard]] bool
+    isDefault() const override;
+
+    void setInnerSType(SerializedTypeID);
+
+    [[nodiscard]] SerializedTypeID
+    getInnerSType() const noexcept;
+
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
+};
+
+//------------------------------------------------------------------------------
+// Implementation
+//------------------------------------------------------------------------------
+
+inline SerializedTypeID
+STDataType::getInnerSType() const noexcept
+{
+    return static_cast<SerializedTypeID>(innerType_);
+}
+
+//------------------------------------------------------------------------------
+//
+// Creation
+//
+//------------------------------------------------------------------------------
+
+STDataType
+dataTypeFromJson(SField const& field, json::Value const& value);
+
+/**
+ * Whether `type` is one an STData holds.
+ */
+[[nodiscard]] bool
+isDataType(std::uint16_t type);
+
+}  // namespace xrpl

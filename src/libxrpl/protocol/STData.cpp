@@ -1,0 +1,857 @@
+#include <xrpl/protocol/STData.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/protocol/jss.h>
+
+#include <charconv>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <type_traits>
+#include <utility>
+
+namespace xrpl {
+
+template <typename U, typename S>
+constexpr U
+toUnsigned(S value)
+    requires(std::is_unsigned_v<U> && std::is_signed_v<S>)
+{
+    if (value < 0 || std::numeric_limits<U>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return static_cast<U>(value);
+}
+
+template <typename U1, typename U2>
+constexpr U1
+toUnsigned(U2 value)
+    requires(std::is_unsigned_v<U1> && std::is_unsigned_v<U2>)
+{
+    if (std::numeric_limits<U1>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return static_cast<U1>(value);
+}
+
+// A UINT8, UINT16 or UINT32 value from a number or a decimal string, refused when it is
+// negative or out of the type's range.
+template <typename U>
+static U
+uintFromJson(json::Value const& value, std::string const& typeName)
+{
+    try
+    {
+        if (value.isString())
+            return beast::lexicalCastThrow<U>(value.asString());
+        if (value.isInt())
+            return toUnsigned<U>(value.asInt());
+        if (value.isUInt())
+            return toUnsigned<U>(value.asUInt());
+    }
+    catch (std::exception const&)
+    {
+        Throw<std::runtime_error>("STData: invalid data for " + typeName);
+    }
+    Throw<std::runtime_error>("STData: invalid data for " + typeName);
+}
+
+STData::STData(SField const& n) : STBase(n), innerType_(STI_NOTPRESENT), data_(STBase{})
+{
+}
+
+STData::STData(SField const& n, unsigned char v) : STData(n)
+{
+    setFieldU8(v);
+}
+
+STData::STData(SField const& n, std::uint16_t v) : STData(n)
+{
+    setFieldU16(v);
+}
+
+STData::STData(SField const& n, std::uint32_t v) : STData(n)
+{
+    setFieldU32(v);
+}
+
+STData::STData(SField const& n, std::uint64_t v) : STData(n)
+{
+    setFieldU64(v);
+}
+
+STData::STData(SField const& n, UInt128 const& v) : STData(n)
+{
+    setFieldH128(v);
+}
+
+STData::STData(SField const& n, uint160 const& v) : STData(n)
+{
+    setFieldH160(v);
+}
+
+STData::STData(SField const& n, uint192 const& v) : STData(n)
+{
+    setFieldH192(v);
+}
+
+STData::STData(SField const& n, uint256 const& v) : STData(n)
+{
+    setFieldH256(v);
+}
+
+STData::STData(SField const& n, Blob const& v) : STData(n)
+{
+    setFieldVL(v);
+}
+
+STData::STData(SField const& n, Slice const& v) : STData(n)
+{
+    setFieldVL(v);
+}
+
+STData::STData(SField const& n, STAmount const& v) : STData(n)
+{
+    setFieldAmount(v);
+}
+
+STData::STData(SField const& n, AccountID const& v) : STData(n)
+{
+    setAccountID(v);
+}
+
+STData::STData(SField const& n, STIssue const& v) : STData(n)
+{
+    setIssue(v);
+}
+
+STData::STData(SField const& n, STCurrency const& v) : STData(n)
+{
+    setCurrency(v);
+}
+
+STData::STData(SField const& n, STNumber const& v) : STData(n)
+{
+    setFieldNumber(v);
+}
+
+STData::STData(SerialIter& sit, SField const& name) : STBase(name), data_(STBase{})
+{
+    std::uint16_t const stype = sit.get16();
+    innerType_ = stype;
+    // Switch on the raw integer, not a SerializedTypeID: the value comes off
+    // the wire, and loading an out-of-range value into an enum is undefined
+    // behaviour (UBSan: "load of value 65535, which is not a valid value for
+    // type 'SerializedTypeID'"). The default branch rejects it.
+    switch (stype)
+    {
+        case STI_UINT8: {
+            data_ = detail::STVar(sit, sfCloseResolution);
+            break;
+        }
+        case STI_UINT16: {
+            data_ = detail::STVar(sit, sfSignerWeight);
+            break;
+        }
+        case STI_UINT32: {
+            data_ = detail::STVar(sit, sfNetworkID);
+            break;
+        }
+        case STI_UINT64: {
+            data_ = detail::STVar(sit, sfIndexNext);
+            break;
+        }
+        case STI_UINT128: {
+            data_ = detail::STVar(sit, sfEmailHash);
+            break;
+        }
+        case STI_UINT160: {
+            data_ = detail::STVar(sit, sfTakerPaysCurrency);
+            break;
+        }
+        case STI_UINT192: {
+            data_ = detail::STVar(sit, sfMPTokenIssuanceID);
+            break;
+        }
+        case STI_UINT256: {
+            data_ = detail::STVar(sit, sfLedgerHash);
+            break;
+        }
+        case STI_VL: {
+            data_ = detail::STVar(sit, sfURI);
+            break;
+        }
+        case STI_AMOUNT: {
+            data_ = detail::STVar(sit, sfAmount);
+            break;
+        }
+        case STI_ACCOUNT: {
+            data_ = detail::STVar(sit, sfAccount);
+            break;
+        }
+        case STI_ISSUE: {
+            data_ = detail::STVar(sit, sfAsset);
+            break;
+        }
+        case STI_CURRENCY: {
+            data_ = detail::STVar(sit, sfBaseAsset);
+            break;
+        }
+        case STI_NUMBER: {
+            data_ = detail::STVar(sit, sfNumber);
+            break;
+        }
+        default:
+            Throw<std::runtime_error>("STData: unknown type");
+    }
+}
+
+STBase*
+STData::copy(std::size_t n, void* buf) const
+{
+    return emplace(n, buf, *this);
+}
+
+STBase*
+STData::move(std::size_t n, void* buf)
+{
+    return emplace(n, buf, std::move(*this));
+}
+
+SerializedTypeID
+STData::getSType() const
+{
+    return STI_DATA;
+}
+
+void
+STData::add(Serializer& s) const
+{
+    s.add16(innerType_);
+
+    switch (static_cast<SerializedTypeID>(innerType_))
+    {
+        case STI_UINT8: {
+            auto const& stUint8 = data_.get().downcast<STUInt8>();
+            stUint8.add(s);
+            break;
+        }
+        case STI_UINT16: {
+            auto const& stUint16 = data_.get().downcast<STUInt16>();
+            stUint16.add(s);
+            break;
+        }
+        case STI_UINT32: {
+            auto const& stUint32 = data_.get().downcast<STUInt32>();
+            stUint32.add(s);
+            break;
+        }
+        case STI_UINT64: {
+            auto const& stUint64 = data_.get().downcast<STUInt64>();
+            stUint64.add(s);
+            break;
+        }
+        case STI_UINT128: {
+            auto const& stUint128 = data_.get().downcast<STUInt128>();
+            stUint128.add(s);
+            break;
+        }
+        case STI_UINT160: {
+            auto const& stUint160 = data_.get().downcast<STUInt160>();
+            stUint160.add(s);
+            break;
+        }
+        case STI_UINT192: {
+            auto const& stUint192 = data_.get().downcast<STUInt192>();
+            stUint192.add(s);
+            break;
+        }
+        case STI_UINT256: {
+            auto const& stUint256 = data_.get().downcast<STUInt256>();
+            stUint256.add(s);
+            break;
+        }
+        case STI_VL: {
+            auto const& stBlob = data_.get().downcast<STBlob>();
+            stBlob.add(s);
+            break;
+        }
+        case STI_AMOUNT: {
+            auto const& stAmt = data_.get().downcast<STAmount>();
+            stAmt.add(s);
+            break;
+        }
+        case STI_ACCOUNT: {
+            auto const& stAcc = data_.get().downcast<STAccount>();
+            stAcc.add(s);
+            break;
+        }
+        case STI_ISSUE: {
+            auto const& stIssue = data_.get().downcast<STIssue>();
+            stIssue.add(s);
+            break;
+        }
+        case STI_CURRENCY: {
+            auto const& stCurrency = data_.get().downcast<STCurrency>();
+            stCurrency.add(s);
+            break;
+        }
+        case STI_NUMBER: {
+            auto const& stNumber = data_.get().downcast<STNumber>();
+            stNumber.add(s);
+            break;
+        }
+        default:
+            Throw<std::runtime_error>("STData: unknown type");
+    }
+}
+
+bool
+STData::isEquivalent(STBase const& t) const
+{
+    auto const* const tPtr = dynamic_cast<STData const*>(&t);
+    return (tPtr != nullptr) && (default_ == tPtr->default_) && (innerType_ == tPtr->innerType_) &&
+        (data_ == tPtr->data_);
+}
+
+bool
+STData::isDefault() const
+{
+    return default_;
+}
+
+std::string
+STData::getInnerTypeString() const
+{
+    std::string innerTypeStr = "Unknown";
+    switch (static_cast<SerializedTypeID>(innerType_))
+    {
+        case STI_UINT8:
+            innerTypeStr = "UINT8";
+            break;
+        case STI_UINT16:
+            innerTypeStr = "UINT16";
+            break;
+        case STI_UINT32:
+            innerTypeStr = "UINT32";
+            break;
+        case STI_UINT64:
+            innerTypeStr = "UINT64";
+            break;
+        case STI_UINT128:
+            innerTypeStr = "UINT128";
+            break;
+        case STI_UINT160:
+            innerTypeStr = "UINT160";
+            break;
+        case STI_UINT192:
+            innerTypeStr = "UINT192";
+            break;
+        case STI_UINT256:
+            innerTypeStr = "UINT256";
+            break;
+        case STI_VL:
+            innerTypeStr = "VL";
+            break;
+        case STI_AMOUNT:
+            innerTypeStr = "AMOUNT";
+            break;
+        case STI_ACCOUNT:
+            innerTypeStr = "ACCOUNT";
+            break;
+        case STI_ISSUE:
+            innerTypeStr = "ISSUE";
+            break;
+        case STI_CURRENCY:
+            innerTypeStr = "CURRENCY";
+            break;
+        case STI_NUMBER:
+            innerTypeStr = "NUMBER";
+            break;
+        // Add other known types as needed
+        default:
+            innerTypeStr = std::to_string(innerType_);
+    }
+
+    return innerTypeStr;
+}
+
+std::string
+STData::getText() const
+{
+    std::string const innerTypeStr = getInnerTypeString();
+    return "STData{InnerType: " + innerTypeStr + ", Data: " + data_.get().getText() + "}";
+}
+
+json::Value
+STData::getJson(JsonOptions options) const
+{
+    json::Value ret(json::ValueType::Object);
+    ret[jss::type] = getInnerTypeString();
+    ret[jss::value] = data_.get().getJson(options);
+    return ret;
+}
+
+void
+STData::setFieldU8(unsigned char v)
+{
+    hold<STUInt8>(STI_UINT8, sfCloseResolution, v);
+}
+
+void
+STData::setFieldU16(std::uint16_t v)
+{
+    hold<STUInt16>(STI_UINT16, sfSignerWeight, v);
+}
+
+void
+STData::setFieldU32(std::uint32_t v)
+{
+    hold<STUInt32>(STI_UINT32, sfNetworkID, v);
+}
+
+void
+STData::setFieldU64(std::uint64_t v)
+{
+    hold<STUInt64>(STI_UINT64, sfIndexNext, v);
+}
+
+void
+STData::setFieldH128(UInt128 const& v)
+{
+    hold<STUInt128>(STI_UINT128, sfEmailHash, v);
+}
+
+void
+STData::setFieldH160(uint160 const& v)
+{
+    hold<STUInt160>(STI_UINT160, sfTakerPaysCurrency, v);
+}
+
+void
+STData::setFieldH192(uint192 const& v)
+{
+    hold<STUInt192>(STI_UINT192, sfMPTokenIssuanceID, v);
+}
+
+void
+STData::setFieldH256(uint256 const& v)
+{
+    hold<STUInt256>(STI_UINT256, sfLedgerHash, v);
+}
+
+void
+STData::setFieldVL(Blob const& v)
+{
+    hold<STBlob>(STI_VL, sfData, v.data(), v.size());
+}
+
+void
+STData::setFieldVL(Slice const& s)
+{
+    hold<STBlob>(STI_VL, sfData, s.data(), s.size());
+}
+
+void
+STData::setAccountID(AccountID const& v)
+{
+    hold<STAccount>(STI_ACCOUNT, sfAccount, v);
+}
+
+void
+STData::setFieldAmount(STAmount const& v)
+{
+    hold<STAmount>(STI_AMOUNT, sfAmount, v);
+}
+
+void
+STData::setIssue(STIssue const& v)
+{
+    hold<STIssue>(STI_ISSUE, v);
+}
+
+void
+STData::setCurrency(STCurrency const& v)
+{
+    hold<STCurrency>(STI_CURRENCY, sfBaseAsset, v.value());
+}
+
+void
+STData::setFieldNumber(STNumber const& v)
+{
+    hold<STNumber>(STI_NUMBER, sfNumber, v.value());
+}
+
+unsigned char
+STData::getFieldU8() const
+{
+    return getFieldByValue<STUInt8>();
+}
+
+std::uint16_t
+STData::getFieldU16() const
+{
+    return getFieldByValue<STUInt16>();
+}
+
+std::uint32_t
+STData::getFieldU32() const
+{
+    return getFieldByValue<STUInt32>();
+}
+
+std::uint64_t
+STData::getFieldU64() const
+{
+    return getFieldByValue<STUInt64>();
+}
+
+UInt128
+STData::getFieldH128() const
+{
+    return getFieldByValue<STUInt128>();
+}
+
+uint160
+STData::getFieldH160() const
+{
+    return getFieldByValue<STUInt160>();
+}
+
+uint192
+STData::getFieldH192() const
+{
+    return getFieldByValue<STUInt192>();
+}
+
+uint256
+STData::getFieldH256() const
+{
+    return getFieldByValue<STUInt256>();
+}
+
+Blob
+STData::getFieldVL() const
+{
+    auto const* b = getFieldPtr<STBlob>();
+    if (b == nullptr)
+        return {};
+    return Blob(b->data(), b->data() + b->size());
+}
+
+AccountID
+STData::getAccountID() const
+{
+    return getFieldByValue<STAccount>();
+}
+
+STAmount const&
+STData::getFieldAmount() const
+{
+    static STAmount const kEmpty{};
+    auto const* value = getFieldPtr<STAmount>();
+    return value != nullptr ? *value : kEmpty;
+}
+
+STIssue
+STData::getFieldIssue() const
+{
+    static STIssue const kEmpty{};
+    auto const* value = getFieldPtr<STIssue>();
+    return value != nullptr ? *value : kEmpty;
+}
+
+STCurrency
+STData::getFieldCurrency() const
+{
+    static STCurrency const kEmpty{};
+    auto const* value = getFieldPtr<STCurrency>();
+    return value != nullptr ? *value : kEmpty;
+}
+
+STNumber
+STData::getFieldNumber() const
+{
+    static STNumber const kEmpty{};
+    auto const* value = getFieldPtr<STNumber>();
+    return value != nullptr ? *value : kEmpty;
+}
+
+STData
+dataFromJson(SField const& field, json::Value const& v)
+{
+    json::Value type;
+    json::Value value;
+
+    if (!v.isObject())
+        Throw<std::runtime_error>("STData: expected object");
+
+    type = v[jss::type];
+    value = v[jss::value];
+
+    if (type.isNull())
+        Throw<std::runtime_error>("STData: type is null");
+    if (value.isNull())
+        Throw<std::runtime_error>("STData: value is null");
+
+    auto const typeStr = type.asString();
+
+    if (typeStr == "UINT8")
+        return STData(field, uintFromJson<unsigned char>(value, "UINT8"));
+    if (typeStr == "UINT16")
+        return STData(field, uintFromJson<std::uint16_t>(value, "UINT16"));
+    if (typeStr == "UINT32")
+        return STData(field, uintFromJson<std::uint32_t>(value, "UINT32"));
+    if (typeStr == "UINT64")
+    {
+        try
+        {
+            if (value.isString())
+            {
+                auto const str = value.asString();
+
+                std::uint64_t val = 0;
+
+                bool const useBase10 = field.shouldMeta(SField::kSmdBaseTen);
+
+                // if the field is amount, serialize as base 10
+                auto [p, ec] =
+                    std::from_chars(str.data(), str.data() + str.size(), val, useBase10 ? 10 : 16);
+
+                if (ec != std::errc() || (p != str.data() + str.size()))
+                    Throw<std::invalid_argument>("STData: invalid UINT64 data");
+
+                STData data(field, val);
+                return data;
+            }
+            if (value.isInt())
+            {
+                STData data(field, toUnsigned<std::uint64_t>(value.asInt()));
+                return data;
+            }
+            if (value.isUInt())
+            {
+                STData data(field, safeCast<std::uint64_t>(value.asUInt()));
+                return data;
+            }
+            Throw<std::runtime_error>("STData: bad type for UINT64");
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data for UINT64");
+        }
+    }
+    else if (typeStr == "UINT128")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for UINT128");
+        }
+
+        UInt128 num;
+
+        if (auto const s = value.asString(); !num.parseHex(s))
+        {
+            if (!s.empty())
+            {
+                Throw<std::runtime_error>("STData: invalid UINT128 data");
+            }
+
+            num.zero();
+        }
+
+        STData data(field, num);
+        return data;
+    }
+    else if (typeStr == "UINT192")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for UINT192");
+        }
+
+        uint192 num;
+
+        if (auto const s = value.asString(); !num.parseHex(s))
+        {
+            if (!s.empty())
+            {
+                Throw<std::runtime_error>("STData: invalid UINT192 data");
+            }
+
+            num.zero();
+        }
+
+        STData data(field, num);
+        return data;
+    }
+    else if (typeStr == "UINT160")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for UINT160");
+        }
+
+        uint160 num;
+
+        if (auto const s = value.asString(); !num.parseHex(s))
+        {
+            if (!s.empty())
+            {
+                Throw<std::runtime_error>("STData: invalid UINT160 data");
+            }
+
+            num.zero();
+        }
+
+        STData data(field, num);
+        return data;
+    }
+    else if (typeStr == "UINT256")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for UINT256");
+        }
+
+        uint256 num;
+
+        if (auto const s = value.asString(); !num.parseHex(s))
+        {
+            if (!s.empty())
+            {
+                Throw<std::runtime_error>("STData: invalid UINT256 data");
+            }
+
+            num.zero();
+        }
+        STData data(field, num);
+        return data;
+    }
+    else if (typeStr == "VL")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for VL");
+        }
+
+        try
+        {
+            if (auto vBlob = strUnHex(value.asString()))
+            {
+                STData data(field, *vBlob);
+                return data;
+            }
+
+            Throw<std::invalid_argument>("invalid data");
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data");
+        }
+    }
+    else if (typeStr == "AMOUNT")
+    {
+        try
+        {
+            STData data(field, amountFromJson(field, value));
+            return data;
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data for AMOUNT");
+        }
+    }
+    else if (typeStr == "ACCOUNT")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for ACCOUNT");
+        }
+
+        std::string const strValue = value.asString();
+
+        try
+        {
+            if (AccountID account; account.parseHex(strValue))
+            {
+                STData data(field, account);
+                return data;
+            }
+
+            if (auto result = parseBase58<AccountID>(strValue))
+            {
+                STData data(field, *result);
+                return data;
+            }
+
+            Throw<std::runtime_error>("STData: invalid data for ACCOUNT");
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data for ACCOUNT");
+        }
+    }
+    else if (typeStr == "ISSUE")
+    {
+        try
+        {
+            STData data(field, issueFromJson(field, value));
+            return data;
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data for ISSUE");
+        }
+    }
+    else if (typeStr == "CURRENCY")
+    {
+        try
+        {
+            STData data(field, currencyFromJson(field, value));
+            return data;
+        }
+        catch (std::exception const&)
+        {
+            Throw<std::runtime_error>("STData: invalid data for CURRENCY");
+        }
+    }
+    else if (typeStr == "NUMBER")
+    {
+        if (!value.isString())
+        {
+            Throw<std::runtime_error>("STData: expected string for NUMBER");
+        }
+
+        STNumber const number = numberFromJson(field, value);
+        STData data(field, number);
+        return data;
+    }
+
+    // Handle unknown or unsupported type
+    Throw<std::runtime_error>("STData: unsupported type string: " + typeStr);
+}
+
+}  // namespace xrpl
