@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -45,6 +46,25 @@ struct FirewallLimitPeriod
  */
 [[nodiscard]] FirewallLimitPeriod
 firewallLimitPeriod(SLE const& limit, NetClock::time_point now);
+
+/**
+ * Where a firewall limit is stored: the ledger entry that holds the limited
+ * balance, and the inner-object field on it.
+ */
+struct FirewallLimitField
+{
+    Keylet entry;
+    SField const* field;
+};
+
+/**
+ * Where the owner's limit on `asset` is stored: XRP on the owner's
+ * AccountRoot, an IOU on the owner's side of its RippleState, an MPT on the
+ * owner's MPToken. Unseated for an IOU or MPT the owner issues, which has no
+ * limit.
+ */
+[[nodiscard]] std::optional<FirewallLimitField>
+firewallLimitField(AccountID const& owner, Asset const& asset);
 
 /**
  * The (before, after) entry pairs of a transaction that the firewall limits

@@ -37,6 +37,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerMirrorEncryptionKeyValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
+    auto const firewallLimitValue = canonical_OBJECT();
 
     MPTokenBuilder builder{
         accountValue,
@@ -58,6 +59,7 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerMirrorEncryptionKey(issuerMirrorEncryptionKeyValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setRecoveryKey(recoveryKeyValue);
+    builder.setFirewallLimit(firewallLimitValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -194,6 +196,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRecoveryKey());
     }
 
+    {
+        auto const& expected = firewallLimitValue;
+        auto const actualOpt = entry.getFirewallLimit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfFirewallLimit");
+        EXPECT_TRUE(entry.hasFirewallLimit());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -224,6 +234,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerMirrorEncryptionKeyValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
+    auto const firewallLimitValue = canonical_OBJECT();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -244,6 +255,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerMirrorEncryptionKey) = issuerMirrorEncryptionKeyValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
     sle->at(sfRecoveryKey) = recoveryKeyValue;
+    sle->setFieldObject(sfFirewallLimit, firewallLimitValue);
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -460,6 +472,19 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfRecoveryKey");
     }
 
+    {
+        auto const& expected = firewallLimitValue;
+
+        auto const fromSleOpt = entryFromSle.getFirewallLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getFirewallLimit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfFirewallLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfFirewallLimit");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -546,5 +571,7 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasRecoveryKey());
     EXPECT_FALSE(entry.getRecoveryKey().has_value());
+    EXPECT_FALSE(entry.hasFirewallLimit());
+    EXPECT_FALSE(entry.getFirewallLimit().has_value());
 }
 }

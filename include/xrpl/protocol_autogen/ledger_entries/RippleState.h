@@ -291,6 +291,56 @@ public:
     {
         return this->sle_->isFieldPresent(sfLowSponsor);
     }
+
+    /**
+     * @brief Get sfLowFirewallLimit (SoeOptional)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<STObject>
+    getLowFirewallLimit() const
+    {
+        if (this->sle_->isFieldPresent(sfLowFirewallLimit))
+            return this->sle_->getFieldObject(sfLowFirewallLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLowFirewallLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLowFirewallLimit() const
+    {
+        return this->sle_->isFieldPresent(sfLowFirewallLimit);
+    }
+
+    /**
+     * @brief Get sfHighFirewallLimit (SoeOptional)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<STObject>
+    getHighFirewallLimit() const
+    {
+        if (this->sle_->isFieldPresent(sfHighFirewallLimit))
+            return this->sle_->getFieldObject(sfHighFirewallLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHighFirewallLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHighFirewallLimit() const
+    {
+        return this->sle_->isFieldPresent(sfHighFirewallLimit);
+    }
 };
 
 /**
@@ -479,6 +529,28 @@ public:
     setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfLowSponsor] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLowFirewallLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setLowFirewallLimit(STObject const& value)
+    {
+        object_.setFieldObject(sfLowFirewallLimit, value);
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHighFirewallLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setHighFirewallLimit(STObject const& value)
+    {
+        object_.setFieldObject(sfHighFirewallLimit, value);
         return *this;
     }
 

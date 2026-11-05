@@ -123,6 +123,31 @@ firewallLimitPeriod(SLE const& limit, NetClock::time_point now)
     };
 }
 
+std::optional<FirewallLimitField>
+firewallLimitField(AccountID const& owner, Asset const& asset)
+{
+    if (asset.native())
+        return FirewallLimitField{.entry = keylet::account(owner), .field = &sfFirewallLimit};
+
+    return asset.visit(
+        [&owner](Issue const& issue) -> std::optional<FirewallLimitField> {
+            if (issue.account == owner)
+                return std::nullopt;
+            return FirewallLimitField{
+                .entry = keylet::trustLine(owner, issue.account, issue.currency),
+                .field = owner < issue.account ? &sfLowFirewallLimit : &sfHighFirewallLimit,
+            };
+        },
+        [&owner](MPTIssue const& issue) -> std::optional<FirewallLimitField> {
+            if (issue.getIssuer() == owner)
+                return std::nullopt;
+            return FirewallLimitField{
+                .entry = keylet::mptoken(issue.getMptID(), owner),
+                .field = &sfFirewallLimit,
+            };
+        });
+}
+
 bool
 isFirewallEntry(LedgerEntryType type) noexcept
 {

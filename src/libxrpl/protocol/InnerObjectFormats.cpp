@@ -65,6 +65,18 @@ InnerObjectFormats::InnerObjectFormats()
             {sfAuthAccounts, SoeOptional},
         });
 
+    for (SField const* field : {&sfFirewallLimit, &sfLowFirewallLimit, &sfHighFirewallLimit})
+    {
+        add(field->jsonName,
+            field->getCode(),
+            {
+                {sfLimitAmount, SoeRequired},
+                {sfPeriod, SoeRequired},
+                {sfSpent, SoeRequired},
+                {sfStartDate, SoeRequired},
+            });
+    }
+
     add(sfAuthAccount.jsonName,
         sfAuthAccount.getCode(),
         {

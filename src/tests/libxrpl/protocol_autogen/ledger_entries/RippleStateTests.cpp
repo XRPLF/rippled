@@ -33,6 +33,8 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     auto const highQualityOutValue = canonical_UINT32();
     auto const highSponsorValue = canonical_ACCOUNT();
     auto const lowSponsorValue = canonical_ACCOUNT();
+    auto const lowFirewallLimitValue = canonical_OBJECT();
+    auto const highFirewallLimitValue = canonical_OBJECT();
 
     RippleStateBuilder builder{
         balanceValue,
@@ -50,6 +52,8 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
     builder.setHighQualityOut(highQualityOutValue);
     builder.setHighSponsor(highSponsorValue);
     builder.setLowSponsor(lowSponsorValue);
+    builder.setLowFirewallLimit(lowFirewallLimitValue);
+    builder.setHighFirewallLimit(highFirewallLimitValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -154,6 +158,22 @@ TEST(RippleStateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLowSponsor());
     }
 
+    {
+        auto const& expected = lowFirewallLimitValue;
+        auto const actualOpt = entry.getLowFirewallLimit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLowFirewallLimit");
+        EXPECT_TRUE(entry.hasLowFirewallLimit());
+    }
+
+    {
+        auto const& expected = highFirewallLimitValue;
+        auto const actualOpt = entry.getHighFirewallLimit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfHighFirewallLimit");
+        EXPECT_TRUE(entry.hasHighFirewallLimit());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -180,6 +200,8 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     auto const highQualityOutValue = canonical_UINT32();
     auto const highSponsorValue = canonical_ACCOUNT();
     auto const lowSponsorValue = canonical_ACCOUNT();
+    auto const lowFirewallLimitValue = canonical_OBJECT();
+    auto const highFirewallLimitValue = canonical_OBJECT();
 
     auto sle = std::make_shared<SLE>(RippleState::entryType, index);
 
@@ -196,6 +218,8 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
     sle->at(sfHighQualityOut) = highQualityOutValue;
     sle->at(sfHighSponsor) = highSponsorValue;
     sle->at(sfLowSponsor) = lowSponsorValue;
+    sle->setFieldObject(sfLowFirewallLimit, lowFirewallLimitValue);
+    sle->setFieldObject(sfHighFirewallLimit, highFirewallLimitValue);
 
     RippleStateBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -360,6 +384,32 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLowSponsor");
     }
 
+    {
+        auto const& expected = lowFirewallLimitValue;
+
+        auto const fromSleOpt = entryFromSle.getLowFirewallLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getLowFirewallLimit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLowFirewallLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfLowFirewallLimit");
+    }
+
+    {
+        auto const& expected = highFirewallLimitValue;
+
+        auto const fromSleOpt = entryFromSle.getHighFirewallLimit();
+        auto const fromBuilderOpt = entryFromBuilder.getHighFirewallLimit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfHighFirewallLimit");
+        expectEqualField(expected, *fromBuilderOpt, "sfHighFirewallLimit");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -438,5 +488,9 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getHighSponsor().has_value());
     EXPECT_FALSE(entry.hasLowSponsor());
     EXPECT_FALSE(entry.getLowSponsor().has_value());
+    EXPECT_FALSE(entry.hasLowFirewallLimit());
+    EXPECT_FALSE(entry.getLowFirewallLimit().has_value());
+    EXPECT_FALSE(entry.hasHighFirewallLimit());
+    EXPECT_FALSE(entry.getHighFirewallLimit().has_value());
 }
 }

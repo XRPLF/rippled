@@ -590,6 +590,31 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfFirewallLimit (SoeOptional)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<STObject>
+    getFirewallLimit() const
+    {
+        if (this->sle_->isFieldPresent(sfFirewallLimit))
+            return this->sle_->getFieldObject(sfFirewallLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfFirewallLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasFirewallLimit() const
+    {
+        return this->sle_->isFieldPresent(sfFirewallLimit);
+    }
 };
 
 /**
@@ -923,6 +948,17 @@ public:
     setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfLoanBrokerID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfFirewallLimit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setFirewallLimit(STObject const& value)
+    {
+        object_.setFieldObject(sfFirewallLimit, value);
         return *this;
     }
 

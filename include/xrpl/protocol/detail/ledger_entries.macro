@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfFirewallLimit,          SoeOptional},
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -258,6 +259,8 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
     {sfHighQualityOut,       SoeOptional},
     {sfHighSponsor,          SoeOptional},
     {sfLowSponsor,           SoeOptional},
+    {sfLowFirewallLimit,     SoeOptional},
+    {sfHighFirewallLimit,    SoeOptional},
 }))
 
 /** The ledger object which lists the network's fee settings.
@@ -395,6 +398,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfIssuerMirrorEncryptionKey,   SoeOptional},
     {sfHolderEncryptionKey,         SoeOptional},
     {sfRecoveryKey,                 SoeOptional},
+    {sfFirewallLimit,               SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle
