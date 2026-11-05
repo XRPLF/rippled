@@ -18,6 +18,7 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/RepoInvariant.h>
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/TokenIssuanceInvariant.h>
 #include <xrpl/tx/invariants/VaultAccrualInvariant.h>
@@ -532,6 +533,7 @@ using InvariantChecks = std::tuple<
     ValidClawback,
     ValidMPTIssuance,
     ValidPermissionedDomain,
+    ValidRepo,
     ValidPermissionedDEX,
     ValidBookDirectory,
     ValidAMM,

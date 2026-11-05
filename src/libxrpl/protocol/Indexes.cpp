@@ -118,6 +118,7 @@ enum class LedgerNameSpace : std::uint16_t {
     TransactionProposal = 'y',
     Beneficiary = 'F',
     TokenIssuance = 'J',
+    Repo = 'M',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -618,6 +619,12 @@ Keylet
 passkeyList(AccountID const& account) noexcept
 {
     return passkeyList(account, 0);
+}
+
+Keylet
+repo(AccountID const& seller, SeqProxy const& seq) noexcept
+{
+    return {ltREPO, indexHash(LedgerNameSpace::Repo, seller, seq.value())};
 }
 
 }  // namespace keylet

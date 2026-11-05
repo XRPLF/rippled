@@ -380,6 +380,8 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    tecREPO_PENDING = 251,
+    tecREPO_ACTIVE = 252,
     tecWOULD_CROSS = 253,
     tecSUPPLY_EXCEEDED = 254,
 };

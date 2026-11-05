@@ -30,6 +30,7 @@
 #include <xrpl/ledger/entries/PasskeyListEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/PayChannelEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/PermissionedDomainEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/RepoEntry.h>                // IWYU pragma: keep
 #include <xrpl/ledger/entries/RippleStateEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
