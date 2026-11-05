@@ -17,6 +17,7 @@
 #include <xrpl/ledger/entries/DirectoryNodeEntry.h>    // IWYU pragma: keep
 #include <xrpl/ledger/entries/EscrowEntry.h>           // IWYU pragma: keep
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>      // IWYU pragma: keep
+#include <xrpl/ledger/entries/FirewallEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>     // IWYU pragma: keep
 #include <xrpl/ledger/entries/LoanBrokerEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/LoanEntry.h>             // IWYU pragma: keep
@@ -38,6 +39,7 @@
 #include <xrpl/ledger/entries/TokenIssuanceEntry.h>        // IWYU pragma: keep
 #include <xrpl/ledger/entries/TransactionProposalEntry.h>  // IWYU pragma: keep
 #include <xrpl/ledger/entries/VaultEntry.h>                // IWYU pragma: keep
+#include <xrpl/ledger/entries/WithdrawPreauthEntry.h>      // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>

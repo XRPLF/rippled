@@ -81,6 +81,30 @@ public:
     {
         return this->tx_->isFieldPresent(sfSignerEntries);
     }
+    /**
+     * @brief Get sfCounterpartySignature (SoeOptional)
+     * @note This is an untyped field.
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<STObject>
+    getCounterpartySignature() const
+    {
+        if (this->tx_->isFieldPresent(sfCounterpartySignature))
+            return this->tx_->getFieldObject(sfCounterpartySignature);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCounterpartySignature is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCounterpartySignature() const
+    {
+        return this->tx_->isFieldPresent(sfCounterpartySignature);
+    }
 };
 
 /**
@@ -146,6 +170,17 @@ public:
     setSignerEntries(STArray const& value)
     {
         object_.setFieldArray(sfSignerEntries, value);
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCounterpartySignature (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    SignerListSetBuilder&
+    setCounterpartySignature(STObject const& value)
+    {
+        object_.setFieldObject(sfCounterpartySignature, value);
         return *this;
     }
 

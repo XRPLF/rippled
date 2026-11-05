@@ -61,6 +61,7 @@ SETTING_DEFAULTS = {
     "delegable": "Delegation::NotDelegable",
     "amendment": "UInt256{}",
     "privileges": "Privilege::NoPriv",
+    "firewall": "FirewallAction::Block",
 }
 
 

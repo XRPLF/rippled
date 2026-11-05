@@ -143,6 +143,7 @@ transResults()
         MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field that was not included."),
         MAKE_ERROR(tefTEMP_DISABLED,               "The transaction requires logic that is currently temporarily disabled."),
         MAKE_ERROR(tefEXCEEDS_LIMIT,               "The transaction exceeds a limit set by fee voting."),
+        MAKE_ERROR(tefFIREWALL_BLOCK,              "Transaction was blocked by the account's firewall."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),

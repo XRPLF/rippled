@@ -31,6 +31,7 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const signerQuorumValue = canonical_UINT32();
     auto const signerEntriesValue = canonical_ARRAY();
+    auto const counterpartySignatureValue = canonical_OBJECT();
 
     SignerListSetBuilder builder{
         accountValue,
@@ -41,6 +42,7 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setSignerEntries(signerEntriesValue);
+    builder.setCounterpartySignature(counterpartySignatureValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -72,6 +74,14 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasSignerEntries());
     }
 
+    {
+        auto const& expected = counterpartySignatureValue;
+        auto const actualOpt = tx.getCounterpartySignature();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
+        expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
+        EXPECT_TRUE(tx.hasCounterpartySignature());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -90,6 +100,7 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const signerQuorumValue = canonical_UINT32();
     auto const signerEntriesValue = canonical_ARRAY();
+    auto const counterpartySignatureValue = canonical_OBJECT();
 
     // Build an initial transaction
     SignerListSetBuilder initialBuilder{
@@ -100,6 +111,7 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setSignerEntries(signerEntriesValue);
+    initialBuilder.setCounterpartySignature(counterpartySignatureValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -129,6 +141,13 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getSignerEntries();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSignerEntries should be present";
         expectEqualField(expected, *actualOpt, "sfSignerEntries");
+    }
+
+    {
+        auto const& expected = counterpartySignatureValue;
+        auto const actualOpt = rebuiltTx.getCounterpartySignature();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
+        expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
     }
 
 }
@@ -190,6 +209,8 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasSignerEntries());
     EXPECT_FALSE(tx.getSignerEntries().has_value());
+    EXPECT_FALSE(tx.hasCounterpartySignature());
+    EXPECT_FALSE(tx.getCounterpartySignature().has_value());
 }
 
 }

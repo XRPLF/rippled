@@ -78,9 +78,28 @@ SignerListSet::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
+XRPAmount
+SignerListSet::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
+}
+
+bool
+SignerListSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCounterpartySignature) || ctx.rules.enabled(featureFirewall);
+}
+
 NotTEC
 SignerListSet::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCounterpartySignature))
+    {
+        if (auto const ret = detail::preflightCheckSigningKey(
+                ctx.tx.getFieldObject(sfCounterpartySignature), ctx.j))
+            return ret;
+    }
+
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
     if (!isTesSuccess(std::get<0>(result)))

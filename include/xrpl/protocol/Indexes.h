@@ -395,6 +395,33 @@ repo(UInt256 const& repoID)
     return {ltREPO, repoID};
 }
 
+/**
+ * A firewall, keyed by the account it protects.
+ */
+Keylet
+firewall(AccountID const& account) noexcept;
+
+inline Keylet
+firewall(UInt256 const& firewallID)
+{
+    return {ltFIREWALL, firewallID};
+}
+
+/**
+ * A withdraw preauthorization, keyed by owner, authorized account and tag.
+ */
+Keylet
+withdrawPreauth(
+    AccountID const& owner,
+    AccountID const& preauthorized,
+    std::uint32_t dtag) noexcept;
+
+inline Keylet
+withdrawPreauth(UInt256 const& key)
+{
+    return {ltWITHDRAW_PREAUTH, key};
+}
+
 inline Keylet
 loanBroker(UInt256 const& key)
 {

@@ -30,6 +30,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const regularKeyValue = canonical_ACCOUNT();
+    auto const counterpartySignatureValue = canonical_OBJECT();
 
     SetRegularKeyBuilder builder{
         accountValue,
@@ -39,6 +40,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setRegularKey(regularKeyValue);
+    builder.setCounterpartySignature(counterpartySignatureValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,6 +66,14 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasRegularKey());
     }
 
+    {
+        auto const& expected = counterpartySignatureValue;
+        auto const actualOpt = tx.getCounterpartySignature();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
+        expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
+        EXPECT_TRUE(tx.hasCounterpartySignature());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -81,6 +91,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const regularKeyValue = canonical_ACCOUNT();
+    auto const counterpartySignatureValue = canonical_OBJECT();
 
     // Build an initial transaction
     SetRegularKeyBuilder initialBuilder{
@@ -90,6 +101,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setRegularKey(regularKeyValue);
+    initialBuilder.setCounterpartySignature(counterpartySignatureValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -113,6 +125,13 @@ TEST(TransactionsSetRegularKeyTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getRegularKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRegularKey should be present";
         expectEqualField(expected, *actualOpt, "sfRegularKey");
+    }
+
+    {
+        auto const& expected = counterpartySignatureValue;
+        auto const actualOpt = rebuiltTx.getCounterpartySignature();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCounterpartySignature should be present";
+        expectEqualField(expected, *actualOpt, "sfCounterpartySignature");
     }
 
 }
@@ -172,6 +191,8 @@ TEST(TransactionsSetRegularKeyTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasRegularKey());
     EXPECT_FALSE(tx.getRegularKey().has_value());
+    EXPECT_FALSE(tx.hasCounterpartySignature());
+    EXPECT_FALSE(tx.getCounterpartySignature().has_value());
 }
 
 }
