@@ -42,6 +42,7 @@ Version 3.5.0 is not yet released.
 ### Bugfixes in 3.5.0
 
 - `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+- `ledger_request`: The `ledger_index` field now handles unsigned numeric values above the signed 32-bit maximum correctly, returning `invalidParams` with the message "Ledger index too large" instead of an internal error. [#6750](https://github.com/XRPLF/rippled/issues/6750)
 
 ## XRP Ledger server version 3.4.0
 
