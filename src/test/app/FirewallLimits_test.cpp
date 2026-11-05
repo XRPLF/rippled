@@ -1530,6 +1530,50 @@ class FirewallLimits_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.seq(alice) == seq + 2);
             BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
         }
+
+        // A key's signer-scoped XRP limit with no account-wide XRP limit binds
+        // an Allow-type outflow standalone; wrapped in a Batch the inner
+        // transaction is refused at apply, so the key cannot escape its limit.
+        Account const erin{"erin"};
+        Account const dave{"dave"};
+        Account const key{"key"};
+        env.fund(XRP(10000), erin, dave, key);
+        env.close();
+        makeFirewall(env, erin, carol, backup, {bob});
+        env(regkey(erin, key), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env(firewall::limitSet(erin.id(), XRP(10), kDay), firewall::kLimitSigner(key));
+        env.close();
+
+        auto fundFee = sponsor::set_fee(erin, 0, XRP(1000));
+        fundFee[sfSponsee.jsonName] = dave.human();
+        {
+            auto const balance = env.balance(erin);
+            env(fundFee, Sig(key), Ter(tecFIREWALL_LIMIT));
+            env.close();
+            BEAST_EXPECT(env.balance(erin) == balance - drops(env.current()->fees().base));
+            BEAST_EXPECT(!env.le(keylet::sponsorship(erin.id(), dave.id())));
+        }
+        {
+            auto const balance = env.balance(erin);
+            auto const seq = env.seq(erin);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const jt = env.jt(
+                batch::outer(erin, seq, batchFee, tfIndependent),
+                batch::Inner(noop(erin), seq + 1),
+                batch::Inner(fundFee, seq + 2),
+                Sig(key));
+            env(jt);
+            env.close();
+            batch::validateInnerTxn(
+                env,
+                strHex(jt.stx->getTransactionID()),
+                strHex(jt.stx->getBatchTransactionIDs().back()),
+                "SponsorshipSet",
+                "tecFIREWALL_LIMIT");
+            BEAST_EXPECT(env.balance(erin) == balance - batchFee);
+            BEAST_EXPECT(!env.le(keylet::sponsorship(erin.id(), dave.id())));
+            BEAST_EXPECT(spentOf(env, erin, xrpIssue(), key.id()) == XRP(0));
+        }
     }
 
     // The engine result of jv carrying a counterparty signing key that is not a

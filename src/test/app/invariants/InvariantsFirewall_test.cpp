@@ -753,6 +753,47 @@ class InvariantsFirewall_test : public InvariantsBase
             createLimitedFirewall);
     }
 
+    void
+    testInnerBatchSignerLimit()
+    {
+        testcase("firewall outflow of a Batch inner transaction under a signer's limit");
+        using namespace jtx;
+
+        // Only a signer-scoped XRP limit, so the outflow matches no limit.
+        auto const signerLimited = [](Account const& a1, Account const& a2, Env& env) {
+            Account const backup{"backup"};
+            env.fund(XRP(1000), backup);
+            env(firewall::set(a1.id(), a2.id(), backup.id()));
+            env(firewall::limitSet(a1.id(), XRP(100), kDay), firewall::kLimitSigner(a2));
+            return env.le(keylet::firewallLimit(a1.id(), xrpIssue(), a2.id())) != nullptr;
+        };
+        auto const outflow = [](Account const& a1, Account const& a2, ApplyContext& ac) {
+            moveXrp(ac, a1.id(), a2.id(), XRP(5));
+            return true;
+        };
+
+        doInvariantCheck(
+            {
+                "Invariant failed: a Batch inner transaction moved an asset out of an account "
+                "with a signer's firewall limit",
+            },
+            outflow,
+            XRPAmount{},
+            ownerTx(
+                ttSPONSORSHIP_SET, [](STObject& tx) { tx.setFieldU32(sfFlags, tfInnerBatchTxn); }),
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            signerLimited);
+
+        // The same outflow outside a Batch matches no limit and passes.
+        doInvariantCheck(
+            {},
+            outflow,
+            XRPAmount{},
+            ownerTx(ttSPONSORSHIP_SET),
+            {tesSUCCESS, tesSUCCESS},
+            signerLimited);
+    }
+
 public:
     void
     run() override
@@ -770,6 +811,7 @@ public:
         testFailedChangesLimit();
         testLimitSetRules();
         testOutflowPrincipal();
+        testInnerBatchSignerLimit();
     }
 };
 
