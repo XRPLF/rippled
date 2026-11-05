@@ -552,13 +552,123 @@ class InvariantsFirewall_test : public InvariantsBase
     }
 
     void
-    testFailedChangesLimit()
+    testLimitFieldRules()
     {
-        testcase("firewall limit changed by a failed transaction");
+        testcase("firewall limit fields changed only by their owner");
         using namespace jtx;
 
+        auto const limitSet = ownerTx(ttFIREWALL_LIMIT_SET);
+        auto const limitDelete = ownerTx(
+            ttFIREWALL_LIMIT_SET, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLimitDelete); });
+
+        // Sets an XRP limit on the owner's AccountRoot and counts it.
+        auto const addLimit = [](ApplyContext& ac, AccountID const& owner) {
+            auto const account = ac.view().peek(keylet::account(owner));
+            STObject limit = STObject::makeInnerObject(sfFirewallLimit);
+            limit.setFieldAmount(sfLimitAmount, XRP(10));
+            limit.setFieldU32(sfPeriod, kDay);
+            limit.setFieldAmount(sfSpent, XRP(0));
+            limit.setFieldU32(sfStartDate, 0);
+            account->setFieldObject(sfFirewallLimit, limit);
+            ac.view().update(account);
+            auto const firewall = ac.view().peek(keylet::firewall(owner));
+            firewall->setFieldU32(sfLimitCount, (*firewall)[~sfLimitCount].valueOr(0) + 1);
+            ac.view().update(firewall);
+            return true;
+        };
+
+        // Removes the owner's XRP limit and its count.
+        auto const removeLimit = [](ApplyContext& ac, AccountID const& owner) {
+            auto const [sle, field] = peekLimit(ac, owner, xrpIssue());
+            if (!sle)
+                return false;
+            sle->makeFieldAbsent(*field);
+            ac.view().update(sle);
+            auto const firewall = ac.view().peek(keylet::firewall(owner));
+            firewall->makeFieldAbsent(sfLimitCount);
+            ac.view().update(firewall);
+            return true;
+        };
+
+        // A Payment by the owner removes its limit.
         doInvariantCheck(
-            {"Invariant failed: a firewall limit changed on a failed transaction"},
+            {"Invariant failed: a firewall limit was removed other than by its owner's "
+             "FirewallLimitSet"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return removeLimit(ac, a1.id());
+            },
+            XRPAmount{},
+            ownerTx(ttPAYMENT),
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createLimitedFirewall);
+
+        // A Payment by the owner adds one.
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit was added other than by its owner's "
+             "FirewallLimitSet"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return addLimit(ac, a1.id());
+            },
+            XRPAmount{},
+            ownerTx(ttPAYMENT),
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createBareFirewall);
+
+        // A Payment by A2 changes A1's MPT limit.
+        Account const gw{"gw"};
+        std::optional<MPTID> mptID;
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit changed other than by a successful "
+             "transaction of its owner"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return mptID &&
+                    setSpent(ac, a1.id(), MPTIssue{*mptID}, STAmount{MPTIssue{*mptID}, 1});
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) { tx.setAccountID(sfAccount, Account{"A2"}.id()); }},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                env.fund(XRP(1000), gw);
+                MPTTester mpt(env, gw, {.holders = {a1}, .fund = false});
+                mpt.create();
+                mpt.authorize({.account = a1});
+                mptID = mpt.issuanceID();
+                if (!createBareFirewall(a1, a2, env))
+                    return false;
+                env(firewall::limitSet(a1.id(), mpt["MPT"](10), kDay));
+                return hasLimit(env, a1.id(), MPTIssue{*mptID});
+            });
+
+        // A FirewallLimitSet by A1 changes A2's side of a line.
+        auto const usd = gw["USD"];
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit changed other than by a successful "
+             "transaction of its owner"},
+            [&](Account const&, Account const& a2, ApplyContext& ac) {
+                auto const [sle, field] = peekLimit(ac, a2.id(), usd.issue());
+                if (!sle)
+                    return false;
+                sle->peekFieldObject(*field).setFieldAmount(sfLimitAmount, usd(5));
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            limitSet,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                env.fund(XRP(1000), gw);
+                env.close();
+                env(trust(a2, usd(1000), tfSetNoRipple));
+                env.close();
+                env(firewall::set(a2.id(), a1.id(), gw.id()));
+                env(firewall::limitSet(a2.id(), usd(10), kDay));
+                return hasLimit(env, a2.id(), usd.issue());
+            });
+
+        // A failed transaction of the owner changes its limit.
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit changed other than by a successful "
+             "transaction of its owner"},
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 return setSpent(ac, a1.id(), xrpIssue(), XRP(1));
             },
@@ -569,6 +679,26 @@ class InvariantsFirewall_test : public InvariantsBase
             TxAccount::None,
             std::source_location::current(),
             tecUNFUNDED_PAYMENT);
+
+        // The owner's FirewallLimitSet adds and deletes a limit.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return addLimit(ac, a1.id());
+            },
+            XRPAmount{},
+            limitSet,
+            {tesSUCCESS, tesSUCCESS},
+            createBareFirewall);
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return removeLimit(ac, a1.id());
+            },
+            XRPAmount{},
+            limitDelete,
+            {tesSUCCESS, tesSUCCESS},
+            createLimitedFirewall);
     }
 
     void
@@ -578,6 +708,8 @@ class InvariantsFirewall_test : public InvariantsBase
         using namespace jtx;
 
         auto const tx = ownerTx(ttFIREWALL_LIMIT_SET);
+        auto const deleteTx = ownerTx(
+            ttFIREWALL_LIMIT_SET, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLimitDelete); });
 
         // Sets an XRP limit with the given Spent on the owner's AccountRoot, and
         // adds the given amount to the firewall's LimitCount.
@@ -722,7 +854,7 @@ class InvariantsFirewall_test : public InvariantsBase
                 return erase(ac, a1.id(), 0);
             },
             XRPAmount{},
-            tx,
+            deleteTx,
             {tesSUCCESS, tesSUCCESS},
             createLimitedFirewall);
         doInvariantCheck(
@@ -731,7 +863,7 @@ class InvariantsFirewall_test : public InvariantsBase
                 return erase(ac, a1.id(), 1);
             },
             XRPAmount{},
-            tx,
+            deleteTx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createLimitedFirewall);
     }
@@ -884,7 +1016,7 @@ public:
         testTokenOutflow();
         testOutflowPerAsset();
         testLimitDeletedByCharge();
-        testFailedChangesLimit();
+        testLimitFieldRules();
         testLimitSetRules();
         testOutflowPrincipal();
         testHoldingDeleteGuards();
