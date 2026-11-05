@@ -97,14 +97,14 @@ repos:
       - id: prettier
         args: [--end-of-line=auto]
 
-  # Scoped to package/: the rest of the repo's Python has pre-existing findings,
-  # so widening these is its own change.
+  # Scoped to package/ and the strategy matrix: the rest of the repo's Python
+  # has pre-existing findings, so widening these is its own change.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
     hooks:
       - id: ruff-check
         args: [--fix]
-        files: ^package/.*\.py$
+        files: ^(package|\.github/scripts/strategy-matrix)/.*\.py$
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: a5439e9af2ff9371297bb1a76a01b8ad17989b88 # frozen: 26.10.1
@@ -116,7 +116,7 @@ repos:
     hooks:
       - id: mypy
         args: [--strict]
-        files: ^package/.*\.py$
+        files: ^(package|\.github/scripts/strategy-matrix)/.*\.py$
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1

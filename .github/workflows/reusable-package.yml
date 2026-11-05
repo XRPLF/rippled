@@ -80,7 +80,11 @@ jobs:
       - name: Generate packaging matrix
         id: generate
         working-directory: .github/scripts/strategy-matrix
-        run: ./generate.py --packaging >>"${GITHUB_OUTPUT}"
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: ./generate.py --packaging --event="${EVENT}" --labels="${LABELS}" --ref-type="${REF_TYPE}" >>"${GITHUB_OUTPUT}"
 
   package:
     needs: [generate-matrix]

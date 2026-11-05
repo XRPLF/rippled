@@ -52,13 +52,59 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
     return " ".join(args)
 
 
+# The GitHub events that reach reusable-strategy-matrix.yml.
+PULL_REQUEST = "pull_request"
+MERGE_GROUP = "merge_group"
+PUSH = "push"
+SCHEDULE = "schedule"
+WORKFLOW_DISPATCH = "workflow_dispatch"
+GITHUB_EVENTS = (PULL_REQUEST, MERGE_GROUP, PUSH, SCHEDULE, WORKFLOW_DISPATCH)
+
+# The events derived from context: a labeled pull request and the push of a tag.
+READY_TO_MERGE = "ready_to_merge"
+READY_TO_MERGE_LABEL = "Ready to merge"
+FULL_BUILD = "full_build"
+FULL_BUILD_LABEL = "Full CI build"
+TAG = "tag"
+
+# The events a config can list. FULL_BUILD is appended to every config's list on
+# load, so no config lists it.
+MATRIX_EVENTS = GITHUB_EVENTS + (READY_TO_MERGE, TAG)
+
+# What github.ref_type can be.
+BRANCH = "branch"
+REF_TYPES = (BRANCH, TAG)
+
+
+def matrix_event(github_event: str, labels: list[str], ref_type: str) -> str:
+    """Resolve a GitHub event, the pull request's labels and the ref type to a
+    matrix event."""
+    if github_event == PULL_REQUEST:
+        if FULL_BUILD_LABEL in labels:
+            return FULL_BUILD
+        if READY_TO_MERGE_LABEL in labels:
+            return READY_TO_MERGE
+    if github_event == PUSH and ref_type == TAG:
+        return TAG
+    return github_event
+
+
+def _read_events(events: list[str]) -> list[str]:
+    """Check a config's 'events' list and append FULL_BUILD to it."""
+    assert events and all(e in MATRIX_EVENTS for e in events), (
+        f"unsupported events {events!r}: list one or more of "
+        f"{', '.join(MATRIX_EVENTS)}."
+    )
+    return [*events, FULL_BUILD]
+
+
 # ---------------------------------------------------------------------------
 # Input types — shapes of the JSON config files
 # ---------------------------------------------------------------------------
 
 
-# Every config must declare 'minimal'. Minimal configs form the reduced matrix
-# built for pull requests by default; the full matrix adds the rest.
+# Every config lists in 'events' the matrix events that build it, drawn from
+# MATRIX_EVENTS. No event implies another.
 #
 # Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
 # 'package' map to be packaged as well. Note that either applies to every entry
@@ -93,7 +139,7 @@ class LinuxConfig:
     compiler: list[str]
     build_type: list[str]
     arch: list[str]
-    minimal: bool
+    events: list[str]
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
@@ -103,6 +149,11 @@ class LinuxConfig:
     def __post_init__(self) -> None:
         if isinstance(self.package, dict):
             self.package = PackageConfig(**self.package)
+        assert self.package is None or TAG in self.events, (
+            f"a config with a 'package' map must list the '{TAG}' event; "
+            f"got {self.events}."
+        )
+        self.events = _read_events(self.events)
 
 
 @dataclasses.dataclass
@@ -129,7 +180,7 @@ class PlatformConfig:
     """One entry in macos.json's or windows.json's 'configs' array."""
 
     build_type: list[str]
-    minimal: bool
+    events: list[str]
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
     benchmark: bool = False  # if true, smoke-run the benchmarks after testing
     extra_cmake_args: str = ""
@@ -140,6 +191,7 @@ class PlatformConfig:
     def __post_init__(self) -> None:
         if isinstance(self.build_type, str):
             self.build_type = [self.build_type]
+        self.events = _read_events(self.events)
 
 
 @dataclasses.dataclass
@@ -215,18 +267,18 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
-    """Expand a LinuxFile into a flat list of matrix entries.
+def expand_linux_matrix(linux: LinuxFile, event: str) -> list[MatrixEntry]:
+    """Expand a LinuxFile into the flat matrix 'event' builds.
 
-    Each config entry is expanded over the cross-product of its
-    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
-    true, only configs flagged as minimal are included.
+    Each config entry is expanded over the cross-product of its compiler,
+    build_type, sanitizers, and architecture lists. A config is included when
+    its 'events' list contains 'event'.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
-            if minimal and not cfg.minimal:
+            if event not in cfg.events:
                 continue
             # An empty sanitizers list means "one entry with no sanitizer".
             effective_sanitizers = cfg.sanitizers or [""]
@@ -259,8 +311,9 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
     return entries
 
 
-def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
-    """Generate the packaging matrix from the configs that carry a 'package' map.
+def expand_linux_packaging(linux: LinuxFile, event: str) -> list[PackagingEntry]:
+    """Generate the packaging matrix from the configs that carry a 'package' map
+    and list 'event'.
 
     Packaging consumes the binaries that config's build job uploaded, so the
     artifact names come from the same config name, and a packaged config is one
@@ -273,7 +326,7 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     entries = []
     for distro, configs in linux.configs.items():
         for cfg in configs:
-            if cfg.package is None:
+            if cfg.package is None or event not in cfg.events:
                 continue
             for compiler, build_type, arch in itertools.product(
                 cfg.compiler, cfg.build_type, cfg.arch
@@ -313,17 +366,17 @@ def package_names_by_type(entries: list[PackagingEntry]) -> dict[str, list[str]]
     }
 
 
-def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
-    """Expand a PlatformFile (macOS or Windows) into matrix entries.
+def expand_platform_matrix(pf: PlatformFile, event: str) -> list[MatrixEntry]:
+    """Expand a PlatformFile (macOS or Windows) into the matrix 'event' builds.
 
-    When 'minimal' is true, only configs flagged as minimal are included.
+    A config is included when its 'events' list contains 'event'.
     """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
     entries: list[MatrixEntry] = []
     for cfg in pf.configs:
-        if minimal and not cfg.minimal:
+        if event not in cfg.events:
             continue
         for build_type in cfg.build_type:
             name = f"{platform_name}-{arch}-{build_type.lower()}"
@@ -368,35 +421,50 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "-m",
-        "--minimal",
-        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
-        "used for pull requests by default. If omitted, the full matrix is "
-        "emitted.",
-        action="store_true",
+        "--event",
+        help="The GitHub event that triggered the run (github.event_name).",
+        choices=GITHUB_EVENTS,
+        required=True,
+    )
+    parser.add_argument(
+        "--labels",
+        help="The pull request's label names as a JSON array "
+        "(github.event.pull_request.labels.*.name). Empty or null means none.",
+        default="",
+    )
+    parser.add_argument(
+        "--ref-type",
+        help="The type of the ref the run is for (github.ref_type).",
+        choices=REF_TYPES,
+        required=True,
     )
     args = parser.parse_args()
 
-    matrix: list[MatrixEntry] | list[PackagingEntry] = []
+    event = matrix_event(
+        args.event, json.loads(args.labels or "null") or [], args.ref_type
+    )
 
+    entries: list[MatrixEntry] | list[PackagingEntry]
     if args.packaging:
-        matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
+        entries = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"), event)
         # One list per format, so each install-test job installs the packages its
         # own format produced.
-        for package_type, names in package_names_by_type(matrix).items():
+        for package_type, names in package_names_by_type(entries).items():
             print(f"{package_type}_package_names={json.dumps(names)}")
     else:
+        matrix: list[MatrixEntry] = []
         if args.config in ("linux", None):
             matrix += expand_linux_matrix(
-                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
+                LinuxFile.load(THIS_DIR / "linux.json"), event
             )
         if args.config in ("macos", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
+                PlatformFile.load(THIS_DIR / "macos.json"), event
             )
         if args.config in ("windows", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
+                PlatformFile.load(THIS_DIR / "windows.json"), event
             )
+        entries = matrix
 
-    print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")
+    print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in entries]})}")
