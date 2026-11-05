@@ -2,3 +2,4 @@
 
 # The CI tooling team should review changes to the CI configuration.
 /.github/ @XRPLF/ci-tooling
+/docs/cpp/ @bthomee @godexsoft @nbougalis @ximinez

@@ -91,20 +91,12 @@ If your test can be run offline, in under 60 seconds, then it can be an
 automatic test run by `xrpld --unittest`.
 Otherwise, it must be a manual test.
 
-If you create new source files, they must be organized as follows:
-
-- If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
-  under `include/xrpl`, and source (`.cpp`) files must go under
-  `src/libxrpl`.
-- All other non-test files must go under `src/xrpld`.
-- New test source files should use `gtest` and go under `src/tests`, unless that isn't possible, in which case they should use our legacy test framework and go under `src/test`.
-- All benchmark source files must go under `src/benchmarks`.
+C++ code must follow the [C++ guidelines](./docs/cpp/guidelines.md),
+including where new source files go and header levelization.
 
 The source must be formatted according to the style guide below. The easiest
 way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
 which format and lint your changes automatically on every commit.
-
-Header includes must be [levelized](.github/scripts/levelization).
 
 Changes should be usually squashed down into a single commit.
 Some larger or more complicated change sets make more sense,
@@ -226,9 +218,9 @@ at any time, so don't use it lightly.
 
 # Style guide
 
-This is a non-exhaustive list of recommended style guidelines. These are
-not always strictly enforced and serve as a way to keep the codebase
-coherent rather than a set of _thou shalt not_ commandments.
+C++ coding guidelines live in [`docs/cpp/guidelines.md`](./docs/cpp/guidelines.md),
+and C++ formatting in [`docs/cpp/formatting.md`](./docs/cpp/formatting.md).
+This section covers the tooling that enforces them.
 
 ## Pre-commit hooks
 
@@ -267,7 +259,7 @@ pre-commit run clang-format --all-files
 
 The hooks configured in this repository include, among others:
 
-- `clang-format` — C++/proto formatting (see [Formatting](#formatting))
+- `clang-format` — C++/proto formatting (see [C++ formatting](./docs/cpp/formatting.md))
 - `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
 - `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
 - `gersemi` — CMake formatting
@@ -277,47 +269,6 @@ The hooks configured in this repository include, among others:
 
 The same hooks run in CI on every pull request, so running them locally before
 you push helps you avoid CI failures.
-
-## Formatting
-
-All code must conform to `clang-format`, according to the settings in
-[`.clang-format`](./.clang-format), unless the result would be unreasonably
-difficult to read or maintain. The `clang-format` version is pinned in
-[`.pre-commit-config.yaml`](./.pre-commit-config.yaml), so the
-[`pre-commit`](#pre-commit-hooks) hook always formats with the same version as
-CI. To demarcate lines that should be left as-is, surround them with comments
-like this:
-
-```
-// clang-format off
-...
-// clang-format on
-```
-
-The easiest way to format your changes is to let the `pre-commit` hook run
-automatically on commit, or to run it manually:
-
-```bash
-pre-commit run clang-format --all-files
-```
-
-You can also format individual files in place by running `clang-format -i <file>...`
-from any directory within this project.
-
-> [!NOTE]
-> This uses whatever `clang-format` version is installed locally, which may
-> differ from the pinned version used by `pre-commit` and CI, so the results
-> can vary.
-
-There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
-
-To download the patch file:
-
-1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
-2. Left menu -> click **Summary**
-3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
-4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
-5. Commit and push.
 
 ## Clang-tidy
 
@@ -378,69 +329,6 @@ run-clang-tidy -p build -quiet -fix -format -allow-no-checks include src tests
 
 `-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
-## Contracts and instrumentation
-
-We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
-and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
-in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
-by finding external conditions which cause contracts violations inside `xrpld`.
-The contracts are expressed as `XRPL_ASSERT` or `UNREACHABLE` (defined in
-`include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
-of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
-is to provide contracts with stable identity which does not rely on line numbers.
-
-When `xrpld` is built with the Antithesis instrumentation enabled
-(using `voidstar` CMake option) and ran on the Antithesis platform, the
-contracts become
-[test properties](https://antithesis.com/docs/using_antithesis/properties.html);
-otherwise they are just like a regular `assert`.
-To learn more about Antithesis, see
-[How Antithesis Works](https://antithesis.com/docs/introduction/how_antithesis_works.html)
-and [C++ SDK](https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html#)
-
-We continue to use the old style `assert` or `assert(false)` in certain
-locations, where the reporting of contract violations on the Antithesis
-platform is either not possible or not useful.
-
-For this reason:
-
-- The locations where `assert` or `assert(false)` contracts should continue to be used:
-  - `constexpr` functions
-  - unit tests i.e. files under `src/test`
-  - unit tests-related modules (files under `beast/test` and `beast/unit_test`)
-- Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
-  giving it unique name, with the short description of the contract.
-- Outside of the listed locations, do not use `assert(false)`; use
-  `UNREACHABLE` instead, giving it unique name, with the description of the
-  condition being violated
-- The contract name should start with a full name (including scope) of the
-  function, optionally a named lambda, followed by a colon `:` and a brief
-  (typically at most five words) description. `UNREACHABLE` contracts
-  can use slightly longer descriptions. If there are multiple overloads of the
-  function, use common sense to balance both brevity and unambiguity of the
-  function name. NOTE: the purpose of name is to provide stable means of
-  unique identification of every contract; for this reason try to avoid elements
-  which can change in some obvious refactors or when reinforcing the condition.
-- Contract description typically (except for `UNREACHABLE`) should describe the
-  _expected_ condition, as in "I assert that _expected_ is true".
-- Contract description for `UNREACHABLE` should describe the _unexpected_
-  situation which caused the line to have been reached.
-- Example good name for an
-  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
-  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
-- Example **bad** name
-  `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
-  (missing namespace, unnecessary full function signature, description too verbose).
-  Good name: `"xrpl::RFC1751::insert : minimum length"`.
-- In **few** well-justified cases a non-standard name can be used, in which case a
-  comment should be placed to explain the rationale (example in `contract.cpp`)
-- Do **not** rename a contract without a good reason (e.g. the name no longer
-  reflects the location or the condition being checked)
-- Do not use `std::unreachable`
-- Do not put contracts where they can be violated by an external condition
-  (e.g. timing, data payload before mandatory validation etc.) as this creates
-  bogus bug reports (and causes crashes of Debug builds)
-
 ## Unit Tests
 
 To execute all unit tests:
@@ -461,37 +349,6 @@ Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
 Alternatively, if the unit test name finds an exact match, it will stop
 doing partial matches, i.e. if a unit test with a title of `TestSuiteName`
 exists, then no other unit test will be executed, apart from `TestSuiteName`.
-
-## Avoid
-
-1. Proliferation of nearly identical code.
-2. Proliferation of new files and classes.
-3. Complex inheritance and complex OOP patterns.
-4. Unmanaged memory allocation and raw pointers.
-5. Macros and non-trivial templates (unless they add significant value).
-6. Lambda patterns (unless these add significant value).
-7. CPU or architecture-specific code unless there is a good reason to
-   include it, and where it is used, guard it with macros and provide
-   explanatory comments.
-8. Importing new libraries unless there is a very good reason to do so.
-
-## Seek to
-
-9. Extend functionality of existing code rather than creating new code.
-10. Prefer readability over terseness where important logic is
-    concerned.
-11. Inline functions that are not used or are not likely to be used
-    elsewhere in the codebase.
-12. Use clear and self-explanatory names for functions, variables,
-    structs and classes.
-13. Use TitleCase for classes, structs, type aliases and filenames,
-    camelCase for function and variable names, lower case for namespaces and
-    folders. The exception is a type alias that generic code looks up by name
-    (`value_type`, `iterator`, `result_type`, and the rest of the standard
-    container, hash and clock members), which keeps its snake_case spelling;
-    `.clang-tidy` lists the names that are allowed.
-14. Provide as many comments as you feel that a competent programmer
-    would need to understand what your code does.
 
 # Maintainers
 
