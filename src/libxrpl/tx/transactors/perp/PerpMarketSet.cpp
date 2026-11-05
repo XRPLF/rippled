@@ -52,7 +52,7 @@ validOracles(STArray const& oracles)
     std::set<std::pair<AccountID, std::uint32_t>> seen;
     for (auto const& oracle : oracles)
     {
-        if (oracle[sfOwner] == beast::kZero ||
+        if (oracle.getFName() != sfIndexOracle || oracle[sfOwner] == beast::kZero ||
             !seen.emplace(oracle[sfOwner], oracle[sfOracleDocumentID]).second)
             return false;
     }
@@ -72,6 +72,9 @@ validTiers(STArray const& tiers)
     std::optional<STObject> previous;
     for (auto const& tier : tiers)
     {
+        if (tier.getFName() != sfMarginTier)
+            return false;
+
         Number const notionalMax = tier[sfNotionalMax];
         std::uint32_t const initial = tier[sfInitialMarginRate];
         std::uint32_t const maintenance = tier[sfMaintenanceMarginRate];
@@ -151,6 +154,11 @@ PerpMarketSet::preflight(PreflightContext const& ctx)
         if (auto const value = tx[~*field]; value && value->signum() <= 0)
             return temMALFORMED;
     }
+
+    // A tick finer than the book can key would admit orders the book never visits.
+    if (auto const tick = tx[~sfPriceTick];
+        tick && (perp::orderQuality(*tick, false) == 0 || perp::orderQuality(*tick, true) == 0))
+        return temMALFORMED;
 
     if (!validNumericRange(tx[~sfOrderPriceBand], perp::kRateUnity))
         return temMALFORMED;

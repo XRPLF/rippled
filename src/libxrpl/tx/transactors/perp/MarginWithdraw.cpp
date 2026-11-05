@@ -203,7 +203,10 @@ MarginWithdraw::doApply()
         return ter;
     }
 
-    (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] - payout;
+    Number const assetsTotal = (*exchange)[sfAssetsTotal] - payout;
+    if (!perp::holdsExactly(asset, assetsTotal))
+        return tecPRECISION_LOSS;
+    (*exchange)[sfAssetsTotal] = assetsTotal;
     associateAsset(*exchange, asset);
     view().update(exchange);
     if (payout == Number{})

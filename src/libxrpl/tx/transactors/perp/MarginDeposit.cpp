@@ -112,6 +112,11 @@ MarginDeposit::doApply()
         perp::roundCollateral(*exchange, tx[sfAmount], Number::RoundingMode::Downward);
     STAmount const amount{asset, value};
 
+    // The pseudo-account's balance must be able to hold the new total exactly.
+    Number const assetsTotal = (*exchange)[sfAssetsTotal] + value;
+    if (!perp::holdsExactly(asset, assetsTotal))
+        return tecPRECISION_LOSS;
+
     // Cover clears bad debt first; the rest is the owner's first-loss cover.
     if (tx.isFlag(tfPerpCover))
     {
@@ -120,7 +125,7 @@ MarginDeposit::doApply()
             return ter;
         (*exchange)[sfCoverAvailable] =
             (*exchange)[sfCoverAvailable] + perp::absorbBadDebt(*exchange, value);
-        (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] + value;
+        (*exchange)[sfAssetsTotal] = assetsTotal;
         associateAsset(*exchange, asset);
         view().update(exchange);
         return tesSUCCESS;
@@ -177,7 +182,7 @@ MarginDeposit::doApply()
 
     (*account)[sfCash] = (*account)[sfCash] + value;
     (*exchange)[sfCashTotal] = (*exchange)[sfCashTotal] + value;
-    (*exchange)[sfAssetsTotal] = (*exchange)[sfAssetsTotal] + value;
+    (*exchange)[sfAssetsTotal] = assetsTotal;
     associateAsset(*account, asset);
     associateAsset(*exchange, asset);
     if (created)

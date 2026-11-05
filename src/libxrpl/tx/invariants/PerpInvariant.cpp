@@ -326,14 +326,14 @@ ValidPerp::finalize(
             fail("perp market open interest does not match its positions");
 
         auto const status = market[sfMarketStatus];
-        if (status == perp::kMarketLive)
+        if (status != perp::kMarketSettled)
         {
             if (sum.size != Number{})
-                fail("perp fills in a live market are not zero-sum");
+                fail("perp fills in an unsettled market are not zero-sum");
             if (market[sfOpenInterestLong] != market[sfOpenInterestShort])
-                fail("perp live market open interest is unbalanced");
+                fail("perp unsettled market open interest is unbalanced");
         }
-        else if (status == perp::kMarketSettled)
+        else
         {
             if (std::ranges::any_of(sum.sizes, [](SizeChange const& size) {
                     return size.after != size.before && size.after != Number{};

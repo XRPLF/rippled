@@ -3,10 +3,10 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -426,7 +426,8 @@ class PerpExchange_test : public PerpTestBase
         testcase("delete payout checks");
         using namespace test::jtx;
 
-        // The owner's USD is not authorized by the issuer, so it cannot receive the payout.
+        // The issuer requires authorization and the owner holds no USD line, so none can be
+        // created.
         {
             Env env{*this, all_};
             env.fund(XRP(100'000), owner_, alice_, gw_);
@@ -448,8 +449,7 @@ class PerpExchange_test : public PerpTestBase
                 (*exchange)[sfAssetsTotal] = Number{500};
                 (*exchange)[sfOwnerFees] = Number{500};
             });
-            env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecNO_AUTH));
-            env.close();
+            env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecNO_LINE));
             BEAST_EXPECT(env.le(keylet));
             BEAST_EXPECT(!env.le(keylet::trustLine(owner_.id(), usd_.issue())));
         }
@@ -471,7 +471,6 @@ class PerpExchange_test : public PerpTestBase
                 (*exchange)[sfOwnerFees] = Number{500};
             });
             env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecFROZEN));
-            env.close();
             BEAST_EXPECT(env.le(keylet));
         }
     }

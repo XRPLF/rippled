@@ -35,6 +35,7 @@
 #include <expected>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -351,6 +352,12 @@ roundCollateral(STLedgerEntry const& exchange, Number const& value, Number::Roun
 {
     Asset const asset = exchange[sfAsset];
     return roundToAsset(asset, value, -int{exchange[sfScale]}, mode);
+}
+
+bool
+holdsExactly(Asset const& asset, Number const& total)
+{
+    return isRepresentable(asset, total) && Number{STAmount{asset, total}} == total;
 }
 
 TER
@@ -741,8 +748,15 @@ std::uint64_t
 orderQuality(Number const& price, bool sell)
 {
     STAmount const one{noIssue(), 1};
-    STAmount const amount{noIssue(), price};
-    return sell ? getRate(one, amount) : getRate(amount, one);
+    try
+    {
+        STAmount const amount{noIssue(), price};
+        return sell ? getRate(one, amount) : getRate(amount, one);
+    }
+    catch (std::overflow_error const&)
+    {
+        return 0;
+    }
 }
 
 PerpBookTip::PerpBookTip(ApplyView& view, uint256 const& marketID, bool sell)
@@ -1261,17 +1275,18 @@ matchOrder(ApplyView& view, SLE::Ref market, SLE::Ref exchange, Taker& taker, be
         Number const takerQuantity = taker.sell ? -quantity : quantity;
         Number const takerSize = (*taker.position)[sfSize];
         Number const makerSize = (*makerPosition)[sfSize];
+        // A post-only order that would cross is killed whether or not the cap allows the fill.
+        if (taker.postOnly)
+        {
+            result.crossed = true;
+            break;
+        }
+
         Number const rise = longRise(takerSize, takerSize + takerQuantity) +
             longRise(makerSize, makerSize - takerQuantity);
         if (rise > Number{} && (*market)[sfOpenInterestLong] + rise > (*market)[sfOpenInterestMax])
         {
             result.capped = true;
-            break;
-        }
-
-        if (taker.postOnly)
-        {
-            result.crossed = true;
             break;
         }
 

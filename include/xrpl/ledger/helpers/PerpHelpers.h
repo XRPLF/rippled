@@ -217,6 +217,13 @@ marginRequirement(Number const& notional, STArray const& tiers, bool initial);
 roundCollateral(STLedgerEntry const& exchange, Number const& value, Number::RoundingMode mode);
 
 /**
+ * Whether an asset holds total exactly: a pseudo-account balance of an IOU keeps 16 significant
+ * digits, a Number total keeps more.
+ */
+[[nodiscard]] bool
+holdsExactly(Asset const& asset, Number const& total);
+
+/**
  * Whether an account may act on a permissioned exchange (spec 13), read-only: the domain owner
  * always may, and an expired credential passes so that verifyDomain can delete it.
  *
@@ -442,6 +449,8 @@ liquidationSummary(ReadView const& view, STLedgerEntry const& account);
 /**
  * The book quality of an order price: the price for an ask and its inverse for a bid, so the best
  * order of either side has the lowest key (spec 3.5).
+ *
+ * @return 0 for a price outside the range of an STAmount, which has no place in the book.
  */
 [[nodiscard]] std::uint64_t
 orderQuality(Number const& price, bool sell);

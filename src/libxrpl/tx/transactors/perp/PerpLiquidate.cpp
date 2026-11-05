@@ -276,6 +276,8 @@ PerpLiquidate::doApply()
         auto const& tiers = market->getFieldArray(sfMarginTiers);
         if (tiers.empty() || worstCase * index > tiers.back()[sfNotionalMax])
             return tecPERP_POSITION_LIMIT;
+        if (auto const ter = perp::deletePositionIfEmpty(view(), taken, j_); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
         liquidated = size;
     }
 

@@ -40,7 +40,8 @@ PerpOrderCreate::preflight(PreflightContext const& ctx)
 
     Number const price = tx[sfLimitPrice];
     Number const size = tx[sfSize];
-    if (price.signum() <= 0 || size.signum() <= 0 || !perp::fitsQualityKey(price))
+    if (price.signum() <= 0 || size.signum() <= 0 || !perp::fitsQualityKey(price) ||
+        perp::orderQuality(price, tx.isFlag(tfPerpSell)) == 0)
         return temMALFORMED;
 
     if (static_cast<int>(tx.isFlag(tfPerpPostOnly)) +

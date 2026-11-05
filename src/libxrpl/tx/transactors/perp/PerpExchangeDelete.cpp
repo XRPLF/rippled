@@ -6,9 +6,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -56,6 +58,25 @@ PerpExchangeDelete::preclaim(PreclaimContext const& ctx)
         (*exchange)[sfBadDebt] != Number{})
         return tecHAS_OBLIGATIONS;
 
+    // The payout leaves the pseudo-account like any withdrawal from a protocol account.
+    Asset const asset = (*exchange)[sfAsset];
+    if (STAmount{asset, (*exchange)[sfAssetsTotal]} > beast::kZero)
+    {
+        AccountID const owner = ctx.tx[sfAccount];
+        AccountID const pseudoID = (*exchange)[sfAccount];
+        if (auto const ter = canTransfer(ctx.view, asset, pseudoID, owner))
+            return ter;
+        if (auto const ter = requireAuth(ctx.view, asset, owner, AuthType::WeakAuth))
+            return ter;
+        if (!holdingExists(ctx.view, owner, asset))
+        {
+            if (auto const ter = canAddHolding(ctx.view, asset); !isTesSuccess(ter))
+                return ter;
+        }
+        if (auto const ter = checkWithdrawFreeze(ctx.view, pseudoID, owner, owner, asset))
+            return ter;
+    }
+
     return tesSUCCESS;
 }
 
@@ -82,14 +103,15 @@ PerpExchangeDelete::doApply()
     STAmount const assets{asset, (*exchange)[sfAssetsTotal]};
     if (assets > beast::kZero)
     {
-        if (!holdingExists(view(), accountID_, asset))
-        {
-            if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, asset, j_))
-                return ter;
-        }
-        if (auto const ter =
-                accountSend(view(), pseudoID, accountID_, assets, j_, {}, WaiveTransferFee::Yes))
+        if (auto const ter = doWithdraw(
+                ctx_.getApplyViewContext(),
+                accountID_,
+                accountID_,
+                pseudoID,
+                preFeeBalance_,
+                assets,
+                assets,
+                j_))
             return ter;
     }
 
