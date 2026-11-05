@@ -13,12 +13,14 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
@@ -306,6 +308,28 @@ transferRate(ReadView const& view, AccountID const& issuer)
         return Rate{sle->getFieldU32(sfTransferRate)};
 
     return kParityRate;
+}
+
+Rate
+transferRate(ReadView const& view, AccountID const& issuer, Currency const& currency)
+{
+    // A per-currency TransferFee on the TokenIssuance overrides the
+    // account-wide TransferRate. Fee is in the XLS-33 format
+    // (0..50000 = 0%..50%).
+    if (view.rules().enabled(featureTokenIssuance))
+    {
+        if (auto const sle = view.read(keylet::tokenIssuance(issuer, currency));
+            sle && sle->isFieldPresent(sfTransferFee))
+            return Rate{1'000'000'000u + (10'000u * sle->getFieldU16(sfTransferFee))};
+    }
+
+    return transferRate(view, issuer);
+}
+
+Rate
+transferRate(ReadView const& view, Issue const& issue)
+{
+    return transferRate(view, issue.account, issue.currency);
 }
 
 void

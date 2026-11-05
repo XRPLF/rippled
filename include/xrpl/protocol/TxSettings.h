@@ -17,25 +17,27 @@ enum class Delegation { Delegable, NotDelegable };
  * TxSettings::privileges) and enforced in InvariantCheck.cpp.
  */
 enum class Privilege : std::uint16_t {
-    NoPriv = 0x0000,              // The transaction can not do any of the enumerated operations
-    CreateAcct = 0x0001,          // The transaction can create a new ACCOUNT_ROOT object.
-    CreatePseudoAcct = 0x0002,    // The transaction can create a pseudo account,
-                                  // which implies createAcct
-    MustDeleteAcct = 0x0004,      // The transaction must delete an ACCOUNT_ROOT object
-    MayDeleteAcct = 0x0008,       // The transaction may delete an ACCOUNT_ROOT
-                                  // object, but does not have to
-    OverrideFreeze = 0x0010,      // The transaction can override some freeze rules
-    ChangeNftCounts = 0x0020,     // The transaction can mint or burn an NFT
-    CreateMptIssuance = 0x0040,   // The transaction can create a new MPT issuance
-    DestroyMptIssuance = 0x0080,  // The transaction can destroy an MPT issuance
-    MustAuthorizeMpt = 0x0100,    // The transaction MUST create or delete an MPT
-                                  // object (except by issuer)
-    MayAuthorizeMpt = 0x0200,     // The transaction MAY create or delete an MPT
-                                  // object (except by issuer)
-    MayDeleteMpt = 0x0400,        // The transaction MAY delete an MPT object. May not create.
-    MustModifyVault = 0x0800,     // The transaction must modify, delete or create, a vault
-    MayModifyVault = 0x1000,      // The transaction MAY modify, delete or create, a vault
-    MayCreateMpt = 0x2000,        // The transaction MAY create an MPT object, except for issuer.
+    NoPriv = 0x0000,                // The transaction can not do any of the enumerated operations
+    CreateAcct = 0x0001,            // The transaction can create a new ACCOUNT_ROOT object.
+    CreatePseudoAcct = 0x0002,      // The transaction can create a pseudo account,
+                                    // which implies createAcct
+    MustDeleteAcct = 0x0004,        // The transaction must delete an ACCOUNT_ROOT object
+    MayDeleteAcct = 0x0008,         // The transaction may delete an ACCOUNT_ROOT
+                                    // object, but does not have to
+    OverrideFreeze = 0x0010,        // The transaction can override some freeze rules
+    ChangeNftCounts = 0x0020,       // The transaction can mint or burn an NFT
+    CreateMptIssuance = 0x0040,     // The transaction can create a new MPT issuance
+    DestroyMptIssuance = 0x0080,    // The transaction can destroy an MPT issuance
+    MustAuthorizeMpt = 0x0100,      // The transaction MUST create or delete an MPT
+                                    // object (except by issuer)
+    MayAuthorizeMpt = 0x0200,       // The transaction MAY create or delete an MPT
+                                    // object (except by issuer)
+    MayDeleteMpt = 0x0400,          // The transaction MAY delete an MPT object. May not create.
+    MustModifyVault = 0x0800,       // The transaction must modify, delete or create, a vault
+    MayModifyVault = 0x1000,        // The transaction MAY modify, delete or create, a vault
+    MayCreateMpt = 0x2000,          // The transaction MAY create an MPT object, except for issuer.
+    CreateTokenIssuance = 0x4000,   // The transaction can create a new token issuance
+    DestroyTokenIssuance = 0x8000,  // The transaction can destroy a token issuance
 };
 
 // The inner static_cast is not redundant: the underlying type is narrower than

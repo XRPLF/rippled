@@ -351,6 +351,15 @@ mptokenIssuance(UInt256 const& issuanceKey)
 }
 
 Keylet
+tokenIssuance(AccountID const& issuer, Currency const& currency) noexcept;
+
+inline Keylet
+tokenIssuance(uint256 const& key)
+{
+    return {ltTOKEN_ISSUANCE, key};
+}
+
+Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet

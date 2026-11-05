@@ -1160,3 +1160,53 @@ TRANSACTION(ttPASSKEY_LIST_SET, 201, PasskeyListSet,
     ({
     {sfPasskeys, SoeRequired},
 }))
+/** This transaction type creates a TokenIssuance object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenIssuanceCreate.h>
+#endif
+TRANSACTION(ttTOKEN_ISSUANCE_CREATE, 202, TokenIssuanceCreate,
+    ({
+        .amendment = featureTokenIssuance,
+        .privileges = Privilege::CreateTokenIssuance,
+    }),
+    ({
+    {sfCurrency, SoeRequired},
+    {sfMaximumAmount, SoeOptional},
+    {sfTokenScale, SoeOptional},
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfTransferFee, SoeOptional},
+    {sfMPTokenMetadata, SoeOptional},
+}))
+/** This transaction type modifies a TokenIssuance object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenIssuanceSet.h>
+#endif
+TRANSACTION(ttTOKEN_ISSUANCE_SET, 203, TokenIssuanceSet,
+    ({.amendment = featureTokenIssuance}),
+    ({
+    {sfCurrency, SoeRequired},
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfTransferFee, SoeOptional},
+    {sfMPTokenMetadata, SoeOptional},
+}))
+/** This transaction type destroys a TokenIssuance object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenIssuanceDestroy.h>
+#endif
+TRANSACTION(ttTOKEN_ISSUANCE_DESTROY, 204, TokenIssuanceDestroy,
+    ({
+        .amendment = featureTokenIssuance,
+        .privileges = Privilege::DestroyTokenIssuance,
+    }),
+    ({
+    {sfCurrency, SoeRequired},
+}))
+/** This transaction type converts between an IOU and its bound MPT. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/token/TokenConvert.h>
+#endif
+TRANSACTION(ttTOKEN_CONVERT, 205, TokenConvert,
+    ({.amendment = featureTokenIssuance}),
+    ({
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))

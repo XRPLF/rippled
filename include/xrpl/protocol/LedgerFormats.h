@@ -237,7 +237,13 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))                                                                 \
                                                                                                                                    \
     LEDGER_OBJECT(LoanBroker,                                                                                                      \
-        LSF_FLAG(lsfLoanBrokerPrivate, 0x00010000))
+        LSF_FLAG(lsfLoanBrokerPrivate, 0x00010000))                                                                                \
+                                                                                                                                   \
+    LEDGER_OBJECT(TokenIssuance,                                                                                                   \
+        LSF_FLAG(lsfTokenLocked, 0x00000001)                    /* True, per-currency global freeze */                             \
+        LSF_FLAG(lsfTokenCannotLock, 0x00000002)                /* True, issuer renounced the per-currency lock */                 \
+        LSF_FLAG(lsfTokenWrapped, 0x00000004)                   /* True, owned by a pseudo-account (blackholed issuer) */          \
+        LSF_FLAG(lsfTokenVerifiedSupply, 0x00000008))           /* True, IssuedAmount reflects verified legacy supply */
 
 // clang-format on
 

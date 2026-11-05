@@ -37,6 +37,9 @@ public:
     void
     setCurrency(Currency const& currency);
 
+    STCurrency&
+    operator=(Currency const& currency);
+
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
@@ -85,6 +88,13 @@ inline void
 STCurrency::setCurrency(Currency const& currency)
 {
     currency_ = currency;
+}
+
+inline STCurrency&
+STCurrency::operator=(Currency const& currency)
+{
+    setCurrency(currency);
+    return *this;
 }
 
 inline bool

@@ -313,6 +313,7 @@ doAccountObjects(rpc::JsonContext& context)
             {.name = jss::vault, .type = ltVAULT},
             {.name = jss::sponsorship, .type = ltSPONSORSHIP},
             {.name = jss::transaction_proposal, .type = ltTRANSACTION_PROPOSAL},
+            {.name = jss::token_issuance, .type = ltTOKEN_ISSUANCE},
         };
 
         typeFilter.emplace();

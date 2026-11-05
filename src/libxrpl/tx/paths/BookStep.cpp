@@ -11,7 +11,9 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Concepts.h>
@@ -38,6 +40,7 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <numeric>
@@ -748,6 +751,12 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
+
+    // What capped IOU issuers' own offers have given in this pass. The
+    // headroom is read before the strand, since the steps after this one have
+    // already issued into sb on the reverse pass.
+    [[maybe_unused]] TOut issuerOffersOut{};
+
     auto execOffer = [&](auto& offer) {
         // Note that offer.quality() returns a (non-optional) Quality.  So
         // ofrQ is always safe to use below this point in the lambda.
@@ -842,9 +851,32 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             if (grossOut)
                 ownerGives = *grossOut;
 
-            auto const funds = offer.isFunded()
+            auto const ownerFunds = offer.isFunded()
                 ? ownerGives  // Offer owner is IOU issuer; they have unlimited funds
                 : offers.ownerFunds();
+
+            // A capped IOU issuer can still issue only its supply headroom.
+            auto const funds = [&] {
+                if constexpr (std::is_same_v<TOut, IOUAmount>)
+                {
+                    if (offer.isFunded())
+                    {
+                        if (auto const headroom =
+                                tokenIssuanceHeadroom(afView, book_.out.get<Issue>()))
+                        {
+                            auto const left = toAmount<IOUAmount>(*headroom) - issuerOffersOut;
+                            return std::min(ownerFunds, std::max(left, IOUAmount{}));
+                        }
+                    }
+                }
+                return ownerFunds;
+            }();
+
+            if (offer.isFunded() && funds < ownerFunds && funds <= beast::kZero)
+            {
+                removeOffer("Removing capped issuer offer with no supply headroom");
+                return true;
+            }
 
             // Only a CLOB offer: an AMM offer is funded and its output rate is
             // parity, so its gross-up always fits.
@@ -938,6 +970,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 "xrpl::BookStep::forEachOffer : capped offer input is limited");
 
             offerAttempted = true;
+            if constexpr (std::is_same_v<TOut, IOUAmount>)
+            {
+                if (offer.isFunded())
+                    issuerOffersOut += ownerGives;
+            }
             return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate, inLimited);
         }
         catch (std::overflow_error const&)
@@ -1620,7 +1657,7 @@ BookStep<TIn, TOut, TDerived>::rate(
         [&](Issue const& issue) -> Rate {
             if (isXRP(issue.account) || issue.account == dstAccount)
                 return kParityRate;
-            return transferRate(view, issue.account);
+            return transferRate(view, issue);
         },
         [&](MPTIssue const& mptIssue) -> Rate {
             // For MPT, parity applies only when this asset is the final strand

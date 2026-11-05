@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -26,6 +27,7 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -481,11 +483,23 @@ DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
     auto const srcOwed = toAmount<IOUAmount>(
         accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
 
+    // A redeeming source returns the destination's own IOUs and issues none
+    // of its own, so its supply cap does not bound the flow.
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::Redeems};
 
     // srcOwed is negative or zero
-    return {creditLimit2(sb, dst_, src_, currency_) + srcOwed, DebtDirection::Issues};
+    auto flow = creditLimit2(sb, dst_, src_, currency_) + srcOwed;
+
+    // A capped issuer at the head of a strand expands supply, so the
+    // headroom bounds the flow. Mid-strand the issuer only ripples
+    // (redeem-then-reissue, sum-neutral), which the cap never blocks.
+    if (prevStep_ == nullptr)
+    {
+        if (auto const headroom = tokenIssuanceHeadroom(sb, Issue{currency_, src_}))
+            flow = std::min(flow, toAmount<IOUAmount>(*headroom));
+    }
+    return {flow, DebtDirection::Issues};
 }
 
 template <class TDerived>
@@ -543,7 +557,8 @@ DirectStepI<TDerived>::revImp(
             dst_,
             toSTAmount(srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
-            j_);
+            j_,
+            EnforceSupplyCap::No);
         JLOG(j_.trace()) << "DirectStepI::rev: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
@@ -560,7 +575,8 @@ DirectStepI<TDerived>::revImp(
         dst_,
         toSTAmount(maxSrcToDst, srcToDstIss),
         /*checkIssuer*/ true,
-        j_);
+        j_,
+        EnforceSupplyCap::No);
     JLOG(j_.trace()) << "DirectStepI::rev: Limiting"
                      << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
                      << " srcToDst: " << to_string(maxSrcToDst) << " out: " << to_string(out);
@@ -656,7 +672,8 @@ DirectStepI<TDerived>::fwdImp(
             dst_,
             toSTAmount(cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
-            j_);
+            j_,
+            EnforceSupplyCap::No);
         JLOG(j_.trace()) << "DirectStepI::fwd: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
@@ -673,7 +690,8 @@ DirectStepI<TDerived>::fwdImp(
             dst_,
             toSTAmount(cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true,
-            j_);
+            j_,
+            EnforceSupplyCap::No);
         JLOG(j_.trace()) << "DirectStepI::rev: Limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(actualIn)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
@@ -763,7 +781,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(ReadView const& sb, DebtDirection prev
         "issue");
 
     std::uint32_t const srcQOut =
-        redeems(prevStepDebtDirection) ? transferRate(sb, src_).value : QUALITY_ONE;
+        redeems(prevStepDebtDirection) ? transferRate(sb, src_, currency_).value : QUALITY_ONE;
     auto dstQIn = static_cast<TDerived const*>(this)->quality(sb, QualityDirection::In);
 
     if (isLast_ && dstQIn > QUALITY_ONE)
