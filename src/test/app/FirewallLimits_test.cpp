@@ -51,6 +51,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -882,6 +883,30 @@ class FirewallLimits_test : public beast::unit_test::Suite
                              }};
         BEAST_EXPECT(!firewallCommitment(zeroCheck));
         BEAST_EXPECT(!firewallFieldBound(zeroCheck, AccountID{}));
+    }
+
+    void
+    testKeyletNamespace()
+    {
+        testcase("FirewallLimit keylet namespace");
+
+        AccountID const owner{1};
+        AccountID const signer{2};
+        Issue const usd{Currency{3}, AccountID{4}};
+        MPTIssue const mpt{makeMptID(5, AccountID{6})};
+        std::uint16_t const space = '8';
+
+        BEAST_EXPECT(
+            keylet::firewallLimit(owner, usd).key ==
+            sha512Half(space, owner, usd.currency, usd.account));
+        BEAST_EXPECT(
+            keylet::firewallLimit(owner, usd, signer).key ==
+            sha512Half(space, owner, usd.currency, usd.account, signer));
+        BEAST_EXPECT(
+            keylet::firewallLimit(owner, mpt).key == sha512Half(space, owner, mpt.getMptID()));
+        BEAST_EXPECT(
+            keylet::firewallLimit(owner, mpt, signer).key ==
+            sha512Half(space, owner, mpt.getMptID(), signer));
     }
 
     void
@@ -1804,6 +1829,7 @@ public:
         testAuthorityChangesWithoutAmendment(all);
         testPeriodHelper();
         testMatchingHelpers();
+        testKeyletNamespace();
         testPaymentLimit(all);
         testLimitReset(all);
         testLimitSigners(all);
