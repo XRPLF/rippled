@@ -458,7 +458,7 @@ class InvariantsFirewall_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createLimitedFirewall);
 
-        for (auto const [limitDelta, signerDelta] :
+        for (auto const& [limitDelta, signerDelta] :
              {std::pair{0u, 1u}, std::pair{1u, 0u}, std::pair{2u, 1u}})
         {
             doInvariantCheck(
