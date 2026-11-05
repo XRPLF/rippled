@@ -1611,7 +1611,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
     void
     testEmptyHoldingDeleted(FeatureBitset features)
     {
-        testcase("empty holding deleted");
+        testcase("empty holding with a limit kept");
         using namespace jtx;
 
         Env env{*this, features};
@@ -1630,13 +1630,80 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::limitSet(alice.id(), mpt["MPT"](50), kDay));
         env.close();
 
-        // Deleting a holding of nothing moves nothing: no limit is charged.
+        // Deleting the MPToken would remove its limit, so it is refused.
         auto const mptAsset = mpt["MPT"](1).value().asset();
+        mpt.authorize({.account = alice, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
+        env.close();
+        BEAST_EXPECT(env.le(keylet::mptoken(mpt.issuanceID(), alice.id())));
+        BEAST_EXPECT(spentOf(env, alice, mptAsset) == mpt["MPT"](0));
+
+        // Once the limit is deleted, deleting the MPToken moves nothing and
+        // charges no limit.
+        env(firewall::limitDelete(alice.id(), mptAsset),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
         mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
         env.close();
         BEAST_EXPECT(!env.le(keylet::mptoken(mpt.issuanceID(), alice.id())));
         BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(0));
-        BEAST_EXPECT(spentOf(env, alice, mptAsset) == mpt["MPT"](0));
+    }
+
+    void
+    testHoldingKept(FeatureBitset features)
+    {
+        testcase("holding with a limit kept");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, carol, backup, gw);
+        env.close();
+        auto const usd = gw["USD"];
+        // alice's side ripples, as her account does, so it is default once empty.
+        env(trust(alice, usd(1000)));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {gw});
+        env(firewall::limitSet(alice.id(), usd(1000), kDay));
+        env.close();
+
+        // Whether alice's side of the line keeps its reserve.
+        auto const aliceReserved = [&]() {
+            auto const line = env.le(keylet::trustLine(alice.id(), usd.issue()));
+            if (!line)
+                return false;
+            bool const aliceIsLow = alice.id() < gw.id();
+            return line->isFlag(aliceIsLow ? lsfLowReserve : lsfHighReserve);
+        };
+
+        // With no trust limit left, paying back the whole balance would clear
+        // alice's side; the limit keeps it.
+        env(trust(alice, usd(0)));
+        env.close();
+        env(pay(alice, gw, usd(100)));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+        BEAST_EXPECT(aliceReserved());
+
+        // A TrustSet that would leave the line default keeps it too.
+        env(trust(alice, usd(0)));
+        env.close();
+        BEAST_EXPECT(aliceReserved());
+
+        // Once the limit is deleted, the same TrustSet deletes the line.
+        env(firewall::limitDelete(alice.id(), usd.issue()),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        BEAST_EXPECT(!limitEntry(env, alice, usd.issue()));
+        env(trust(alice, usd(0)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usd.issue())));
     }
 
     void
@@ -1762,6 +1829,7 @@ public:
         testBadCounterpartyKey(all);
         testLimitAmountOutOfRange(all);
         testEmptyHoldingDeleted(all);
+        testHoldingKept(all);
         testCommitmentOtherAsset(all);
     }
 };

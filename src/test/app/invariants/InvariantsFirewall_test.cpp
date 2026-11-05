@@ -10,6 +10,9 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -32,6 +35,7 @@
 #include <memory>
 #include <optional>
 #include <source_location>
+#include <string>
 #include <utility>
 
 namespace xrpl::test {
@@ -775,6 +779,97 @@ class InvariantsFirewall_test : public InvariantsBase
             createLimitedFirewall);
     }
 
+    void
+    testHoldingDeleteGuards()
+    {
+        testcase("holding with a firewall limit not deleted");
+        using namespace jtx;
+
+        // An issuer whose account is above A1's, so A1 is the line's low side.
+        std::optional<Account> gw;
+        for (int i = 0; i < 32 && !gw; ++i)
+        {
+            Account const candidate{"issuer" + std::to_string(i)};
+            if (candidate.id() > Account{"A1"}.id())
+                gw = candidate;
+        }
+        if (!BEAST_EXPECT(gw))
+            return;
+        auto const usd = (*gw)["USD"];
+
+        // A1 holds 100 USD with no trust limit left, and a USD limit; both
+        // sides ripple, as both accounts do, so a side is default once empty.
+        auto const limitedLine = [&](Account const& a1, Account const& a2, Env& env) {
+            env.fund(XRP(1000), *gw);
+            env.close();
+            env(trust(a1, usd(1000)));
+            env.close();
+            env(pay(*gw, a1, usd(100)));
+            env.close();
+            env(trust(a1, usd(0)));
+            env.close();
+            if (!createBareFirewall(a1, a2, env))
+                return false;
+            env(firewall::limitSet(a1.id(), usd(1000), kDay));
+            return hasLimit(env, a1.id(), usd.issue());
+        };
+
+        // trustDelete refuses a line with a limit.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const line = ac.view().peek(keylet::trustLine(a1.id(), usd.issue()));
+                if (!line || !line->isFieldPresent(sfLowFirewallLimit))
+                    return false;
+                return trustDelete(ac.view(), line, a1.id(), gw->id(), ac.journal) ==
+                    tecHAS_OBLIGATIONS;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            limitedLine);
+
+        // Sending the whole balance to the issuer keeps A1's side reserved.
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                if (!isTesSuccess(accountSend(ac.view(), a1.id(), gw->id(), usd(100), ac.journal)))
+                    return false;
+                auto const line = ac.view().read(keylet::trustLine(a1.id(), usd.issue()));
+                return line && line->isFlag(lsfLowReserve);
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            limitedLine);
+
+        // removeEmptyHolding refuses an MPToken with a limit.
+        std::optional<MPTID> mptID;
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                if (!mptID)
+                    return false;
+                return removeEmptyHolding(
+                           ac.getApplyViewContext(), a1.id(), MPTIssue{*mptID}, ac.journal) ==
+                    tecHAS_OBLIGATIONS;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                env.fund(XRP(1000), *gw);
+                MPTTester mpt(env, *gw, {.holders = {a1}, .fund = false});
+                mpt.create();
+                mpt.authorize({.account = a1});
+                mptID = mpt.issuanceID();
+                if (!createBareFirewall(a1, a2, env))
+                    return false;
+                env(firewall::limitSet(a1.id(), mpt["MPT"](10), kDay));
+                return hasLimit(env, a1.id(), MPTIssue{*mptID});
+            });
+    }
+
 public:
     void
     run() override
@@ -792,6 +887,7 @@ public:
         testFailedChangesLimit();
         testLimitSetRules();
         testOutflowPrincipal();
+        testHoldingDeleteGuards();
     }
 };
 
