@@ -20,6 +20,7 @@
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/SubscriptionHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Firewall.h>
@@ -434,6 +435,10 @@ Transactor::preflightUniversal(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidAmount(ctx.tx, ctx.j))
         return temBAD_AMOUNT;
+
+    // A Subscription field anywhere in the transaction needs the amendment.
+    if (!ctx.rules.enabled(featureSubscription) && hasSubscriptionField(ctx.tx))
+        return temDISABLED;
 
     return tesSUCCESS;
 }

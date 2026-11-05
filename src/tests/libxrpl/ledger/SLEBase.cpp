@@ -38,6 +38,7 @@
 #include <xrpl/ledger/entries/RippleStateEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
+#include <xrpl/ledger/entries/SubscriptionEntry.h>        // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
 #include <xrpl/ledger/entries/TokenIssuanceEntry.h>        // IWYU pragma: keep
 #include <xrpl/ledger/entries/TransactionProposalEntry.h>  // IWYU pragma: keep
