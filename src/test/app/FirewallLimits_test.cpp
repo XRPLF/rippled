@@ -24,22 +24,32 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -47,6 +57,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -146,10 +157,17 @@ class FirewallLimits_test : public beast::unit_test::Suite
             env(jv, Ter(temBAD_SIGNER));
         }
         env(firewall::set(alice.id(), fwID), firewall::kCounterparty(dave), Ter(temBAD_SIGNER));
+        env(unlisted(1), firewall::kCounterparty(dave), Ter(temBAD_SIGNER));
+        {
+            auto jv = unlisted(1);
+            jv[sfDestinationTag.jsonName] = 7;
+            env(jv, Ter(temBAD_SIGNER));
+        }
         env.close();
         auto const after = env.le(keylet::firewall(alice.id()));
         BEAST_EXPECT(after && !after->isFieldPresent(sfMaxFee));
         BEAST_EXPECT(after && after->getAccountID(sfCounterparty) == carol.id());
+        BEAST_EXPECT(after && !after->isFieldPresent(sfDestinationTag));
         BEAST_EXPECT(unlistedAssets(env, alice) == 0);
     }
 
@@ -800,6 +818,70 @@ class FirewallLimits_test : public beast::unit_test::Suite
         period = firewallLimitPeriod(limit, at(1555));
         BEAST_EXPECT(period.spent == STAmount{XRPAmount{0}});
         BEAST_EXPECT(period.startDate == 1500);
+
+        // A limit with no period never resets.
+        limit.setFieldU32(sfPeriod, 0);
+        period = firewallLimitPeriod(limit, at(1'000'000));
+        BEAST_EXPECT(period.spent == STAmount{XRPAmount{10}});
+        BEAST_EXPECT(period.startDate == 1000);
+    }
+
+    void
+    testMatchingHelpers()
+    {
+        testcase("signer and bound helpers");
+
+        AccountID const owner{1};
+        AccountID const signer{2};
+        AccountID const destination{3};
+
+        // A signing key that is not a public key names no signer.
+        STTx const badKey{ttPAYMENT, [&](STObject& tx) {
+                              tx.setAccountID(sfAccount, owner);
+                              tx.setAccountID(sfDestination, destination);
+                              tx.setFieldAmount(sfAmount, STAmount{XRPAmount{10}});
+                              tx.setFieldVL(sfSigningPubKey, Blob{0x01, 0x02});
+                          }};
+        BEAST_EXPECT(firewallLimitSigners(badKey).empty());
+        BEAST_EXPECT(firewallMatchingLimits(badKey, owner, xrpIssue()).size() == 1);
+
+        // A signer named twice has its limit read once.
+        STTx const twice{ttPAYMENT, [&](STObject& tx) {
+                             tx.setAccountID(sfAccount, owner);
+                             tx.setAccountID(sfDestination, destination);
+                             tx.setFieldAmount(sfAmount, STAmount{XRPAmount{10}});
+                             STArray signers(sfSigners);
+                             for (int i = 0; i < 2; ++i)
+                             {
+                                 STObject entry(sfSigner);
+                                 entry.setAccountID(sfAccount, signer);
+                                 entry.setFieldVL(sfSigningPubKey, Blob{});
+                                 entry.setFieldVL(sfTxnSignature, Blob{});
+                                 signers.push_back(std::move(entry));
+                             }
+                             tx.setFieldArray(sfSigners, signers);
+                         }};
+        BEAST_EXPECT(firewallLimitSigners(twice).size() == 2);
+        auto const keylets = firewallMatchingLimits(twice, owner, xrpIssue());
+        BEAST_EXPECT(keylets.size() == 2);
+        BEAST_EXPECT(
+            keylets.size() == 2 &&
+            keylets[1].key == keylet::firewallLimit(owner, xrpIssue(), signer).key);
+
+        // A bound or a commitment of zero binds nothing.
+        STTx const zeroPayment{ttPAYMENT, [&](STObject& tx) {
+                                   tx.setAccountID(sfAccount, owner);
+                                   tx.setAccountID(sfDestination, destination);
+                                   tx.setFieldAmount(sfAmount, STAmount{XRPAmount{0}});
+                               }};
+        BEAST_EXPECT(!firewallFieldBound(zeroPayment, AccountID{}));
+        STTx const zeroCheck{ttCHECK_CREATE, [&](STObject& tx) {
+                                 tx.setAccountID(sfAccount, owner);
+                                 tx.setAccountID(sfDestination, destination);
+                                 tx.setFieldAmount(sfSendMax, STAmount{XRPAmount{0}});
+                             }};
+        BEAST_EXPECT(!firewallCommitment(zeroCheck));
+        BEAST_EXPECT(!firewallFieldBound(zeroCheck, AccountID{}));
     }
 
     void
@@ -1450,6 +1532,161 @@ class FirewallLimits_test : public beast::unit_test::Suite
         }
     }
 
+    // The engine result of jv carrying a counterparty signing key that is not a
+    // public key. Simulation skips signature verification, which would refuse
+    // the key before preflight.
+    static std::string
+    simulateBadCounterpartyKey(jtx::Env& env, json::Value jv)
+    {
+        json::Value sig = json::ValueType::Object;
+        sig[sfSigningPubKey.jsonName] = "0102";
+        jv[sfCounterpartySignature.jsonName] = sig;
+        json::Value params;
+        params[jss::tx_json] = jv;
+        return env.rpc("json", "simulate", to_string(params))[jss::result][jss::engine_result]
+            .asString();
+    }
+
+    void
+    testBadCounterpartyKey(FeatureBitset features)
+    {
+        testcase("counterparty signing key that is not a key");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const agent{"agent"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, agent, carol, backup);
+        env.close();
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, firewall::limitSet(alice.id(), XRP(100), kDay)) ==
+            "temBAD_SIGNATURE");
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, delegate::set(alice, agent, {"Payment"})) ==
+            "temBAD_SIGNATURE");
+    }
+
+    void
+    testLimitAmountOutOfRange(FeatureBitset features)
+    {
+        testcase("LimitAmount out of range");
+        using namespace jtx;
+
+        // Amounts above the legal maximum, which only decoding a serialized
+        // amount produces: XRP above kMaxNativeN and an MPT amount of 2^63.
+        MPTID const mptID = makeMptID(1, AccountID{1});
+        Serializer xrpRaw;
+        xrpRaw.add64(std::uint64_t{0x4000000000000000} | (STAmount::kMaxNativeN + 1));
+        SerialIter xrpIter(xrpRaw.slice());
+        STAmount const tooMuchXrp{xrpIter, sfLimitAmount};
+        Serializer mptRaw;
+        mptRaw.add8(0x60);
+        mptRaw.add64(std::uint64_t{0x8000000000000000});
+        mptRaw.addBitString(mptID);
+        SerialIter mptIter(mptRaw.slice());
+        STAmount const tooMuchMpt{mptIter, sfLimitAmount};
+        BEAST_EXPECT(!isLegalNet(tooMuchXrp));
+        BEAST_EXPECT(!isLegalMPT(tooMuchMpt));
+
+        for (bool const cleanup : {false, true})
+        {
+            Env env{*this, cleanup ? features : features - fixCleanup3_2_0};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const backup{"backup"};
+            env.fund(XRP(10000), alice, carol, backup);
+            env.close();
+            env(firewall::set(alice.id(), carol.id(), backup.id()));
+            env.close();
+
+            for (auto const& [valid, tooMuch] : {
+                     std::pair{STAmount{XRPAmount{100}}, tooMuchXrp},
+                     std::pair{STAmount{MPTIssue{mptID}, std::uint64_t{100}}, tooMuchMpt},
+                 })
+            {
+                STTx tx{*env.jt(firewall::limitSet(alice.id(), valid, kDay)).stx};
+                tx.setFieldAmount(sfLimitAmount, tooMuch);
+                tx.sign(alice.pk(), alice.sk());
+
+                // FirewallLimitSet's own amount check refuses it; with
+                // fixCleanup3_2_0 the universal amount check refuses it first.
+                auto const jr = env.rpc("submit", strHex(tx.getSerializer().slice()));
+                BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_AMOUNT");
+                env.close();
+                BEAST_EXPECT(!limitEntry(env, alice, valid.asset()));
+            }
+        }
+    }
+
+    void
+    testEmptyHoldingDeleted(FeatureBitset features)
+    {
+        testcase("empty holding deleted");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        MPTTester mpt(env, gw, {.holders = {alice}});
+        mpt.create({.ownerCount = 1});
+        mpt.authorize({.account = alice});
+        env.fund(XRP(10000), bob, carol, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env(firewall::limitSet(alice.id(), mpt["MPT"](50), kDay));
+        env.close();
+
+        // Deleting a holding of nothing moves nothing: no limit is charged.
+        auto const mptAsset = mpt["MPT"](1).value().asset();
+        mpt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(mpt.issuanceID(), alice.id())));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(0));
+        BEAST_EXPECT(spentOf(env, alice, mptAsset) == mpt["MPT"](0));
+    }
+
+    void
+    testCommitmentOtherAsset(FeatureBitset features)
+    {
+        testcase("commitment in another asset than the fee");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, carol, backup, gw);
+        env.close();
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(70), kDay));
+        env(firewall::limitSet(alice.id(), usd(50), kDay));
+        env.close();
+
+        // A check committing USD charges the USD limit; the XRP that leaves is
+        // only the fee, so the XRP limit is charged nothing.
+        env(check::create(alice, bob, usd(30)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, usd.issue()) == usd(30));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(0));
+        env(check::create(alice, bob, usd(21)), Ter(tefFIREWALL_LIMIT));
+    }
+
     void
     testDisabled(FeatureBitset features)
     {
@@ -1486,6 +1723,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
         update["UnlistedAssets"] = 1;
         env(update, Sig(sfCounterpartySignature, carol), signedFee(env), Ter(temDISABLED));
 
+        // Every update needs the counterparty, as on XLS-86.
+        auto maxFee = firewall::set(alice.id(), keylet::firewall(alice.id()).key);
+        maxFee[sfMaxFee.jsonName] = to_string(XRP(1).value().xrp());
+        env(maxFee, Ter(temBAD_SIGNER));
+
         // CounterpartySignature is refused on DelegateSet.
         env(delegate::set(alice, bob, {"Payment"}),
             Sig(sfCounterpartySignature, carol),
@@ -1494,6 +1736,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == ownersBefore);
+        auto const sle = env.le(keylet::firewall(alice.id()));
+        BEAST_EXPECT(sle && !sle->isFieldPresent(sfMaxFee));
         BEAST_EXPECT(!env.le(keylet::firewall(bob.id())));
         BEAST_EXPECT(!env.le(keylet::delegate(alice.id(), bob.id())));
     }
@@ -1515,6 +1759,7 @@ public:
         testAuthorityChanges(all);
         testAuthorityChangesWithoutAmendment(all);
         testPeriodHelper();
+        testMatchingHelpers();
         testPaymentLimit(all);
         testLimitReset(all);
         testLimitSigners(all);
@@ -1527,6 +1772,10 @@ public:
         testFailedChangesNoLimit(all);
         testUnlistedAllowOutflow(all);
         testBatchCharges(all);
+        testBadCounterpartyKey(all);
+        testLimitAmountOutOfRange(all);
+        testEmptyHoldingDeleted(all);
+        testCommitmentOtherAsset(all);
     }
 };
 
