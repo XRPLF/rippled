@@ -11,6 +11,7 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/BallotInvariant.h>
 #include <xrpl/tx/invariants/CosignerInvariant.h>
+#include <xrpl/tx/invariants/CouponInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FirewallInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
@@ -556,7 +557,8 @@ using InvariantChecks = std::tuple<
     SponsorshipAccountCountMatchesField,
     ValidBeneficiary,
     ValidTokenIssuance,
-    ValidBallot>;
+    ValidBallot,
+    ValidCouponSchedule>;
 
 /**
  * @brief get a tuple of all invariant checks

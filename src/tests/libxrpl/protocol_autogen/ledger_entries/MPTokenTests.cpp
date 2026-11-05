@@ -40,6 +40,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const redemptionAfterValue = canonical_UINT32();
     auto const voteLockedAmountValue = canonical_UINT64();
     auto const ballotIDValue = canonical_UINT256();
+    auto const couponAccruedValue = canonical_AMOUNT();
+    auto const couponIndexValue = canonical_AMOUNT();
 
     MPTokenBuilder builder{
         accountValue,
@@ -64,6 +66,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setRedemptionAfter(redemptionAfterValue);
     builder.setVoteLockedAmount(voteLockedAmountValue);
     builder.setBallotID(ballotIDValue);
+    builder.setCouponAccrued(couponAccruedValue);
+    builder.setCouponIndex(couponIndexValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -224,6 +228,22 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasBallotID());
     }
 
+    {
+        auto const& expected = couponAccruedValue;
+        auto const actualOpt = entry.getCouponAccrued();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfCouponAccrued");
+        EXPECT_TRUE(entry.hasCouponAccrued());
+    }
+
+    {
+        auto const& expected = couponIndexValue;
+        auto const actualOpt = entry.getCouponIndex();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfCouponIndex");
+        EXPECT_TRUE(entry.hasCouponIndex());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -257,6 +277,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const redemptionAfterValue = canonical_UINT32();
     auto const voteLockedAmountValue = canonical_UINT64();
     auto const ballotIDValue = canonical_UINT256();
+    auto const couponAccruedValue = canonical_AMOUNT();
+    auto const couponIndexValue = canonical_AMOUNT();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -280,6 +302,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfRedemptionAfter) = redemptionAfterValue;
     sle->at(sfVoteLockedAmount) = voteLockedAmountValue;
     sle->at(sfBallotID) = ballotIDValue;
+    sle->at(sfCouponAccrued) = couponAccruedValue;
+    sle->at(sfCouponIndex) = couponIndexValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -535,6 +559,32 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
     }
 
+    {
+        auto const& expected = couponAccruedValue;
+
+        auto const fromSleOpt = entryFromSle.getCouponAccrued();
+        auto const fromBuilderOpt = entryFromBuilder.getCouponAccrued();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfCouponAccrued");
+        expectEqualField(expected, *fromBuilderOpt, "sfCouponAccrued");
+    }
+
+    {
+        auto const& expected = couponIndexValue;
+
+        auto const fromSleOpt = entryFromSle.getCouponIndex();
+        auto const fromBuilderOpt = entryFromBuilder.getCouponIndex();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfCouponIndex");
+        expectEqualField(expected, *fromBuilderOpt, "sfCouponIndex");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -627,5 +677,9 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getVoteLockedAmount().has_value());
     EXPECT_FALSE(entry.hasBallotID());
     EXPECT_FALSE(entry.getBallotID().has_value());
+    EXPECT_FALSE(entry.hasCouponAccrued());
+    EXPECT_FALSE(entry.getCouponAccrued().has_value());
+    EXPECT_FALSE(entry.hasCouponIndex());
+    EXPECT_FALSE(entry.getCouponIndex().has_value());
 }
 }

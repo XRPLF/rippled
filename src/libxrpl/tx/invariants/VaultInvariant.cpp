@@ -1483,6 +1483,40 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttCOUPON_PAY: {
+                // A share issuance's coupon moves vault cash out at declaration; shares
+                // never change.
+                bool result = true;
+                auto const& beforeVault = beforeVault_[0];
+                Number const deltaTotal = afterVault.assetsTotal - beforeVault.assetsTotal;
+                Number const deltaAvailable =
+                    afterVault.assetsAvailable - beforeVault.assetsAvailable;
+
+                if (deltaTotal != deltaAvailable)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: coupon must change assets outstanding and "
+                        "available alike";
+                    result = false;
+                }
+
+                if (deltaAvailable >= kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: coupon moved vault assets the wrong way";
+                    result = false;
+                }
+
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: coupon must not change shares outstanding";
+                    result = false;
+                }
+
+                return result;
+            }
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:

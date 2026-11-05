@@ -10,6 +10,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -76,6 +77,10 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
+
+    // A coupon schedule on the share issuance is an unmet obligation.
+    if (sleMPT->isFlag(lsfMPTCouponSchedule))
+        return tecHAS_OBLIGATIONS;
 
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
