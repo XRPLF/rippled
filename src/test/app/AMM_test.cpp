@@ -86,7 +86,7 @@ private:
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
         return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
-            featureMPTokensV2;
+            featureMPTokensV2 - featurePerpetualFutures;
     }
 
     // Seed from the local testableAmendments() which strips SAV and Lending.

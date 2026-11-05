@@ -3001,13 +3001,17 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        // 58 = 54 from the already-composed tree + 4 delegable transactions
+        // 63 = 54 from the already-composed tree + 4 delegable transactions
         // from the AMM curves bundle: AMMCollectFees, AMMBinCreate,
         // AMMBinDestroy and AMMPositionTransfer. Each is pool-scoped with the
         // AMM ledger entry checked at preclaim, so a delegate gains no
         // authority it could not already exercise through AMMDeposit or
-        // AMMWithdraw.
-        std::size_t const expectedDelegableCount = 58;
+        // AMMWithdraw. The remaining 5 come from the perpetual futures
+        // bundle: MarginDeposit, PerpOrderCreate, PerpOrderCancel,
+        // PerpLiquidate and PerpRefresh. Each is scoped to a margin account
+        // or market the delegating account already controls; MarginWithdraw
+        // is NotDelegable because it moves collateral out of the exchange.
+        std::size_t const expectedDelegableCount = 63;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

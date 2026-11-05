@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -1174,7 +1175,7 @@ isAMMBinIssuance(ReadView const& view, UInt256 const& ammID, SLE const& issuance
 }
 
 // Whether `entry`, linked into the owner directory of `pseudo`, belongs to the
-// AMM, Vault or LoanBroker that the pseudo-account was created for.
+// AMM, Vault, LoanBroker or PerpExchange that the pseudo-account was created for.
 static bool
 isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry)
 {
@@ -1231,6 +1232,12 @@ isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry
             return false;  // LCOV_EXCL_LINE
         auto const vault = view.read(keylet::vault((*broker)[sfVaultID]));
         return vault && isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
+    }
+
+    if (pseudo.isFieldPresent(sfPerpExchangeID))
+    {
+        auto const exchange = view.read(keylet::perpExchange(pseudo[sfPerpExchangeID]));
+        return exchange && isHolding(entry, (*exchange)[sfAsset], pseudoAcctID);
     }
 
     // A new pseudo-account kind must say what it owns.
@@ -1424,6 +1431,19 @@ NoModifiedUnmodifiableFields::finalize(
         }
         return changed;
     };
+    // An array field has no at(), so it is compared whole.
+    auto const kArrayChanged = [&j, &tx](SLE const& before, SLE const& after, SField const& field) {
+        STArray const& was = before.getFieldArray(field);
+        STArray const& now = after.getFieldArray(field);
+        bool const changed =
+            before.isFieldPresent(field) != after.isFieldPresent(field) || !(was == now);
+        if (changed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << field.getName()
+                            << " changed on immutable ledger entry in " << tx.getTransactionID();
+        }
+        return changed;
+    };
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
@@ -1432,8 +1452,9 @@ NoModifiedUnmodifiableFields::finalize(
         // featureLendingProtocol gates enforcement, not detection: changes are
         // always logged, but the transaction is only failed once the amendment
         // is enabled. Type-specific field lists may add their own gates (see
-        // ltVAULT).
-        bool const enforce = view.rules().enabled(featureLendingProtocol);
+        // ltVAULT); the perpetual futures entries enforce under
+        // featurePerpetualFutures.
+        bool enforce = view.rules().enabled(featureLendingProtocol);
         bool bad = kFieldChanged(before, after, sfLedgerEntryType) ||
             kFieldChanged(before, after, sfLedgerIndex);
         switch (type)
@@ -1523,6 +1544,60 @@ NoModifiedUnmodifiableFields::finalize(
                         kFieldChanged(before, after, sfShareMPTID);
                 }
                 break;
+            case ltPERP_EXCHANGE:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfOwner) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfAsset) ||
+                    kFieldChanged(before, after, sfScale) ||
+                    kFieldChanged(before, after, sfDomainID) ||
+                    kFieldChanged(before, after, sfLiquidationRewardMin) ||
+                    kFieldChanged(before, after, sfLiquidationChunkMin) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltPERP_MARKET:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfExchangeID) ||
+                    kFieldChanged(before, after, sfBaseAsset) ||
+                    kFieldChanged(before, after, sfQuoteAsset) ||
+                    kArrayChanged(*before, *after, sfIndexOracles) ||
+                    kFieldChanged(before, after, sfIndexMaxLedgers) ||
+                    kFieldChanged(before, after, sfPriceTick) ||
+                    kFieldChanged(before, after, sfLotSize) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltMARGIN_ACCOUNT:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfExchangeID) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltMARGIN_POSITION:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfMarginAccountID) ||
+                    kFieldChanged(before, after, sfMarketID) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
+            case ltPERP_ORDER:
+                enforce = view.rules().enabled(featurePerpetualFutures);
+                bad = bad || kFieldChanged(before, after, sfFlags) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfMarginAccountID) ||
+                    kFieldChanged(before, after, sfMarketID) ||
+                    kFieldChanged(before, after, sfLimitPrice) ||
+                    kFieldChanged(before, after, sfExpiration) ||
+                    kFieldChanged(before, after, sfBuilder) ||
+                    kFieldChanged(before, after, sfBuilderFee) ||
+                    kFieldChanged(before, after, sfBookDirectory) ||
+                    kFieldChanged(before, after, sfBookNode) ||
+                    kFieldChanged(before, after, sfOwnerNode);
+                break;
             default:
                 break;
         }
@@ -1593,6 +1668,7 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::ConstRef before, SLE::Con
         case ltAMM:
         case ltVAULT:
         case ltLOAN_BROKER:
+        case ltPERP_EXCHANGE:
             deletedObjSles_.push_back(before);
             break;
         default:

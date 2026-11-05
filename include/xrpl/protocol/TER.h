@@ -381,6 +381,18 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    // PerpetualFutures: alphanet registry block 232-242.
+    tecPERP_STALE_PRICE = 232,
+    tecPERP_PRICE_BAND = 233,
+    tecPERP_INSUFFICIENT_MARGIN = 234,
+    tecPERP_POSITION_LIMIT = 235,
+    tecPERP_OI_CAP = 236,
+    tecPERP_INSUFFICIENT_COVER = 237,
+    tecPERP_MARKET_SETTLED = 238,
+    tecPERP_MARKET_LIMIT = 239,
+    tecPERP_WATERFALL_CREDIT = 240,
+    tecPERP_HEALTHY = 241,
+    tecPERP_NO_LIQUIDITY = 242,
     // Audit #20: surfaced when a CL swap loop exhausts the per-call
     // maxTickCrossings budget. POST-AUDIT-#19: BookStep now iterates per
     // tick range and never crosses >1000 ticks in one applySwap call, so

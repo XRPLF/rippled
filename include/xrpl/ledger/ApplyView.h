@@ -335,14 +335,14 @@ public:
         Keylet const& key,
         std::function<void(SLE::Ref)> const& describe)
     {
-        if (key.type != ltOFFER)
+        if (key.type != ltOFFER && key.type != ltPERP_ORDER)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::ApplyView::dirAppend : only Offers are appended to "
-                "book directories");
-            // Only Offers are appended to book directories. Call dirInsert()
-            // instead
+                "xrpl::ApplyView::dirAppend : only Offers and PerpOrders are "
+                "appended to book directories");
+            // Only Offers and PerpOrders are appended to book directories.
+            // Call dirInsert() instead
             return std::nullopt;
             // LCOV_EXCL_STOP
         }

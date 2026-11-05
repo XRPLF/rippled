@@ -37,6 +37,9 @@ public:
     void
     setCurrency(Currency const& currency);
 
+    /**
+     * Replaces the held currency, as STObject's field proxies assign a value.
+     */
     STCurrency&
     operator=(Currency const& currency);
 
@@ -76,6 +79,13 @@ inline Currency const&
 STCurrency::currency() const
 {
     return currency_;
+}
+
+inline STCurrency&
+STCurrency::operator=(Currency const& currency)
+{
+    currency_ = currency;
+    return *this;
 }
 
 inline Currency const&

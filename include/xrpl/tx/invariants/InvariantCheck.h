@@ -21,6 +21,7 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/PerpInvariant.h>
 #include <xrpl/tx/invariants/RepoInvariant.h>
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/SubscriptionInvariant.h>
@@ -572,6 +573,7 @@ using InvariantChecks = std::tuple<
     ValidVault,
     ValidVaultAccrual,
     ValidSubscription,
+    ValidPerp,
     ValidConfidentialMPToken,
     ValidMPTBalanceChanges,
     ValidAmounts,

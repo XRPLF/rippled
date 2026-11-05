@@ -252,7 +252,14 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfVoterRecoverable, 0x00000002))              /* True, casts carry a voter self-recovery vector */               \
                                                                                                                                    \
     LEDGER_OBJECT(Subscription,                                                                                                    \
-        LSF_FLAG(lsfSingleUse, 0x00010000))                     /* True, delete on first successful claim */
+        LSF_FLAG(lsfSingleUse, 0x00010000))                     /* True, delete on first successful claim */                       \
+                                                                                                                                   \
+    LEDGER_OBJECT(PerpMarket,                                                                                                      \
+        LSF_FLAG(lsfPerpIsolatedOnly, 0x00010000))                                                                                 \
+                                                                                                                                   \
+    LEDGER_OBJECT(PerpOrder,                                                                                                       \
+        LSF_FLAG(lsfPerpSell, 0x00010000)                                                                                          \
+        LSF_FLAG(lsfPerpReduceOnly, 0x00020000))
 
 // clang-format on
 

@@ -120,6 +120,7 @@ JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
 JSS(affected);                    // out: AcceptedLedgerTx
 JSS(age);                         // out: NetworkOPs, Peers
+JSS(aggregate);                   // out: perpetual futures RPC
 JSS(alternatives);                // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);           // out: NetworkOPs
 JSS(amm_account);                 // in: amm_info
@@ -254,10 +255,14 @@ JSS(engine_result);                  // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);             // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_message);          // out: NetworkOPs, TransactionSign, Submit
 JSS(entire_set);                     // out: get_aggregate_price
+JSS(entry_price);                    // out: perpetual futures RPC
 JSS(ephemeral_key);                  // out: ValidatorInfo
+JSS(equity);                         // out: perpetual futures RPC
                                      // in/out: Manifest
 JSS(error);                          // out: error
 JSS(errored);                        //
+JSS(estimated_liquidation_price);    // out: perpetual futures RPC
+JSS(exchange_id);                    // in: LedgerEntry; perpetual futures RPC
 JSS(error_code);                     // out: error
 JSS(error_exception);                // out: Submit
 JSS(error_message);                  // out: error
@@ -299,9 +304,11 @@ JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
 JSS(fullbelow_size);                 // out: GetCounts
+JSS(funding_owed);                   // out: perpetual futures RPC
 JSS(gateway);                        // in: noripple_check
 JSS(git);                            // out: server_info
 JSS(good);                           // out: RPCVersion
+JSS(haircut);                        // out: perpetual futures RPC
 JSS(hash);                           // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
 JSS(have_header);                    // out: InboundLedger
 JSS(have_state);                     // out: InboundLedger
@@ -317,10 +324,12 @@ JSS(hotwallet);                      // in: GatewayBalances
 JSS(id);                             // websocket.
 JSS(ident);                          // in: AccountCurrencies, AccountInfo, OwnerInfo
 JSS(ignore_default);                 // in: AccountLines
+JSS(im);                             // out: perpetual futures RPC
 JSS(in);                             // out: OverlayImpl
 JSS(inLedger);                       // out: tx/Transaction
 JSS(inbound);                        // out: PeerImp
 JSS(index);                          // in: LedgerEntry
+JSS(index_price);                    // out: perpetual futures RPC
                                      // out: STLedgerEntry, LedgerEntry, TxHistory, LedgerData
 JSS(info);                           // out: ServerInfo, ConsensusInfo, FetchInfo
 JSS(initial_sync_duration_us);       //
@@ -377,6 +386,7 @@ JSS(limit);                       // in/out: AccountTx*, AccountOffers, AccountL
                                   // in: LedgerData, BookOffers
 JSS(limit_peer);                  // out: AccountLines
 JSS(lines);                       // out: AccountLines
+JSS(liquidatable);                // out: perpetual futures RPC
 JSS(liquidity_gross);             // out: amm_ticks
 JSS(liquidity_net);               // out: amm_ticks
 JSS(list);                        // out: ValidatorList
@@ -398,13 +408,16 @@ JSS(local);                       // out: resource/Logic.h
 JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
 JSS(locked);                      // out: GatewayBalances
+JSS(loss_owed);                   // out: perpetual futures RPC
 JSS(low);                         // out: BookChanges
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo
 JSS(lp_token);                    // out: amm_info
 JSS(majority);                    // out: RPC feature
 JSS(manifest);                    // out: ValidatorInfo, Manifest
+JSS(margin_account_id);           // in: LedgerEntry; perpetual futures RPC
 JSS(marker);                      // in/out: AccountTx, AccountOffers, AccountLines, AccountObjects,
+JSS(market_id);                   // in: LedgerEntry; perpetual futures RPC
                                   //         LedgerData
                                   // in: BookOffers
 JSS(master_key);                  // out: WalletPropose, NetworkOPs, ValidatorInfo
@@ -434,6 +447,7 @@ JSS(min_ledger);                  // in: LedgerCleaner
 JSS(minimum_fee);                 // out: TxQ
 JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
+JSS(mm);                          // out: perpetual futures RPC
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
 JSS(mpt_issuances);               // in: Subscribe, Unsubscribe
@@ -445,6 +459,7 @@ JSS(needed_state_hashes);         // out: InboundLedger
 JSS(needed_transaction_hashes);   // out: InboundLedger
 JSS(network_id);                  // out: NetworkOPs
 JSS(network_ledger);              // out: NetworkOPs
+JSS(next_funding_rate);           // out: perpetual futures RPC
 JSS(next_refresh_time);           // out: ValidatorSite
 JSS(nft_id);                      // in: nft_sell_offers, nft_buy_offers
 JSS(nft_offer_index);             // out nft_buy_offers, nft_sell_offers
@@ -482,6 +497,7 @@ JSS(open_ledger_fee);             // out: TxQ
 JSS(open_ledger_level);           // out: TxQ
 JSS(optionality);                 // out: server_definitions
 JSS(oracles);                     // in: get_aggregate_price
+JSS(orders);                      // out: perpetual futures RPC
 JSS(oracle_document_id);          // in: get_aggregate_price
 JSS(out);                         // out: OverlayImpl
 JSS(owner);                       // in: LedgerEntry, out: NetworkOPs
@@ -505,6 +521,7 @@ JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
 JSS(port);                        // in: Connect, out: NetworkOPs
 JSS(ports);                       // out: NetworkOPs
+JSS(positions);                   // out: perpetual futures RPC
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
@@ -577,6 +594,7 @@ JSS(server_version);              // out: NetworkOPs
 JSS(settle_delay);                // out: AccountChannels
 JSS(severity);                    // in: LogLevel
 JSS(shares);                      // out: VaultInfo
+JSS(side);                        // out: perpetual futures RPC
 JSS(signature);                   // out: NetworkOPs, ChannelAuthorize
 JSS(signature_target);            // in: TransactionSign
 JSS(signature_verified);          // out: ChannelVerify
@@ -688,6 +706,7 @@ JSS(type);                        // in: AccountObjects
 JSS(type_hex);                    // out: STPathSet
 JSS(unl);                         // out: UnlList
 JSS(unlimited);                   // out: Connection.h
+JSS(upnl);                        // out: perpetual futures RPC
 JSS(uptime);                      // out: GetCounts
 JSS(uri);                         // out: ValidatorSites
 JSS(url);                         // in/out: Subscribe, Unsubscribe
@@ -723,6 +742,9 @@ JSS(vote_slots);                  // out: amm_info
 JSS(vote_weight);                 // out: amm_info
 JSS(warning);                     // rpc:
 JSS(warnings);                    // out: server_info, server_state
+JSS(waterfall_credit);            // out: perpetual futures RPC
+JSS(withdrawable);                // out: perpetual futures RPC
+JSS(withdrawable_cover);          // out: perpetual futures RPC
 JSS(workers);                     //
 JSS(write_load);                  // out: GetCounts
 

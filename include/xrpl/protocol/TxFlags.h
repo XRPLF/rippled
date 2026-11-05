@@ -252,6 +252,38 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
         MASK_ADJ(0))                                                                                                                                          \
                                                                                                                                                                \
+    TRANSACTION(PerpMarketSet,                                                                                                                                 \
+        TF_FLAG(tfPerpMarketSettle, 0x00010000)                                                                                                                \
+        TF_FLAG(tfPerpIsolatedOnly, 0x00020000),                                                                                                               \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(MarginDeposit,                                                                                                                                 \
+        TF_FLAG(tfPerpCover, 0x00010000),                                                                                                                      \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(MarginWithdraw,                                                                                                                                \
+        TF_FLAG2(tfPerpCover, 0x00010000)                                                                                                                      \
+        TF_FLAG(tfPerpOwnerFees, 0x00020000)                                                                                                                   \
+        TF_FLAG(tfPerpDeleteAccount, 0x00040000),                                                                                                              \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(PerpOrderCreate,                                                                                                                               \
+        TF_FLAG(tfPerpSell, 0x00010000)                                                                                                                        \
+        TF_FLAG2(tfImmediateOrCancel, 0x00020000)                                                                                                              \
+        TF_FLAG2(tfFillOrKill, 0x00040000)                                                                                                                     \
+        TF_FLAG(tfPerpReduceOnly, 0x00080000)                                                                                                                  \
+        TF_FLAG(tfPerpPostOnly, 0x00100000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(PerpLiquidate,                                                                                                                                 \
+        TF_FLAG(tfPerpLiquidateToBook, 0x00010000)                                                                                                             \
+        TF_FLAG(tfPerpLiquidateTakeover, 0x00020000),                                                                                                          \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(PerpRefresh,                                                                                                                                   \
+        TF_FLAG(tfPerpSettleStale, 0x00010000),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(ConfidentialMPTHolderKeyUpdate,                                                                                                                \
         TF_FLAG(tfHolderKeyRotation, 0x00010000)                                                                                                               \
         TF_FLAG(tfHolderKeyRecovery, 0x00020000)                                                                                                               \

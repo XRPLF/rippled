@@ -1564,3 +1564,156 @@ TRANSACTION(ttSUBSCRIPTION_CLAIM, 226, SubscriptionClaim,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfSubscriptionID, SoeRequired},
 }))
+/** This transaction creates or updates a perpetual futures exchange. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpExchangeSet.h>
+#endif
+TRANSACTION(ttPERP_EXCHANGE_SET, 231, PerpExchangeSet,
+    ({
+        .amendment = featurePerpetualFutures,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfExchangeID, SoeOptional},
+    {sfAsset, SoeOptional, SoeMptSupported},
+    {sfScale, SoeOptional},
+    {sfDomainID, SoeOptional},
+    {sfMakerFee, SoeOptional},
+    {sfTakerFee, SoeOptional},
+    {sfOwnerFeeShare, SoeOptional},
+    {sfBuilderFeeMax, SoeOptional},
+    {sfCoverRateMinimum, SoeOptional},
+    {sfLiquidationPenalty, SoeOptional},
+    {sfLiquidationRewardMin, SoeOptional},
+    {sfLiquidationChunkMin, SoeOptional},
+    {sfData, SoeOptional},
+}))
+/** This transaction deletes an empty perpetual futures exchange. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpExchangeDelete.h>
+#endif
+TRANSACTION(ttPERP_EXCHANGE_DELETE, 232, PerpExchangeDelete,
+    ({
+        .amendment = featurePerpetualFutures,
+        .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfExchangeID, SoeRequired},
+}))
+/** This transaction creates, updates or settles a perpetual futures market. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpMarketSet.h>
+#endif
+TRANSACTION(ttPERP_MARKET_SET, 233, PerpMarketSet,
+    ({
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfExchangeID, SoeOptional},
+    {sfMarketID, SoeOptional},
+    {sfBaseAsset, SoeOptional},
+    {sfQuoteAsset, SoeOptional},
+    {sfIndexOracles, SoeOptional},
+    {sfIndexMaxLedgers, SoeOptional},
+    {sfPriceTick, SoeOptional},
+    {sfLotSize, SoeOptional},
+    {sfMarginTiers, SoeOptional},
+    {sfOpenInterestMax, SoeOptional},
+    {sfOrderPriceBand, SoeOptional},
+}))
+/** This transaction deletes a perpetual futures market. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpMarketDelete.h>
+#endif
+TRANSACTION(ttPERP_MARKET_DELETE, 234, PerpMarketDelete,
+    ({
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfMarketID, SoeRequired},
+}))
+/** This transaction deposits collateral into a margin account or an exchange's cover. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/MarginDeposit.h>
+#endif
+TRANSACTION(ttMARGIN_DEPOSIT, 235, MarginDeposit,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfExchangeID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))
+/** This transaction withdraws collateral from a margin account, or an exchange's cover or owner fees. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/MarginWithdraw.h>
+#endif
+TRANSACTION(ttMARGIN_WITHDRAW, 236, MarginWithdraw,
+    ({
+        .amendment = featurePerpetualFutures,
+        .privileges = Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfExchangeID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfDestination, SoeOptional},
+}))
+/** This transaction places an order in a perpetual futures market. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpOrderCreate.h>
+#endif
+TRANSACTION(ttPERP_ORDER_CREATE, 237, PerpOrderCreate,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfMarketID, SoeRequired},
+    {sfLimitPrice, SoeRequired},
+    {sfSize, SoeRequired},
+    {sfOfferSequence, SoeOptional},
+    {sfExpiration, SoeOptional},
+    {sfBuilder, SoeOptional},
+    {sfBuilderFee, SoeOptional},
+}))
+/** This transaction cancels a resting perpetual futures order. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpOrderCancel.h>
+#endif
+TRANSACTION(ttPERP_ORDER_CANCEL, 238, PerpOrderCancel,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfOfferSequence, SoeRequired},
+    {sfOwner, SoeOptional},
+}))
+/** This transaction liquidates a position of an under-margined account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpLiquidate.h>
+#endif
+TRANSACTION(ttPERP_LIQUIDATE, 239, PerpLiquidate,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfMarginAccountID, SoeRequired},
+    {sfMarketID, SoeRequired},
+    {sfSize, SoeOptional},
+}))
+/** This transaction refreshes a perpetual futures market and settles a margin account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/perp/PerpRefresh.h>
+#endif
+TRANSACTION(ttPERP_REFRESH, 240, PerpRefresh,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featurePerpetualFutures,
+    }),
+    ({
+    {sfMarketID, SoeOptional},
+    {sfMarginAccountID, SoeOptional},
+}))

@@ -8022,8 +8022,8 @@ class MPToken_test : public beast::unit_test::Suite
         Account const carol("carol");  // holder / receiver
 
         bool const fixed = features[featureMPTokensV2] || features[fixCleanup3_5_0];
-        bool const smallNumber =
-            !features[featureSingleAssetVault] && !features[featureLendingProtocol];
+        bool const smallNumber = !features[featureSingleAssetVault] &&
+            !features[featureLendingProtocol] && !features[featurePerpetualFutures];
 
         // Small enough that the legacy divide() doesn't overflow. Larger
         // amounts are covered by testPartialPaymentDivideOverflow.
@@ -8593,8 +8593,8 @@ public:
 #endif
 
         // Number has a 16-digit mantissa without these amendments.
-        auto const smallNumber =
-            all - featureMPTokensV2 - featureSingleAssetVault - featureLendingProtocol;
+        auto const smallNumber = all - featureMPTokensV2 - featureSingleAssetVault -
+            featureLendingProtocol - featurePerpetualFutures;
         testPartialPaymentRounding(smallNumber);
         testPartialPaymentRounding(smallNumber - fixCleanup3_5_0);
         testPartialPaymentSendMax(smallNumber);

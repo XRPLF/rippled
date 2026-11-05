@@ -493,6 +493,73 @@ loan(UInt256 const& key)
     return {ltLOAN, key};
 }
 
+/**
+ * A perpetual futures exchange, keyed by its owner and creating sequence.
+ */
+Keylet
+perpExchange(AccountID const& owner, SeqProxy const& seq) noexcept;
+
+inline Keylet
+perpExchange(UInt256 const& key)
+{
+    return {ltPERP_EXCHANGE, key};
+}
+
+/**
+ * A perpetual futures market: one per oracle pair per exchange.
+ */
+Keylet
+perpMarket(UInt256 const& exchangeID, Currency const& base, Currency const& quote) noexcept;
+
+inline Keylet
+perpMarket(UInt256 const& key)
+{
+    return {ltPERP_MARKET, key};
+}
+
+/**
+ * The margin account of an account on an exchange.
+ */
+Keylet
+marginAccount(AccountID const& account, UInt256 const& exchangeID) noexcept;
+
+inline Keylet
+marginAccount(UInt256 const& key)
+{
+    return {ltMARGIN_ACCOUNT, key};
+}
+
+/**
+ * A margin account's position in one market.
+ */
+Keylet
+marginPosition(UInt256 const& marginAccountID, UInt256 const& marketID) noexcept;
+
+inline Keylet
+marginPosition(UInt256 const& key)
+{
+    return {ltMARGIN_POSITION, key};
+}
+
+/**
+ * A resting perpetual futures order, keyed by its owner and creating sequence.
+ */
+Keylet
+perpOrder(AccountID const& account, SeqProxy const& seq) noexcept;
+
+inline Keylet
+perpOrder(UInt256 const& key)
+{
+    return {ltPERP_ORDER, key};
+}
+
+/**
+ * The base of one side of a market's order book; price levels sit under it
+ * through keylet::quality.
+ */
+Keylet
+perpBook(UInt256 const& marketID, bool sell) noexcept;
+
 Keylet
 couponSchedule(UInt192 const& mptIssuanceID) noexcept;
 

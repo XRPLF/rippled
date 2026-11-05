@@ -155,6 +155,21 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfBallotWeight, SoeRequired},
         });
+
+    add(sfIndexOracle.jsonName,
+        sfIndexOracle.getCode(),
+        {
+            {sfOwner, SoeRequired},
+            {sfOracleDocumentID, SoeRequired},
+        });
+
+    add(sfMarginTier.jsonName,
+        sfMarginTier.getCode(),
+        {
+            {sfNotionalMax, SoeRequired},
+            {sfInitialMarginRate, SoeRequired},
+            {sfMaintenanceMarginRate, SoeRequired},
+        });
 }
 
 InnerObjectFormats const&

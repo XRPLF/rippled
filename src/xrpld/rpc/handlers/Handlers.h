@@ -130,4 +130,12 @@ json::Value
 doValidatorInfo(rpc::JsonContext&);
 json::Value
 doVaultInfo(rpc::JsonContext const&);
+json::Value
+doPerpExchangeInfo(rpc::JsonContext const&);
+json::Value
+doPerpMarketInfo(rpc::JsonContext const&);
+json::Value
+doPerpBookOrders(rpc::JsonContext const&);
+json::Value
+doMarginAccountInfo(rpc::JsonContext const&);
 }  // namespace xrpl

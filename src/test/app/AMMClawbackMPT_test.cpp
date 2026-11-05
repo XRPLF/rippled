@@ -37,7 +37,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     largeMantissa(FeatureBitset const& features)
     {
         return features[featureSingleAssetVault] || features[featureLendingProtocol] ||
-            features[featureMPTokensV2];
+            features[featureMPTokensV2] || features[featurePerpetualFutures];
     }
 
     void
