@@ -9,6 +9,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -16,7 +17,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -115,17 +115,53 @@ class InvariantsFirewall_test : public InvariantsBase
 
     static constexpr std::uint32_t kDay = 86'400;
 
-    // A firewall for the first account, with the second as counterparty and a
-    // separate backup, and an account-wide XRP limit of 100 XRP a day.
+    // Whether the owner has a limit on the asset.
     static bool
-    createLimitedFirewall(jtx::Account const& a1, jtx::Account const& a2, jtx::Env& env)
+    hasLimit(jtx::Env const& env, AccountID const& owner, Asset const& asset)
+    {
+        auto const location = firewallLimitField(owner, asset);
+        if (!location)
+            return false;
+        auto const sle = env.le(location->entry);
+        return sle && sle->isFieldPresent(*location->field);
+    }
+
+    // The entry holding the owner's limit on the asset, peeked in the view, and
+    // the limit's field; the entry is null when the limit does not exist.
+    static std::pair<SLE::pointer, SField const*>
+    peekLimit(ApplyContext& ac, AccountID const& owner, Asset const& asset)
+    {
+        auto const location = firewallLimitField(owner, asset);
+        if (!location)
+            return {nullptr, nullptr};
+        auto const sle = ac.view().peek(location->entry);
+        if (!sle || !sle->isFieldPresent(*location->field))
+            return {nullptr, location->field};
+        return {sle, location->field};
+    }
+
+    // A firewall for the first account, with the second as counterparty and a
+    // separate backup, and no limit.
+    static bool
+    createBareFirewall(jtx::Account const& a1, jtx::Account const& a2, jtx::Env& env)
     {
         using namespace jtx;
         Account const backup{"backup"};
         env.fund(XRP(1000), backup);
         env(firewall::set(a1.id(), a2.id(), backup.id()));
+        return env.le(keylet::firewall(a1.id())) != nullptr;
+    }
+
+    // A firewall for the first account, with the second as counterparty and a
+    // separate backup, and an XRP limit of 100 XRP a day.
+    static bool
+    createLimitedFirewall(jtx::Account const& a1, jtx::Account const& a2, jtx::Env& env)
+    {
+        using namespace jtx;
+        if (!createBareFirewall(a1, a2, env))
+            return false;
         env(firewall::limitSet(a1.id(), XRP(100), kDay));
-        return env.le(keylet::firewallLimit(a1.id(), xrpIssue())) != nullptr;
+        return hasLimit(env, a1.id(), xrpIssue());
     }
 
     // Moves XRP between two accounts' balances in the view.
@@ -142,17 +178,12 @@ class InvariantsFirewall_test : public InvariantsBase
 
     // Writes a limit's Spent in the view.
     static bool
-    setSpent(
-        ApplyContext& ac,
-        AccountID const& owner,
-        Asset const& asset,
-        STAmount const& spent,
-        std::optional<AccountID> const& signer = std::nullopt)
+    setSpent(ApplyContext& ac, AccountID const& owner, Asset const& asset, STAmount const& spent)
     {
-        auto const sle = ac.view().peek(keylet::firewallLimit(owner, asset, signer));
+        auto const [sle, field] = peekLimit(ac, owner, asset);
         if (!sle)
             return false;
-        sle->setFieldAmount(sfSpent, spent);
+        sle->peekFieldObject(*field).setFieldAmount(sfSpent, spent);
         ac.view().update(sle);
         return true;
     }
@@ -238,10 +269,10 @@ class InvariantsFirewall_test : public InvariantsBase
                 sle->setFieldAmount(
                     sfBalance, sle->getFieldAmount(sfBalance) - STAmount{drops(10)});
                 ac.view().update(sle);
-                auto const limit = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                auto const [limit, field] = peekLimit(ac, a1.id(), xrpIssue());
                 if (!limit)
                     return false;
-                limit->setFieldAmount(sfLimitAmount, XRP(0));
+                limit->peekFieldObject(*field).setFieldAmount(sfLimitAmount, XRP(0));
                 ac.view().update(limit);
                 return true;
             },
@@ -338,7 +369,7 @@ class InvariantsFirewall_test : public InvariantsBase
                 env(pay(gw, a1, usd(100)));
                 env(firewall::set(a1.id(), a2.id(), backup.id()));
                 env(firewall::limitSet(a1.id(), usd(10), kDay));
-                return env.le(keylet::firewallLimit(a1.id(), usd.issue())) != nullptr;
+                return hasLimit(env, a1.id(), usd.issue());
             });
 
         std::optional<MPTID> mptID;
@@ -373,7 +404,7 @@ class InvariantsFirewall_test : public InvariantsBase
                 mptID = mpt.issuanceID();
                 env(firewall::set(a1.id(), a2.id(), backup.id()));
                 env(firewall::limitSet(a1.id(), mpt["MPT"](10), kDay));
-                return env.le(keylet::firewallLimit(a1.id(), MPTIssue{*mptID})) != nullptr;
+                return hasLimit(env, a1.id(), MPTIssue{*mptID});
             });
     }
 
@@ -441,8 +472,8 @@ class InvariantsFirewall_test : public InvariantsBase
             env(firewall::set(a1.id(), a2.id(), backup.id()));
             env(firewall::limitSet(a1.id(), usd1(15), kDay));
             env(firewall::limitSet(a1.id(), limited["MPT"](5), kDay));
-            return env.le(keylet::firewallLimit(a1.id(), usd1.issue())) != nullptr &&
-                env.le(keylet::firewallLimit(a1.id(), MPTIssue{*limitedMpt})) != nullptr;
+            return hasLimit(env, a1.id(), usd1.issue()) &&
+                hasLimit(env, a1.id(), MPTIssue{*limitedMpt});
         };
 
         // A1 sends 10 USD of gw1, 7 USD of gw2, 5 EUR and 3 and 2 of the MPTs
@@ -503,10 +534,11 @@ class InvariantsFirewall_test : public InvariantsBase
             {"Invariant failed: a firewall limit was deleted by a charge"},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 moveXrp(ac, a1.id(), a2.id(), XRP(5));
-                auto const limit = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                auto const [limit, field] = peekLimit(ac, a1.id(), xrpIssue());
                 if (!limit)
                     return false;
-                ac.view().erase(limit);
+                limit->makeFieldAbsent(*field);
+                ac.view().update(limit);
                 return true;
             },
             XRPAmount{},
@@ -543,71 +575,59 @@ class InvariantsFirewall_test : public InvariantsBase
 
         auto const tx = ownerTx(ttFIREWALL_LIMIT_SET);
 
-        // Inserts a limit scoped to A2 with the given Spent, and adds the
-        // given amounts to the firewall's counts.
+        // Sets an XRP limit with the given Spent on the owner's AccountRoot, and
+        // adds the given amount to the firewall's LimitCount.
         auto const create = [](ApplyContext& ac,
                                AccountID const& owner,
-                               AccountID const& signer,
                                STAmount const& spent,
-                               std::uint32_t limitCountDelta,
-                               std::uint32_t signerCountDelta) {
-            auto const sle =
-                std::make_shared<SLE>(keylet::firewallLimit(owner, xrpIssue(), signer));
-            sle->setAccountID(sfOwner, owner);
-            sle->setFieldIssue(sfAsset, STIssue{sfAsset, xrpIssue()});
-            sle->setAccountID(sfLimitSigner, signer);
-            sle->setFieldAmount(sfLimitAmount, XRP(10));
-            sle->setFieldU32(sfPeriod, kDay);
-            sle->setFieldAmount(sfSpent, spent);
-            sle->setFieldU32(sfStartDate, 0);
-            sle->setFieldU64(sfOwnerNode, 0);
-            ac.view().insert(sle);
+                               std::uint32_t limitCountDelta) {
+            auto const account = ac.view().peek(keylet::account(owner));
+            STObject limit = STObject::makeInnerObject(sfFirewallLimit);
+            limit.setFieldAmount(sfLimitAmount, XRP(10));
+            limit.setFieldU32(sfPeriod, kDay);
+            limit.setFieldAmount(sfSpent, spent);
+            limit.setFieldU32(sfStartDate, 0);
+            account->setFieldObject(sfFirewallLimit, limit);
+            ac.view().update(account);
             auto const firewall = ac.view().peek(keylet::firewall(owner));
             firewall->setFieldU32(
-                sfLimitCount, firewall->getFieldU32(sfLimitCount) + limitCountDelta);
-            firewall->setFieldU32(
-                sfSignerLimitCount,
-                (firewall->isFieldPresent(sfSignerLimitCount)
-                     ? firewall->getFieldU32(sfSignerLimitCount)
-                     : 0) +
-                    signerCountDelta);
+                sfLimitCount, (*firewall)[~sfLimitCount].valueOr(0) + limitCountDelta);
             ac.view().update(firewall);
             return true;
         };
 
-        // A created limit with nothing spent and counts that follow it.
+        // A created limit with nothing spent and a count that follows it.
         doInvariantCheck(
             {},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                return create(ac, a1.id(), a2.id(), XRP(0), 1, 1);
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return create(ac, a1.id(), XRP(0), 1);
             },
             XRPAmount{},
             tx,
             {tesSUCCESS, tesSUCCESS},
-            createLimitedFirewall);
+            createBareFirewall);
 
         doInvariantCheck(
             {"Invariant failed: a created firewall limit has spent"},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                return create(ac, a1.id(), a2.id(), XRP(1), 1, 1);
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return create(ac, a1.id(), XRP(1), 1);
             },
             XRPAmount{},
             tx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            createLimitedFirewall);
+            createBareFirewall);
 
-        for (auto const& [limitDelta, signerDelta] :
-             {std::pair{0u, 1u}, std::pair{1u, 0u}, std::pair{2u, 1u}})
+        for (auto const limitDelta : {0u, 2u})
         {
             doInvariantCheck(
-                {"Invariant failed: a firewall's limit counts do not match its limits"},
-                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    return create(ac, a1.id(), a2.id(), XRP(0), limitDelta, signerDelta);
+                {"Invariant failed: a firewall's limit count does not match its limits"},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    return create(ac, a1.id(), XRP(0), limitDelta);
                 },
                 XRPAmount{},
                 tx,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                createLimitedFirewall);
+                createBareFirewall);
         }
 
         // An update that lowers or raises the amount keeps what was spent.
@@ -616,10 +636,10 @@ class InvariantsFirewall_test : public InvariantsBase
             doInvariantCheck(
                 {},
                 [amount](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                    auto const [sle, field] = peekLimit(ac, a1.id(), xrpIssue());
                     if (!sle)
                         return false;
-                    sle->setFieldAmount(sfLimitAmount, amount);
+                    sle->peekFieldObject(*field).setFieldAmount(sfLimitAmount, amount);
                     ac.view().update(sle);
                     return true;
                 },
@@ -643,10 +663,11 @@ class InvariantsFirewall_test : public InvariantsBase
         doInvariantCheck(
             {"Invariant failed: a firewall limit update changed what was spent"},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto const sle = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                auto const [sle, field] = peekLimit(ac, a1.id(), xrpIssue());
                 if (!sle)
                     return false;
-                sle->setFieldU32(sfStartDate, sle->getFieldU32(sfStartDate) + 1);
+                STObject& limit = sle->peekFieldObject(*field);
+                limit.setFieldU32(sfStartDate, limit.getFieldU32(sfStartDate) + 1);
                 ac.view().update(sle);
                 return true;
             },
@@ -658,7 +679,7 @@ class InvariantsFirewall_test : public InvariantsBase
         // A firewall that appears with a limit count but no limit; the reset
         // removes it, so the second pass does not escalate.
         doInvariantCheck(
-            {"Invariant failed: a firewall's limit counts do not match its limits"},
+            {"Invariant failed: a firewall's limit count does not match its limits"},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sle = std::make_shared<SLE>(keylet::firewall(a1.id()));
                 sle->setAccountID(sfOwner, a1.id());
@@ -672,12 +693,13 @@ class InvariantsFirewall_test : public InvariantsBase
             tx,
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
-        // A delete removes the entry and its count.
+        // A delete removes the field and its count.
         auto const erase = [](ApplyContext& ac, AccountID const& owner, std::uint32_t count) {
-            auto const sle = ac.view().peek(keylet::firewallLimit(owner, xrpIssue()));
+            auto const [sle, field] = peekLimit(ac, owner, xrpIssue());
             if (!sle)
                 return false;
-            ac.view().erase(sle);
+            sle->makeFieldAbsent(*field);
+            ac.view().update(sle);
             auto const firewall = ac.view().peek(keylet::firewall(owner));
             if (count == 0)
             {
@@ -700,7 +722,7 @@ class InvariantsFirewall_test : public InvariantsBase
             {tesSUCCESS, tesSUCCESS},
             createLimitedFirewall);
         doInvariantCheck(
-            {"Invariant failed: a firewall's limit counts do not match its limits"},
+            {"Invariant failed: a firewall's limit count does not match its limits"},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return erase(ac, a1.id(), 1);
             },
@@ -753,47 +775,6 @@ class InvariantsFirewall_test : public InvariantsBase
             createLimitedFirewall);
     }
 
-    void
-    testInnerBatchSignerLimit()
-    {
-        testcase("firewall outflow of a Batch inner transaction under a signer's limit");
-        using namespace jtx;
-
-        // Only a signer-scoped XRP limit, so the outflow matches no limit.
-        auto const signerLimited = [](Account const& a1, Account const& a2, Env& env) {
-            Account const backup{"backup"};
-            env.fund(XRP(1000), backup);
-            env(firewall::set(a1.id(), a2.id(), backup.id()));
-            env(firewall::limitSet(a1.id(), XRP(100), kDay), firewall::kLimitSigner(a2));
-            return env.le(keylet::firewallLimit(a1.id(), xrpIssue(), a2.id())) != nullptr;
-        };
-        auto const outflow = [](Account const& a1, Account const& a2, ApplyContext& ac) {
-            moveXrp(ac, a1.id(), a2.id(), XRP(5));
-            return true;
-        };
-
-        doInvariantCheck(
-            {
-                "Invariant failed: a Batch inner transaction moved an asset out of an account "
-                "with a signer's firewall limit",
-            },
-            outflow,
-            XRPAmount{},
-            ownerTx(
-                ttSPONSORSHIP_SET, [](STObject& tx) { tx.setFieldU32(sfFlags, tfInnerBatchTxn); }),
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-            signerLimited);
-
-        // The same outflow outside a Batch matches no limit and passes.
-        doInvariantCheck(
-            {},
-            outflow,
-            XRPAmount{},
-            ownerTx(ttSPONSORSHIP_SET),
-            {tesSUCCESS, tesSUCCESS},
-            signerLimited);
-    }
-
 public:
     void
     run() override
@@ -811,7 +792,6 @@ public:
         testFailedChangesLimit();
         testLimitSetRules();
         testOutflowPrincipal();
-        testInnerBatchSignerLimit();
     }
 };
 

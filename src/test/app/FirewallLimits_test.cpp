@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -180,27 +181,26 @@ class FirewallLimits_test : public beast::unit_test::Suite
         return env.current()->parentCloseTime().time_since_epoch().count();
     }
 
-    static std::shared_ptr<SLE const>
-    limitEntry(
-        jtx::Env const& env,
-        jtx::Account const& owner,
-        Asset const& asset,
-        std::optional<AccountID> const& signer = std::nullopt)
+    // The owner's limit on the asset, read from the entry that holds the
+    // balance; unseated when the asset has no limit.
+    static std::optional<STObject>
+    limitEntry(jtx::Env const& env, jtx::Account const& owner, Asset const& asset)
     {
-        return env.le(keylet::firewallLimit(owner.id(), asset, signer));
+        auto const location = firewallLimitField(owner.id(), asset);
+        if (!location)
+            return std::nullopt;
+        auto const sle = env.le(location->entry);
+        if (!sle || !sle->isFieldPresent(*location->field))
+            return std::nullopt;
+        return sle->getFieldObject(*location->field);
     }
 
-    // The firewall's LimitCount and SignerLimitCount, 0 when absent.
-    static std::pair<std::uint32_t, std::uint32_t>
-    limitCounts(jtx::Env const& env, jtx::Account const& account)
+    // The firewall's LimitCount, 0 when absent.
+    static std::uint32_t
+    limitCount(jtx::Env const& env, jtx::Account const& account)
     {
         auto const sle = env.le(keylet::firewall(account.id()));
-        if (!sle)
-            return {0, 0};
-        return {
-            (*sle)[~sfLimitCount].value_or(0),
-            (*sle)[~sfSignerLimitCount].value_or(0),
-        };
+        return sle ? (*sle)[~sfLimitCount].value_or(0) : 0;
     }
 
     void
@@ -216,9 +216,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const gw{"gw"};
         env.fund(XRP(10000), alice, carol, backup, gw);
         env.close();
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env.close();
         env(firewall::set(alice.id(), carol.id(), backup.id()));
         env.close();
-        auto const usd = gw["USD"];
 
         // Only tfLimitDelete is a flag of its own.
         env(firewall::limitSet(alice.id(), XRP(100), kDay),
@@ -281,9 +283,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const dave{"dave"};
         Account const backup{"backup"};
         Account const gw{"gw"};
-        env.fund(XRP(10000), alice, bob, carol, dave, backup, gw);
+        env.fund(XRP(10000), alice, bob, carol, backup, gw);
         env.close();
         auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env.close();
 
         // A limit needs a firewall.
         env(firewall::limitSet(bob.id(), XRP(100), kDay), Ter(tecNO_TARGET));
@@ -298,31 +302,24 @@ class FirewallLimits_test : public beast::unit_test::Suite
         auto const createdAt = closeTime(env);
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
         env.close();
-        auto const sle = limitEntry(env, alice, xrpIssue());
-        if (!BEAST_EXPECT(sle))
+        auto const limit = limitEntry(env, alice, xrpIssue());
+        if (!BEAST_EXPECT(limit))
             return;
-        BEAST_EXPECT(sle->getAccountID(sfOwner) == alice.id());
-        BEAST_EXPECT((*sle)[sfAsset] == Asset{xrpIssue()});
-        BEAST_EXPECT(!sle->isFieldPresent(sfLimitSigner));
-        BEAST_EXPECT(sle->getFieldAmount(sfLimitAmount) == XRP(100));
-        BEAST_EXPECT(sle->getFieldU32(sfPeriod) == kDay);
-        BEAST_EXPECT(sle->getFieldAmount(sfSpent) == XRP(0));
-        BEAST_EXPECT(sle->getFieldU32(sfStartDate) == createdAt);
-        BEAST_EXPECT(ownerCount(env, alice) == owners + 1);
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(1u, 0u));
+        BEAST_EXPECT(limit->getFieldAmount(sfLimitAmount) == XRP(100));
+        BEAST_EXPECT(limit->getFieldU32(sfPeriod) == kDay);
+        BEAST_EXPECT(limit->getFieldAmount(sfSpent) == XRP(0));
+        BEAST_EXPECT(limit->getFieldU32(sfStartDate) == createdAt);
+        BEAST_EXPECT(ownerCount(env, alice) == owners);
+        BEAST_EXPECT(limitCount(env, alice) == 1);
 
-        // A limit scoped to one signer, and a zero limit that stops the asset.
-        env(firewall::limitSet(alice.id(), XRP(10), kDay), firewall::kLimitSigner(dave));
+        // A zero limit stops the asset.
         env(firewall::limitSet(alice.id(), usd(0), kDay));
         env.close();
-        auto const signerSle = limitEntry(env, alice, xrpIssue(), dave.id());
-        BEAST_EXPECT(signerSle && signerSle->getAccountID(sfLimitSigner) == dave.id());
-        BEAST_EXPECT(signerSle && signerSle->getFieldAmount(sfLimitAmount) == XRP(10));
-        auto const usdSle = limitEntry(env, alice, usd.issue());
-        BEAST_EXPECT(usdSle && usdSle->getFieldAmount(sfLimitAmount) == usd(0));
-        BEAST_EXPECT(usdSle && usdSle->getFieldAmount(sfSpent) == usd(0));
-        BEAST_EXPECT(ownerCount(env, alice) == owners + 3);
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(3u, 1u));
+        auto const usdLimit = limitEntry(env, alice, usd.issue());
+        BEAST_EXPECT(usdLimit && usdLimit->getFieldAmount(sfLimitAmount) == usd(0));
+        BEAST_EXPECT(usdLimit && usdLimit->getFieldAmount(sfSpent) == usd(0));
+        BEAST_EXPECT(ownerCount(env, alice) == owners);
+        BEAST_EXPECT(limitCount(env, alice) == 2);
     }
 
     void
@@ -418,9 +415,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const carol{"carol"};
         Account const dave{"dave"};
-        Account const erin{"erin"};
         Account const backup{"backup"};
-        env.fund(XRP(10000), alice, carol, dave, erin, backup);
+        env.fund(XRP(10000), alice, carol, dave, backup);
         env.close();
         env(firewall::set(alice.id(), carol.id(), backup.id()));
         env.close();
@@ -439,46 +435,18 @@ class FirewallLimits_test : public beast::unit_test::Suite
             Ter(tefBAD_AUTH));
         env.close();
         BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
-        for (auto const& signer : {dave, erin})
-        {
-            env(firewall::limitSet(alice.id(), XRP(10), kDay),
-                firewall::kLimitSigner(signer),
-                Ter(temBAD_SIGNER));
-            env(firewall::limitSet(alice.id(), XRP(10), kDay),
-                firewall::kLimitSigner(signer),
-                Sig(sfCounterpartySignature, carol),
-                signedFee(env));
-        }
         env(firewall::limitSet(alice.id(), XRP(100), kDay),
             Sig(sfCounterpartySignature, carol),
             signedFee(env));
         env.close();
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(3u, 2u));
+        BEAST_EXPECT(limitEntry(env, alice, xrpIssue()));
+        BEAST_EXPECT(limitCount(env, alice) == 1);
 
-        // With an account-wide limit, deleting a signer's limit leaves the
-        // signer the larger account-wide one, so it loosens.
-        env(firewall::limitDelete(alice.id(), xrpIssue()),
-            firewall::kLimitSigner(dave),
-            Ter(temBAD_SIGNER));
-        env(firewall::limitDelete(alice.id(), xrpIssue()),
-            firewall::kLimitSigner(dave),
-            Sig(sfCounterpartySignature, carol),
-            signedFee(env));
-        env.close();
-        BEAST_EXPECT(!limitEntry(env, alice, xrpIssue(), dave.id()));
-
-        // Deleting the account-wide limit refuses the asset again, so it
-        // tightens.
+        // Deleting the limit refuses the asset again, so it tightens.
         env(firewall::limitDelete(alice.id(), xrpIssue()));
         env.close();
         BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
-
-        // Without one, deleting a signer's limit refuses the asset to that
-        // signer, so it tightens too.
-        env(firewall::limitDelete(alice.id(), xrpIssue()), firewall::kLimitSigner(erin));
-        env.close();
-        BEAST_EXPECT(!limitEntry(env, alice, xrpIssue(), erin.id()));
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(0u, 0u));
+        BEAST_EXPECT(limitCount(env, alice) == 0);
     }
 
     void
@@ -490,9 +458,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Env env{*this, features};
         Account const alice{"alice"};
         Account const carol{"carol"};
-        Account const dave{"dave"};
         Account const backup{"backup"};
-        env.fund(XRP(10000), alice, carol, dave, backup);
+        env.fund(XRP(10000), alice, carol, backup);
         env.close();
         env(firewall::set(alice.id(), carol.id(), backup.id()));
         env.close();
@@ -503,27 +470,14 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
 
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
-        env(firewall::limitSet(alice.id(), XRP(10), kDay), firewall::kLimitSigner(dave));
         env.close();
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(2u, 1u));
-        BEAST_EXPECT(ownerCount(env, alice) == owners + 2);
+        BEAST_EXPECT(limitCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == owners);
 
-        // With unlisted assets allowed, deleting any limit loosens.
+        // With unlisted assets allowed, deleting a limit loosens.
         env(firewall::limitDelete(alice.id(), xrpIssue()), Ter(temBAD_SIGNER));
-        env(firewall::limitDelete(alice.id(), xrpIssue()),
-            firewall::kLimitSigner(dave),
-            Ter(temBAD_SIGNER));
         env.close();
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(2u, 1u));
-
-        env(firewall::limitDelete(alice.id(), xrpIssue()),
-            firewall::kLimitSigner(dave),
-            Sig(sfCounterpartySignature, carol),
-            signedFee(env));
-        env.close();
-        BEAST_EXPECT(!limitEntry(env, alice, xrpIssue(), dave.id()));
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(1u, 0u));
-        BEAST_EXPECT(ownerCount(env, alice) == owners + 1);
+        BEAST_EXPECT(limitCount(env, alice) == 1);
 
         // The firewall cannot be deleted while a limit exists.
         env(firewall::del(alice.id(), firewallID(alice)),
@@ -538,7 +492,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
             signedFee(env));
         env.close();
         BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
-        BEAST_EXPECT(limitCounts(env, alice) == std::make_pair(0u, 0u));
+        BEAST_EXPECT(limitCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, alice) == owners);
 
         // After the last limit, it can; a firewall made again has no limits.
@@ -551,7 +505,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
         auto const sle = env.le(keylet::firewall(alice.id()));
         BEAST_EXPECT(sle && !sle->isFieldPresent(sfLimitCount));
-        BEAST_EXPECT(sle && !sle->isFieldPresent(sfSignerLimitCount));
     }
 
     void
@@ -572,9 +525,13 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::set(alice.id(), carol.id(), backup.id()));
         env.close();
 
-        env(firewall::limitSet(alice.id(), XRP(1), kDay), Ter(tecINSUFFICIENT_RESERVE));
+        // A limit is a field of an entry alice already has, so it takes no
+        // reserve.
+        auto const owners = ownerCount(env, alice);
+        env(firewall::limitSet(alice.id(), XRP(1), kDay));
         env.close();
-        BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
+        BEAST_EXPECT(limitEntry(env, alice, xrpIssue()));
+        BEAST_EXPECT(ownerCount(env, alice) == owners);
 
         // A counterparty signature adds its base fee.
         env(firewall::limitSet(alice.id(), XRP(1), kDay),
@@ -606,6 +563,138 @@ class FirewallLimits_test : public beast::unit_test::Suite
             Ter(temINVALID_INNER_BATCH));
         env.close();
         BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
+    }
+
+    void
+    testLimitOnEntries(FeatureBitset features)
+    {
+        testcase("limits stored on the entries that hold the balances");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        MPTTester mpt(env, gw, {.holders = {alice}});
+        mpt.create({.ownerCount = 1});
+        mpt.authorize({.account = alice});
+
+        // One issuer whose account is below alice's and one above it.
+        std::optional<Account> lowGw;
+        std::optional<Account> highGw;
+        for (int i = 0; i < 32 && (!lowGw || !highGw); ++i)
+        {
+            Account const candidate{"issuer" + std::to_string(i)};
+            if (candidate.id() < alice.id() && !lowGw)
+                lowGw = candidate;
+            if (candidate.id() > alice.id() && !highGw)
+                highGw = candidate;
+        }
+        if (!BEAST_EXPECT(lowGw && highGw))
+            return;
+        auto const lowUsd = (*lowGw)["USD"];
+        auto const highUsd = (*highGw)["USD"];
+        env.fund(XRP(10000), carol, backup, *lowGw, *highGw);
+        env.close();
+        env(trust(alice, lowUsd(1000), tfSetNoRipple));
+        env(trust(alice, highUsd(1000), tfSetNoRipple));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {});
+        auto const owners = ownerCount(env, alice);
+
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env(firewall::limitSet(alice.id(), lowUsd(10), kDay));
+        env(firewall::limitSet(alice.id(), highUsd(20), kDay));
+        env(firewall::limitSet(alice.id(), mpt["MPT"](30), kDay));
+        env.close();
+
+        // XRP on the AccountRoot.
+        auto const account = env.le(keylet::account(alice.id()));
+        BEAST_EXPECT(
+            account && account->isFieldPresent(sfFirewallLimit) &&
+            account->getFieldObject(sfFirewallLimit).getFieldAmount(sfLimitAmount) == XRP(100));
+
+        // An IOU on alice's side of the line: high when the issuer is below her.
+        auto const lowLine = env.le(keylet::trustLine(alice.id(), lowUsd.issue()));
+        BEAST_EXPECT(
+            lowLine && lowLine->isFieldPresent(sfHighFirewallLimit) &&
+            !lowLine->isFieldPresent(sfLowFirewallLimit) &&
+            lowLine->getFieldObject(sfHighFirewallLimit).getFieldAmount(sfLimitAmount) ==
+                lowUsd(10));
+
+        // Low when the issuer is above her.
+        auto const highLine = env.le(keylet::trustLine(alice.id(), highUsd.issue()));
+        BEAST_EXPECT(
+            highLine && highLine->isFieldPresent(sfLowFirewallLimit) &&
+            !highLine->isFieldPresent(sfHighFirewallLimit) &&
+            highLine->getFieldObject(sfLowFirewallLimit).getFieldAmount(sfLimitAmount) ==
+                highUsd(20));
+
+        // An MPT on the MPToken.
+        auto const token = env.le(keylet::mptoken(mpt.issuanceID(), alice.id()));
+        BEAST_EXPECT(
+            token && token->isFieldPresent(sfFirewallLimit) &&
+            token->getFieldObject(sfFirewallLimit).getFieldAmount(sfLimitAmount) == mpt["MPT"](30));
+
+        // Each limit is counted on the firewall and takes no reserve.
+        BEAST_EXPECT(limitCount(env, alice) == 4);
+        BEAST_EXPECT(ownerCount(env, alice) == owners);
+    }
+
+    void
+    testLimitSetNoHolding(FeatureBitset features)
+    {
+        testcase("FirewallLimitSet without a holding");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, carol, backup, gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        // alice holds LP tokens of an AMM from before her firewall.
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        AMM amm(env, gw, XRP(100), usd(100));
+        amm.deposit(alice, XRP(10));
+        env.close();
+
+        // gw alone holds the EUR line between them.
+        env(trust(gw, alice["EUR"](100)));
+        env.close();
+        MPTTester mpt(env, gw, {.fund = false});
+        mpt.create();
+        env.close();
+        makeFirewall(env, alice, carol, backup, {});
+
+        // An IOU with no line, or a line whose side of alice holds nothing.
+        env(firewall::limitSet(alice.id(), gw["GBP"](10), kDay), Ter(tecNO_LINE));
+        env(firewall::limitSet(alice.id(), eur(10), kDay), Ter(tecNO_LINE));
+
+        // An MPT with no MPToken.
+        env(firewall::limitSet(alice.id(), mpt["MPT"](10), kDay), Ter(tecOBJECT_NOT_FOUND));
+
+        // An asset alice issues has no limit.
+        env(firewall::limitSet(alice.id(), alice["USD"](10), kDay), Ter(temBAD_ISSUER));
+        env(firewall::limitSet(
+                alice.id(), STAmount{MPTIssue{makeMptID(1, alice.id())}, std::uint64_t{10}}, kDay),
+            Ter(temBAD_ISSUER));
+
+        // An AMM's LP token is refused: a limit would keep the AMM from being
+        // deleted.
+        STAmount const lpTokens{amm.lptIssue(), 10};
+        BEAST_EXPECT(env.le(keylet::trustLine(alice.id(), amm.lptIssue())));
+        env(firewall::limitSet(alice.id(), lpTokens, kDay), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(limitCount(env, alice) == 0);
     }
 
     // The permissions of the Delegate entry for (account, authorized).
@@ -769,24 +858,20 @@ class FirewallLimits_test : public beast::unit_test::Suite
 
     // The stored Spent of a limit, unseated when the limit does not exist.
     static std::optional<STAmount>
-    spentOf(
-        jtx::Env const& env,
-        jtx::Account const& owner,
-        Asset const& asset,
-        std::optional<AccountID> const& signer = std::nullopt)
+    spentOf(jtx::Env const& env, jtx::Account const& owner, Asset const& asset)
     {
-        auto const sle = limitEntry(env, owner, asset, signer);
-        if (!sle)
+        auto const limit = limitEntry(env, owner, asset);
+        if (!limit)
             return std::nullopt;
-        return sle->getFieldAmount(sfSpent);
+        return limit->getFieldAmount(sfSpent);
     }
 
     // The stored StartDate of a limit, 0 when the limit does not exist.
     static std::uint32_t
     startOf(jtx::Env const& env, jtx::Account const& owner, Asset const& asset)
     {
-        auto const sle = limitEntry(env, owner, asset);
-        return sle ? sle->getFieldU32(sfStartDate) : 0;
+        auto const limit = limitEntry(env, owner, asset);
+        return limit ? limit->getFieldU32(sfStartDate) : 0;
     }
 
     static NetClock::time_point
@@ -865,46 +950,12 @@ class FirewallLimits_test : public beast::unit_test::Suite
     }
 
     void
-    testMatchingHelpers()
+    testBoundHelpers()
     {
-        testcase("signer and bound helpers");
+        testcase("bound helpers");
 
         AccountID const owner{1};
-        AccountID const signer{2};
         AccountID const destination{3};
-
-        // A signing key that is not a public key names no signer.
-        STTx const badKey{ttPAYMENT, [&](STObject& tx) {
-                              tx.setAccountID(sfAccount, owner);
-                              tx.setAccountID(sfDestination, destination);
-                              tx.setFieldAmount(sfAmount, STAmount{XRPAmount{10}});
-                              tx.setFieldVL(sfSigningPubKey, Blob{0x01, 0x02});
-                          }};
-        BEAST_EXPECT(firewallLimitSigners(badKey).empty());
-        BEAST_EXPECT(firewallMatchingLimits(badKey, owner, xrpIssue()).size() == 1);
-
-        // A signer named twice has its limit read once.
-        STTx const twice{ttPAYMENT, [&](STObject& tx) {
-                             tx.setAccountID(sfAccount, owner);
-                             tx.setAccountID(sfDestination, destination);
-                             tx.setFieldAmount(sfAmount, STAmount{XRPAmount{10}});
-                             STArray signers(sfSigners);
-                             for (int i = 0; i < 2; ++i)
-                             {
-                                 STObject entry(sfSigner);
-                                 entry.setAccountID(sfAccount, signer);
-                                 entry.setFieldVL(sfSigningPubKey, Blob{});
-                                 entry.setFieldVL(sfTxnSignature, Blob{});
-                                 signers.push_back(std::move(entry));
-                             }
-                             tx.setFieldArray(sfSigners, signers);
-                         }};
-        BEAST_EXPECT(firewallLimitSigners(twice).size() == 2);
-        auto const keylets = firewallMatchingLimits(twice, owner, xrpIssue());
-        BEAST_EXPECT(keylets.size() == 2);
-        BEAST_EXPECT(
-            keylets.size() == 2 &&
-            keylets[1].key == keylet::firewallLimit(owner, xrpIssue(), signer).key);
 
         // A bound or a commitment of zero binds nothing.
         STTx const zeroPayment{ttPAYMENT, [&](STObject& tx) {
@@ -920,30 +971,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
                              }};
         BEAST_EXPECT(!firewallCommitment(zeroCheck));
         BEAST_EXPECT(!firewallFieldBound(zeroCheck, AccountID{}));
-    }
-
-    void
-    testKeyletNamespace()
-    {
-        testcase("FirewallLimit keylet namespace");
-
-        AccountID const owner{1};
-        AccountID const signer{2};
-        Issue const usd{Currency{3}, AccountID{4}};
-        MPTIssue const mpt{makeMptID(5, AccountID{6})};
-        std::uint16_t const space = '8';
-
-        BEAST_EXPECT(
-            keylet::firewallLimit(owner, usd).key ==
-            sha512Half(space, owner, usd.currency, usd.account));
-        BEAST_EXPECT(
-            keylet::firewallLimit(owner, usd, signer).key ==
-            sha512Half(space, owner, usd.currency, usd.account, signer));
-        BEAST_EXPECT(
-            keylet::firewallLimit(owner, mpt).key == sha512Half(space, owner, mpt.getMptID()));
-        BEAST_EXPECT(
-            keylet::firewallLimit(owner, mpt, signer).key ==
-            sha512Half(space, owner, mpt.getMptID(), signer));
     }
 
     void
@@ -1059,70 +1086,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
     }
 
     void
-    testLimitSigners(FeatureBitset features)
-    {
-        testcase("limit signers");
-        using namespace jtx;
-
-        Env env{*this, features};
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-        Account const carol{"carol"};
-        Account const backup{"backup"};
-        Account const agent{"agent"};
-        Account const key{"key"};
-        Account const signer1{"signer1"};
-        Account const signer2{"signer2"};
-        env.fund(XRP(10000), alice, bob, carol, backup, agent, key, signer1, signer2);
-        env.close();
-        makeFirewall(env, alice, carol, backup, {bob});
-        env(regkey(alice, key), Sig(sfCounterpartySignature, carol), signedFee(env));
-        env(signers(alice, 1, {{signer1, 1}, {signer2, 1}}),
-            Sig(sfCounterpartySignature, carol),
-            signedFee(env));
-        env(delegate::set(alice, agent, {"Payment"}),
-            Sig(sfCounterpartySignature, carol),
-            signedFee(env));
-        env.close();
-
-        env(firewall::limitSet(alice.id(), XRP(1000), kDay));
-        env(firewall::limitSet(alice.id(), XRP(10), kDay), firewall::kLimitSigner(agent));
-        env(firewall::limitSet(alice.id(), XRP(20), kDay), firewall::kLimitSigner(key));
-        env(firewall::limitSet(alice.id(), XRP(30), kDay), firewall::kLimitSigner(signer1));
-        env(firewall::limitSet(alice.id(), XRP(40), kDay), firewall::kLimitSigner(alice));
-        env.close();
-
-        // The delegate is matched by sfDelegate; it pays the fee, so the charge
-        // is the payment alone.
-        env(pay(alice, bob, XRP(11)), delegate::As(agent), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(10)), delegate::As(agent));
-        // The regular key's account.
-        env(pay(alice, bob, XRP(21)), Sig(key), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(20)), Sig(key));
-        // A member of the multisignature.
-        env(pay(alice, bob, XRP(31)), Msig(signer1), signedFee(env), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(30)), Msig(signer1), signedFee(env));
-        // The master key's account, the owner.
-        env(pay(alice, bob, XRP(41)), Sig(alice), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(40)), Sig(alice));
-        env.close();
-
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), agent.id()) == XRP(10));
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), key.id()) == XRP(20));
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), signer1.id()) == XRP(30));
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), alice.id()) == XRP(40));
-
-        // The account-wide limit binds every one of those transactions, and a
-        // signer with no limit of its own.
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
-        env(pay(alice, bob, XRP(901)), Msig(signer2), signedFee(env), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(900)), Msig(signer2), signedFee(env));
-        env.close();
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(1000));
-        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), signer1.id()) == XRP(30));
-    }
-
-    void
     testUnlistedAssetsEnforced(FeatureBitset features)
     {
         testcase("unlisted assets enforced");
@@ -1133,9 +1096,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         Account const carol{"carol"};
         Account const backup{"backup"};
-        Account const agent{"agent"};
         Account const gw{"gw"};
-        env.fund(XRP(10000), alice, bob, carol, backup, agent, gw);
+        env.fund(XRP(10000), alice, bob, carol, backup, gw);
         env.close();
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
@@ -1150,7 +1112,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
         makeFirewall(env, alice, carol, backup, {bob});
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
-        env(firewall::limitSet(alice.id(), eur(50), kDay), firewall::kLimitSigner(agent));
         env.close();
 
         // Allowed by default, an asset with no limit leaves freely.
@@ -1165,8 +1126,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
         }
         env.close();
 
-        // Refused, it cannot leave; an asset whose only limit is another
-        // signer's counts as unlisted.
+        // Refused, an asset with no limit cannot leave.
         env(pay(alice, bob, usd(10)), Ter(tefFIREWALL_LIMIT));
         env(pay(alice, bob, eur(10)), Ter(tefFIREWALL_LIMIT));
         env(pay(alice, bob, XRP(10)));
@@ -1492,9 +1452,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         Account const carol{"carol"};
         Account const dave{"dave"};
-        Account const agent{"agent"};
         Account const backup{"backup"};
-        env.fund(XRP(10000), alice, bob, carol, dave, agent, backup);
+        env.fund(XRP(10000), alice, bob, carol, dave, backup);
         env.close();
         makeFirewall(env, alice, carol, backup, {bob});
         {
@@ -1528,25 +1487,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
             BEAST_EXPECT(env.le(keylet::sponsorship(alice.id(), dave.id())));
         }
-
-        // An XRP limit scoped to another signer does not bind the owner's own
-        // signature, so XRP stays unlisted.
-        env(firewall::limitSet(alice.id(), XRP(5), kDay),
-            firewall::kLimitSigner(agent),
-            Sig(sfCounterpartySignature, carol),
-            signedFee(env));
-        env.close();
-        {
-            auto const balance = env.balance(alice);
-            env(sponsor::set_fee(alice, 0, XRP(1)),
-                sponsor::SponseeAcc(dave),
-                Ter(tecFIREWALL_LIMIT));
-            env.close();
-            BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
-            BEAST_EXPECT(spentOf(env, alice, xrpIssue(), agent.id()) == XRP(0));
-            auto const sponsorship = env.le(keylet::sponsorship(alice.id(), dave.id()));
-            BEAST_EXPECT(sponsorship && !sponsorship->isFieldPresent(sfFeeAmount));
-        }
     }
 
     void
@@ -1559,15 +1499,14 @@ class FirewallLimits_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        Account const agent{"agent"};
         Account const backup{"backup"};
-        env.fund(XRP(10000), alice, bob, carol, agent, backup);
+        env.fund(XRP(10000), alice, bob, carol, backup);
         env.close();
         makeFirewall(env, alice, carol, backup, {bob});
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
         env.close();
 
-        // Each inner transaction is charged against the account-wide limit.
+        // Each inner transaction is charged against the limit.
         {
             auto const seq = env.seq(alice);
             env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
@@ -1575,66 +1514,6 @@ class FirewallLimits_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(60)), seq + 2));
             env.close();
             BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
-        }
-
-        // With a limit scoped to a signer, an inner transaction cannot be
-        // matched to one, so one with a bound is refused.
-        env(firewall::limitSet(alice.id(), XRP(5), kDay), firewall::kLimitSigner(agent));
-        env.close();
-        {
-            auto const bobBefore = env.balance(bob);
-            auto const seq = env.seq(alice);
-            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
-                batch::Inner(noop(alice), seq + 1),
-                batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
-            env.close();
-            BEAST_EXPECT(env.balance(bob) == bobBefore);
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
-            BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
-        }
-
-        // A key's signer-scoped XRP limit with no account-wide XRP limit binds
-        // an Allow-type outflow standalone; wrapped in a Batch the inner
-        // transaction is refused at apply, so the key cannot escape its limit.
-        Account const erin{"erin"};
-        Account const dave{"dave"};
-        Account const key{"key"};
-        env.fund(XRP(10000), erin, dave, key);
-        env.close();
-        makeFirewall(env, erin, carol, backup, {bob});
-        env(regkey(erin, key), Sig(sfCounterpartySignature, carol), signedFee(env));
-        env(firewall::limitSet(erin.id(), XRP(10), kDay), firewall::kLimitSigner(key));
-        env.close();
-
-        auto fundFee = sponsor::set_fee(erin, 0, XRP(1000));
-        fundFee[sfSponsee.jsonName] = dave.human();
-        {
-            auto const balance = env.balance(erin);
-            env(fundFee, Sig(key), Ter(tecFIREWALL_LIMIT));
-            env.close();
-            BEAST_EXPECT(env.balance(erin) == balance - drops(env.current()->fees().base));
-            BEAST_EXPECT(!env.le(keylet::sponsorship(erin.id(), dave.id())));
-        }
-        {
-            auto const balance = env.balance(erin);
-            auto const seq = env.seq(erin);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const jt = env.jt(
-                batch::outer(erin, seq, batchFee, tfIndependent),
-                batch::Inner(noop(erin), seq + 1),
-                batch::Inner(fundFee, seq + 2),
-                Sig(key));
-            env(jt);
-            env.close();
-            batch::validateInnerTxn(
-                env,
-                strHex(jt.stx->getTransactionID()),
-                strHex(jt.stx->getBatchTransactionIDs().back()),
-                "SponsorshipSet",
-                "tecFIREWALL_LIMIT");
-            BEAST_EXPECT(env.balance(erin) == balance - batchFee);
-            BEAST_EXPECT(!env.le(keylet::sponsorship(erin.id(), dave.id())));
-            BEAST_EXPECT(spentOf(env, erin, xrpIssue(), key.id()) == XRP(0));
         }
     }
 
@@ -1862,15 +1741,15 @@ public:
         testLimitSetDelete(all);
         testLimitSetFeeAndReserve(all);
         testLimitSetBatchInner(all);
+        testLimitOnEntries(all);
+        testLimitSetNoHolding(all);
         testAuthorityChanges(all);
         testAuthorityChangesWithoutAmendment(all);
         testPeriodHelper();
         testLimitFieldHelper();
-        testMatchingHelpers();
-        testKeyletNamespace();
+        testBoundHelpers();
         testPaymentLimit(all);
         testLimitReset(all);
-        testLimitSigners(all);
         testUnlistedAssetsEnforced(all);
         testFieldBounds(all);
         testMptLimit(all);
