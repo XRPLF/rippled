@@ -828,6 +828,43 @@ class FirewallLimits_test : public beast::unit_test::Suite
     }
 
     void
+    testLimitFieldHelper()
+    {
+        testcase("limit field helper");
+
+        AccountID const low{1};
+        AccountID const owner{2};
+        AccountID const high{3};
+        Currency const usd{4};
+
+        // Whether the helper names the expected entry and field.
+        auto const expectField = [&](Asset const& asset, Keylet const& entry, SField const& field) {
+            auto const located = firewallLimitField(owner, asset);
+            if (!BEAST_EXPECT(located))
+                return;
+            BEAST_EXPECT(located->entry.type == entry.type);
+            BEAST_EXPECT(located->entry.key == entry.key);
+            BEAST_EXPECT(located->field == &field);
+        };
+
+        // XRP is on the owner's AccountRoot.
+        expectField(xrpIssue(), keylet::account(owner), sfFirewallLimit);
+
+        // An IOU is on the owner's side of its line: high when the issuer is
+        // below the owner, low when it is above.
+        expectField(Issue{usd, low}, keylet::trustLine(owner, low, usd), sfHighFirewallLimit);
+        expectField(Issue{usd, high}, keylet::trustLine(owner, high, usd), sfLowFirewallLimit);
+
+        // An MPT is on the owner's MPToken.
+        MPTID const mptID = makeMptID(5, low);
+        expectField(MPTIssue{mptID}, keylet::mptoken(mptID, owner), sfFirewallLimit);
+
+        // An asset the owner issues has no limit field.
+        BEAST_EXPECT(!firewallLimitField(owner, Issue{usd, owner}));
+        BEAST_EXPECT(!firewallLimitField(owner, MPTIssue{makeMptID(6, owner)}));
+    }
+
+    void
     testMatchingHelpers()
     {
         testcase("signer and bound helpers");
@@ -1828,6 +1865,7 @@ public:
         testAuthorityChanges(all);
         testAuthorityChangesWithoutAmendment(all);
         testPeriodHelper();
+        testLimitFieldHelper();
         testMatchingHelpers();
         testKeyletNamespace();
         testPaymentLimit(all);
