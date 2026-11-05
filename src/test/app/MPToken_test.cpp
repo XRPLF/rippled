@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/StructuredData.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -63,6 +64,7 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -8093,6 +8095,388 @@ class MPToken_test : public beast::unit_test::Suite
         }
     }
 
+    // Byte-string helper for Schema/Data blobs with embedded zero bytes.
+    static std::string
+    sd(std::initializer_list<unsigned char> il)
+    {
+        return {il.begin(), il.end()};
+    }
+
+    void
+    testStructuredDataValidation(FeatureBitset features)
+    {
+        testcase("invalid Schema/Metadata for MPTStructuredData");
+
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+
+        // str, u16, u32, u64 - the XLS worked example
+        std::string const schema = sd({0x0E, 0x03, 0x04, 0x05});
+        std::string const record = sd({0x09}) + "912828YK0" + sd({0x01, 0xA9}) +
+            sd({0x71, 0x3F, 0xB3, 0x00}) + sd({0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x42, 0x40});
+
+        // A Schema requires the amendment, on create and on set
+        {
+            Env env{*this, features - featureMPTStructuredData};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.schema = schema, .ownerCount = 0, .err = temDISABLED});
+            mptAlice.create(
+                {.metadata = record, .schema = schema, .ownerCount = 0, .err = temDISABLED});
+
+            auto const mptID = makeMptID(env.seq(alice), alice);
+            mptAlice.set({.account = alice, .id = mptID, .schema = schema, .err = temDISABLED});
+        }
+
+        // Without the amendment an issuance is created and modified as before
+        {
+            Env env{*this, features - featureMPTStructuredData};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.metadata = record, .ownerCount = 1, .flags = tfMPTCanLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .metadata = "opaque"});
+            BEAST_EXPECT(mptAlice.checkMetadata("opaque"));
+            BEAST_EXPECT(!mptAlice.checkSchema(schema));
+        }
+
+        // Metadata over the size cap, with and without a Schema
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const oversized(kMaxMpTokenMetadataLength + 1, 'a');
+            mptAlice.create({.metadata = oversized, .ownerCount = 0, .err = temMALFORMED});
+            mptAlice.create({
+                .metadata = oversized,
+                .schema = sd({0x0F}),
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Malformed schemas on create
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+
+            // Empty schema
+            mptAlice.create({.schema = std::string{}, .ownerCount = 0, .err = temMALFORMED});
+            // Reserved type code
+            mptAlice.create({.schema = sd({0x00}), .ownerCount = 0, .err = temMALFORMED});
+            // Array without an element type
+            mptAlice.create({.schema = sd({0x20}), .ownerCount = 0, .err = temMALFORMED});
+            // Unterminated tuple
+            mptAlice.create({.schema = sd({0x30, 0x05}), .ownerCount = 0, .err = temMALFORMED});
+            // Over the size cap
+            mptAlice.create({
+                .schema = std::string(kMaxSchemaLength + 1, '\x02'),
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Metadata must decode against a Schema declared alongside it
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+
+            mptAlice.create({
+                .metadata = record + sd({0x00}),
+                .schema = schema,
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+            mptAlice.create({
+                .metadata = record.substr(0, record.size() - 1),
+                .schema = schema,
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+
+            // Metadata without a Schema stays opaque
+            mptAlice.create({.metadata = "not a typed record", .ownerCount = 1});
+        }
+
+        // Schema rules on set
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.metadata = record, .schema = schema, .ownerCount = 1});
+
+            // A Schema mutates the issuance itself: no Holder, no flags
+            mptAlice.set({.account = alice, .holder = bob, .schema = schema, .err = temMALFORMED});
+            mptAlice.set(
+                {.account = alice, .flags = tfMPTLock, .schema = schema, .err = temMALFORMED});
+            // Metadata that no longer decodes against the Schema
+            mptAlice.set(
+                {.account = alice, .metadata = record + sd({0x00}), .err = tecNO_PERMISSION});
+            // A Schema the stored Metadata does not decode against
+            mptAlice.set({.account = alice, .schema = sd({0x05}), .err = tecNO_PERMISSION});
+            // A Schema over the size cap
+            mptAlice.set({
+                .account = alice,
+                .schema = std::string(kMaxSchemaLength + 1, '\x02'),
+                .err = temMALFORMED,
+            });
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(mptAlice.checkMetadata(record));
+        }
+
+        // tifMPTMetadata freezes the Schema as well as the Metadata
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({
+                .metadata = record,
+                .schema = schema,
+                .ownerCount = 1,
+                .immutableFlags = tifMPTMetadata,
+            });
+            mptAlice.set({.account = alice, .metadata = record, .err = tecNO_PERMISSION});
+            mptAlice.set({.account = alice, .schema = schema, .err = tecNO_PERMISSION});
+        }
+    }
+
+    void
+    testStructuredData(FeatureBitset features)
+    {
+        testcase("Schema and Metadata lifecycle");
+
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        std::string const schema = sd({0x0E, 0x03, 0x04, 0x05});
+        // VL prefix + string, then big-endian u16, u32, u64
+        auto const record = [](std::string const& cusip,
+                               std::uint16_t coupon,
+                               std::uint32_t maturity,
+                               std::uint64_t face) {
+            std::string out = sd({static_cast<unsigned char>(cusip.size())}) + cusip;
+            auto const appendBE = [&out](std::uint64_t value, int bytes) {
+                for (int i = (bytes - 1) * 8; i >= 0; i -= 8)
+                    out += static_cast<char>((value >> i) & 0xFF);
+            };
+            appendBE(coupon, 2);
+            appendBE(maturity, 4);
+            appendBE(face, 8);
+            return out;
+        };
+
+        // Typed Metadata fixed at create
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(mptAlice.checkMetadata(v1));
+        }
+
+        // Schema declared at create, Metadata written and replaced later
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.schema = schema, .ownerCount = 1});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.set({.account = alice, .metadata = v1});
+            BEAST_EXPECT(mptAlice.checkMetadata(v1));
+
+            auto const v2 = record("912828YL8", 450, 1931536000, 2000000);
+            mptAlice.set({.account = alice, .metadata = v2});
+            BEAST_EXPECT(mptAlice.checkMetadata(v2));
+
+            // The Schema is untouched by any of it
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+        }
+
+        // Schema and Metadata re-typed together in one transaction
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
+
+            // A bare u64: the old record does not fit it, so both must move at once
+            std::string const reduced = sd({0x05});
+            std::string const face = sd({0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x42, 0x40});
+            mptAlice.set({.account = alice, .metadata = face, .schema = reduced});
+            BEAST_EXPECT(mptAlice.checkSchema(reduced));
+            BEAST_EXPECT(mptAlice.checkMetadata(face));
+
+            // An empty Schema removes it, leaving the Metadata opaque again
+            mptAlice.set({.account = alice, .schema = std::string{}});
+            BEAST_EXPECT(!mptAlice.checkSchema(reduced));
+            BEAST_EXPECT(mptAlice.checkMetadata(face));
+        }
+
+        // Schema attached to an issuance that has no Metadata yet
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1});
+            mptAlice.set({.account = alice, .schema = schema});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+
+            // A record that does not decode against it is still refused
+            mptAlice.set({.account = alice, .metadata = "untyped", .err = tecNO_PERMISSION});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+        }
+
+        // Metadata removed under a Schema: the Schema stays
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
+            mptAlice.set({.account = alice, .metadata = std::string{}});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+        }
+
+        // A Set that changes neither field leaves both as they were
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create(
+                {.metadata = v1, .schema = schema, .ownerCount = 1, .flags = tfMPTCanLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(mptAlice.checkMetadata(v1));
+        }
+    }
+
+    void
+    testStructuredDataAdversarial(FeatureBitset features)
+    {
+        testcase("adversarial Schema for MPTStructuredData");
+
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        // Nested arrays around a tuple of empty tuples: an element that reads no data
+        std::string hostileSchema = sd({0x20, 0x20, 0x20, 0x30});
+        for (int i = 0; i < 125; ++i)
+            hostileSchema += sd({0x30, 0x31});
+        hostileSchema += sd({0x31});
+        BEAST_EXPECT(hostileSchema.size() <= kMaxSchemaLength);
+
+        std::string hostileRecord = sd({0x1F});
+        for (int i = 0; i < 31; ++i)
+        {
+            hostileRecord += sd({0x1F});
+            for (int k = 0; k < 31; ++k)
+                hostileRecord += sd({0xFF});
+        }
+        BEAST_EXPECT(hostileRecord.size() <= kMaxMpTokenMetadataLength);
+
+        // Rejected on create, with and without the record that drives it
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.schema = hostileSchema, .ownerCount = 0, .err = temMALFORMED});
+            mptAlice.create({
+                .metadata = hostileRecord,
+                .schema = hostileSchema,
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+
+            // The smallest arrays whose element reads no data
+            mptAlice.create(
+                {.schema = sd({0x20, 0x30, 0x31}), .ownerCount = 0, .err = temMALFORMED});
+            mptAlice.create({
+                .schema = sd({0x20, 0x30, 0x30, 0x31, 0x30, 0x31, 0x31}),
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+            mptAlice.create(
+                {.schema = sd({0x20, 0x20, 0x30, 0x31}), .ownerCount = 0, .err = temMALFORMED});
+        }
+
+        // Rejected on set, so it cannot be attached to an existing issuance
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1});
+            mptAlice.set({.account = alice, .schema = hostileSchema, .err = temMALFORMED});
+        }
+
+        // An array of a tuple that does read data stays legal
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            // ((),u8)[] holding two elements
+            std::string const nested = sd({0x20, 0x30, 0x30, 0x31, 0x02, 0x31});
+            mptAlice.create(
+                {.metadata = sd({0x02, 0x07, 0x09}), .schema = nested, .ownerCount = 1});
+            BEAST_EXPECT(mptAlice.checkSchema(nested));
+        }
+
+        // Nesting stops at kMaxSchemaDepth
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string atCap;
+            for (std::size_t i = 0; i < kMaxSchemaDepth; ++i)
+                atCap += sd({0x20});
+            std::string const overCap = atCap + sd({0x20, 0x02});
+            atCap += sd({0x02});
+
+            // Eight nested arrays, each holding one element, then a u8
+            std::string record;
+            for (std::size_t i = 0; i < kMaxSchemaDepth; ++i)
+                record += sd({0x01});
+            record += sd({0x07});
+            mptAlice.create({.schema = overCap, .ownerCount = 0, .err = temMALFORMED});
+
+            mptAlice.create({.metadata = record, .schema = atCap, .ownerCount = 1});
+            BEAST_EXPECT(mptAlice.checkSchema(atCap));
+        }
+
+        // The record must be consumed exactly: no trailing bytes, no truncation
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const u32 = sd({0x04});
+            mptAlice.create({
+                .metadata = sd({0x00, 0x00, 0x00, 0x01, 0x00}),
+                .schema = u32,
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+            mptAlice.create({
+                .metadata = sd({0x00, 0x00, 0x01}),
+                .schema = u32,
+                .ownerCount = 0,
+                .err = temMALFORMED,
+            });
+            mptAlice.create(
+                {.metadata = sd({0x00, 0x00, 0x00, 0x01}), .schema = u32, .ownerCount = 1});
+        }
+
+        // tifMPTMetadata with a Schema and no record refuses every write to either field
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const u32 = sd({0x04});
+            mptAlice.create({.schema = u32, .ownerCount = 1, .immutableFlags = tifMPTMetadata});
+            BEAST_EXPECT(mptAlice.checkSchema(u32));
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+
+            mptAlice.set({
+                .account = alice,
+                .metadata = sd({0x00, 0x00, 0x00, 0x01}),
+                .err = tecNO_PERMISSION,
+            });
+            mptAlice.set({.account = alice, .schema = std::string{}, .err = tecNO_PERMISSION});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+        }
+    }
+
 public:
     void
     run() override
@@ -8172,6 +8556,11 @@ public:
 
         // Test helpers
         testHelperFunctions();
+
+        // Structured data (MPTStructuredData)
+        testStructuredDataValidation(all);
+        testStructuredData(all);
+        testStructuredDataAdversarial(all);
 
         // Dynamic MPT
         testInvalidCreateDynamic(all);

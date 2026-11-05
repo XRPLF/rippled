@@ -167,6 +167,7 @@ struct MPTCreate
     std::optional<std::uint8_t> assetScale = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
+    std::optional<std::string> schema = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     // authorize if seated.
@@ -261,6 +262,7 @@ struct MPTSet
     std::optional<std::uint32_t> immutableFlags = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
+    std::optional<std::string> schema = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<UInt256> domainID = std::nullopt;
     std::optional<Buffer> issuerPubKey = std::nullopt;
@@ -705,6 +707,9 @@ public:
 
     [[nodiscard]] bool
     isMetadataPresent() const;
+
+    [[nodiscard]] bool
+    checkSchema(std::string const& schema) const;
 
     [[nodiscard]] bool
     checkTransferFee(std::uint16_t transferFee) const;

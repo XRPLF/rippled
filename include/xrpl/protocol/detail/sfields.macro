@@ -474,3 +474,4 @@ TYPED_SFIELD(sfStruckDepositPrice,       NUMBER,     250, SField::kSmdDefault)
 // sfLastAccrualTime: the vault's accrued interest at a time t is
 // sfAccrualRate * t minus this.
 TYPED_SFIELD(sfAccrualAnchor,            NUMBER,     249, SField::kSmdDefault)
+TYPED_SFIELD(sfMPTokenSchema,               VL,    251)
