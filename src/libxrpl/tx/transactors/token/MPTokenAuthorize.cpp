@@ -76,6 +76,10 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
                 return tecHAS_OBLIGATIONS;
             }
+
+            // Only FirewallLimitSet removes a firewall limit.
+            if (sleMpt->isFieldPresent(sfFirewallLimit))
+                return tecHAS_OBLIGATIONS;
             if (ctx.view.rules().enabled(fixCleanup3_4_0))
             {
                 if (sleMptIssuance && sleMpt->isFlag(lsfMPTLocked))

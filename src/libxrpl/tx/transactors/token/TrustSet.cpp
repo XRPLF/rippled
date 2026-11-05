@@ -502,12 +502,14 @@ TrustSet::doApply()
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
-            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZero;
+            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZero ||
+            sleRippleState->isFieldPresent(sfLowFirewallLimit);
         bool const bLowReserveClear = !bLowReserveSet;
 
         bool const bHighReserveSet = (uHighQualityIn != 0u) || (uHighQualityOut != 0u) ||
             ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
-            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZero;
+            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZero ||
+            sleRippleState->isFieldPresent(sfHighFirewallLimit);
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;

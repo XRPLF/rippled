@@ -360,6 +360,10 @@ removeEmptyHolding(
         return tecHAS_OBLIGATIONS;
     }
 
+    // Only FirewallLimitSet removes a firewall limit.
+    if (mptoken->isFieldPresent(sfFirewallLimit))
+        return tecHAS_OBLIGATIONS;
+
     return authorizeMPToken(
         ctx,
         {},  // priorBalance

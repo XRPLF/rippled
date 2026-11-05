@@ -773,9 +773,11 @@ directSendNoFeeIOU(
             // Sender trust limit is 0.
             && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
             // Sender quality in is 0.
+            && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u)
+            // Sender quality out is 0.
             &&
-            (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u))
-        // Sender quality out is 0.
+            !sleRippleState->isFieldPresent(bSenderHigh ? sfHighFirewallLimit : sfLowFirewallLimit))
+        // Sender has no firewall limit on the line.
         {
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(

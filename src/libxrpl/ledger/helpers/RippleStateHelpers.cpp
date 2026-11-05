@@ -303,6 +303,14 @@ trustDelete(
     AccountID const& uHighAccountID,
     beast::Journal j)
 {
+    // Only FirewallLimitSet removes a firewall limit, so a line carrying one stays.
+    if (sleRippleState->isFieldPresent(sfLowFirewallLimit) ||
+        sleRippleState->isFieldPresent(sfHighFirewallLimit))
+    {
+        JLOG(j.trace()) << "trustDelete: the line carries a firewall limit";
+        return tecHAS_OBLIGATIONS;
+    }
+
     // Detect legacy dirs.
     std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
     std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
@@ -371,8 +379,10 @@ updateTrustLine(
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
         // Sender quality in is 0.
-        && (state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
-    // Sender quality out is 0.
+        && (state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u)
+        // Sender quality out is 0.
+        && !state->isFieldPresent(bSenderHigh ? sfHighFirewallLimit : sfLowFirewallLimit))
+    // Sender has no firewall limit on the line.
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
