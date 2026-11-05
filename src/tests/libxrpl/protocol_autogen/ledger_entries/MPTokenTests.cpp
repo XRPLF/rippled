@@ -38,6 +38,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
     auto const redemptionAfterValue = canonical_UINT32();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     MPTokenBuilder builder{
         accountValue,
@@ -60,6 +62,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setRecoveryKey(recoveryKeyValue);
     builder.setRedemptionAfter(redemptionAfterValue);
+    builder.setVoteLockedAmount(voteLockedAmountValue);
+    builder.setBallotID(ballotIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -204,6 +208,22 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasRedemptionAfter());
     }
 
+    {
+        auto const& expected = voteLockedAmountValue;
+        auto const actualOpt = entry.getVoteLockedAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVoteLockedAmount");
+        EXPECT_TRUE(entry.hasVoteLockedAmount());
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+        auto const actualOpt = entry.getBallotID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBallotID");
+        EXPECT_TRUE(entry.hasBallotID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -235,6 +255,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const holderEncryptionKeyValue = canonical_VL();
     auto const recoveryKeyValue = canonical_VL();
     auto const redemptionAfterValue = canonical_UINT32();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -256,6 +278,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
     sle->at(sfRecoveryKey) = recoveryKeyValue;
     sle->at(sfRedemptionAfter) = redemptionAfterValue;
+    sle->at(sfVoteLockedAmount) = voteLockedAmountValue;
+    sle->at(sfBallotID) = ballotIDValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -485,6 +509,32 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfRedemptionAfter");
     }
 
+    {
+        auto const& expected = voteLockedAmountValue;
+
+        auto const fromSleOpt = entryFromSle.getVoteLockedAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getVoteLockedAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVoteLockedAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfVoteLockedAmount");
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+
+        auto const fromSleOpt = entryFromSle.getBallotID();
+        auto const fromBuilderOpt = entryFromBuilder.getBallotID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBallotID");
+        expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -573,5 +623,9 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getRecoveryKey().has_value());
     EXPECT_FALSE(entry.hasRedemptionAfter());
     EXPECT_FALSE(entry.getRedemptionAfter().has_value());
+    EXPECT_FALSE(entry.hasVoteLockedAmount());
+    EXPECT_FALSE(entry.getVoteLockedAmount().has_value());
+    EXPECT_FALSE(entry.hasBallotID());
+    EXPECT_FALSE(entry.getBallotID().has_value());
 }
 }

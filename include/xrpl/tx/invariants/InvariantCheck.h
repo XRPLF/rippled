@@ -9,6 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/BallotInvariant.h>
 #include <xrpl/tx/invariants/CosignerInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FirewallInvariant.h>
@@ -554,7 +555,8 @@ using InvariantChecks = std::tuple<
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField,
     ValidBeneficiary,
-    ValidTokenIssuance>;
+    ValidTokenIssuance,
+    ValidBallot>;
 
 /**
  * @brief get a tuple of all invariant checks
