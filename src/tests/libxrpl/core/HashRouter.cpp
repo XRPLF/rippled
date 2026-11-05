@@ -40,9 +40,9 @@ TEST_F(HashRouterTest, clear_flags_reports_when_nothing_changes)
 {
     UInt256 const key{2};
 
-    // No entry, so nothing to clear and no entry is created.
+    // No entry, so nothing to clear and no entry is created: the next insertion is a new one.
     EXPECT_FALSE(router.clearFlags(key, HashRouterFlags::SAVED));
-    EXPECT_EQ(router.getFlags(key), HashRouterFlags::UNDEFINED);
+    EXPECT_TRUE(router.addSuppressionPeer(key, 0));
 
     // An entry whose flags do not include the one named.
     EXPECT_TRUE(router.setFlags(key, HashRouterFlags::BAD));
