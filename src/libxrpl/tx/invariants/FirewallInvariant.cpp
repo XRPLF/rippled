@@ -16,6 +16,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -191,11 +192,19 @@ ValidFirewallOutflow::checkCharges(
     AccountID const owner = tx.getAccountID(sfAccount);
     AccountID const backup = firewall.getAccountID(sfBackup);
     bool const refusesUnlisted = firewall[~sfUnlistedAssets].value_or(0) == 1;
+    bool const unmatchedSigner =
+        tx.isFlag(tfInnerBatchTxn) && firewall[~sfSignerLimitCount].value_or(0) > 0;
     auto const now = view.parentCloseTime();
 
     for (auto const& asset : firewallChargedAssets(entries_, tx, owner))
     {
         Number const charge = firewallCharge(entries_, tx, owner, backup, asset, fee);
+        if (unmatchedSigner && charge > Number{})
+        {
+            JLOG(j.fatal()) << "Invariant failed: a Batch inner transaction moved an asset out "
+                               "of an account with a signer's firewall limit";
+            return false;
+        }
         bool matched = false;
         for (auto const& limitKeylet : firewallMatchingLimits(tx, owner, asset))
         {

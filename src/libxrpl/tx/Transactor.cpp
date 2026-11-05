@@ -1144,7 +1144,8 @@ checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
 // Charges the measured outflow of an applied transaction to every matching
 // limit of its account, bringing each to the current period, and refuses an
 // outflow of an asset with no matching limit while the firewall refuses
-// unlisted assets.
+// unlisted assets, or any outflow of an inner Batch transaction while the
+// firewall has a signer-scoped limit.
 TER
 chargeFirewallLimits(ApplyContext& ctx)
 {
@@ -1169,9 +1170,19 @@ chargeFirewallLimits(ApplyContext& ctx)
     AccountID const backup = sleFirewall->getAccountID(sfBackup);
     XRPAmount const fee = ctx.tx.getFieldAmount(sfFee).xrp();
     auto const now = view.parentCloseTime();
+    bool const unmatchedSigner =
+        ctx.tx.isFlag(tfInnerBatchTxn) && (*sleFirewall)[~sfSignerLimitCount].value_or(0) > 0;
     for (auto const& asset : firewallChargedAssets(entries, ctx.tx, owner))
     {
         Number const charge = firewallCharge(entries, ctx.tx, owner, backup, asset, fee);
+        // An inner Batch transaction carries no signature to match a signer's
+        // limit against, so it moves nothing out while one exists.
+        if (unmatchedSigner && charge > Number{})
+        {
+            JLOG(ctx.journal.trace())
+                << "Firewall: an inner Batch transaction cannot be matched to a signer's limit";
+            return tecFIREWALL_LIMIT;
+        }
         bool matched = false;
         for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, asset))
         {
