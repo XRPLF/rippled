@@ -27,7 +27,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -906,17 +905,18 @@ trust-these-validators.gov
 [validator_list_threshold]
 -1
 )xrpldConfig");
-            bool error = false;
+            std::string error;
+            auto const expectedError = "Invalid value '-1' in [validator_list_threshold] section";
             try
             {
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::bad_cast& e)
+            catch (std::runtime_error const& e)
             {
-                error = true;
+                error = e.what();
             }
-            BEAST_EXPECT(error);
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load should throw if [validator_list_sites] is configured but
@@ -1817,6 +1817,39 @@ r.ripple.com:51235
     }
 
     void
+    testInvalidValue()
+    {
+        testcase("invalid value names the section");
+
+        // A value that does not parse must surface as std::runtime_error
+        // naming the section and the text, not as the std::bad_cast the
+        // underlying parse throws.
+        auto const load = [this](std::string const& section, std::string const& value) {
+            std::string error;
+            try
+            {
+                Config c;
+                c.loadFromString("[" + section + "]\n" + value + "\n");
+                fail("no exception for [" + section + "] " + value);
+            }
+            catch (std::runtime_error const& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT(
+                error == std::format("Invalid value '{}' in [{}] section", value, section));
+        };
+
+        // One site of each shape: a typed read, a typed read followed by a
+        // range check, a read whose named values come first, and a read
+        // whose target type differs from the member.
+        load(Sections::kPeerPrivate, "maybe");
+        load(Sections::kWorkers, "many");
+        load(Sections::kNetworkId, "abc!");
+        load(Sections::kFeeDefault, "ten");
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1837,6 +1870,7 @@ r.ripple.com:51235
         testNetworkID();
         testSingleSection();
         testToFees();
+        testInvalidValue();
     }
 };
 
