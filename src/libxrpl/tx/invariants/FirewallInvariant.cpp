@@ -166,13 +166,13 @@ ValidFirewallOutflow::checkLimitFields(STTx const& tx, TER const result, beast::
                 continue;
 
             bool const byOwner = sender == limitOwner(sle, *field);
-            if (!limitBefore && !(byOwner && isLimitSet && !isLimitDelete))
+            if (!limitBefore && (!byOwner || !isLimitSet || isLimitDelete))
             {
                 JLOG(j.fatal()) << "Invariant failed: a firewall limit was added other than by "
                                    "its owner's FirewallLimitSet";
                 return false;
             }
-            if (!limitAfter && !(byOwner && isLimitDelete))
+            if (!limitAfter && (!byOwner || !isLimitDelete))
             {
                 JLOG(j.fatal()) << "Invariant failed: a firewall limit was removed other than by "
                                    "its owner's FirewallLimitSet";

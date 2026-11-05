@@ -1109,10 +1109,11 @@ checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
 
     AccountID const owner = ctx.tx.getAccountID(sfAccount);
     auto const location = firewallLimitField(owner, bound->asset());
+    SField const* const field = location ? location->field : nullptr;
     auto const sleHolding = location ? ctx.view.read(location->entry) : nullptr;
-    if (sleHolding && sleHolding->isFieldPresent(*location->field))
+    if (sleHolding && sleHolding->isFieldPresent(*field))
     {
-        STObject const& limit = sleHolding->getFieldObject(*location->field);
+        STObject const& limit = sleHolding->getFieldObject(*field);
         auto const period = firewallLimitPeriod(limit, ctx.view.parentCloseTime());
         if (Number(period.spent) + Number(*bound) > Number(limit.getFieldAmount(sfLimitAmount)))
         {
@@ -1162,10 +1163,11 @@ chargeFirewallLimits(ApplyContext& ctx)
     {
         Number const charge = firewallCharge(entries, ctx.tx, owner, backup, asset, fee);
         auto const location = firewallLimitField(owner, asset);
+        SField const* const field = location ? location->field : nullptr;
         auto const sleHolding = location ? view.peek(location->entry) : nullptr;
-        if (sleHolding && sleHolding->isFieldPresent(*location->field))
+        if (sleHolding && sleHolding->isFieldPresent(*field))
         {
-            STObject& limit = sleHolding->peekFieldObject(*location->field);
+            STObject& limit = sleHolding->peekFieldObject(*field);
             auto const period = firewallLimitPeriod(limit, now);
             Number const spent = Number(period.spent) + charge;
             if (charge > Number{} && spent > Number(limit.getFieldAmount(sfLimitAmount)))

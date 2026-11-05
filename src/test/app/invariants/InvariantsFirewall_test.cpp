@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -535,8 +536,10 @@ class InvariantsFirewall_test : public InvariantsBase
         using namespace jtx;
 
         doInvariantCheck(
-            {"Invariant failed: a firewall limit was removed other than by its owner's "
-             "FirewallLimitSet"},
+            {
+                "Invariant failed: a firewall limit was removed other than by its owner's "
+                "FirewallLimitSet",
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 moveXrp(ac, a1.id(), a2.id(), XRP(5));
                 auto const [limit, field] = peekLimit(ac, a1.id(), xrpIssue());
@@ -593,8 +596,10 @@ class InvariantsFirewall_test : public InvariantsBase
 
         // A Payment by the owner removes its limit.
         doInvariantCheck(
-            {"Invariant failed: a firewall limit was removed other than by its owner's "
-             "FirewallLimitSet"},
+            {
+                "Invariant failed: a firewall limit was removed other than by its owner's "
+                "FirewallLimitSet",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return removeLimit(ac, a1.id());
             },
@@ -605,8 +610,10 @@ class InvariantsFirewall_test : public InvariantsBase
 
         // A Payment by the owner adds one.
         doInvariantCheck(
-            {"Invariant failed: a firewall limit was added other than by its owner's "
-             "FirewallLimitSet"},
+            {
+                "Invariant failed: a firewall limit was added other than by its owner's "
+                "FirewallLimitSet",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return addLimit(ac, a1.id());
             },
@@ -619,8 +626,10 @@ class InvariantsFirewall_test : public InvariantsBase
         Account const gw{"gw"};
         std::optional<MPTID> mptID;
         doInvariantCheck(
-            {"Invariant failed: a firewall limit changed other than by a successful "
-             "transaction of its owner"},
+            {
+                "Invariant failed: a firewall limit changed other than by a successful "
+                "transaction of its owner",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return mptID &&
                     setSpent(ac, a1.id(), MPTIssue{*mptID}, STAmount{MPTIssue{*mptID}, 1});
@@ -643,8 +652,10 @@ class InvariantsFirewall_test : public InvariantsBase
         // A FirewallLimitSet by A1 changes A2's side of a line.
         auto const usd = gw["USD"];
         doInvariantCheck(
-            {"Invariant failed: a firewall limit changed other than by a successful "
-             "transaction of its owner"},
+            {
+                "Invariant failed: a firewall limit changed other than by a successful "
+                "transaction of its owner",
+            },
             [&](Account const&, Account const& a2, ApplyContext& ac) {
                 auto const [sle, field] = peekLimit(ac, a2.id(), usd.issue());
                 if (!sle)
@@ -668,8 +679,10 @@ class InvariantsFirewall_test : public InvariantsBase
 
         // A failed transaction of the owner changes its limit.
         doInvariantCheck(
-            {"Invariant failed: a firewall limit changed other than by a successful "
-             "transaction of its owner"},
+            {
+                "Invariant failed: a firewall limit changed other than by a successful "
+                "transaction of its owner",
+            },
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 return setSpent(ac, a1.id(), xrpIssue(), XRP(1));
             },
@@ -926,8 +939,11 @@ class InvariantsFirewall_test : public InvariantsBase
             if (candidate.id() > Account{"A1"}.id())
                 gw = candidate;
         }
-        if (!BEAST_EXPECT(gw))
+        if (!gw)
+        {
+            fail("no issuer above A1");
             return;
+        }
         auto const usd = (*gw)["USD"];
 
         // A1 holds 100 USD with no trust limit left, and a USD limit; both

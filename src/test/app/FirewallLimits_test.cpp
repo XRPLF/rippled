@@ -25,7 +25,6 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -38,11 +37,10 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -52,7 +50,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -303,12 +300,10 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
         env.close();
         auto const limit = limitEntry(env, alice, xrpIssue());
-        if (!BEAST_EXPECT(limit))
-            return;
-        BEAST_EXPECT(limit->getFieldAmount(sfLimitAmount) == XRP(100));
-        BEAST_EXPECT(limit->getFieldU32(sfPeriod) == kDay);
-        BEAST_EXPECT(limit->getFieldAmount(sfSpent) == XRP(0));
-        BEAST_EXPECT(limit->getFieldU32(sfStartDate) == createdAt);
+        BEAST_EXPECT(limit && limit->getFieldAmount(sfLimitAmount) == XRP(100));
+        BEAST_EXPECT(limit && limit->getFieldU32(sfPeriod) == kDay);
+        BEAST_EXPECT(limit && limit->getFieldAmount(sfSpent) == XRP(0));
+        BEAST_EXPECT(limit && limit->getFieldU32(sfStartDate) == createdAt);
         BEAST_EXPECT(ownerCount(env, alice) == owners);
         BEAST_EXPECT(limitCount(env, alice) == 1);
 
@@ -339,8 +334,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::limitSet(alice.id(), XRP(100), kDay));
         env.close();
         auto const created = limitEntry(env, alice, xrpIssue());
-        if (!BEAST_EXPECT(created))
+        if (!created)
+        {
+            fail("the created limit is missing");
             return;
+        }
         auto const start = created->getFieldU32(sfStartDate);
 
         auto const expectLimit = [&](STAmount const& amount, std::uint32_t period) {
@@ -397,12 +395,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::limitSet(alice.id(), XRP(40), 3 * kDay));
         env.close();
         auto const sle = limitEntry(env, alice, xrpIssue());
-        if (!BEAST_EXPECT(sle))
-            return;
         BEAST_EXPECT(
+            sle &&
             sle->getFieldU32(sfStartDate) == start + (2 * kDay * ((at - start) / (2 * kDay))));
-        BEAST_EXPECT(sle->getFieldU32(sfStartDate) > start);
-        BEAST_EXPECT(sle->getFieldAmount(sfSpent) == XRP(0));
+        BEAST_EXPECT(sle && sle->getFieldU32(sfStartDate) > start);
+        BEAST_EXPECT(sle && sle->getFieldAmount(sfSpent) == XRP(0));
     }
 
     void
@@ -591,8 +588,11 @@ class FirewallLimits_test : public beast::unit_test::Suite
             if (candidate.id() > alice.id() && !highGw)
                 highGw = candidate;
         }
-        if (!BEAST_EXPECT(lowGw && highGw))
+        if (!lowGw || !highGw)
+        {
+            fail("no issuer below and above alice");
             return;
+        }
         auto const lowUsd = (*lowGw)["USD"];
         auto const highUsd = (*highGw)["USD"];
         env.fund(XRP(10000), carol, backup, *lowGw, *highGw);
@@ -1673,7 +1673,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
 
         // Whether alice's side of the line keeps its reserve.
-        auto const aliceReserved = [&]() {
+        auto const aliceReserved = [&] {
             auto const line = env.le(keylet::trustLine(alice.id(), usd.issue()));
             if (!line)
                 return false;
