@@ -99,6 +99,27 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
+> [!IMPORTANT]
+> The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
+> `workflow_dispatch` events, so TSan runs nightly, on a manual run of the
+> Trigger workflow and on a pull request labeled "Full CI build", not in the
+> merge queue or a tag build. The
+> job cannot fail yet: `halt_on_error=false` continues past a finding, and the
+> workflow adds `exitcode=0` to `TSAN_OPTIONS`, so read the job log for
+> findings. Once the findings are known and stable, drop `exitcode=0` so a new
+> one fails the job, and suppress the rest.
+
+> [!IMPORTANT]
+> Check lock order on Linux, where TSan reports
+> `WARNING: ThreadSanitizer: lock-order-inversion (potential deadlock)`. macOS
+> arm64 reports no inversion, even for a double lock of a non-recursive mutex,
+> though it does report races.
+
+> [!TIP]
+> The build defines `XRPL_ASAN`, `XRPL_TSAN` or `XRPL_UBSAN` per active
+> sanitizer. Test them at run time to skip a test that only applies under one
+> sanitizer, so every build still compiles the test.
+
 ### LeakSanitizer (LSan)
 
 LSan is automatically enabled with ASAN. To disable it:
@@ -150,15 +171,26 @@ More details [here](https://clang.llvm.org/docs/undefinedbehaviorSanitizer.html)
 
 ### [`tsan.supp`](../../sanitizers/suppressions/tsan.supp)
 
-- **Purpose**: Suppress ThreadSanitizer data race warnings
-- **Format**: `race:<pattern>` where pattern matches function/file names
+- **Purpose**: Suppress ThreadSanitizer warnings
+- **Format**: `<type>:<pattern>` where pattern matches function/file names, and
+  type is `race`, `deadlock`, `signal`, `mutex` or `called_from_lib`
 - **More info**: [ThreadSanitizer suppressions](https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions)
 
 ### [`sanitizer-ignorelist.txt`](../../sanitizers/suppressions/sanitizer-ignorelist.txt)
 
 - **Purpose**: Compile-time ignorelist for all sanitizers
 - **Usage**: Passed via `-fsanitize-ignorelist=absolute/path/to/sanitizer-ignorelist.txt`
-- **Format**: `<level>:<pattern>` (e.g., `src:Workers.cpp`)
+- **Format**: `<entity>:<glob>` (e.g. `src:*Workers.cpp`)
+- **Note**: Not a suppressions file. Clang looks up only the entities `src`,
+  `fun`, `global`, `type` and `mainfile`, so a `race:` or `deadlock:` entry
+  parses but does nothing. Those belong in `tsan.supp`.
+- **Note**: The glob must match the whole absolute path the compiler receives.
+  `src:core/detail/Workers.cpp` matches nothing; `src:*core/detail/Workers.cpp`
+  does.
+- **Note**: To confirm an entry works, compile the file with and without it and
+  compare the calls the sanitizer planted, e.g.
+  `nm -u <file>.o | grep -cE '__tsan_(read|write)'`. Ignore `__tsan_func_entry`
+  and `__tsan_init`, which an ignored file still has.
 
 ## Troubleshooting
 
