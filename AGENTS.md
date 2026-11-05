@@ -29,7 +29,7 @@ Comments should explain _why_, not _what_/_how_ — the code already shows that.
 
 ## Code review
 
-When reviewing a change, or self-reviewing your own before asking for review, apply [docs/CodeReview.md](./docs/CodeReview.md): correctness rules first, then style and convention rules. Cite the rule number (`CR-N`) in each review comment. Never skip, disable or weaken tests, or remove an amendment gate, to satisfy a review comment; raise the conflict instead.
+When reviewing a change, or self-reviewing your own before asking for review, apply [docs/CodeReview.md](./docs/CodeReview.md): correctness rules first, then style and convention rules. Cite the rule ID (e.g. `CT-2`) in each review comment. Never skip, disable or weaken tests, or remove an amendment gate, to satisfy a review comment; raise the conflict instead.
 
 ### Review perspectives
 
