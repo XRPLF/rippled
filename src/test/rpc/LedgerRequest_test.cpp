@@ -149,6 +149,18 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
             BEAST_EXPECT(result[jss::result][jss::error_message] == "Ledger index too large");
         }
+
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = -1;
+            auto const result =
+                env.rpc("json", "ledger_request", jvParams.toStyledString());
+            BEAST_EXPECT(result[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            BEAST_EXPECT(
+                result[jss::result][jss::error_message] ==
+                "Ledger index too small");
+        }
     }
 
     void

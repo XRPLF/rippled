@@ -468,9 +468,18 @@ getOrAcquireLedger(rpc::JsonContext const& context)
 
         // asInt() throws for unsigned values above the signed maximum.
         if (jsonIndex.isInt())
+        {
+            if (jsonIndex.asInt() < 0)
+                return std::unexpected(
+                    rpc::makeParamError("Ledger index too small"));
+
             ledgerIndex = static_cast<std::uint32_t>(jsonIndex.asInt());
+        }
         else
+        {
             ledgerIndex = jsonIndex.asUInt();
+        }
+
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->header().seq)
