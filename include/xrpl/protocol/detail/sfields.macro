@@ -519,3 +519,59 @@ TYPED_SFIELD(sfFrequency,                UINT32,   233)
 TYPED_SFIELD(sfStartTime,                UINT32,   232)
 TYPED_SFIELD(sfNextClaimTime,            UINT32,   231)
 TYPED_SFIELD(sfSubscriptionID,           UINT256,  250)
+TYPED_SFIELD(sfCurveType,               UINT8,    251)
+TYPED_SFIELD(sfFeeTier,                 UINT8,    250)
+TYPED_SFIELD(sfTickSpacing,             UINT16,   254)
+TYPED_SFIELD(sfWeight,                  UINT16,   253)
+// Index of a 256-tick window within the CL tick-presence bitmap. word = (tick + 887272) / 256.
+// Range [0, 6931] so UINT16 is plenty.
+TYPED_SFIELD(sfBitmapWordIndex,         UINT16,   252)
+// Binned-curve: bin width in basis points. price(id) = (1 + step/10000)^id.
+TYPED_SFIELD(sfBinStep,                 UINT16,   251)
+TYPED_SFIELD(sfAmplification,            UINT32,   230)
+TYPED_SFIELD(sfAmplificationTarget,      UINT32,   229)
+TYPED_SFIELD(sfAmplificationTime,        UINT32,   228)
+TYPED_SFIELD(sfPositionCount,            UINT32,   227)
+TYPED_SFIELD(sfActiveLiquidity,          UINT64,   252)
+TYPED_SFIELD(sfPositionLiquidity,        UINT64,   251)
+TYPED_SFIELD(sfLiquidityGross,           UINT64,   250)
+TYPED_SFIELD(sfLiquidityNet,             UINT64,   249)
+// Binned-curve: an LP's proportional claim on a bin's aggregate
+// liquidity. Sum of all holders' sfShares == bin's sfOutstandingAmount.
+TYPED_SFIELD(sfShares,                   UINT64,   248)
+// 256-bit bitmap of initialised-tick presence within a single 256-tick window
+// of a CL pool. Bit i (0-indexed from least-significant) set => tick
+// (wordIndex * 256 + i - 887272) is initialised. Read via byte order:
+// least-significant 32-bit lane first. See findNextInitTickBitmap.
+TYPED_SFIELD(sfBitmapBits,               UINT256,  249)
+// Position keylet hash: addresses a specific ltAMM_POSITION SLE owned by the
+// transactor. Used as a tx-input field on AMMWithdraw, AMMCollectFees, and
+// AMMPositionTransfer to identify which of the LP's positions to operate on.
+TYPED_SFIELD(sfPositionID,               UINT256,  248)
+// Concentrated-liquidity fee-growth accumulators. v3 uses Q128.128 in
+// uint256 because Solidity lacks a native fractional type; XRPL has
+// Number (16-digit mantissa, 32-bit exponent) which is strictly more
+// capable for "fee per unit liquidity". No asset association — the
+// value is dimensionless growth-per-liquidity.
+TYPED_SFIELD(sfFeeGrowthOutside0,        NUMBER,   247)
+TYPED_SFIELD(sfFeeGrowthOutside1,        NUMBER,   246)
+TYPED_SFIELD(sfFeeGrowthInsideLast0,     NUMBER,   245)
+TYPED_SFIELD(sfFeeGrowthInsideLast1,     NUMBER,   244)
+// Binned-curve per-bin fee accumulators (fee per MPT-share-unit).
+TYPED_SFIELD(sfFeeGrowthBin0,            NUMBER,   243)
+TYPED_SFIELD(sfFeeGrowthBin1,            NUMBER,   242)
+TYPED_SFIELD(sfFeeGrowthGlobal0,         NUMBER,   241)
+TYPED_SFIELD(sfFeeGrowthGlobal1,         NUMBER,   240)
+TYPED_SFIELD(sfSqrtPrice,                NUMBER,   239)
+TYPED_SFIELD(sfTickLower,               INT32,    254)
+TYPED_SFIELD(sfTickUpper,               INT32,    253)
+TYPED_SFIELD(sfTickIndex,               INT32,    252)
+TYPED_SFIELD(sfCurrentTick,             INT32,    251)
+// Binned-curve indices.
+TYPED_SFIELD(sfBinID,                   INT32,    250)
+TYPED_SFIELD(sfActiveBinID,             INT32,    249)
+TYPED_SFIELD(sfTokensOwed0,              AMOUNT,   246)
+TYPED_SFIELD(sfTokensOwed1,              AMOUNT,   245)
+// Binned-curve per-bin reserves (asset0 / asset1 inventory at the bin's price).
+TYPED_SFIELD(sfReserve0,                 AMOUNT,   244)
+TYPED_SFIELD(sfReserve1,                 AMOUNT,   243)

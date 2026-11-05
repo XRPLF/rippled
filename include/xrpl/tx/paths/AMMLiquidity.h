@@ -1,14 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -44,6 +49,8 @@ private:
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
+    std::uint8_t const curveType_{kCtConstantProduct};
+    uint256 const ammID_;
 
 public:
     AMMLiquidity(
@@ -53,7 +60,8 @@ public:
         Asset const& in,
         Asset const& out,
         AMMContext& ammContext,
-        beast::Journal j);
+        beast::Journal j,
+        std::uint8_t curveType = kCtConstantProduct);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
     AMMLiquidity&
@@ -104,12 +112,74 @@ public:
         return assetOut_;
     }
 
+    [[nodiscard]] std::uint8_t
+    curveType() const
+    {
+        return curveType_;
+    }
+
+    [[nodiscard]] uint256 const&
+    ammID() const
+    {
+        return ammID_;
+    }
+
 private:
+    /**
+     * What the next offer is priced from, read once per offer.
+     * `params` is the AMM entry as `view` holds it now, whose curve fields
+     * (sfCurrentTick, sfActiveLiquidity, sfActiveBinID, sfAmplification...)
+     * price the offer; nullptr for constant product, whose math reads none.
+     * For a CL pool its price, tick and liquidity are those of the range the
+     * offer draws from, past the ticks and empty ranges a swap crosses for
+     * free; `range` is that range's capacity and `reserves` its virtual
+     * reserves, both from the one walk.
+     */
+    struct CurveState
+    {
+        std::shared_ptr<SLE const> params;
+        std::optional<ClRangeCapacity> range;
+        std::optional<TAmounts<TIn, TOut>> reserves;
+    };
+
+    [[nodiscard]] CurveState
+    curveState(ReadView const& view) const;
+
     /**
      * Fetches current AMM balances.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
+
+    /**
+     * The virtual reserves of the CL range `params` prices from (liquidity /
+     * sqrtP of token0, liquidity * sqrtP of token1), as in/out; nullopt for a
+     * range with no liquidity or reserves the amount types cannot hold.
+     */
+    [[nodiscard]] std::optional<TAmounts<TIn, TOut>>
+    clRangeReserves(SLE const& params) const;
+
+    /**
+     * The quality of the pool's next unit traded at `balances`: its CL range's
+     * for a CL pool, the curve's marginal price for a StableSwap pool, the
+     * holdings' ratio for constant product. A binned pool has no such ratio:
+     * its offers are priced from their own amounts.
+     */
+    [[nodiscard]] Quality
+    spotQuality(TAmounts<TIn, TOut> const& balances, CurveState const& state) const;
+
+    /**
+     * The largest offer of a curve other than constant product whose price,
+     * once consumed, is still no worse than `clobQuality`: the curve's own
+     * swap amounts sized by bisection on the output. nullopt when not even
+     * the smallest offer beats `clobQuality`.
+     */
+    [[nodiscard]] std::optional<TAmounts<TIn, TOut>>
+    sizeToQuality(
+        TAmounts<TIn, TOut> const& balances,
+        Quality const& clobQuality,
+        CurveState const& state,
+        ReadView const& view) const;
 
     /**
      * Generate AMM offers with the offer size based on Fibonacci sequence.
@@ -120,15 +190,20 @@ private:
      * throws overflow exception.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
-    generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
+    generateFibSeqOffer(
+        ReadView const& view,
+        TAmounts<TIn, TOut> const& balances,
+        SLE const* params) const;
 
     /**
      * Generate max offer. The offer is generated as:
      * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
+     * A CL offer is capped at its range and carries the range's spot quality.
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances) const;
+    maxOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances, CurveState const& state)
+        const;
 };
 
 }  // namespace xrpl

@@ -35,6 +35,11 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
     auto const amount2Value = canonical_AMOUNT();
     auto const ePriceValue = canonical_AMOUNT();
     auto const lPTokenInValue = canonical_AMOUNT();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const positionIDValue = canonical_UINT256();
+    auto const positionLiquidityValue = canonical_UINT64();
+    auto const binIDValue = canonical_INT32();
+    auto const sharesValue = canonical_UINT64();
 
     AMMWithdrawBuilder builder{
         accountValue,
@@ -49,6 +54,11 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
     builder.setAmount2(amount2Value);
     builder.setEPrice(ePriceValue);
     builder.setLPTokenIn(lPTokenInValue);
+    builder.setCurveType(curveTypeValue);
+    builder.setPositionID(positionIDValue);
+    builder.setPositionLiquidity(positionLiquidityValue);
+    builder.setBinID(binIDValue);
+    builder.setShares(sharesValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -110,6 +120,46 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasLPTokenIn());
     }
 
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
+    {
+        auto const& expected = positionIDValue;
+        auto const actualOpt = tx.getPositionID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPositionID should be present";
+        expectEqualField(expected, *actualOpt, "sfPositionID");
+        EXPECT_TRUE(tx.hasPositionID());
+    }
+
+    {
+        auto const& expected = positionLiquidityValue;
+        auto const actualOpt = tx.getPositionLiquidity();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPositionLiquidity should be present";
+        expectEqualField(expected, *actualOpt, "sfPositionLiquidity");
+        EXPECT_TRUE(tx.hasPositionLiquidity());
+    }
+
+    {
+        auto const& expected = binIDValue;
+        auto const actualOpt = tx.getBinID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBinID should be present";
+        expectEqualField(expected, *actualOpt, "sfBinID");
+        EXPECT_TRUE(tx.hasBinID());
+    }
+
+    {
+        auto const& expected = sharesValue;
+        auto const actualOpt = tx.getShares();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShares should be present";
+        expectEqualField(expected, *actualOpt, "sfShares");
+        EXPECT_TRUE(tx.hasShares());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -132,6 +182,11 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
     auto const amount2Value = canonical_AMOUNT();
     auto const ePriceValue = canonical_AMOUNT();
     auto const lPTokenInValue = canonical_AMOUNT();
+    auto const curveTypeValue = canonical_UINT8();
+    auto const positionIDValue = canonical_UINT256();
+    auto const positionLiquidityValue = canonical_UINT64();
+    auto const binIDValue = canonical_INT32();
+    auto const sharesValue = canonical_UINT64();
 
     // Build an initial transaction
     AMMWithdrawBuilder initialBuilder{
@@ -146,6 +201,11 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
     initialBuilder.setAmount2(amount2Value);
     initialBuilder.setEPrice(ePriceValue);
     initialBuilder.setLPTokenIn(lPTokenInValue);
+    initialBuilder.setCurveType(curveTypeValue);
+    initialBuilder.setPositionID(positionIDValue);
+    initialBuilder.setPositionLiquidity(positionLiquidityValue);
+    initialBuilder.setBinID(binIDValue);
+    initialBuilder.setShares(sharesValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -202,6 +262,41 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getLPTokenIn();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLPTokenIn should be present";
         expectEqualField(expected, *actualOpt, "sfLPTokenIn");
+    }
+
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+    }
+
+    {
+        auto const& expected = positionIDValue;
+        auto const actualOpt = rebuiltTx.getPositionID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPositionID should be present";
+        expectEqualField(expected, *actualOpt, "sfPositionID");
+    }
+
+    {
+        auto const& expected = positionLiquidityValue;
+        auto const actualOpt = rebuiltTx.getPositionLiquidity();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfPositionLiquidity should be present";
+        expectEqualField(expected, *actualOpt, "sfPositionLiquidity");
+    }
+
+    {
+        auto const& expected = binIDValue;
+        auto const actualOpt = rebuiltTx.getBinID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBinID should be present";
+        expectEqualField(expected, *actualOpt, "sfBinID");
+    }
+
+    {
+        auto const& expected = sharesValue;
+        auto const actualOpt = rebuiltTx.getShares();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShares should be present";
+        expectEqualField(expected, *actualOpt, "sfShares");
     }
 
 }
@@ -271,6 +366,16 @@ TEST(TransactionsAMMWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getEPrice().has_value());
     EXPECT_FALSE(tx.hasLPTokenIn());
     EXPECT_FALSE(tx.getLPTokenIn().has_value());
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
+    EXPECT_FALSE(tx.hasPositionID());
+    EXPECT_FALSE(tx.getPositionID().has_value());
+    EXPECT_FALSE(tx.hasPositionLiquidity());
+    EXPECT_FALSE(tx.getPositionLiquidity().has_value());
+    EXPECT_FALSE(tx.hasBinID());
+    EXPECT_FALSE(tx.getBinID().has_value());
+    EXPECT_FALSE(tx.hasShares());
+    EXPECT_FALSE(tx.getShares().has_value());
 }
 
 }

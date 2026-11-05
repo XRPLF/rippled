@@ -11,6 +11,8 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -29,7 +31,9 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <chrono>
@@ -405,6 +409,193 @@ ammPoolHolds(
 }
 
 TER
+depositToCurvePool(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (amount <= beast::kZero)
+        return tesSUCCESS;
+    if (amount.holds<MPTIssue>())
+    {
+        auto const& issue = amount.get<MPTIssue>();
+        if (!view.exists(keylet::mptoken(issue.getMptID(), ammAccount)))
+        {
+            if (auto const ter = requireAuth(view, issue, ammAccount, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+                return ter;
+            if (auto const ter = createMPToken(
+                    view, issue.getMptID(), ammAccount, {}, lsfMPTAMM | lsfMPTAuthorized);
+                !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+    if (auto const ter = accountSend(view, from, ammAccount, amount, j, {}, WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return ter;
+    if (amount.holds<Issue>() && !isXRP(amount))
+    {
+        auto const line = view.peek(keylet::trustLine(ammAccount, amount.get<Issue>()));
+        if (!line)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (!line->isFlag(lsfAMMNode))
+        {
+            line->setFieldU32(sfFlags, line->getFlags() | lsfAMMNode);
+            view.update(line);
+        }
+    }
+    return tesSUCCESS;
+}
+
+TER
+payFromCurvePool(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    STAmount const& amount,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling)
+{
+    if (amount <= beast::kZero)
+        return tesSUCCESS;
+    if (amount.holds<MPTIssue>() && to != amount.getIssuer() &&
+        !view.exists(keylet::mptoken(amount.get<MPTIssue>().getMptID(), to)))
+    {
+        auto const sleAccount = view.peek(keylet::account(to));
+        if (!sleAccount)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        // The reserve rule of TrustSet and MPTokenAuthorize: the first two objects are free.
+        XRPAmount const reserve = ownerCount(sleAccount, j) < 2
+            ? XRPAmount{0}
+            : accountReserve(view, sleAccount, j, {.ownerCountDelta = 1});
+        // XRP paid earlier in the transaction (a bin's fees before its reserves) counts too.
+        if (reserveHandling == ReserveHandling::EnforceReserve &&
+            std::max(priorBalance, sleAccount->getFieldAmount(sfBalance).xrp()) < reserve)
+            return tecINSUFFICIENT_RESERVE;
+        if (auto const ter = checkCreateMPT(view, amount.get<MPTIssue>(), to, j);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+    }
+    return accountSend(view, ammAccount, to, amount, j, {}, WaiveTransferFee::Yes);
+}
+
+bool
+binnedPoolEmptyBesides(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::optional<std::int32_t> exceptBinID)
+{
+    constexpr int kBinBudget = 1000;
+    auto const end = keylet::ammBinEnd(ammID).key;
+    auto key = keylet::ammBinBase(ammID).key;
+    for (int left = kBinBudget; left > 0; --left)
+    {
+        auto const next = view.succ(key, end);
+        if (!next)
+            return true;
+        key = *next;
+        auto const binID = keylet::ammBinID(key);
+        if (exceptBinID && binID == *exceptBinID)
+            continue;
+        auto const bin = view.read(keylet::ammBin(ammID, binID));
+        if (!bin)
+            continue;  // LCOV_EXCL_LINE
+        for (SField const* field : {&sfReserve0, &sfReserve1, &sfTokensOwed0, &sfTokensOwed1})
+        {
+            if (bin->isFieldPresent(*field) && bin->getFieldAmount(*field) > beast::kZero)
+                return false;
+        }
+    }
+    return false;
+}
+
+TER
+payPoolRemainder(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    Asset const& asset,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling)
+{
+    if (asset.integral())
+        return tesSUCCESS;
+    return payFromCurvePool(
+        view,
+        ammAccount,
+        to,
+        ammAccountHolds(view, ammAccount, asset),
+        priorBalance,
+        j,
+        reserveHandling);
+}
+
+STAmount
+cappedAtPoolHolds(
+    ReadView const& view,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (amount.integral())
+        return amount;
+    return std::min(
+        amount,
+        accountHolds(view, ammAccount, amount.get<Issue>(), FreezeHandling::IgnoreFreeze, j));
+}
+
+TER
+settleBinFees(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& holder,
+    SLE& binSle,
+    SLE& holdingSle,
+    std::uint64_t heldShares,
+    XRPAmount const& priorBalance,
+    beast::Journal j)
+{
+    Number const shares{
+        static_cast<std::int64_t>(std::min(holdingSle.getFieldU64(sfShares), heldShares))};
+    auto const settle = [&](SF_NUMBER const& growthField,
+                            SF_NUMBER const& lastField,
+                            SF_AMOUNT const& unclaimedField,
+                            SF_AMOUNT const& reserveField) -> TER {
+        Number const growthNow{binSle.getFieldNumber(growthField)};
+        Number const growthLast{holdingSle.getFieldNumber(lastField)};
+        holdingSle.setFieldNumber(lastField, STNumber{lastField, growthNow});
+        auto const asset = binSle.getFieldAmount(reserveField).asset();
+        STAmount const unclaimed = binSle.isFieldPresent(unclaimedField)
+            ? binSle.getFieldAmount(unclaimedField)
+            : STAmount{asset, 0};
+        // The fee owed is rounded down in the pool's favour whatever the asset.
+        auto const owed = [&] {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+            return toSTAmount(
+                asset, shares * (growthNow - growthLast), Number::RoundingMode::Downward);
+        }();
+        if (owed <= beast::kZero)
+            return tesSUCCESS;
+        STAmount const fee = std::min(unclaimed, owed);
+        if (fee <= beast::kZero)
+            return tesSUCCESS;
+        if (auto const ter = payFromCurvePool(view, ammAccount, holder, fee, priorBalance, j);
+            !isTesSuccess(ter))
+            return ter;
+        binSle.setFieldAmount(unclaimedField, unclaimed - fee);
+        return tesSUCCESS;
+    };
+    if (auto const ter = settle(sfFeeGrowthBin0, sfFeeGrowthInsideLast0, sfTokensOwed0, sfReserve0);
+        !isTesSuccess(ter))
+        return ter;
+    return settle(sfFeeGrowthBin1, sfFeeGrowthInsideLast1, sfTokensOwed1, sfReserve1);
+}
+
+TER
 checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance)
 {
     if (newLPTokenBalance <= beast::kZero)
@@ -422,9 +613,7 @@ checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenB
 TER
 checkAMMPrecisionLoss(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    Asset const& asset1,
-    Asset const& asset2,
+    SLE const& ammSle,
     STAmount const& newLPTokenBalance,
     beast::Journal const j)
 {
@@ -432,13 +621,17 @@ checkAMMPrecisionLoss(
         return tesSUCCESS;
     auto const [amount, amount2] = ammPoolHolds(
         view,
-        ammAccountID,
-        asset1,
-        asset2,
+        ammSle[sfAccount],
+        ammSle[sfAsset],
+        ammSle[sfAsset2],
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j);
-    return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
+    auto const mean =
+        ammPoolMean(view.rules(), ammSle, amount, amount2, newLPTokenBalance.get<Issue>());
+    if (!mean)
+        return tecPRECISION_LOSS;
+    return checkAMMPrecisionLoss(*mean, newLPTokenBalance);
 }
 
 std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
@@ -516,14 +709,10 @@ ammLPHolds(
     Asset const& asset2,
     AccountID const& ammAccount,
     AccountID const& lpAccount,
-    beast::Journal const j)
+    beast::Journal const j,
+    std::uint8_t curveType)
 {
-    // This function looks similar to `accountHolds`. However, it only checks if
-    // a LPToken holder has enough balance. On the other hand, `accountHolds`
-    // checks if the underlying assets of LPToken are frozen with the
-    // fixFrozenLPTokenTransfer amendment
-
-    auto const currency = ammLPTCurrency(asset1, asset2);
+    auto const currency = ammLPTCurrency(asset1, asset2, curveType);
     STAmount amount;
 
     auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
@@ -566,7 +755,9 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j);
+    auto const ct =
+        ammSle.isFieldPresent(sfCurveType) ? ammSle.getFieldU8(sfCurveType) : kCtConstantProduct;
+    return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j, ct);
 }
 
 std::uint16_t
@@ -715,9 +906,14 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 }
 
 TER
-deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
+deleteAMMAccount(
+    Sandbox& sb,
+    Asset const& asset,
+    Asset const& asset2,
+    beast::Journal j,
+    std::uint8_t curveType)
 {
-    auto const ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
     {
         // LCOV_EXCL_START

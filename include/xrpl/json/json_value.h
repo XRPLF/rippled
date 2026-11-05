@@ -528,6 +528,7 @@ public:
     using iterator_category = std::bidirectional_iterator_tag;
     using SizeT = unsigned int;
     using difference_type = int;
+    using value_type = Value;
     using SelfType = ValueIteratorBase;
 
     ValueIteratorBase();

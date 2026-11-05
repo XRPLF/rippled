@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -125,6 +126,11 @@ enum class LedgerNameSpace : std::uint16_t {
     BallotVote = 'Y',
     CouponSchedule = 'j',
     Subscription = 'k',
+    AmmPosition = 'v',
+    AmmTick = 'w',
+    AmmTickBitmap = 'z',
+    AmmBin = '0',
+    AmmBinHolding = '1',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -496,13 +502,24 @@ nftSells(UInt256 const& id) noexcept
 }
 
 Keylet
-amm(Asset const& asset1, Asset const& asset2) noexcept
+amm(Asset const& asset1, Asset const& asset2, std::uint8_t curveType) noexcept
 {
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     return std::visit(
-        []<ValidIssueType TIss1, ValidIssueType TIss2>(TIss1 const& issue1, TIss2 const& issue2) {
+        [curveType]<ValidIssueType TIss1, ValidIssueType TIss2>(
+            TIss1 const& issue1, TIss2 const& issue2) {
             if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, Issue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.account,
+                        issue1.currency,
+                        issue2.account,
+                        issue2.currency,
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm,
                     issue1.account,
@@ -512,16 +529,39 @@ amm(Asset const& asset1, Asset const& asset2) noexcept
             }
             else if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, MPTIssue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.account,
+                        issue1.currency,
+                        issue2.getMptID(),
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm, issue1.account, issue1.currency, issue2.getMptID()));
             }
             else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, Issue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.getMptID(),
+                        issue2.account,
+                        issue2.currency,
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm, issue1.getMptID(), issue2.account, issue2.currency));
             }
             else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID(), curveType));
+                }
                 return amm(indexHash(LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID()));
             }
         },
@@ -674,6 +714,157 @@ subscription(
     return {
         ltSUBSCRIPTION,
         indexHash(LedgerNameSpace::Subscription, account, dest, seq)};
+}
+
+Keylet
+ammPosition(UInt256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return {ltAMM_POSITION, indexHash(LedgerNameSpace::AmmPosition, ammID, owner, seq)};
+}
+
+static UInt256
+ammTickBaseKey(UInt256 const& ammID) noexcept
+{
+    // High 192 bits from hash, low 64 bits zeroed
+    auto key = indexHash(LedgerNameSpace::AmmTick, ammID);
+    setLow64BE(key, 0);
+    return key;
+}
+
+// The low 64 bits of a tick, bitmap word or bin key start at 1, so that no entry's key equals the
+// base key, which the range walks exclude.
+static std::uint64_t
+encodeLow64(std::int64_t offsetIndex) noexcept
+{
+    return static_cast<std::uint64_t>(offsetIndex) + 1;
+}
+
+static std::int64_t
+decodeLow64(UInt256 const& key) noexcept
+{
+    return static_cast<std::int64_t>(getLow64BE(key)) - 1;
+}
+
+Keylet
+ammTick(UInt256 const& ammID, std::int32_t tickIndex) noexcept
+{
+    // Offset binary using the shared kTickBitmapOffset from AMMCore.h —
+    // same constant used by the bitmap word-index packing.
+    auto const encoded = encodeLow64(
+        static_cast<std::int64_t>(tickIndex) + static_cast<std::int64_t>(kTickBitmapOffset));
+
+    auto key = ammTickBaseKey(ammID);
+    setLow64BE(key, encoded);
+    return {ltAMM_TICK, key};
+}
+
+std::int32_t
+ammTickIndex(UInt256 const& key) noexcept
+{
+    return static_cast<std::int32_t>(
+        decodeLow64(key) - static_cast<std::int64_t>(kTickBitmapOffset));
+}
+
+Keylet
+ammTickBase(UInt256 const& ammID) noexcept
+{
+    return {ltAMM_TICK, ammTickBaseKey(ammID)};
+}
+
+Keylet
+ammTickEnd(UInt256 const& ammID) noexcept
+{
+    auto key = ammTickBaseKey(ammID);
+    setLow64BE(key, ~std::uint64_t{0});
+    return {ltAMM_TICK, key};
+}
+
+static UInt256
+ammTickBitmapBaseKey(UInt256 const& ammID) noexcept
+{
+    auto key = indexHash(LedgerNameSpace::AmmTickBitmap, ammID);
+    setLow64BE(key, 0);
+    return key;
+}
+
+Keylet
+ammTickBitmapWord(UInt256 const& ammID, std::uint16_t wordIndex) noexcept
+{
+    auto key = ammTickBitmapBaseKey(ammID);
+    setLow64BE(key, encodeLow64(wordIndex));
+    return {ltAMM_TICK_BITMAP, key};
+}
+
+Keylet
+ammTickBitmapBase(UInt256 const& ammID) noexcept
+{
+    return {ltAMM_TICK_BITMAP, ammTickBitmapBaseKey(ammID)};
+}
+
+Keylet
+ammTickBitmapEnd(UInt256 const& ammID) noexcept
+{
+    auto key = ammTickBitmapBaseKey(ammID);
+    setLow64BE(key, ~std::uint64_t{0});
+    return {ltAMM_TICK_BITMAP, key};
+}
+
+static UInt256
+ammBinBaseKey(UInt256 const& ammID) noexcept
+{
+    auto key = indexHash(LedgerNameSpace::AmmBin, ammID);
+    setLow64BE(key, 0);
+    return key;
+}
+
+Keylet
+ammBin(UInt256 const& ammID, std::int32_t binID) noexcept
+{
+    // Offset-binary encoding: shift signed bin ID into unsigned domain
+    // so the low 64 keylet bits sort numerically by bin price order.
+    auto const encoded =
+        encodeLow64(static_cast<std::int64_t>(binID) - static_cast<std::int64_t>(minBinID));
+    auto key = ammBinBaseKey(ammID);
+    setLow64BE(key, encoded);
+    return {ltAMM_BIN, key};
+}
+
+std::int32_t
+ammBinID(UInt256 const& key) noexcept
+{
+    return static_cast<std::int32_t>(decodeLow64(key) + static_cast<std::int64_t>(minBinID));
+}
+
+Keylet
+ammBin(UInt256 const& key) noexcept
+{
+    return {ltAMM_BIN, key};
+}
+
+Keylet
+ammBinBase(UInt256 const& ammID) noexcept
+{
+    return {ltAMM_BIN, ammBinBaseKey(ammID)};
+}
+
+Keylet
+ammBinEnd(UInt256 const& ammID) noexcept
+{
+    auto key = ammBinBaseKey(ammID);
+    setLow64BE(key, ~std::uint64_t{0});
+    return {ltAMM_BIN, key};
+}
+
+Keylet
+ammBinHolding(UInt256 const& ammID, AccountID const& owner, std::int32_t binID) noexcept
+{
+    return {ltAMM_BIN_HOLDING, indexHash(LedgerNameSpace::AmmBinHolding, ammID, owner, binID)};
+}
+
+Keylet
+ammBinHolding(UInt256 const& key) noexcept
+{
+    return {ltAMM_BIN_HOLDING, key};
 }
 
 }  // namespace keylet

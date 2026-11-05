@@ -212,6 +212,28 @@ removePasskeyListFromLedger(
     return SetPasskeyList::deleteSLE(view, sleDel, account, j);
 }
 
+// A bin share snapshot records only the fees accrued since a deposit; it was exempted from the
+// owner count when it was created, so removing it leaves the count as it is.
+TER
+removeAMMBinHoldingFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    UInt256 const&,
+    SLE::Ref sleDel,
+    beast::Journal j)
+{
+    if (!view.dirRemove(keylet::ownerDir(account), (*sleDel)[sfOwnerNode], sleDel->key(), true))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "AccountDelete: unable to remove a bin share snapshot from its owner.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    view.erase(sleDel);
+    return tesSUCCESS;
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -242,6 +264,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removePasskeyListFromLedger;
         case ltWITHDRAW_PREAUTH:
             return removeWithdrawPreauthFromLedger;
+        case ltAMM_BIN_HOLDING:
+            return removeAMMBinHoldingFromLedger;
         default:
             return nullptr;
     }

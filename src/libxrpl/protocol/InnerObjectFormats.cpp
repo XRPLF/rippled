@@ -53,6 +53,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfAccount, SoeRequired},
             {sfTradingFee, SoeDefault},
             {sfVoteWeight, SoeRequired},
+            {sfAmplification, SoeOptional},
         });
 
     add(sfAuctionSlot.jsonName,

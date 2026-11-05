@@ -31,6 +31,7 @@ TEST(TransactionsAMMDeleteTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
+    auto const curveTypeValue = canonical_UINT8();
 
     AMMDeleteBuilder builder{
         accountValue,
@@ -41,6 +42,7 @@ TEST(TransactionsAMMDeleteTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setCurveType(curveTypeValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -70,6 +72,14 @@ TEST(TransactionsAMMDeleteTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -88,6 +98,7 @@ TEST(TransactionsAMMDeleteTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
+    auto const curveTypeValue = canonical_UINT8();
 
     // Build an initial transaction
     AMMDeleteBuilder initialBuilder{
@@ -98,6 +109,7 @@ TEST(TransactionsAMMDeleteTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setCurveType(curveTypeValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -128,6 +140,13 @@ TEST(TransactionsAMMDeleteTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -158,5 +177,37 @@ TEST(TransactionsAMMDeleteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(AMMDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsAMMDeleteTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDeleteNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const assetValue = canonical_ISSUE();
+    auto const asset2Value = canonical_ISSUE();
+
+    AMMDeleteBuilder builder{
+        accountValue,
+        assetValue,
+        asset2Value,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
+}
 
 }

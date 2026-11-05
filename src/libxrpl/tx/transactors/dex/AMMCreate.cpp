@@ -1,11 +1,14 @@
 #include <xrpl/tx/transactors/dex/AMMCreate.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -22,6 +25,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -32,6 +36,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -39,6 +44,8 @@ namespace xrpl {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAmount].holds<MPTIssue>() && !ctx.tx[sfAmount2].holds<MPTIssue>());
 }
@@ -73,6 +80,72 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    if (ctx.tx.isFieldPresent(sfCurveType))
+    {
+        auto const curveType = ctx.tx.getFieldU8(sfCurveType);
+        // CurveType 4 (Smart AMM) is reserved for a separate, yet-to-be
+        // declared amendment. Return temDISABLED so clients can present
+        // a "try again when activated" message.
+        if (curveType == 4u)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: Smart AMM amendment not enabled.";
+            return temDISABLED;
+        }
+        if (curveType > kCtBinned)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: invalid curve type.";
+            return temMALFORMED;
+        }
+
+        if (curveType == kCtBinned)
+        {
+            if (!ctx.tx.isFieldPresent(sfBinStep))
+            {
+                JLOG(ctx.j.debug()) << "AMM Instance: BinStep required for kCtBinned.";
+                return temMALFORMED;
+            }
+            auto const binStep = ctx.tx.getFieldU16(sfBinStep);
+            bool valid = false;
+            for (auto const validBinStep : validBinSteps)
+            {
+                if (validBinStep == binStep)
+                {
+                    valid = true;
+                    break;
+                }
+            }
+            if (!valid)
+            {
+                JLOG(ctx.j.debug()) << "AMM Instance: invalid BinStep value.";
+                return temMALFORMED;
+            }
+        }
+        else if (curveType != kCtConstantProduct)
+        {
+            // The amendment is enabled here, so the curve exists.
+            auto const* curve = getCurve(curveType, ctx.rules);
+
+            // All current CurveInterface::validateParams implementations
+            // return either tesSUCCESS or temMALFORMED, so masking to
+            // temMALFORMED here is lossless.
+            if (auto const ter = curve->validateParams(ctx.tx); ter != tesSUCCESS)
+            {
+                JLOG(ctx.j.debug()) << "AMM Instance: invalid curve params.";
+                return temMALFORMED;
+            }
+        }
+    }
+
+    // A curve takes only its own parameters.
+    auto const poolCurve = ctx.tx[~sfCurveType].value_or(kCtConstantProduct);
+    if ((ctx.tx.isFieldPresent(sfFeeTier) && poolCurve != kCtConcentratedLiquidity) ||
+        (ctx.tx.isFieldPresent(sfAmplification) && poolCurve != kCtStableSwap) ||
+        (ctx.tx.isFieldPresent(sfBinStep) && poolCurve != kCtBinned))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: parameter of another curve.";
+        return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -90,8 +163,11 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
-    // Check if AMM already exists for the token pair
-    if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+
+    // Check if AMM already exists for the token pair and curve type
+    if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset(), curveType);
         ctx.view.read(ammKeylet))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
@@ -181,8 +257,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureSingleAssetVault))
     {
-        if (auto const accountId =
-                pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
+        if (auto const accountId = pseudoAccountAddress(
+                ctx.view, keylet::amm(amount.asset(), amount2.asset(), curveType).key);
             accountId == beast::kZero)
             return terADDRESS_COLLISION;
 
@@ -253,8 +329,10 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 {
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
 
-    auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
+    auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset(), curveType);
 
     // Mitigate same account exists possibility
     auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
@@ -268,7 +346,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const accountId = (*acc)[sfAccount];
 
     // LP Token already exists. (should not happen)
-    auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
+    auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId, curveType);
     if (sb.read(keylet::trustLine(accountId, lptIss)))
     {
         JLOG(j.error()) << "AMM Instance: LP Token already exists.";
@@ -281,8 +359,45 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
 
-    // Calculate initial LPT balance.
-    auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
+    // Calculate initial LPT balance using curve-specific math.
+    //
+    // ConcentratedLiquidity is non-fungible: ownership is per-position
+    // (ltAMM_POSITION), not per-LP-token. Minting LP tokens at create
+    // would strand them — there is no redemption path. So CL pools
+    // start with LPTokenBalance = 0 and no LP token transfer. Likewise
+    // the Amount / Amount2 in the tx are interpreted as the initial
+    // price ratio only; the AMM pool starts with zero asset reserves.
+    // First liquidity must come via AMMDeposit, which mints a position
+    // SLE spanning a chosen [tickLower, tickUpper] range. This matches
+    // the Uniswap v3 / v4 / Trader Joe LB pattern (createPool +
+    // separate mint).
+    STAmount lpTokens;
+    if (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
+    {
+        // Neither curve mints aggregate LP tokens at create — CL uses
+        // per-position SLEs, Binned uses per-bin MPT shares. Initial
+        // Amount/Amount2 act as the initial price ratio only; no assets
+        // are transferred at create time. First liquidity comes via
+        // AMMDeposit.
+        lpTokens = STAmount{lptIss, 0};
+    }
+    else if (curveType == kCtConstantProduct)
+    {
+        lpTokens = ammLPTokens(amount, amount2, lptIss);
+    }
+    else
+    {
+        auto const* curve = getCurve(curveType, ctx.view().rules());
+        auto const& [amt1, amt2] = (amount.asset() < amount2.asset()) ? std::tie(amount, amount2)
+                                                                      : std::tie(amount2, amount);
+        auto const lpResult = curve->initialLPTokens(amt1, amt2, lptIss, &ctx.tx);
+        if (!lpResult)
+        {
+            JLOG(j.error()) << "AMM Instance: failed to compute initial LP tokens.";
+            return {lpResult.error(), false};
+        }
+        lpTokens = *lpResult;
+    }
 
     // Create ltAMM
     auto const ammSle = std::make_shared<SLE>(ammKeylet);
@@ -291,8 +406,44 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
-    // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
+
+    // Set curve type and params directly on the AMM SLE
+    if (curveType != kCtConstantProduct)
+    {
+        ammSle->setFieldU8(sfCurveType, curveType);
+
+        if (curveType == kCtConcentratedLiquidity)
+        {
+            auto const feeTier = ctx.tx.getFieldU8(sfFeeTier);
+            auto const tickSpacing = feeTierToTickSpacing[feeTier];
+
+            ammSle->setFieldU8(sfFeeTier, feeTier);
+            ammSle->setFieldU16(sfTickSpacing, static_cast<std::uint16_t>(tickSpacing));
+            ammSle->setFieldI32(sfCurrentTick, 0);
+            ammSle->setFieldU64(sfActiveLiquidity, 0);
+            ammSle->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(0)});
+            ammSle->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, Number{0}});
+            ammSle->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, Number{0}});
+        }
+        else if (curveType == kCtStableSwap)
+        {
+            ammSle->setFieldU32(sfAmplification, ctx.tx.getFieldU32(sfAmplification));
+        }
+        else if (curveType == kCtBinned)
+        {
+            ammSle->setFieldU16(sfBinStep, ctx.tx.getFieldU16(sfBinStep));
+            // Active bin starts at 0 (price = 1). LPs deposit into named
+            // bin IDs; the AMM tracks which bin holds the current price.
+            ammSle->setFieldI32(sfActiveBinID, 0);
+        }
+    }
+
+    // AMM creator gets the auction slot and the voting slot. A CL pool trades at its fee tier's
+    // fee.
+    auto const tradingFee = curveType == kCtConcentratedLiquidity
+        ? clTradingFee(ctx.tx.getFieldU8(sfFeeTier))
+        : ctx.tx[sfTradingFee];
+    initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, tradingFee);
 
     // Add owner directory to link the root account and AMM object.
     if (auto const ter = dirLink(sb, accountId, ammSle); ter)
@@ -302,12 +453,17 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     }
     sb.insert(ammSle);
 
-    // Send LPT to LP.
-    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
-    if (!isTesSuccess(res))
+    // Send LPT to LP. Skip for CL and Binned — neither mints aggregate LP
+    // tokens (CL uses per-position SLEs; Binned uses per-bin MPT shares).
+    TER res = tesSUCCESS;
+    if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
     {
-        JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
-        return {res, false};
+        res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
+        if (!isTesSuccess(res))
+        {
+            JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
+            return {res, false};
+        }
     }
 
     auto const sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
@@ -367,20 +523,28 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
             });
     };
 
-    // Send asset1.
-    res = sendAndInitTrustOrMPT(amount);
-    if (!isTesSuccess(res))
+    // For CL and Binned, Amount / Amount2 act as the initial price ratio
+    // only — no assets are transferred at create time. First liquidity
+    // must come via AMMDeposit, which mints either a position SLE (CL)
+    // or a per-bin MPT issuance (Binned) and sets up the pool's trust
+    // lines (with lsfAMMNode) and MPTokens (depositToCurvePool).
+    if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
     {
-        JLOG(j.debug()) << "AMM Instance: failed to send " << amount;
-        return {res, false};
-    }
+        // Send asset1.
+        res = sendAndInitTrustOrMPT(amount);
+        if (!isTesSuccess(res))
+        {
+            JLOG(j.debug()) << "AMM Instance: failed to send " << amount;
+            return {res, false};
+        }
 
-    // Send asset2.
-    res = sendAndInitTrustOrMPT(amount2);
-    if (!isTesSuccess(res))
-    {
-        JLOG(j.debug()) << "AMM Instance: failed to send " << amount2;
-        return {res, false};
+        // Send asset2.
+        res = sendAndInitTrustOrMPT(amount2);
+        if (!isTesSuccess(res))
+        {
+            JLOG(j.debug()) << "AMM Instance: failed to send " << amount2;
+            return {res, false};
+        }
     }
 
     JLOG(j.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " "

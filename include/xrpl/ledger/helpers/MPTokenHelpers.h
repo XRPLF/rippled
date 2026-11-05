@@ -132,6 +132,13 @@ authorizeMPToken(
     std::uint32_t flags = 0,
     std::optional<AccountID> holderID = std::nullopt);
 
+// Snapshot-style SLEs the AMM owns on behalf of an LP
+// (e.g. ltAMM_BIN_HOLDING). The SLE is inserted into the LP's owner
+// directory by the caller; this helper compensates the owner-count
+// increment so the LP doesn't pay reserve.
+void
+exemptAMMOwnedSLE(ApplyView& view, AccountID const& account, beast::Journal journal);
+
 /**
  * Check if the account lacks required authorization for MPT.
  *
