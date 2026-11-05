@@ -30,6 +30,10 @@ TEST_F(HashRouterTest, clear_flags_clears_only_the_named_flags)
 
     // The flag is clear, so setting it again is a change.
     EXPECT_TRUE(router.setFlags(key, HashRouterFlags::SAVED));
+
+    // A mask with one set flag and one clear flag is still a change.
+    EXPECT_TRUE(router.clearFlags(key, HashRouterFlags::SAVED | HashRouterFlags::HELD));
+    EXPECT_EQ(router.getFlags(key), HashRouterFlags::BAD);
 }
 
 TEST_F(HashRouterTest, clear_flags_reports_when_nothing_changes)

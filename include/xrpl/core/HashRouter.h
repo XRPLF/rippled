@@ -70,6 +70,13 @@ operator&=(HashRouterFlags& lhs, HashRouterFlags rhs)
     return lhs;
 }
 
+constexpr HashRouterFlags
+operator~(HashRouterFlags flags)
+{
+    return static_cast<HashRouterFlags>(
+        ~static_cast<std::underlying_type_t<HashRouterFlags>>(flags));
+}
+
 constexpr bool
 any(HashRouterFlags flags)
 {
@@ -156,8 +163,7 @@ private:
         void
         clearFlags(HashRouterFlags flags)
         {
-            flags_ = static_cast<HashRouterFlags>(
-                static_cast<std::uint16_t>(flags_) & ~static_cast<std::uint16_t>(flags));
+            flags_ &= ~flags;
         }
 
         /**
