@@ -130,6 +130,8 @@ TYPED_SFIELD(sfBytecodeSizeLimit,        UINT32,    82)
 TYPED_SFIELD(sfGasPrice,                 UINT32,    83)
 TYPED_SFIELD(sfGas,                      UINT32,    84)
 TYPED_SFIELD(sfGasUsed,                  UINT32,    85)
+TYPED_SFIELD(sfTimeLock,                 UINT32,    254)
+TYPED_SFIELD(sfLastInteraction,          UINT32,    253)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -360,6 +362,7 @@ TYPED_SFIELD(sfLowSponsor,               ACCOUNT,   29)
 TYPED_SFIELD(sfCounterpartySponsor,      ACCOUNT,   30)
 TYPED_SFIELD(sfSponsee,                  ACCOUNT,   31)
 TYPED_SFIELD(sfSigningFor,               ACCOUNT,   32)
+TYPED_SFIELD(sfBeneficiary,              ACCOUNT,   254)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::kSmdNever)

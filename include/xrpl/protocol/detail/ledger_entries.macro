@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfLastInteraction,        SoeOptional},
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -627,6 +628,19 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
     {sfProposedTransaction,  SoeRequired},
     {sfExpiration,           SoeRequired},
     {sfOwnerNode,            SoeRequired},
+}))
+
+/** An account that may sign for this account once it has been silent for TimeLock seconds.
+
+    \sa keylet::beneficiary
+ */
+LEDGER_ENTRY(ltBENEFICIARY, 0x0200, Beneficiary, beneficiary, ({
+    {sfAccount,              SoeRequired},
+    {sfBeneficiary,          SoeRequired},
+    {sfTimeLock,             SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
 
 #undef EXPAND

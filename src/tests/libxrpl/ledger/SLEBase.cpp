@@ -8,6 +8,7 @@
 #include <xrpl/ledger/entries/AMMEntry.h>  // IWYU pragma: keep
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>       // IWYU pragma: keep
+#include <xrpl/ledger/entries/BeneficiaryEntry.h>      // IWYU pragma: keep
 #include <xrpl/ledger/entries/CheckEntry.h>            // IWYU pragma: keep
 #include <xrpl/ledger/entries/CredentialEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/DIDEntry.h>              // IWYU pragma: keep

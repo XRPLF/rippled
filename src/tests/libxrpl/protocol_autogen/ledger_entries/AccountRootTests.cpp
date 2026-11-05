@@ -46,6 +46,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const lastInteractionValue = canonical_UINT32();
 
     AccountRootBuilder builder{
         accountValue,
@@ -76,6 +77,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setAMMID(aMMIDValue);
     builder.setVaultID(vaultIDValue);
     builder.setLoanBrokerID(loanBrokerIDValue);
+    builder.setLastInteraction(lastInteractionValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -282,6 +284,14 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLoanBrokerID());
     }
 
+    {
+        auto const& expected = lastInteractionValue;
+        auto const actualOpt = entry.getLastInteraction();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLastInteraction");
+        EXPECT_TRUE(entry.hasLastInteraction());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -321,6 +331,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const lastInteractionValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(AccountRoot::entryType, index);
 
@@ -350,6 +361,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     sle->at(sfAMMID) = aMMIDValue;
     sle->at(sfVaultID) = vaultIDValue;
     sle->at(sfLoanBrokerID) = loanBrokerIDValue;
+    sle->at(sfLastInteraction) = lastInteractionValue;
 
     AccountRootBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -680,6 +692,19 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLoanBrokerID");
     }
 
+    {
+        auto const& expected = lastInteractionValue;
+
+        auto const fromSleOpt = entryFromSle.getLastInteraction();
+        auto const fromBuilderOpt = entryFromBuilder.getLastInteraction();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLastInteraction");
+        expectEqualField(expected, *fromBuilderOpt, "sfLastInteraction");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -784,5 +809,7 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getVaultID().has_value());
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
+    EXPECT_FALSE(entry.hasLastInteraction());
+    EXPECT_FALSE(entry.getLastInteraction().has_value());
 }
 }

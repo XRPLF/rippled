@@ -141,6 +141,13 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / kTenthBipsPerUnity.value();
 }
 
+/**
+ * The longest inactivity period a beneficiary designation may require, ten
+ * years in seconds. Long enough for the intended use and short enough that the
+ * value still means something.
+ */
+constexpr std::uint32_t kMaxBeneficiaryTimeLock = 10 * 365 * 24 * 60 * 60;
+
 namespace lending {
 /**
  * The maximum management fee rate allowed by a loan broker in 1/10 bips.
