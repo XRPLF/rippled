@@ -298,8 +298,8 @@ struct WasmVMDeathTest : WasmVMTest
 // asked to run anything.
 TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
 {
-    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts, so the death this test
-    // expects never happens. Skip it, as BaseUintDeathTest does.
+    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts, so the death this
+    // test expects never happens. Skip it, as BaseUintDeathTest does.
 #ifdef ENABLE_VOIDSTAR
     GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
 #else
@@ -323,7 +323,8 @@ TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
 // contract's state.
 TEST_F(WasmVMDeathTest, dirty_host_is_refused_before_contract_runs)
 {
-    // See no_gas_is_refused_as_malformed_rather_than_run: voidstar builds do not die on failed asserts.
+    // See no_gas_is_refused_as_malformed_rather_than_run: voidstar builds do not die on failed
+    // asserts.
 #ifdef ENABLE_VOIDSTAR
     GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
 #else
