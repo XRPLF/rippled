@@ -378,6 +378,144 @@ class InvariantsFirewall_test : public InvariantsBase
     }
 
     void
+    testOutflowPerAsset()
+    {
+        testcase("firewall outflow counted per asset");
+        using namespace jtx;
+
+        Account const gw1{"gw1"};
+        Account const gw2{"gw2"};
+        auto const usd1 = gw1["USD"];
+        auto const usd2 = gw2["USD"];
+        auto const eur1 = gw1["EUR"];
+        std::optional<MPTID> limitedMpt;
+        std::optional<MPTID> otherMpt;
+
+        // Moves amount of an issue from one holder's line to another's.
+        auto const moveLine =
+            [](ApplyContext& ac, Issue const& issue, AccountID const& holder, Number delta) {
+                auto const line =
+                    ac.view().peek(keylet::trustLine(holder, issue.account, issue.currency));
+                STAmount const balance = line->getFieldAmount(sfBalance);
+                bool const holderIsLow = line->getFieldAmount(sfLowLimit).getIssuer() == holder;
+                line->setFieldAmount(
+                    sfBalance,
+                    STAmount{balance.asset(), Number(balance) + (holderIsLow ? delta : -delta)});
+                ac.view().update(line);
+            };
+        auto const moveMpt =
+            [](ApplyContext& ac, MPTID const& id, AccountID const& holder, std::int64_t delta) {
+                auto const sle = ac.view().peek(keylet::mptoken(id, holder));
+                sle->setFieldU64(
+                    sfMPTAmount,
+                    static_cast<std::uint64_t>(
+                        static_cast<std::int64_t>(sle->getFieldU64(sfMPTAmount)) + delta));
+                ac.view().update(sle);
+            };
+
+        // A1 holds USD of two issuers, EUR and two MPTs, with limits on USD of
+        // gw1 and on one MPT; A2 holds the same.
+        auto const setup = [&](Account const& a1, Account const& a2, Env& env) {
+            Account const backup{"backup"};
+            env.fund(XRP(1000), gw1, gw2, backup);
+            for (auto const& holder : {a1, a2})
+            {
+                for (auto const& amount : {usd1(1000), usd2(1000), eur1(1000)})
+                    env(trust(holder, amount, tfSetNoRipple));
+            }
+            env(pay(gw1, a1, usd1(100)));
+            env(pay(gw2, a1, usd2(100)));
+            env(pay(gw1, a1, eur1(100)));
+            MPTTester limited(env, gw1, {.holders = {a1, a2}, .fund = false});
+            limited.create({.flags = tfMPTCanTransfer});
+            MPTTester other(env, gw1, {.holders = {a1, a2}, .fund = false});
+            other.create({.flags = tfMPTCanTransfer});
+            for (auto* mpt : {&limited, &other})
+            {
+                mpt->authorize({.account = a1});
+                mpt->authorize({.account = a2});
+                env(pay(gw1, a1, (*mpt)["MPT"](100)));
+            }
+            limitedMpt = limited.issuanceID();
+            otherMpt = other.issuanceID();
+            env(firewall::set(a1.id(), a2.id(), backup.id()));
+            env(firewall::limitSet(a1.id(), usd1(15), kDay));
+            env(firewall::limitSet(a1.id(), limited["MPT"](5), kDay));
+            return env.le(keylet::firewallLimit(a1.id(), usd1.issue())) != nullptr &&
+                env.le(keylet::firewallLimit(a1.id(), MPTIssue{*limitedMpt})) != nullptr;
+        };
+
+        // A1 sends 10 USD of gw1, 7 USD of gw2, 5 EUR and 3 and 2 of the MPTs
+        // to A2, and writes usdSpent on its USD limit and 3 on its MPT limit.
+        auto const outflow = [&](STAmount const& usdSpent) {
+            return [&, usdSpent](Account const& a1, Account const& a2, ApplyContext& ac) {
+                if (!limitedMpt || !otherMpt)
+                    return false;
+                for (auto const& [issue, amount] : {
+                         std::pair{usd1.issue(), 10},
+                         std::pair{usd2.issue(), 7},
+                         std::pair{eur1.issue(), 5},
+                     })
+                {
+                    moveLine(ac, issue, a1.id(), Number{-amount});
+                    moveLine(ac, issue, a2.id(), Number{amount});
+                }
+                for (auto const& [id, amount] :
+                     {std::pair{*limitedMpt, 3}, std::pair{*otherMpt, 2}})
+                {
+                    moveMpt(ac, id, a1.id(), -amount);
+                    moveMpt(ac, id, a2.id(), amount);
+                }
+                return setSpent(ac, a1.id(), usd1.issue(), usdSpent) &&
+                    setSpent(
+                           ac,
+                           a1.id(),
+                           MPTIssue{*limitedMpt},
+                           STAmount{MPTIssue{*limitedMpt}, std::uint64_t{3}});
+            };
+        };
+
+        // Each limit is charged only its own asset: USD of another issuer,
+        // another currency and another MPT are not counted.
+        doInvariantCheck(
+            {},
+            outflow(usd1(10)),
+            XRPAmount{},
+            ownerTx(ttPAYMENT),
+            {tesSUCCESS, tesSUCCESS},
+            setup);
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit's spent does not match its charge"},
+            outflow(usd1(17)),
+            XRPAmount{},
+            ownerTx(ttPAYMENT),
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            setup);
+    }
+
+    void
+    testLimitDeletedByCharge()
+    {
+        testcase("firewall limit deleted by a charge");
+        using namespace jtx;
+
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit was deleted by a charge"},
+            [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                moveXrp(ac, a1.id(), a2.id(), XRP(5));
+                auto const limit = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                if (!limit)
+                    return false;
+                ac.view().erase(limit);
+                return true;
+            },
+            XRPAmount{},
+            ownerTx(ttPAYMENT),
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createLimitedFirewall);
+    }
+
+    void
     testFailedChangesLimit()
     {
         testcase("firewall limit changed by a failed transaction");
@@ -501,6 +639,39 @@ class InvariantsFirewall_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createLimitedFirewall);
 
+        // Moving the period's start alone changes what was spent too.
+        doInvariantCheck(
+            {"Invariant failed: a firewall limit update changed what was spent"},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::firewallLimit(a1.id(), xrpIssue()));
+                if (!sle)
+                    return false;
+                sle->setFieldU32(sfStartDate, sle->getFieldU32(sfStartDate) + 1);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            tx,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createLimitedFirewall);
+
+        // A firewall that appears with a limit count but no limit; the reset
+        // removes it, so the second pass does not escalate.
+        doInvariantCheck(
+            {"Invariant failed: a firewall's limit counts do not match its limits"},
+            [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = std::make_shared<SLE>(keylet::firewall(a1.id()));
+                sle->setAccountID(sfOwner, a1.id());
+                sle->setAccountID(sfCounterparty, a2.id());
+                sle->setAccountID(sfBackup, Account{"backup"}.id());
+                sle->setFieldU32(sfLimitCount, 1);
+                ac.view().insert(sle);
+                return true;
+            },
+            XRPAmount{},
+            tx,
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
         // A delete removes the entry and its count.
         auto const erase = [](ApplyContext& ac, AccountID const& owner, std::uint32_t count) {
             auto const sle = ac.view().peek(keylet::firewallLimit(owner, xrpIssue()));
@@ -594,6 +765,8 @@ public:
         testOutflowFeeExcluded();
         testUnlistedOutflow();
         testTokenOutflow();
+        testOutflowPerAsset();
+        testLimitDeletedByCharge();
         testFailedChangesLimit();
         testLimitSetRules();
         testOutflowPrincipal();
