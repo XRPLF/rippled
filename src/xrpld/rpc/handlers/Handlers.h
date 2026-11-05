@@ -29,6 +29,8 @@ doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);
 json::Value
+doContractInfo(rpc::JsonContext&);
+json::Value
 doFeature(rpc::JsonContext&);
 json::Value
 doFee(rpc::JsonContext&);

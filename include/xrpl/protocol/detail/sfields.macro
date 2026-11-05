@@ -640,3 +640,27 @@ UNTYPED_SFIELD(sfMarginTier,            OBJECT,   249)
 // PerpetualFutures
 UNTYPED_SFIELD(sfIndexOracles,          ARRAY,    246)
 UNTYPED_SFIELD(sfMarginTiers,           ARRAY,    247)
+TYPED_SFIELD(sfParameterFlag,            UINT32,    86)
+TYPED_SFIELD(sfContractHash,             UINT256,   43)
+TYPED_SFIELD(sfContractID,               UINT256,   44,
+    SField::kSmdPseudoAccount | SField::kSmdDefault)
+TYPED_SFIELD(sfContractCode,                VL,     51)
+TYPED_SFIELD(sfFunctionName,                VL,     52)
+TYPED_SFIELD(sfEventName,                   VL,     53)
+TYPED_SFIELD(sfContractAccount,          ACCOUNT,   33)
+UNTYPED_SFIELD(sfFunction,               OBJECT,    40)
+UNTYPED_SFIELD(sfInstanceParameter,      OBJECT,    41)
+UNTYPED_SFIELD(sfInstanceParameterValue, OBJECT,    42)
+UNTYPED_SFIELD(sfParameter,              OBJECT,    43)
+UNTYPED_SFIELD(sfContractEvent,          OBJECT,    44)
+UNTYPED_SFIELD(sfFunctions,              ARRAY,     32)
+UNTYPED_SFIELD(sfInstanceParameters,     ARRAY,     33)
+UNTYPED_SFIELD(sfInstanceParameterValues,ARRAY,     34)
+UNTYPED_SFIELD(sfParameters,             ARRAY,     35)
+UNTYPED_SFIELD(sfContractEvents,         ARRAY,     36)
+// data
+TYPED_SFIELD(sfParameterValue,           DATA,       1, SField::kSmdDefault)
+// data type
+TYPED_SFIELD(sfParameterType,            DATATYPE,   1)
+// json
+TYPED_SFIELD(sfContractJson,             JSON,       1)

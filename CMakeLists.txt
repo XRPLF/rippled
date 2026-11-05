@@ -160,11 +160,8 @@ endif()
 
 add_custom_target(tidy_prerequisites)
 
-if(rust)
-    add_subdirectory(crates)
-endif()
+add_subdirectory(crates)
 include(XrplCore)
-
 include(XrplProtocolAutogen)
 include(XrplInstall)
 include(XrplValidatorKeys)

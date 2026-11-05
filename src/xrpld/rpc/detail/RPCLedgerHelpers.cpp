@@ -9,15 +9,21 @@
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 #include <org/xrpl/rpc/v1/get_ledger.pb.h>        // IWYU pragma: keep
@@ -29,6 +35,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <memory>
 #include <utility>
 #include <variant>
@@ -538,6 +545,33 @@ getOrAcquireLedger(rpc::JsonContext const& context)
 
     return std::unexpected(
         rpc::makeError(RpcNotReady, "findCreate failed to return an inbound ledger"));
+}
+
+/**
+ * @brief Injects JSON describing an account root.
+ *
+ * @param jv The JSON value to populate.
+ * @param sle The account root to describe.
+ *
+ * @details
+ * Populates the provided JSON value with the description of the account root and, when it
+ * holds an email hash, a 'urlgravatar' field with the corresponding Gravatar URL.
+ */
+void
+injectSLE(json::Value& jv, SLE const& sle)
+{
+    jv = sle.getJson(JsonOptions::Values::None);
+    XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::rpc::injectSLE : sle is account root");
+    if (sle.isFieldPresent(sfEmailHash))
+    {
+        auto const& hash = sle.getFieldH128(sfEmailHash);
+        Blob const b(hash.begin(), hash.end());
+        std::string md5 = strHex(makeSlice(b));
+        md5 = toLower(md5);
+        // VFALCO TODO Give a name to this constant and move it
+        //             to a more visible location.
+        jv[jss::urlgravatar] = std::format("https://www.gravatar.com/avatar/{}", md5);
+    }
 }
 
 }  // namespace xrpl::rpc

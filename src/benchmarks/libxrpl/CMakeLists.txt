@@ -20,3 +20,20 @@ target_link_libraries(
 xrpl_add_benchmark(nodestore)
 target_link_libraries(xrpl.bench.nodestore PRIVATE xrpl.imports.bench)
 add_dependencies(xrpl.benchmarks xrpl.bench.nodestore)
+
+# Gas calibration for the wasm host functions. The ledger and real host come from
+# `xrpl.testkit.wasm` (built with the tests, but framework-free), so this target links
+# no GTest and no GMock.
+if(TARGET xrpl.testkit.wasm)
+    xrpl_add_benchmark(wasm)
+    target_link_libraries(
+        xrpl.bench.wasm
+        PRIVATE xrpl.imports.bench xrpl.testkit.wasm
+    )
+    add_dependencies(xrpl.benchmarks xrpl.bench.wasm)
+else()
+    message(
+        STATUS
+        "xrpl.testkit.wasm not built (tests disabled); skipping xrpl.bench.wasm."
+    )
+endif()

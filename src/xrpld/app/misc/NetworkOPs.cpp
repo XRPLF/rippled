@@ -660,6 +660,15 @@ public:
     subConsensus(InfoSub::Ref ispListener) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
+    void
+    subContractEvents(
+        InfoSub::Ref ispListener,
+        AccountID const& contractAccount,
+        std::set<std::string> const& events) override;
+    void
+    unsubContractEvents(InfoSub::Ref ispListener, AccountID const& contractAccount) override;
+    void
+    unsubContractEventsInternal(std::uint64_t uListener, AccountID const& contractAccount) override;
 
     InfoSub::pointer
     findRpcSub(std::string const& strUrl) override;
@@ -818,6 +827,10 @@ private:
     void
     pubConsensus(ConsensusPhase phase);
     void
+    pubContractEvents(
+        std::shared_ptr<ReadView const> const& ledger,
+        AcceptedLedgerTx const& transaction);
+    void
     pubMPTTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     std::string
@@ -828,6 +841,16 @@ private:
     using SubInfoMapType = HashMap<AccountID, SubMapType>;
     using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
     using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
+
+    /**
+     * A contract-event subscriber and the event names it follows (all when empty).
+     */
+    struct ContractEventSub
+    {
+        InfoSub::Wptr listener;
+        std::set<std::string> events;
+    };
+    using SubContractEventMapType = HashMap<AccountID, HashMap<std::uint64_t, ContractEventSub>>;
 
     /*
      * With a validated ledger to separate history and future, the node
@@ -949,19 +972,20 @@ private:
 
     // Independent lock domains so a long cleanup/publish on one does not stall
     // the others. Hold at most one at a time; if ever more, order: accountLock_,
-    // bookLock_, mptLock_, streamLock_.
+    // bookLock_, mptLock_, contractEventLock_, streamLock_.
     //
     // Deferred-destruction rule (non-recursive mutexes): under bookLock_,
-    // mptLock_, or streamLock_, never let the last InfoSub pointer die inside the
-    // lock - ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers
-    // collect the locked pointers in a container declared before the lock and
-    // destruct after release (see pubServer / pubBookTransaction /
-    // pubMPTTransaction). accountLock_ is exempt: ~InfoSub offloads account
-    // teardown to scheduleAccountCleanup.
-    std::mutex accountLock_;  ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
-    std::mutex bookLock_;     ///< Guards subBook_.
-    std::mutex mptLock_;      ///< Guards subMPT_.
-    std::mutex streamLock_;   ///< Guards streamMaps_[] and rpcSubMap_.
+    // mptLock_, contractEventLock_, or streamLock_, never let the last InfoSub pointer
+    // die inside the lock - ~InfoSub re-acquires it via unsub* -> self-deadlock.
+    // Publishers collect the locked pointers in a container declared before the lock
+    // and destruct after release (see pubServer / pubBookTransaction /
+    // pubMPTTransaction / pubContractEvents). accountLock_ is exempt: ~InfoSub
+    // offloads account teardown to scheduleAccountCleanup.
+    std::mutex accountLock_;        ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
+    std::mutex bookLock_;           ///< Guards subBook_.
+    std::mutex mptLock_;            ///< Guards subMPT_.
+    std::mutex contractEventLock_;  ///< Guards subContractEvents_.
+    std::mutex streamLock_;         ///< Guards streamMaps_[] and rpcSubMap_.
 
     std::atomic<OperatingMode> mode_;
 
@@ -997,8 +1021,9 @@ private:
 
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;    ///< Guarded by bookLock_.
-    SubMPTInfoMapType subMPT_;  ///< Guarded by mptLock_.
+    SubBookMapType subBook_;                     ///< Guarded by bookLock_.
+    SubMPTInfoMapType subMPT_;                   ///< Guarded by mptLock_.
+    SubContractEventMapType subContractEvents_;  ///< Guarded by contractEventLock_.
 
     SubRpcMapType rpcSubMap_;
 
@@ -3706,6 +3731,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+    pubContractEvents(ledger, transaction);
     pubMPTTransaction(transaction, jvObj);
 }
 
@@ -4714,6 +4740,102 @@ NetworkOPsImp::unsubBookInternal(std::uint64_t uSeq, Book const& book)
     if (it->second.empty())
         subBook_.erase(it);
     return erased;
+}
+
+void
+NetworkOPsImp::pubContractEvents(
+    std::shared_ptr<ReadView const> const& ledger,
+    AcceptedLedgerTx const& alTx)
+{
+    // Events are in the metadata of a successful ContractCall only.
+    auto const& events = alTx.getMeta().getContractEvents();
+    auto const& tx = alTx.getTxn();
+    if (!events || tx->getTxnType() != ttCONTRACT_CALL)
+        return;
+    auto const contractAccount = tx->getAccountID(sfContractAccount);
+
+    // Declared before the lock so a last-reference ~InfoSub runs after
+    // contractEventLock_ is released (see the deferred-destruction rule).
+    std::vector<std::pair<InfoSub::pointer, std::set<std::string>>> listeners;
+    {
+        std::scoped_lock const sl(contractEventLock_);
+        auto const found = subContractEvents_.find(contractAccount);
+        if (found == subContractEvents_.end())
+            return;
+        for (auto it = found->second.begin(); it != found->second.end();)
+        {
+            if (auto p = it->second.listener.lock())
+            {
+                listeners.emplace_back(std::move(p), it->second.events);
+                ++it;
+            }
+            else
+            {
+                it = found->second.erase(it);
+            }
+        }
+        if (found->second.empty())
+            subContractEvents_.erase(found);
+    }
+
+    for (auto const& [listener, names] : listeners)
+    {
+        json::Value jvEvents(json::ValueType::Array);
+        for (auto const& event : *events)
+        {
+            auto const nameBytes = event.getFieldVL(sfEventName);
+            std::string const name(nameBytes.begin(), nameBytes.end());
+            if (!names.empty() && !names.contains(name))
+                continue;
+            json::Value jvEvent(json::ValueType::Object);
+            jvEvent[jss::name] = name;
+            jvEvent[jss::data] =
+                event.getFieldJson(sfContractJson).getJson(JsonOptions::Values::None);
+            jvEvents.append(std::move(jvEvent));
+        }
+        if (jvEvents.size() == 0)
+            continue;
+
+        json::Value jvObj(json::ValueType::Object);
+        jvObj[jss::type] = "contractEvent";
+        jvObj[jss::contract_account] = toBase58(contractAccount);
+        jvObj[jss::events] = std::move(jvEvents);
+        jvObj[jss::hash] = to_string(tx->getTransactionID());
+        jvObj[jss::ledger_index] = ledger->seq();
+        listener->send(jvObj, true);
+    }
+}
+
+void
+NetworkOPsImp::subContractEvents(
+    InfoSub::Ref isrListener,
+    AccountID const& contractAccount,
+    std::set<std::string> const& events)
+{
+    std::scoped_lock const sl(contractEventLock_);
+    subContractEvents_[contractAccount][isrListener->getSeq()] =
+        ContractEventSub{.listener = isrListener, .events = events};
+}
+
+void
+NetworkOPsImp::unsubContractEvents(InfoSub::Ref isrListener, AccountID const& contractAccount)
+{
+    // Remove from the InfoSub first so ~InfoSub does not remove it again.
+    isrListener->deleteContractEventSubscription(contractAccount);
+    unsubContractEventsInternal(isrListener->getSeq(), contractAccount);
+}
+
+void
+NetworkOPsImp::unsubContractEventsInternal(std::uint64_t uSeq, AccountID const& contractAccount)
+{
+    // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
+    std::scoped_lock const sl(contractEventLock_);
+    auto const found = subContractEvents_.find(contractAccount);
+    if (found == subContractEvents_.end())
+        return;
+    found->second.erase(uSeq);
+    if (found->second.empty())
+        subContractEvents_.erase(found);
 }
 
 std::uint32_t

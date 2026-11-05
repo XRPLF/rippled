@@ -1,0 +1,58 @@
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <cstdint>
+#include <expected>
+#include <string>
+#include <string_view>
+
+namespace xrpl {
+
+// =========================================================
+// SECTION: LEDGER HEADER FUNCTIONS
+// =========================================================
+
+std::expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getLedgerSqn() const
+{
+    return ctx_.view().seq();
+}
+
+std::expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getParentLedgerTime() const
+{
+    return ctx_.view().parentCloseTime().time_since_epoch().count();
+}
+
+std::expected<Hash, HostFunctionError>
+WasmHostFunctionsImpl::getParentLedgerHash() const
+{
+    return ctx_.view().header().parentHash;
+}
+
+std::expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getBaseFee() const
+{
+    if (auto const drops = ctx_.view().fees().base.dropsAs<std::uint32_t>())
+        return *drops;
+    return std::unexpected(HostFunctionError::InternalFatal);
+}
+
+std::expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId) const
+{
+    return ctx_.view().rules().enabled(amendmentId);
+}
+
+std::expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName) const
+{
+    auto const amendment = getRegisteredFeature(std::string(amendmentName));
+    if (!amendment)
+        return 0;
+    return ctx_.view().rules().enabled(*amendment);
+}
+
+}  // namespace xrpl

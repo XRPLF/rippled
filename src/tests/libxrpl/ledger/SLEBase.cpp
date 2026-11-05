@@ -17,6 +17,9 @@
 #include <xrpl/ledger/entries/BallotVoteEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/BeneficiaryEntry.h>      // IWYU pragma: keep
 #include <xrpl/ledger/entries/CheckEntry.h>            // IWYU pragma: keep
+#include <xrpl/ledger/entries/ContractDataEntry.h>     // IWYU pragma: keep
+#include <xrpl/ledger/entries/ContractEntry.h>         // IWYU pragma: keep
+#include <xrpl/ledger/entries/ContractSourceEntry.h>   // IWYU pragma: keep
 #include <xrpl/ledger/entries/CouponScheduleEntry.h>   // IWYU pragma: keep
 #include <xrpl/ledger/entries/CredentialEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/DIDEntry.h>              // IWYU pragma: keep

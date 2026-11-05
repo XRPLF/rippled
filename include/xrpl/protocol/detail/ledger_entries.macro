@@ -155,6 +155,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
     {sfLastInteraction,        SoeOptional},
     {sfPerpExchangeID,         SoeOptional}, // pseudo-account designator
+    {sfContractID,             SoeOptional}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -518,6 +519,48 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfRedemptionPeriod,     SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
+}))
+
+
+
+/** A ledger object representing a contract source.
+    \sa keylet::contractSource
+ */
+LEDGER_ENTRY(ltCONTRACT_SOURCE, 0x0085, ContractSource, contract_source, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfContractHash,         SoeRequired},
+    {sfContractCode,         SoeRequired},
+    {sfFunctions,            SoeRequired},
+    {sfInstanceParameters,   SoeOptional},
+    {sfReferenceCount,       SoeRequired},
+}))
+
+/** A ledger object representing a contract.
+    \sa keylet::contract
+ */
+LEDGER_ENTRY(ltCONTRACT, 0x0086, Contract, contract, ({
+    {sfPreviousTxnID,             SoeRequired},
+    {sfPreviousTxnLgrSeq,         SoeRequired},
+    {sfSequence,                  SoeRequired},
+    {sfOwnerNode,                 SoeRequired},
+    {sfOwner,                     SoeRequired},
+    {sfContractAccount,           SoeRequired},
+    {sfContractHash,              SoeRequired},
+    {sfInstanceParameterValues,   SoeOptional},
+    {sfURI,                       SoeOptional},
+}))
+
+/** A ledger object representing a contract data.
+    \sa keylet::contractData
+ */
+LEDGER_ENTRY(ltCONTRACT_DATA, 0x0087, ContractData, contract_data, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfContractAccount,      SoeRequired},
+    {sfContractJson,         SoeRequired},
 }))
 
 /** Reserve 0x0084-0x0087 for future Vault-related objects. */

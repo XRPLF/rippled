@@ -34,6 +34,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <memory>
 #include <system_error>
@@ -283,9 +284,11 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
             return tefEXCEEDS_LIMIT;
         }
 
-        // TODO(SmartEscrow): screen the module itself here - that it compiles,
-        // and that it imports and exports what the engine can serve - once the
-        // WASM engine lands. Until then any blob of the right size is taken.
+        if (auto const re = preflightEscrowWasm(code, ctx.j, escrowFunctionName); !isTesSuccess(re))
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
+            return re;
+        }
     }
 
     return tesSUCCESS;

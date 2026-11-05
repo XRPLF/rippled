@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 
 namespace xrpl {
@@ -286,6 +287,29 @@ public:
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
+        /**
+         * Follow the events `contractAccount` emits in validated ContractCalls, only
+         * those named in `events` when it is not empty. A second call for the same
+         * contract replaces the names.
+         */
+        virtual void
+        subContractEvents(
+            InfoSub::Ref ispListener,
+            AccountID const& contractAccount,
+            std::set<std::string> const& events) = 0;
+
+        /**
+         * Stop following `contractAccount`, in the InfoSub and on the server.
+         */
+        virtual void
+        unsubContractEvents(InfoSub::Ref ispListener, AccountID const& contractAccount) = 0;
+
+        /**
+         * Remove only the server-side entry. Called by ~InfoSub() for each contract.
+         */
+        virtual void
+        unsubContractEventsInternal(std::uint64_t uListener, AccountID const& contractAccount) = 0;
+
         virtual void
         subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) = 0;
         virtual void
@@ -331,7 +355,7 @@ public:
      * connection.
      *
      * The combined size of the per-connection account, real-time account,
-     * account-history, and MPT issuance subscription sets. `doSubscribe` reads
+     * account-history, MPT issuance, and contract-event subscription sets. `doSubscribe` reads
      * this to enforce the per-connection subscription cap before admitting more.
      *
      * @return The total tracked subscription count for this connection.
@@ -453,6 +477,26 @@ public:
     [[nodiscard]] unsigned int
     getApiVersion() const noexcept;
 
+    /**
+     * Reserve contract-event subscriptions for `contractAccounts` against `cap`,
+     * all or nothing, like tryReserveAccountSubscriptions.
+     *
+     * @return true if reserved; false if the request must be rejected.
+     * @note Thread-safe: takes `lock_`.
+     */
+    [[nodiscard]] bool
+    tryReserveContractEventSubscriptions(
+        HashSet<AccountID> const& contractAccounts,
+        std::size_t cap);
+
+    /**
+     * Stop tracking `contractAccount`.
+     *
+     * @note Thread-safe: takes `lock_`.
+     */
+    void
+    deleteContractEventSubscription(AccountID const& contractAccount);
+
     void
     insertSubMPTInfo(MPTID const& mptID);
 
@@ -485,6 +529,7 @@ private:
     HashSet<AccountID> accountHistorySubscriptions_;
     HashSet<Book> bookSubscriptions_;
     HashSet<MPTID> mptSubscriptions_;
+    HashSet<AccountID> contractEventSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

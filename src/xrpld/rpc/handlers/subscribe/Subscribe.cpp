@@ -394,6 +394,23 @@ doSubscribe(rpc::JsonContext& context)
         }
     }
 
+    if (context.params.isMember(jss::contract_events))
+    {
+        auto const subscriptions = rpc::parseContractEvents(context.params[jss::contract_events]);
+        if (!subscriptions)
+            return subscriptions.error();
+
+        HashSet<AccountID> contractAccounts;
+        for (auto const& [contractAccount, events] : *subscriptions)
+            contractAccounts.insert(contractAccount);
+        if (!ispSub->tryReserveContractEventSubscriptions(contractAccounts, subscriptionCap))
+            return rpc::makeParamError("Too many subscriptions for this connection.");
+
+        for (auto const& [contractAccount, events] : *subscriptions)
+            context.netOps.subContractEvents(ispSub, contractAccount, events);
+        JLOG(context.j.debug()) << "doSubscribe: contract_events: " << subscriptions->size();
+    }
+
     if (context.params.isMember(jss::mpt_issuances))
     {
         if (!context.params[jss::mpt_issuances].isArray())

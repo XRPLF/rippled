@@ -207,6 +207,17 @@ doUnsubscribe(rpc::JsonContext& context)
         }
     }
 
+    if (context.params.isMember(jss::contract_events))
+    {
+        auto const subscriptions = rpc::parseContractEvents(context.params[jss::contract_events]);
+        if (!subscriptions)
+            return subscriptions.error();
+
+        for (auto const& [contractAccount, events] : *subscriptions)
+            context.netOps.unsubContractEvents(ispSub, contractAccount);
+        JLOG(context.j.debug()) << "doUnsubscribe: contract_events: " << subscriptions->size();
+    }
+
     if (context.params.isMember(jss::mpt_issuances))
     {
         if (!context.params[jss::mpt_issuances].isArray())

@@ -16,6 +16,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -113,6 +114,9 @@ ApplyStateTable::apply(
     TER ter,
     std::optional<STAmount> const& deliver,
     std::optional<UInt256 const> const& parentBatchId,
+    std::optional<std::uint32_t> const& gasUsed,
+    std::optional<std::int32_t> const& vmReturnCode,
+    std::optional<STArray> const& contractEvents,
     bool isDryRun,
     beast::Journal j)
 {
@@ -127,6 +131,9 @@ ApplyStateTable::apply(
 
         meta.setDeliveredAmount(deliver);
         meta.setParentBatchID(parentBatchId);
+        meta.setGasUsed(gasUsed);
+        meta.setVMReturnCode(vmReturnCode);
+        meta.setContractEvents(contractEvents);
 
         Mods newMod;
         for (auto const& item : items_)

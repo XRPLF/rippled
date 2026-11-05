@@ -1252,6 +1252,77 @@ parsePerpOrder(
     return keylet::perpOrder(*account, SeqProxy::rawSequence(*seq)).key;
 }
 
+static std::expected<UInt256, json::Value>
+parseContractSource(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const contractHash =
+        ledger_entry_helpers::requiredUInt256(params, jss::contract_hash, "malformedRequest");
+    if (!contractHash)
+        return std::unexpected(contractHash.error());
+
+    return keylet::contractSource(*contractHash).key;
+}
+
+static std::expected<UInt256, json::Value>
+parseContract(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const contractHash =
+        ledger_entry_helpers::requiredUInt256(params, jss::contract_hash, "malformedRequest");
+    if (!contractHash)
+        return std::unexpected(contractHash.error());
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const seq = ledger_entry_helpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return std::unexpected(seq.error());
+
+    return keylet::contract(*contractHash, *owner, *seq).key;
+}
+
+static std::expected<UInt256, json::Value>
+parseContractData(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const contractAccount = ledger_entry_helpers::requiredAccountID(
+        params, jss::contract_account, "malformedContractAccount");
+    if (!contractAccount)
+        return std::unexpected(contractAccount.error());
+
+    return keylet::contractData(*owner, *contractAccount).key;
+}
+
 struct LedgerEntry
 {
     json::StaticString fieldName;

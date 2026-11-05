@@ -110,6 +110,7 @@ transResults()
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
         MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
+        MAKE_ERROR(tecINVALID_PARAMETERS,            "Contract parameters do not match the expected ABI."),
         MAKE_ERROR(tecPERP_STALE_PRICE,              "The market's index price is stale."),
         MAKE_ERROR(tecPERP_PRICE_BAND,               "The order price is outside the market's price band."),
         MAKE_ERROR(tecPERP_INSUFFICIENT_MARGIN,      "The margin account's equity is below the requirement."),

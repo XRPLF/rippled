@@ -310,6 +310,12 @@ page(Keylet const& root, std::uint64_t const index = 0) noexcept
 Keylet
 escrow(AccountID const& src, SeqProxy const& seq) noexcept;
 
+inline Keylet
+escrow(uint256 const& key) noexcept
+{
+    return {ltESCROW, key};
+}
+
 /**
  * A PaymentChannel
  */
@@ -730,6 +736,31 @@ ammBinHolding(UInt256 const& ammID, AccountID const& owner, std::int32_t binID) 
 
 Keylet
 ammBinHolding(UInt256 const& key) noexcept;
+
+/**
+ * The shared source object for the contract code hashing to `contractHash`.
+ */
+Keylet
+contractSource(UInt256 const& contractHash) noexcept;
+
+/**
+ * A contract instance owned by `owner`, keyed by the creating transaction
+ * sequence and the hash of the contract code it instantiates.
+ */
+Keylet
+contract(UInt256 const& contractHash, AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+contract(UInt256 const& contractID)
+{
+    return {ltCONTRACT, contractID};
+}
+
+/**
+ * The data `owner` stores against the contract running as `contractAccount`.
+ */
+Keylet
+contractData(AccountID const& owner, AccountID const& contractAccount) noexcept;
 
 }  // namespace keylet
 

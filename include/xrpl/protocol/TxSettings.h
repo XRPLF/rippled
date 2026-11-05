@@ -32,6 +32,11 @@ enum class FirewallAction {
 };
 
 /**
+ * Whether a smart contract may emit this transaction type.
+ */
+enum class Emittance { Emitable, NotEmitable };
+
+/**
  * Operations a transaction is permitted to perform, as a bitfield.
  *
  * These are declared per-transaction in transactions.macro (via
@@ -120,6 +125,11 @@ struct TxSettings
      * a type nobody classified is rejected for a firewalled account.
      */
     FirewallAction firewall{FirewallAction::Block};
+
+    /**
+     * Whether a smart contract may emit this transaction type.
+     */
+    Emittance emittance{Emittance::Emitable};
 };
 
 }  // namespace xrpl

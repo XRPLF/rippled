@@ -1,0 +1,228 @@
+#pragma once
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/detail/STVar.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+namespace xrpl {
+
+class STData final : public STBase
+{
+private:
+    using DataType = detail::STVar;
+    std::uint16_t innerType_;
+    DataType data_;
+    bool default_{true};
+
+public:
+    using value_type = STData;  // Although not directly holding a single value
+
+    STData(SField const& n);
+    STData(SField const& n, unsigned char);
+    STData(SField const& n, std::uint16_t);
+    STData(SField const& n, std::uint32_t);
+    STData(SField const& n, std::uint64_t);
+    STData(SField const& n, UInt128 const&);
+    STData(SField const& n, uint160 const&);
+    STData(SField const& n, uint192 const&);
+    STData(SField const& n, uint256 const&);
+    STData(SField const& n, Blob const&);
+    STData(SField const& n, Slice const&);
+    STData(SField const& n, AccountID const&);
+    STData(SField const& n, STAmount const&);
+    STData(SField const& n, STIssue const&);
+    STData(SField const& n, STCurrency const&);
+    STData(SField const& n, STNumber const&);
+
+    STData(SerialIter& sit, SField const& name);
+
+    [[nodiscard]] SerializedTypeID
+    getSType() const override;
+
+    [[nodiscard]] std::string
+    getInnerTypeString() const;
+
+    [[nodiscard]] std::string
+    getText() const override;
+
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
+
+    void
+    add(Serializer& s) const override;
+
+    [[nodiscard]] bool
+    isEquivalent(STBase const& t) const override;
+
+    [[nodiscard]] bool
+    isDefault() const override;
+
+    [[nodiscard]] SerializedTypeID
+    getInnerSType() const noexcept;
+
+    void
+    setFieldU8(unsigned char);
+    void
+    setFieldU16(std::uint16_t);
+    void
+    setFieldU32(std::uint32_t);
+    void
+    setFieldU64(std::uint64_t);
+    void
+    setFieldH128(UInt128 const&);
+    void
+    setFieldH160(uint160 const&);
+    void
+    setFieldH192(uint192 const&);
+    void
+    setFieldH256(uint256 const&);
+    void
+    setFieldVL(Blob const&);
+    void
+    setFieldVL(Slice const&);
+    void
+    setAccountID(AccountID const&);
+    void
+    setFieldAmount(STAmount const&);
+    void
+    setIssue(STIssue const&);
+    void
+    setCurrency(STCurrency const&);
+    void
+    setFieldNumber(STNumber const&);
+
+    [[nodiscard]] unsigned char
+    getFieldU8() const;
+    [[nodiscard]] std::uint16_t
+    getFieldU16() const;
+    [[nodiscard]] std::uint32_t
+    getFieldU32() const;
+    [[nodiscard]] std::uint64_t
+    getFieldU64() const;
+    [[nodiscard]] UInt128
+    getFieldH128() const;
+    [[nodiscard]] uint160
+    getFieldH160() const;
+    [[nodiscard]] uint192
+    getFieldH192() const;
+    [[nodiscard]] uint256
+    getFieldH256() const;
+    [[nodiscard]] Blob
+    getFieldVL() const;
+    [[nodiscard]] AccountID
+    getAccountID() const;
+    [[nodiscard]] STAmount const&
+    getFieldAmount() const;
+    [[nodiscard]] STIssue
+    getFieldIssue() const;
+    [[nodiscard]] STCurrency
+    getFieldCurrency() const;
+    [[nodiscard]] STNumber
+    getFieldNumber() const;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
+
+    friend class detail::STVar;
+
+    // Implementation for getting (most) fields that return by value.
+    //
+    // The remove_cv and remove_reference are necessitated by the STBitString
+    // types.  Their value() returns by const ref.  We return those types
+    // by value.
+    template <typename T, typename V = std::remove_cvref_t<decltype(std::declval<T>().value())>>
+    V
+    getFieldByValue() const;
+
+    // The held value as a `T`, or nullptr when no value is present.
+    template <typename T>
+    [[nodiscard]] T const*
+    getFieldPtr() const;
+
+    // Hold a `T` built from `args` as a value of `type`.
+    template <typename T, typename... Args>
+    void
+    hold(SerializedTypeID type, Args&&... args);
+};
+
+//------------------------------------------------------------------------------
+// Implementation
+//------------------------------------------------------------------------------
+
+inline SerializedTypeID
+STData::getInnerSType() const noexcept
+{
+    return static_cast<SerializedTypeID>(innerType_);
+}
+
+template <typename T, typename V>
+V
+STData::getFieldByValue() const
+{
+    STBase const* rf = &data_.get();
+
+    SerializedTypeID const id = rf->getSType();
+
+    if (id == STI_NOTPRESENT)
+        Throw<std::runtime_error>("Field not present");
+
+    T const* cf = dynamic_cast<T const*>(rf);
+
+    if (!cf)
+        Throw<std::runtime_error>("Wrong field type");
+
+    return cf->value();
+}
+
+template <typename T>
+T const*
+STData::getFieldPtr() const
+{
+    STBase const* rf = &data_.get();
+
+    if (rf->getSType() == STI_NOTPRESENT)
+        return nullptr;
+
+    T const* cf = dynamic_cast<T const*>(rf);
+
+    if (!cf)
+        Throw<std::runtime_error>("Wrong field type");
+
+    return cf;
+}
+
+template <typename T, typename... Args>
+void
+STData::hold(SerializedTypeID type, Args&&... args)
+{
+    innerType_ = type;
+    data_ = detail::STVar(T(std::forward<Args>(args)...));
+}
+
+//------------------------------------------------------------------------------
+//
+// Creation
+//
+//------------------------------------------------------------------------------
+
+STData
+dataFromJson(SField const& field, json::Value const& value);
+
+}  // namespace xrpl

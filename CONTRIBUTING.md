@@ -336,7 +336,7 @@ The [Nix development shell](./docs/build/nix.md) provides `clang-tidy` at the [t
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
+Before running clang-tidy, you must generate the files it depends on (protobuf headers and the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
 
 ```bash
 cmake --build build --target tidy_prerequisites

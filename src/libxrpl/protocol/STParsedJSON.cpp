@@ -21,6 +21,8 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -967,6 +969,32 @@ parseLeaf(
                 return ret;
             }
             break;
+
+        case STI_DATA: {
+            try
+            {
+                ret = detail::makeStvar<STData>(dataFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalidData(jsonName, fieldName);
+                return ret;
+            }
+
+            break;
+        }
+        case STI_DATATYPE: {
+            try
+            {
+                ret = detail::makeStvar<STDataType>(dataTypeFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalidData(jsonName, fieldName);
+                return ret;
+            }
+            break;
+        }
 
         default:
             error = badType(jsonName, fieldName);

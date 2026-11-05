@@ -14,17 +14,27 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
 
 #include <algorithm>
 #include <cassert>
@@ -36,6 +46,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -1199,6 +1210,42 @@ public:
         BEAST_EXPECT(table->needValidatedLedger(257));
     }
 
+    // The amendment names in an AmendmentTable are node-local: each line of [amendments] and
+    // [veto_amendments] is "<id> <name>", the name can be any word, and it replaces the
+    // compiled-in name of that amendment in this node's table.
+    // Smart escrow's amendment_enabled host function takes an amendment name, and its answer
+    // decides the outcome of the transaction, so it must not read those names: a validator
+    // with a misspelled name in its config would otherwise get a different answer than the
+    // rest of the network for the same ledger, and compute a different ledger.
+    void
+    testWasmNameLookupIgnoresTableNames()
+    {
+        testcase("amendment_enabled by name ignores AmendmentTable names");
+
+        // Configure this node like a validator whose [veto_amendments] line misspells
+        // TokenEscrow. The veto itself does not matter here; the misspelled name does.
+        test::jtx::Env env{*this, test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
+                               cfg->section(Sections::kVetoAmendments)
+                                   .append(to_string(featureTokenEscrow) + " TokenEscr");
+                               return cfg;
+                           })};
+
+        // TokenEscrow is enabled on the ledger, but this node's AmendmentTable no longer knows it
+        // by its real name: the config renamed it to "TokenEscr".
+        BEAST_EXPECT(env.current()->rules().enabled(featureTokenEscrow));
+        BEAST_EXPECT(env.app().getAmendmentTable().find("TokenEscrow") == UInt256{});
+
+        // Build the host functions.
+        OpenView ov{*env.current()};
+        STTx const tx{ttESCROW_FINISH, [](STObject&) {}};
+        ApplyContext ac{
+            env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, env.journal};
+        WasmHostFunctionsImpl const host{ac, keylet::account(AccountID{})};
+
+        BEAST_EXPECT(host.isAmendmentEnabled(std::string_view{"TokenEscrow"}) == 1);
+        BEAST_EXPECT(host.isAmendmentEnabled(std::string_view{"TokenEscr"}) == 0);
+    }
+
     void
     testFeature(FeatureBitset const& feat)
     {
@@ -1221,6 +1268,7 @@ public:
         testBadConfig();
         testEnableVeto();
         testHasUnsupported();
+        testWasmNameLookupIgnoresTableNames();
         testFeature(all);
     }
 };

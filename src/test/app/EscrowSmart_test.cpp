@@ -11,6 +11,7 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/protocol/Feature.h>
@@ -32,28 +33,44 @@ namespace xrpl::test {
 /**
  * Smart Escrow's `Bytecode`, `Data` and `Gas` fields.
  *
- *  The WASM engine that runs an escrow's bytecode is not in this build, so the
- *  `Bytecode` field is opaque here: `EscrowCreate` weighs its size and nothing
- *  reads it, and `EscrowFinish` has nothing to run it with. Everything around
- *  the run is testable, and is tested below - the preflight and preclaim rules,
- *  the fee the bytecode costs, the owner reserve it occupies, and the refund of
- *  that reserve.
- *
- *  What waits on the engine: a successful finish, tecBYTECODE_REJECTED, the
- *  gas and return code the run reports in the transaction metadata, and the
- *  `Data` a rejected contract leaves behind.
+ *  Tested here: the preflight and preclaim rules, the fee the bytecode costs,
+ *  the owner reserve it occupies, and the refund of that reserve. The run
+ *  itself is tested under `src/tests/libxrpl/tx/wasm`.
  */
 struct EscrowSmart_test : public beast::unit_test::Suite
 {
-    // A blob of `bytes` bytes, as hex. Opens with the WASM preamble - "\0asm"
-    // and version 1 - so a reader can see what the field is meant to carry,
-    // but nothing in this build parses it.
+    // A valid module of exactly `bytes` bytes, as hex: `escrow_finish` returns 1, and a
+    // custom section, which the engine ignores, pads it to size. Needs `bytes` >= 49.
     static std::string
     bytecodeOfSize(std::size_t bytes)
     {
-        static std::string const kPreamble = "0061736D01000000";
-        std::string hex = kPreamble;
-        hex.append((bytes * 2) - kPreamble.size(), 'A');
+        // Header, type () -> i32, one function, its export, and its body `i32.const 1`.
+        static std::string const kModule =
+            "0061736D01000000"
+            "0105016000017F"
+            "03020100"
+            "071101"
+            "0D"
+            "657363726F775F66696E697368"
+            "0000"
+            "0A0601040041010B";
+        std::size_t const pad = bytes - (kModule.size() / 2);  // custom section, all of it
+        // id, LEB128 size, then an empty name and filler.
+        bool const oneByteSize = pad <= 129;
+        std::size_t const size = oneByteSize ? pad - 2 : pad - 3;
+        std::string hex = kModule + "00";
+        if (oneByteSize)
+        {
+            hex += strHex(std::string(1, static_cast<char>(size)));
+        }
+        else
+        {
+            hex += strHex(
+                std::string{static_cast<char>((size & 0x7F) | 0x80), static_cast<char>(size >> 7)});
+        }
+        hex += "00";
+        hex.append((size - 1) * 2, 'A');
+        XRPL_ASSERT(hex.size() == bytes * 2, "EscrowSmart_test::bytecodeOfSize : exact size");
         return hex;
     }
 
@@ -655,12 +672,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         env(escrow::finish(carol, alice, seq), Fee(fee - 1), escrow::Gas(gas), Ter(telINSUF_FEE_P));
 
-        // TODO(SmartEscrow): tesSUCCESS once the WASM engine lands. Until then
-        // the fee is charged and the run reports that it could not happen.
-        env(escrow::finish(carol, alice, seq),
-            Fee(fee),
-            escrow::Gas(gas),
-            Ter(tecFAILED_PROCESSING));
+        env(escrow::finish(carol, alice, seq), Fee(fee), escrow::Gas(gas), Ter(tesSUCCESS));
 
         {
             // A gas cost of a fraction of a drop rounds up to a whole drop:
@@ -680,17 +692,18 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
             auto const base = env.current()->fees().base;
             env(escrow::finish(carol, alice, seq), Fee(base), escrow::Gas(2), Ter(telINSUF_FEE_P));
+            // The fee is accepted; two gas is not enough to run the module.
             env(escrow::finish(carol, alice, seq),
                 Fee(base + 1),
                 escrow::Gas(2),
-                Ter(tecFAILED_PROCESSING));
+                Ter(tecOUT_OF_GAS));
         }
     }
 
     void
-    testFinishWithoutEngine(FeatureBitset features)
+    testFailedFinishKeepsEscrow(FeatureBitset features)
     {
-        testcase("EscrowFinish has no WASM engine");
+        testcase("A failed EscrowFinish keeps the escrow and its reserve");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -711,13 +724,12 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
-        // TODO(SmartEscrow): the contract decides this once the WASM engine
-        // lands - tesSUCCESS on accept, tecBYTECODE_REJECTED on reject.
-        auto const gas = 1'000;
+        // One gas is not enough to run the module, so the finish fails.
+        auto const gas = 1;
         env(escrow::finish(carol, alice, seq),
             Fee(finishFeeFor(env, gas)),
             escrow::Gas(gas),
-            Ter(tecFAILED_PROCESSING));
+            Ter(tecOUT_OF_GAS));
         env.close();
 
         // The escrow and its reserve survive.
@@ -768,7 +780,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         testFinishPreflight(features);
         testFinishBytecodePairing(features);
         testFinishFee(features);
-        testFinishWithoutEngine(features);
+        testFailedFinishKeepsEscrow(features);
         testFinishReleasesReserve(features);
     }
 

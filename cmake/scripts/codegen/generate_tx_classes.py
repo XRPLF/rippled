@@ -62,6 +62,7 @@ SETTING_DEFAULTS = {
     "amendment": "UInt256{}",
     "privileges": "Privilege::NoPriv",
     "firewall": "FirewallAction::Block",
+    "emittance": "Emittance::Emitable",
 }
 
 

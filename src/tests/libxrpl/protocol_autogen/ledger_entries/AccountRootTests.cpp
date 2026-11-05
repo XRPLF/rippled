@@ -48,6 +48,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const lastInteractionValue = canonical_UINT32();
     auto const perpExchangeIDValue = canonical_UINT256();
+    auto const contractIDValue = canonical_UINT256();
 
     AccountRootBuilder builder{
         accountValue,
@@ -80,6 +81,7 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setLoanBrokerID(loanBrokerIDValue);
     builder.setLastInteraction(lastInteractionValue);
     builder.setPerpExchangeID(perpExchangeIDValue);
+    builder.setContractID(contractIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -302,6 +304,14 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasPerpExchangeID());
     }
 
+    {
+        auto const& expected = contractIDValue;
+        auto const actualOpt = entry.getContractID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfContractID");
+        EXPECT_TRUE(entry.hasContractID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -343,6 +353,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const lastInteractionValue = canonical_UINT32();
     auto const perpExchangeIDValue = canonical_UINT256();
+    auto const contractIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(AccountRoot::entryType, index);
 
@@ -374,6 +385,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     sle->at(sfLoanBrokerID) = loanBrokerIDValue;
     sle->at(sfLastInteraction) = lastInteractionValue;
     sle->at(sfPerpExchangeID) = perpExchangeIDValue;
+    sle->at(sfContractID) = contractIDValue;
 
     AccountRootBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -730,6 +742,19 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfPerpExchangeID");
     }
 
+    {
+        auto const& expected = contractIDValue;
+
+        auto const fromSleOpt = entryFromSle.getContractID();
+        auto const fromBuilderOpt = entryFromBuilder.getContractID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfContractID");
+        expectEqualField(expected, *fromBuilderOpt, "sfContractID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -838,5 +863,7 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLastInteraction().has_value());
     EXPECT_FALSE(entry.hasPerpExchangeID());
     EXPECT_FALSE(entry.getPerpExchangeID().has_value());
+    EXPECT_FALSE(entry.hasContractID());
+    EXPECT_FALSE(entry.getContractID().has_value());
 }
 }

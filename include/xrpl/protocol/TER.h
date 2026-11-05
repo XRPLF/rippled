@@ -381,6 +381,7 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    tecINVALID_PARAMETERS = 203,
     // PerpetualFutures: alphanet registry block 232-242.
     tecPERP_STALE_PRICE = 232,
     tecPERP_PRICE_BAND = 233,

@@ -1,0 +1,173 @@
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+
+#include <string>
+
+namespace xrpl::test {
+
+// get_data_object_field — reading one key out of an account's data object.
+//
+// What it answers is the value's canonical serialization with no type byte: the contract
+// asked for a key, and the type is the one the value was stored as.
+struct GetDataObjectFieldImpl : ContractHostFixture
+{
+    Account const alice = fund("alice");
+    Account const contract = fund("contract");
+
+    ContractHost
+    host()
+    {
+        return makeTracingContractHost({contract.id(), alice.id()});
+    }
+
+    // An account whose data object is already on the ledger, so a read has something to find
+    // without a write in the same run.
+    void
+    store(std::string const& key, STJson::Value const& value)
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), key, value));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+};
+
+TEST_F(GetDataObjectFieldImpl, every_width_comes_back_as_its_canonical_bytes)
+{
+    store("value_u8", u8(42));
+    store("value_u16", u16(1234));
+    store("count", u32(3));
+    store("total", u64(9'876'543'210));
+
+    auto const contractHost = host();
+    expectValue(contractHost->getDataObjectField(alice.id(), "value_u8"), serialization(u8(42)));
+    expectValue(
+        contractHost->getDataObjectField(alice.id(), "value_u16"), serialization(u16(1234)));
+    expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
+    expectValue(
+        contractHost->getDataObjectField(alice.id(), "total"), serialization(u64(9'876'543'210)));
+}
+
+// An integer's canonical serialization is big-endian, which is the opposite of what
+// `instance_param` answers with. The two live side by side in the ABI, so this is asserted
+// against the bytes rather than against a helper that could share the mistake.
+TEST_F(GetDataObjectFieldImpl, an_integer_comes_back_big_endian)
+{
+    store("count", u32(0x01020304));
+
+    expectValue(host()->getDataObjectField(alice.id(), "count"), (Bytes{0x01, 0x02, 0x03, 0x04}));
+}
+
+TEST_F(GetDataObjectFieldImpl, an_account_is_its_length_and_its_twenty_bytes)
+{
+    store("owner", acct(contract.id()));
+
+    auto const expected = serialization(acct(contract.id()));
+    ASSERT_EQ(expected.size(), 21U) << "an account field carries its length";
+    expectValue(host()->getDataObjectField(alice.id(), "owner"), expected);
+}
+
+TEST_F(GetDataObjectFieldImpl, an_account_with_no_data_object_has_nothing_to_read)
+{
+    expectError(
+        host()->getDataObjectField(alice.id(), "count"), HostFunctionError::LedgerObjNotFound);
+}
+
+TEST_F(GetDataObjectFieldImpl, a_key_that_is_not_there_is_not_a_field)
+{
+    store("count", u32(3));
+
+    expectError(host()->getDataObjectField(alice.id(), "absent"), HostFunctionError::InvalidField);
+}
+
+TEST_F(
+    GetDataObjectFieldImpl,
+    an_account_that_does_not_exist_is_refused_before_its_data_is_looked_for)
+{
+    expectError(
+        host()->getDataObjectField(Account{"ghost"}.id(), "count"),
+        HostFunctionError::InvalidAccount);
+}
+
+// A read caches what the ledger holds for the rest of the call, unmodified, so finalizing
+// writes nothing back for it.
+TEST_F(GetDataObjectFieldImpl, a_read_is_cached_unmodified)
+{
+    store("count", u32(3));
+
+    auto const contractHost = host();
+    expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
+
+    auto const& [modified, data] = contractHost.context().result.dataMap.at(alice.id());
+    EXPECT_FALSE(modified);
+    EXPECT_EQ(contractHost.context().result.dataMap.modifiedCount, 0U);
+    expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
+}
+
+// An object holds no array elements, and an array holds no keys to keep an array under.
+TEST_F(GetDataObjectFieldImpl, each_getter_reads_only_the_shape_it_names)
+{
+    store("count", u32(3));
+
+    auto const contractHost = host();
+    expectError(
+        contractHost->getDataArrayElementField(alice.id(), 0, "count"),
+        HostFunctionError::InvalidState);
+    expectError(
+        contractHost->getDataNestedObjectField(alice.id(), "count", "inner"),
+        HostFunctionError::InvalidField);
+
+    auto const arrayHost = host();
+    ASSERT_TRUE(arrayHost->setDataArrayElementField(contract.id(), 0, "first", u8(1)));
+    ASSERT_EQ(arrayHost.finalize(), tesSUCCESS);
+    expectError(
+        host()->getDataNestedArrayElementField(contract.id(), "first", 0, "first"),
+        HostFunctionError::InvalidState);
+    expectValue(host()->getDataArrayElementField(contract.id(), 0, "first"), serialization(u8(1)));
+}
+
+// Every getter refuses an account that does not exist and one with no data object.
+TEST_F(GetDataObjectFieldImpl, every_getter_refuses_a_missing_account_or_data_object)
+{
+    auto const ghost = Account{"ghost"}.id();
+    auto const contractHost = host();
+    expectError(
+        contractHost->getDataNestedObjectField(ghost, "a", "b"), HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataArrayElementField(ghost, 0, "a"), HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataNestedArrayElementField(ghost, "a", 0, "b"),
+        HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataNestedObjectField(alice.id(), "a", "b"),
+        HostFunctionError::LedgerObjNotFound);
+    expectError(
+        contractHost->getDataArrayElementField(alice.id(), 0, "a"),
+        HostFunctionError::LedgerObjNotFound);
+    expectError(
+        contractHost->getDataNestedArrayElementField(alice.id(), "a", 0, "b"),
+        HostFunctionError::LedgerObjNotFound);
+}
+
+// A data object only read in a call is not written back.
+TEST_F(GetDataObjectFieldImpl, a_read_only_object_is_not_written_back)
+{
+    store("count", u32(3));
+    auto const before = contractData(alice.id(), contract.id());
+
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->getDataObjectField(alice.id(), "count"));
+    ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    EXPECT_EQ(
+        contractData(alice.id(), contract.id())->getFieldH256(sfPreviousTxnID),
+        before->getFieldH256(sfPreviousTxnID));
+}
+
+}  // namespace xrpl::test
