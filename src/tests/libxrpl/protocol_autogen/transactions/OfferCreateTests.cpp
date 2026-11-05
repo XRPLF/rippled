@@ -34,6 +34,7 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const offerSequenceValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
+    auto const minQuantityValue = canonical_AMOUNT();
 
     OfferCreateBuilder builder{
         accountValue,
@@ -47,6 +48,7 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setOfferSequence(offerSequenceValue);
     builder.setDomainID(domainIDValue);
+    builder.setMinQuantity(minQuantityValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -100,6 +102,14 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasDomainID());
     }
 
+    {
+        auto const& expected = minQuantityValue;
+        auto const actualOpt = tx.getMinQuantity();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMinQuantity should be present";
+        expectEqualField(expected, *actualOpt, "sfMinQuantity");
+        EXPECT_TRUE(tx.hasMinQuantity());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -121,6 +131,7 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const offerSequenceValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
+    auto const minQuantityValue = canonical_AMOUNT();
 
     // Build an initial transaction
     OfferCreateBuilder initialBuilder{
@@ -134,6 +145,7 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setOfferSequence(offerSequenceValue);
     initialBuilder.setDomainID(domainIDValue);
+    initialBuilder.setMinQuantity(minQuantityValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -183,6 +195,13 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getDomainID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
         expectEqualField(expected, *actualOpt, "sfDomainID");
+    }
+
+    {
+        auto const& expected = minQuantityValue;
+        auto const actualOpt = rebuiltTx.getMinQuantity();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMinQuantity should be present";
+        expectEqualField(expected, *actualOpt, "sfMinQuantity");
     }
 
 }
@@ -250,6 +269,8 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getOfferSequence().has_value());
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
+    EXPECT_FALSE(tx.hasMinQuantity());
+    EXPECT_FALSE(tx.getMinQuantity().has_value());
 }
 
 }

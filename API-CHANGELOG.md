@@ -33,6 +33,7 @@ Version 3.5.0 is not yet released.
 
 ### Additions in 3.5.0
 
+- `book_offers`, `account_offers`: With the `OfferQualifiers` amendment, an offer entry may now include `all_or_none: true` (the offer carries the `lsfAllOrNone` flag) and/or `min_quantity` (the offer's `MinQuantity` amount). These mark execution-qualified ("contingent") offers that cannot be taken to arbitrary depth; clients should exclude them from quoted/takeable depth. The `OfferCreate` transaction gains the `tfAllOrNone` and `tfPostOnly` flags and an optional `MinQuantity` field, and a marketable `tfPostOnly` offer is rejected with the new `tecWOULD_CROSS` result.
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive the same `transaction` message as the `transactions` stream for each validated transaction whose metadata affects a subscribed issuance. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 - `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
 
