@@ -298,6 +298,11 @@ struct WasmVMDeathTest : WasmVMTest
 // asked to run anything.
 TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
 {
+    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts, so the death this test
+    // expects never happens. Skip it, as BaseUintDeathTest does.
+#ifdef ENABLE_VOIDSTAR
+    GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
+#else
     for (auto const gas : {std::int64_t{0}, std::int64_t{-1}})
     {
         EXPECT_DEBUG_DEATH(
@@ -310,6 +315,7 @@ TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
             },
             "gas limit is positive");
     }
+#endif
 }
 
 // The host caches the current ledger object, the slot table and the contract's data for the
@@ -317,6 +323,10 @@ TEST_F(WasmVMDeathTest, no_gas_is_refused_as_malformed_rather_than_run)
 // contract's state.
 TEST_F(WasmVMDeathTest, dirty_host_is_refused_before_contract_runs)
 {
+    // See no_gas_is_refused_as_malformed_rather_than_run: voidstar builds do not die on failed asserts.
+#ifdef ENABLE_VOIDSTAR
+    GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
+#else
     EXPECT_DEBUG_DEATH(
         {
             EXPECT_CALL(host, checkSelf()).WillOnce(testing::Return(false));
@@ -328,6 +338,7 @@ TEST_F(WasmVMDeathTest, dirty_host_is_refused_before_contract_runs)
             EXPECT_THAT(logged(), testing::HasSubstr("not clean"));
         },
         "host functions not clean before the run");
+#endif
 }
 
 }  // namespace xrpl::test

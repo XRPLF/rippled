@@ -159,10 +159,13 @@ STData::STData(SField const& n, STNumber const& v) : STData(n)
 
 STData::STData(SerialIter& sit, SField const& name) : STBase(name), data_(STBase{})
 {
-    std::uint16_t const stype = SerializedTypeID(sit.get16());
+    std::uint16_t const stype = sit.get16();
     innerType_ = stype;
-    auto const s = static_cast<SerializedTypeID>(stype);
-    switch (s)
+    // Switch on the raw integer, not a SerializedTypeID: the value comes off
+    // the wire, and loading an out-of-range value into an enum is undefined
+    // behaviour (UBSan: "load of value 65535, which is not a valid value for
+    // type 'SerializedTypeID'"). The default branch rejects it.
+    switch (stype)
     {
         case STI_UINT8: {
             data_ = detail::STVar(sit, sfCloseResolution);
