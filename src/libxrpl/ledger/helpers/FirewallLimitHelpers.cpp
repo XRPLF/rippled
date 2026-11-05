@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
@@ -47,7 +48,7 @@ heldOn(SLE const& sle, AccountID const& account, Asset const& asset)
         case ltRIPPLE_STATE: {
             if (!asset.holds<Issue>() || asset.native())
                 return std::nullopt;
-            Issue const& issue = asset.get<Issue>();
+            auto const& issue = asset.get<Issue>();
             STAmount const balance = sle.getFieldAmount(sfBalance);
             if (balance.get<Issue>().currency != issue.currency)
                 return std::nullopt;
@@ -141,7 +142,8 @@ firewallLimitSigners(STTx const& tx)
     std::vector<AccountID> signers;
     if (tx.isFieldPresent(sfSigners))
     {
-        for (auto const& signer : tx.getFieldArray(sfSigners))
+        STArray const& txSigners = tx.getFieldArray(sfSigners);
+        for (auto const& signer : txSigners)
             signers.push_back(signer.getAccountID(sfAccount));
         return signers;
     }

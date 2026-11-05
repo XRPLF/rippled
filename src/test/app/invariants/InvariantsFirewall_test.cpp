@@ -269,8 +269,10 @@ class InvariantsFirewall_test : public InvariantsBase
             return env.le(keylet::firewall(a1.id())) != nullptr;
         };
         doInvariantCheck(
-            {"Invariant failed: an asset with no firewall limit left an account that refuses "
-             "unlisted assets"},
+            {
+                "Invariant failed: an asset with no firewall limit left an account that refuses "
+                "unlisted assets",
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 moveXrp(ac, a1.id(), a2.id(), XRP(5));
                 return true;

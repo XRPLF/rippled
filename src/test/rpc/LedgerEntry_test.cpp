@@ -39,6 +39,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -1633,9 +1634,11 @@ class LedgerEntry_test : public beast::unit_test::Suite
             {
                 {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
                 {.fieldName = jss::asset, .malformedErrorMsg = "malformedRequest"},
-                {.fieldName = jss::limit_signer,
-                 .malformedErrorMsg = "malformedAddress",
-                 .required = false},
+                {
+                    .fieldName = jss::limit_signer,
+                    .malformedErrorMsg = "malformedAddress",
+                    .required = false,
+                },
             });
     }
 

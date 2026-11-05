@@ -28,7 +28,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -110,7 +109,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
         BEAST_EXPECT(unlistedAssets(env, alice) == 0);
         auto const fwID = firewallID(alice);
 
-        auto unlisted = [&](std::uint8_t value) {
+        auto const unlisted = [&](std::uint8_t value) {
             auto jv = firewall::set(alice.id(), fwID);
             jv[sfUnlistedAssets.jsonName] = value;
             return jv;
@@ -138,12 +137,12 @@ class FirewallLimits_test : public beast::unit_test::Suite
         // With any other field the update needs the counterparty.
         {
             auto jv = unlisted(1);
-            jv[sfMaxFee.jsonName] = to_string(XRP(1).value());
+            jv[sfMaxFee.jsonName] = to_string(XRP(1).value().xrp());
             env(jv, Ter(temBAD_SIGNER));
         }
         {
             auto jv = firewall::set(alice.id(), fwID);
-            jv[sfMaxFee.jsonName] = to_string(XRP(1).value());
+            jv[sfMaxFee.jsonName] = to_string(XRP(1).value().xrp());
             env(jv, Ter(temBAD_SIGNER));
         }
         env(firewall::set(alice.id(), fwID), firewall::kCounterparty(dave), Ter(temBAD_SIGNER));
@@ -328,7 +327,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
             return;
         auto const start = created->getFieldU32(sfStartDate);
 
-        auto expectLimit = [&](STAmount const& amount, std::uint32_t period) {
+        auto const expectLimit = [&](STAmount const& amount, std::uint32_t period) {
             auto const sle = limitEntry(env, alice, xrpIssue());
             BEAST_EXPECT(sle && sle->getFieldAmount(sfLimitAmount) == amount);
             BEAST_EXPECT(sle && sle->getFieldU32(sfPeriod) == period);
@@ -695,13 +694,9 @@ class FirewallLimits_test : public beast::unit_test::Suite
         testcase("authority changes without the amendment");
         using namespace jtx;
 
-        auto const firewallLimits = getRegisteredFeature("FirewallLimits");
-        if (!BEAST_EXPECT(firewallLimits))
-            return;
-
         // XLS-86 lets the owner alone grant a delegate.
         {
-            Env env{*this, features - *firewallLimits};
+            Env env{*this, features - featureFirewallLimits};
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const carol{"carol"};
@@ -1461,11 +1456,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
         testcase("disabled");
         using namespace jtx;
 
-        auto const firewallLimits = getRegisteredFeature("FirewallLimits");
-        if (!BEAST_EXPECT(firewallLimits))
-            return;
-
-        Env env{*this, features - *firewallLimits};
+        Env env{*this, features - featureFirewallLimits};
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
