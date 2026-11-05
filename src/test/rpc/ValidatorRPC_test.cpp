@@ -3,6 +3,7 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/BasicApp.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/core/Config.h>
 
@@ -12,6 +13,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -23,6 +25,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -134,8 +137,8 @@ public:
         // Negative UNL update
         {
             HashSet<PublicKey> disabledKeys;
-            auto const k1 = randomKeyPair(KeyType::Ed25519).first;
-            auto const k2 = randomKeyPair(KeyType::Ed25519).first;
+            auto const k1 = randomKeyPair(KeyType::Dilithium).first;
+            auto const k2 = randomKeyPair(KeyType::Dilithium).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
             env.app().getValidators().setNegativeUNL(disabledKeys);
@@ -537,12 +540,68 @@ public:
     }
 
     void
+    testValidationCreateKeyType()
+    {
+        testcase("validation_create key_type");
+        using namespace test::jtx;
+        Env env{*this};
+        std::string const secret = "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE";
+
+        auto const create = [&env, &secret](std::optional<std::string> const& keyType) {
+            json::Value params;
+            params[jss::secret] = secret;
+            if (keyType)
+                params[jss::key_type] = *keyType;
+            return env.rpc("json", "validation_create", to_string(params))[jss::result];
+        };
+        auto const keyTypeOf = [](json::Value const& result) {
+            auto const pk = parseBase58<PublicKey>(
+                TokenType::NodePublic, result[jss::validation_public_key].asString());
+            return pk ? publicKeyType(*pk) : std::nullopt;
+        };
+
+        {
+            // the default is secp256k1, and its seed in [validation_seed] gives the reported key
+            auto const result = create(std::nullopt);
+            BEAST_EXPECT(keyTypeOf(result) == KeyType::Secp256k1);
+            BEAST_EXPECT(result[jss::key_type] == "secp256k1");
+
+            Config c;
+            c.section(Sections::kValidationSeed).append(result[jss::validation_seed].asString());
+            ValidatorKeys const k{c, env.journal};
+            BEAST_EXPECT(
+                k.keys &&
+                toBase58(TokenType::NodePublic, k.keys->publicKey) ==
+                    result[jss::validation_public_key].asString());
+        }
+        {
+            auto const result = create(std::string("secp256k1"));
+            BEAST_EXPECT(keyTypeOf(result) == KeyType::Secp256k1);
+            BEAST_EXPECT(result[jss::key_type] == "secp256k1");
+        }
+        {
+            auto const result = create(std::string("dilithium"));
+            BEAST_EXPECT(keyTypeOf(result) == KeyType::Dilithium);
+            BEAST_EXPECT(result[jss::key_type] == "dilithium");
+        }
+        {
+            auto const result = create(std::string("ed25519"));
+            BEAST_EXPECT(result[jss::error] == "badKeyType");
+        }
+        {
+            auto const result = create(std::string("bogus"));
+            BEAST_EXPECT(result[jss::error] == "badKeyType");
+        }
+    }
+
+    void
     run() override
     {
         testPrivileges();
         testStaticUNL();
         testDynamicUNL();
         testValidationCreate();
+        testValidationCreateKeyType();
     }
 };
 

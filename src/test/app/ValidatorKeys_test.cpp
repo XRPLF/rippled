@@ -2,13 +2,18 @@
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/utils.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -17,6 +22,10 @@
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
 
+#include <boost/program_options/variables_map.hpp>
+
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -101,8 +110,9 @@ public:
             // validation seed section -> empty manifest and valid seeds
             Config c;
             c.section(Sections::kValidationSeed).append(seed_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
 
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
@@ -117,6 +127,7 @@ public:
             // validation seed bad seed -> invalid
             Config c;
             c.section(Sections::kValidationSeed).append("badseed");
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
 
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
@@ -128,6 +139,7 @@ public:
             // validator token
             Config c;
             c.section(Sections::kValidatorToken).append(tokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys k{c, journal};
 
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -143,6 +155,7 @@ public:
             // invalid validator token
             Config c;
             c.section(Sections::kValidatorToken).append("badtoken");
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -154,6 +167,7 @@ public:
             Config c;
             c.section(Sections::kValidationSeed).append(seed_);
             c.section(Sections::kValidatorToken).append(tokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
@@ -165,12 +179,109 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(Sections::kValidatorToken).append(invalidTokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
+
+        testValidatorKeyType(journal);
+        testNodeIdentityKeyType(env.app());
+    }
+
+private:
+    void
+    testValidatorKeyType(beast::Journal const& journal)
+    {
+        testcase("validator_key_type");
+
+        auto const keyTypeOf = [&](std::optional<std::string> const& value) {
+            Config c;
+            c.section(Sections::kValidationSeed).append(seed_);
+            if (value)
+                c.section(Sections::kValidatorKeyType);
+            if (value && !value->empty())
+                c.section(Sections::kValidatorKeyType).append(*value);
+            ValidatorKeys const k{c, journal};
+            return k.keys ? publicKeyType(k.keys->publicKey) : std::nullopt;
+        };
+        BEAST_EXPECT(keyTypeOf(std::nullopt) == KeyType::Secp256k1);
+        BEAST_EXPECT(keyTypeOf(std::string("secp256k1")) == KeyType::Secp256k1);
+        BEAST_EXPECT(keyTypeOf(std::string("dilithium")) == KeyType::Dilithium);
+
+        for (std::string const value : {"ed25519", "bogus", ""})
+        {
+            Config c;
+            c.section(Sections::kValidationSeed).append(seed_);
+            c.section(Sections::kValidatorKeyType);
+            if (!value.empty())
+                c.section(Sections::kValidatorKeyType).append(value);
+            ValidatorKeys const k{c, journal};
+            BEAST_EXPECT(k.configInvalid());
+            BEAST_EXPECT(!k.keys);
+        }
+
+        {
+            // a 32-byte token secret is not a Dilithium key
+            Config c;
+            c.section(Sections::kValidatorToken).append(tokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("dilithium");
+            ValidatorKeys const k{c, journal};
+            BEAST_EXPECT(k.configInvalid());
+            BEAST_EXPECT(!k.keys);
+        }
+
+        {
+            // a token whose manifest does not deserialize
+            auto const secret = parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr_);
+            BEAST_EXPECT(secret);
+            if (!secret)
+                return;
+            json::Value token;
+            token["manifest"] = base64Encode("not a manifest");
+            token["validation_secret_key"] = strHex(*secret);
+            Config c;
+            c.section(Sections::kValidatorToken).append(base64Encode(to_string(token)));
+            ValidatorKeys const k{c, journal};
+            BEAST_EXPECT(k.configInvalid());
+            BEAST_EXPECT(!k.keys);
+        }
+    }
+
+    void
+    testNodeIdentityKeyType(Application& app)
+    {
+        testcase("node identity key type");
+
+        auto const seed = generateSeed("node identity");
+        boost::program_options::variables_map const cmdline;
+        auto& config = app.config();
+        config.legacy(Sections::kNodeSeed, toBase58(seed));
+
+        for (auto const type : {KeyType::Secp256k1, KeyType::Dilithium})
+        {
+            config.legacy(Sections::kValidatorKeyType, to_string(type));
+            auto const [pk, sk] = getNodeIdentity(app, cmdline);
+            BEAST_EXPECT(pk == derivePublicKey(type, generateSecretKey(type, seed)));
+            BEAST_EXPECT(pk == derivePublicKey(type, sk));
+        }
+
+        config.legacy(Sections::kValidatorKeyType, "ed25519");
+        std::string error;
+        try
+        {
+            [[maybe_unused]] auto const identity = getNodeIdentity(app, cmdline);
+        }
+        catch (std::runtime_error const& e)
+        {
+            error = e.what();
+        }
+        BEAST_EXPECT(
+            error ==
+            "Invalid key type specified in [validator_key_type]: it must be secp256k1 "
+            "or dilithium");
     }
 };  // namespace test
 

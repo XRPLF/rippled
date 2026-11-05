@@ -144,7 +144,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         std::uint16_t& nDisabled)
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Dilithium)));
 
         bool const disabled = nDisabled > 0;
         if (disabled)

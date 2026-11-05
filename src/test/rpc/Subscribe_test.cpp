@@ -438,6 +438,12 @@ public:
     {
         using namespace jtx;
 
+        // The validator signs with a dilithium key derived from the seed.
+        auto const dilithiumValidator = [](std::unique_ptr<Config> cfg) {
+            cfg = validator(std::move(cfg), "");
+            cfg->section(Sections::kValidatorKeyType).append("dilithium");
+            return cfg;
+        };
         // doValidation only writes a fee field when its target differs from the
         // ledger's current value, so a node with nothing to change emits
         // nothing. Vote for limits other than the ones already in force, so
@@ -450,7 +456,8 @@ public:
 
             return cfg;
         };
-        Env env{*this, singleThreadIo(voteDifferentLimits(envconfig(validator, ""))), features};
+        Env env{
+            *this, singleThreadIo(voteDifferentLimits(envconfig(dilithiumValidator))), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
@@ -462,7 +469,7 @@ public:
         std::string const valPublicKey = toBase58(
             TokenType::NodePublic,
             derivePublicKey(
-                KeyType::Secp256k1, generateSecretKey(KeyType::Secp256k1, *parsedseed)));
+                KeyType::Dilithium, generateSecretKey(KeyType::Dilithium, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
         json::Value stream;

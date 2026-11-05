@@ -7,8 +7,10 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <optional>
 #include <string>
@@ -307,7 +309,7 @@ public:
         BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, "!ty89234gh45"));
 
         auto const good =
-            toBase58(TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
+            toBase58(TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey(keyType)));
 
         // Short (non-empty) strings
         {
@@ -357,9 +359,8 @@ public:
         std::vector<PublicKey> keys;
         keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.capacity(); ++i)
-            keys.emplace_back(derivePublicKey(keyType, randomSecretKey()));
-        BEAST_EXPECT(keys.size() == 32);
+        for (auto& key : keys)
+            key = derivePublicKey(keyType, randomSecretKey(keyType));
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
@@ -398,9 +399,7 @@ public:
 
             auto const pk2 = parseBase58<PublicKey>(
                 TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
-            BEAST_EXPECT(pk2);
-
-            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(pk2 && pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::Secp256k1);
@@ -414,12 +413,57 @@ public:
 
             auto const pk2 = parseBase58<PublicKey>(
                 TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
-            BEAST_EXPECT(pk2);
-
-            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(pk2 && pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::Ed25519);
+
+        testcase("Base58: dilithium");
+        // Derived by OpenSSL 3.6 ML-DSA-44 KeyGen from xi = sha512Half(seed), independently of
+        // xrpld.
+
+        {
+            auto const pk1 = derivePublicKey(
+                KeyType::Dilithium,
+                generateSecretKey(KeyType::Dilithium, generateSeed("masterpassphrase")));
+
+            auto const pk2 = parseBase58<PublicKey>(
+                TokenType::NodePublic,
+                "p9V3Cbimc6b8wDeVhkRseniKe4Z7Y3yBBAXZUsVebH8Hr4tzB1uY5gRJFUC7KF"
+                "nTbHtFWghFkmdNMDQZWzvTujhQ5JDX3zLpiGBbwhaSCY24ik1BmwpxQJQtbfsJ"
+                "ozoeyofm7tB6ejcgBmcW4r1Qxz4tndNUD962NZpmhw45aPFiVXwGZxEdGNZmUj"
+                "gVm8TMoPG6tmBfkAiHimsXwnAeAEWN96BRr9DZU5rxx98eQcBakPY3ekjtgiRt"
+                "49vCgXuxnkXpYKuLnNAxrPGUuGGwoNqhcEm4HCNLWKiSBEvRArK5KzanPjynKF"
+                "SmCyf8Q89T38HVP8aQCksPaB5WhGN5mm8tE1govXCSEgmRZt5nkKKJT5ZU6TM7"
+                "Gdfp1ES8Wxt5VYvWGAMscX7dam99mC9nkNrtmw83a6yZQjXVqWQpcUJs97p6DC"
+                "ErtynQ28E5hNGka99drQr9KJpvBKYFbNNg3bPRvMVeXpKovoevn3Msx9sLY84y"
+                "DP6pNkjKFaE8qfHQCACRBYGBTS45ZtVLmq5fepuAYQockWqRmu4dXt8ntmJVKd"
+                "C9HWn1S24L97yZ8QqUnrfM1owGcuf6rFdeuaD6SJvJjQVaS2mP3igmAL3vZmw5"
+                "CqqEih68fM5aZbmiynf24BiPpD3V2oKe38ByChB1FmuuqamwqLbNAC7rrmVDuL"
+                "vg5dBMCyPcMGJ3bUV12DqnxZYuuMchxUFFu7fmtqiXBeEhhsT8DZYhfpEpYndL"
+                "34pNft2dbUZBmRWwqa3kkuMY7QKe1YeZsumHBUG8osNKBijahUke9K74mkCpZy"
+                "WkPfxY5XcGaDzkwZDaCRTYqgRqsU2dJGUkPJXV1Bnc3ptkcUZkNAPuv6egmDcq"
+                "uqTz1b46EvRuQ3vqgiyRaGhjxsUnUx51jvjp32Qyvhqm4dcHfLeibDehVpz4W9"
+                "mLJ2KmYaZeXNaa92qTzCGK83EdVVahb5WwMouNUeQHy1FvuopoNMwgzPigH2Br"
+                "KsmYabd8CoyLfqyD3Am2in9xSQFxy9hnwBZ744FUnFCHc4b9FCFctHUJsiZ6Pt"
+                "Drwy2MqqK2KQpcKYd4ZwJbWiuKD9qTXsLtU1r7ha9txyKW2H7KSDXRduhGF5vC"
+                "2vnTTCm6xzUyRL6jrgJkw6SqFABUW8e2EHGwjCrLnb942u4e5XHmgBZd3A1aEh"
+                "jQcK7821HpNNHRwtTbppnCUxxrcLg9RPGGaQVDpATFjUxsYgnFBxfUTDXhNJ17"
+                "QPHDeKae7rX65st2hqaAQa9jy1JdwnBrvDMK9UzQ4n2RR6WGHEhwRhVncSEchk"
+                "8z88BvXxioFGdpaaLfWtjHSsSQZ35ueitkBFdPwjkMHbAnnQHRwtv2miyczwU5"
+                "6cVkxqyCc5BBK9VGqre1eYp7mayLUM2TUzovoUX8ExSZCacSkg5CEsCELcuUhj"
+                "3vkrPUHWdCrGsPtvo5hgPCvUVNkvdydXXLDbt9tNqaZAxZJSEKkULc4jzy9yuS"
+                "DxWHurztRAcHtia86ASYCxBjER576m31BBcnsnYSVPPY61D2gPyRnHhk9Sn7p5"
+                "pPQY3rwgrWTKSRad1kJ7JsSLg27sjvZp7yVjY4KeEHVi4AjJeSkwmq9PTKZSd6"
+                "rgqPj6VAqf99AddbQBkNdWfyxbqTKa91DdqzHjFucHVNEm8brX1P6X6hAwjyzr"
+                "TvoejSqJZgVPy16p5k9C86hgxeHbxbfu5nEiTjcfdPur5aDEkiPJqtv7A467RY"
+                "mX4LEt4DpoZGHrZksxe1xJQdcA2QAyJbTpPRkcK7fnPfvAZk9pLja9Z45hWVH9"
+                "d");
+
+            BEAST_EXPECT(pk2 && pk1 == *pk2);
+        }
+
+        // testBase58(KeyType::Dilithium);
     }
 
     void
@@ -445,11 +489,34 @@ public:
     }
 
     void
+    testEqualityAcrossSizes()
+    {
+        testcase("Equality across key sizes");
+
+        auto const secp = randomKeyPair(KeyType::Secp256k1).first;
+        std::array<std::uint8_t, 1312> blob{};
+        std::memcpy(blob.data(), secp.data(), secp.size());
+        std::fill(blob.begin() + secp.size(), blob.end(), std::uint8_t{0x5A});
+        PublicKey const dil{makeSlice(blob)};
+        BEAST_EXPECT(publicKeyType(dil) == KeyType::Dilithium);
+        BEAST_EXPECT(!(dil == secp));
+        BEAST_EXPECT(!(secp == dil));
+
+        // a 33-byte key assigned over a 1312-byte key compares by its own 33 bytes
+        PublicKey reused{dil};
+        reused = secp;
+        BEAST_EXPECT(reused.size() == secp.size());
+        BEAST_EXPECT(reused == secp);
+        BEAST_EXPECT(!(reused == dil));
+    }
+
+    void
     run() override
     {
         testBase58();
         testCanonical();
         testMiscOperations();
+        testEqualityAcrossSizes();
     }
 };
 

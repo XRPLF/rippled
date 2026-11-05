@@ -68,6 +68,34 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
 
 std::string
 decodeBase58(std::string const& s);
+
+/**
+ * The largest payload of a token of `type` that the reference codec carries for the fast one: a
+ * Dilithium public key (1312 bytes) or secret key (2560 bytes); 0 for every other type.
+ */
+[[nodiscard]] std::size_t
+maxTokenPayload(TokenType type);
+
+/**
+ * The Base58 length of a token of `type` carrying a Dilithium payload: 1799 characters for a
+ * public key, 3503 for a secret key; 0 for every other type.
+ */
+[[nodiscard]] std::size_t
+maxTokenChars(TokenType type);
+
+/**
+ * Whether a decode the fast codec declined with `error` runs again in the reference codec: only
+ * a Dilithium-sized input of at most `maxTokenChars(type)` characters.
+ */
+[[nodiscard]] bool
+decodeFallbackAllowed(TokenType type, std::error_code const& error, std::size_t chars);
+
+/**
+ * Whether an encode the fast codec declined with `error` runs again in the reference codec: only
+ * a payload of at most `maxTokenPayload(type)` bytes.
+ */
+[[nodiscard]] bool
+encodeFallbackAllowed(TokenType type, std::error_code const& error, std::size_t bytes);
 }  // namespace detail
 }  // namespace b58_ref
 

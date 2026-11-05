@@ -103,7 +103,8 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::Secp256k1,
+            (publicKeyType(getSignerPublic()) == KeyType::Secp256k1 ||
+             publicKeyType(getSignerPublic()) == KeyType::Dilithium),
             "xrpl::STValidation::isValid : valid key type");
 
         // Log that the signature was never checked, so an operator does not

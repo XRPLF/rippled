@@ -17,6 +17,7 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/tokens.h>
@@ -292,7 +293,8 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
             {
                 auto const key = strUnHex(k.asString());
 
-                if (key && key->size() == 32)
+                if (key &&
+                    (key->size() == SecretKey::kSize || key->size() == SecretKey::kDilithiumSize))
                 {
                     return ValidatorToken{
                         .manifest = m.asString(),

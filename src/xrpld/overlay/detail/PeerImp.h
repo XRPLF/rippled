@@ -62,6 +62,19 @@ namespace xrpl {
 
 struct ValidatorBlobInfo;
 class SHAMap;
+class Rules;
+
+namespace detail {
+
+/**
+ * Whether a proposal's node key and signature have a shape the rules accept: a secp256k1 key with a
+ * 64 to 72 byte signature, or, with featureQuantum, a Dilithium key with a signature of at most
+ * 2420 bytes.
+ */
+[[nodiscard]] bool
+proposalKeyAndSignatureValid(Slice const& nodePubKey, Slice const& sig, Rules const& rules);
+
+}  // namespace detail
 
 class PeerImp : public Peer, public std::enable_shared_from_this<PeerImp>, public OverlayImpl::Child
 {

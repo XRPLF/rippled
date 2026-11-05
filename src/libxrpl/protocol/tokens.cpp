@@ -27,6 +27,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <vector>
 
@@ -262,7 +263,12 @@ decodeBase58(std::string const& s)
         --remain;
     }
 
-    if (remain > 64)
+    // Cap input length to bound CPU (decode loop is O(n^2)) and memory.
+    // The largest legitimate token is a dilithium NodePrivate or AccountSecret
+    // (1 type byte + 2560 key bytes + 4 checksum = 2565 bytes, 3503 base58
+    // characters); a dilithium public key token is 1799. 4096 still rejects
+    // pathological inputs.
+    if (remain > 4096)
         return {};
 
     // Allocate enough space in big-endian base256 representation.
@@ -292,6 +298,50 @@ decodeBase58(std::string const& s)
     while (iter != b256.end())
         result.push_back(*(iter++));
     return result;
+}
+
+std::size_t
+maxTokenPayload(TokenType type)
+{
+    switch (type)
+    {
+        case TokenType::NodePublic:
+        case TokenType::AccountPublic:
+            return 1312;
+        case TokenType::NodePrivate:
+        case TokenType::AccountSecret:
+            return 2560;
+        default:
+            return 0;
+    }
+}
+
+std::size_t
+maxTokenChars(TokenType type)
+{
+    switch (type)
+    {
+        case TokenType::NodePublic:
+        case TokenType::AccountPublic:
+            return 1799;
+        case TokenType::NodePrivate:
+        case TokenType::AccountSecret:
+            return 3503;
+        default:
+            return 0;
+    }
+}
+
+bool
+decodeFallbackAllowed(TokenType type, std::error_code const& error, std::size_t chars)
+{
+    return error == TokenCodecErrc::InputTooLarge && chars <= maxTokenChars(type);
+}
+
+bool
+encodeFallbackAllowed(TokenType type, std::error_code const& error, std::size_t bytes)
+{
+    return error == TokenCodecErrc::InputTooLarge && bytes <= maxTokenPayload(type);
 }
 
 }  // namespace detail
@@ -688,7 +738,11 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
-        return {};
+    {
+        if (!b58_ref::detail::encodeFallbackAllowed(type, r.error(), size))
+            return {};
+        return b58_ref::encodeBase58Token(type, token, size);
+    }
     sr.resize(r.value().size());
     return sr;
 }
@@ -703,7 +757,11 @@ decodeBase58Token(std::string const& s, TokenType type)
     std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
-        return {};
+    {
+        if (!b58_ref::detail::decodeFallbackAllowed(type, r.error(), s.size()))
+            return {};
+        return b58_ref::decodeBase58Token(s, type);
+    }
     sr.resize(r.value().size());
     return sr;
 }

@@ -112,6 +112,9 @@
 # 2025-11-11, Bronek Kozicki
 #     - make EXECUTABLE and EXECUTABLE_ARGS optional
 #
+# 2026-10-23, Denis Angell
+#     - warn, not abort, on hit counts above 2^32 (gcovr zeroes those lines)
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -494,6 +497,7 @@ function(setup_target_for_coverage_gcovr)
         --gcov-executable
         ${GCOV_TOOL}
         --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+        --gcov-ignore-parse-errors=suspicious_hits.warn_once_per_file
         -r
         ${BASEDIR}
         ${GCOVR_ADDITIONAL_ARGS}

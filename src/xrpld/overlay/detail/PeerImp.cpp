@@ -49,6 +49,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -107,6 +108,24 @@
 using namespace std::chrono_literals;
 
 namespace xrpl {
+
+namespace detail {
+
+bool
+proposalKeyAndSignatureValid(Slice const& nodePubKey, Slice const& sig, Rules const& rules)
+{
+    switch (enabledPublicKeyType(nodePubKey, rules).value_or(KeyType::Ed25519))
+    {
+        case KeyType::Secp256k1:
+            return std::clamp<std::size_t>(sig.size(), 64, 72) == sig.size();
+        case KeyType::Dilithium:
+            return std::clamp<std::size_t>(sig.size(), 64, 2420) == sig.size();
+        default:
+            return false;
+    }
+}
+
+}  // namespace detail
 
 namespace {
 /**
@@ -173,6 +192,20 @@ PeerImp::PeerImp(
           peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().ledgerReplay))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
+    // Increase TCP buffer sizes for quantum signature support
+    // Default macOS buffers are only 128KB, which can cause "stream truncated"
+    // errors when multiple validators send large quantum signatures simultaneously
+    try
+    {
+        constexpr int kBufferSize = 1024 * 1024;  // 1 MB
+        socket_.set_option(boost::asio::socket_base::send_buffer_size(kBufferSize));
+        socket_.set_option(boost::asio::socket_base::receive_buffer_size(kBufferSize));
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.warn()) << "Failed to set socket buffer sizes: " << e.what();
+    }
+
     JLOG(journal_.info())
         << "compression enabled " << (compressionEnabled_ == Compressed::On)
         << " vp reduce-relay base squelch enabled "
@@ -1902,13 +1935,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     auto const sig = makeSlice(set.signature());
 
-    // Preliminary check for the validity of the signature: A DER encoded
-    // signature can't be longer than 72 bytes.
-    if ((std::clamp<std::size_t>(sig.size(), 64, 72) != sig.size()) ||
-        (publicKeyType(makeSlice(set.nodepubkey())) != KeyType::Secp256k1))
+    if (!detail::proposalKeyAndSignatureValid(
+            makeSlice(set.nodepubkey()), sig, app_.getLedgerMaster().getValidatedRules()))
     {
         JLOG(pJournal_.warn()) << "Proposal: malformed";
-        fee_.update(resource::kFeeInvalidSignature, " signature can't be longer than 72 bytes");
+        fee_.update(resource::kFeeInvalidSignature, " invalid signature size for key type");
         return;
     }
 
@@ -2270,6 +2301,7 @@ PeerImp::onValidatorListMessage(
     }
 
     auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        app_.getLedgerMaster().getValidatedRules(),
         manifest,
         version,
         blobs,
@@ -2495,6 +2527,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 return;
             }
             val->setSeen(closeTime);
+        }
+
+        if (!enabledPublicKeyType(
+                val->getSignerPublic().slice(), app_.getLedgerMaster().getValidatedRules()))
+        {
+            JLOG(pJournal_.debug()) << "Validation: Dilithium key before featureQuantum";
+            fee_.update(resource::kFeeInvalidData, "dilithium validation");
+            return;
         }
 
         if (!isCurrent(

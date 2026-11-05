@@ -10,6 +10,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
@@ -18,6 +19,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -29,6 +31,16 @@ class SecretKey_test : public beast::unit_test::Suite
         std::array<std::uint8_t, 16> seed;
         std::array<std::uint8_t, 33> pubkey;
         std::array<std::uint8_t, 32> seckey;
+        char const* addr;
+    };
+
+    // A Dilithium key pair is given by the sha512Half digests of its 1312-byte public and
+    // 2560-byte secret key.
+    struct DilithiumTestKeyData
+    {
+        std::array<std::uint8_t, 16> seed;
+        char const* pubkeyDigest;
+        char const* seckeyDigest;
         char const* addr;
     };
 
@@ -106,18 +118,16 @@ public:
     }
 
     void
-    testDigestSigning()
+    testDigestSigning(KeyType type)
     {
-        testcase("secp256k1: digest signing & verification");
+        testcase << to_string(type) << ": digest signing & verification";
 
         for (std::size_t i = 0; i < 32; i++)
         {
-            auto const [pk, sk] = randomKeyPair(KeyType::Secp256k1);
+            auto const [pk, sk] = randomKeyPair(type);
 
-            BEAST_EXPECT(pk == derivePublicKey(KeyType::Secp256k1, sk));
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*publicKeyType(pk) == KeyType::Secp256k1);
+            BEAST_EXPECT(pk == derivePublicKey(type, sk));
+            BEAST_EXPECT(publicKeyType(pk) == type);
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -155,7 +165,7 @@ public:
             auto const [pk, sk] = randomKeyPair(type);
 
             BEAST_EXPECT(pk == derivePublicKey(type, sk));
-            BEAST_EXPECT(*publicKeyType(pk) == type);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(publicKeyType(pk) == type);  // NOLINT(bugprone-unchecked-optional-access)
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -309,7 +319,6 @@ public:
         for (auto const& test : kSecP256K1TestVectors)
         {
             auto const id = parseBase58<AccountID>(test.addr);
-            BEAST_EXPECT(id);
 
             auto const kp = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
 
@@ -328,7 +337,6 @@ public:
         for (auto const& test : kED25519TestVectors)
         {
             auto const id = parseBase58<AccountID>(test.addr);
-            BEAST_EXPECT(id);
 
             auto const kp = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
 
@@ -340,6 +348,134 @@ public:
     }
 
     void
+    testKeyDerivationDilithium()
+    {
+        std::vector<std::uint8_t> data(64);
+        beast::rngfill(data.data(), data.size(), cryptoPrng());
+
+        testcase("dilithium: key derivation");
+
+        // From Seed
+        {
+            auto const sk = generateSecretKey(KeyType::Dilithium, generateSeed("masterpassphrase"));
+            auto const pk = derivePublicKey(KeyType::Dilithium, sk);
+            // auto const accId = calcAccountID(pk);
+            auto const sig = sign(pk, sk, makeSlice(data));
+            BEAST_EXPECT(!sig.empty());
+            BEAST_EXPECT(verify(pk, makeSlice(data), sig));
+        }
+
+        // From Random Seed
+        {
+            auto const seed = randomSeed();
+            auto const sk = generateSecretKey(KeyType::Dilithium, seed);
+            auto const pk = derivePublicKey(KeyType::Dilithium, sk);
+            // auto const accId = calcAccountID(pk);
+            auto const sig = sign(pk, sk, makeSlice(data));
+            BEAST_EXPECT(!sig.empty());
+            BEAST_EXPECT(verify(pk, makeSlice(data), sig));
+        }
+
+        // From Random KP
+        {
+            std::pair<PublicKey, SecretKey> const kp = randomKeyPair(KeyType::Dilithium);
+            // auto const accId = calcAccountID(kp.first);
+            auto const sig = sign(kp.first, kp.second, makeSlice(data));
+            BEAST_EXPECT(!sig.empty());
+            BEAST_EXPECT(verify(kp.first, makeSlice(data), sig));
+        }
+
+        for (auto const& test : kDilithiumTestVectors)
+        {
+            auto const id = parseBase58<AccountID>(test.addr);
+
+            auto const kp = generateKeyPair(KeyType::Dilithium, Seed{makeSlice(test.seed)});
+
+            BEAST_EXPECT(to_string(sha512Half(kp.first.slice())) == test.pubkeyDigest);
+            BEAST_EXPECT(
+                to_string(sha512Half(Slice{kp.second.data(), kp.second.size()})) ==
+                test.seckeyDigest);
+            BEAST_EXPECT(id && calcAccountID(kp.first) == *id);
+        }
+    }
+
+    void
+    testDilithiumFips204KnownAnswer()
+    {
+        testcase("Dilithium seeded keygen matches FIPS 204");
+
+        // Digests of the key pair `openssl genpkey -algorithm ML-DSA-44 -pkeyopt
+        // hexseed:<sha512Half(seed)>` (OpenSSL 3.6) derives for the "masterpassphrase" seed.
+        auto const [pk, sk] = generateKeyPair(KeyType::Dilithium, generateSeed("masterpassphrase"));
+        BEAST_EXPECT(
+            to_string(sha512Half(pk.slice())) ==
+            "208BAD44129DF72B6F5E31368DE0B104F8F06E0A0EC6A2C62DFA34B003958511");
+        BEAST_EXPECT(
+            to_string(sha512Half(Slice{sk.data(), sk.size()})) ==
+            "C5BE235D5DCB0F589B75DACC1B0CDA965A3B03E25593CBE9381D41481DA43031");
+
+        std::string const message = "fips204";
+        auto const sig = sign(pk, sk, makeSlice(message));
+        BEAST_EXPECT(verify(pk, makeSlice(message), sig));
+    }
+
+    void
+    testArrayConstructors()
+    {
+        testcase("Construction from fixed-size arrays");
+
+        std::array<std::uint8_t, SecretKey::kSize> small{};
+        small.fill(0x11);
+        SecretKey const smallKey(small);
+        BEAST_EXPECT(smallKey.size() == SecretKey::kSize);
+        BEAST_EXPECT(std::equal(small.begin(), small.end(), smallKey.data()));
+
+        std::array<std::uint8_t, SecretKey::kDilithiumSize> large{};
+        large.fill(0x22);
+        SecretKey const largeKey(large);
+        BEAST_EXPECT(largeKey.size() == SecretKey::kDilithiumSize);
+        BEAST_EXPECT(std::equal(large.begin(), large.end(), largeKey.data()));
+    }
+
+    void
+    testParseBase58Sizes()
+    {
+        testcase("parseBase58 accepts only secret key sizes");
+
+        for (std::size_t const size : {SecretKey::kSize, SecretKey::kDilithiumSize})
+        {
+            std::vector<std::uint8_t> const payload(size, 0x33);
+            auto const token = encodeBase58Token(TokenType::NodePrivate, payload.data(), size);
+            auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, token);
+            BEAST_EXPECT(sk && sk->size() == size);
+        }
+
+        std::vector<std::uint8_t> const odd(SecretKey::kSize + 1, 0x33);
+        auto const token = encodeBase58Token(TokenType::NodePrivate, odd.data(), odd.size());
+        BEAST_EXPECT(!token.empty());
+        BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, token));
+    }
+
+    void
+    testVerifyDigestKeyTypes()
+    {
+        testcase("verifyDigest by key type");
+
+        auto const digest = sha512Half(Slice{"message", 7});
+        for (auto const type : {KeyType::Secp256k1, KeyType::Dilithium})
+        {
+            auto const [pk, sk] = randomKeyPair(type);
+            auto const sig = signDigest(pk, sk, digest);
+            BEAST_EXPECT(verifyDigest(pk, digest, sig));
+        }
+
+        // an Ed25519 key never verifies a digest signature
+        auto const [edPk, edSk] = randomKeyPair(KeyType::Ed25519);
+        auto const edSig = sign(edPk, edSk, Slice{digest.data(), digest.size()});
+        BEAST_EXPECT(!verifyDigest(edPk, digest, edSig));
+    }
+
+    void
     run() override
     {
         testBase58();
@@ -347,12 +483,22 @@ public:
         // secp256k1
         testKeyDerivationSecp256k1();
         testSigning(KeyType::Secp256k1);
-        testDigestSigning();
+        testDigestSigning(KeyType::Secp256k1);
         testCanonicality();
 
         // Ed25519
         testKeyDerivationEd25519();
         testSigning(KeyType::Ed25519);
+
+        // dilithium
+        testKeyDerivationDilithium();
+        testDilithiumFips204KnownAnswer();
+        testSigning(KeyType::Dilithium);
+        testDigestSigning(KeyType::Dilithium);
+
+        testArrayConstructors();
+        testParseBase58Sizes();
+        testVerifyDigestKeyTypes();
     }
 
 private:
@@ -1502,6 +1648,484 @@ inline static TestKeyData const kED25519TestVectors[] = {
       0x28,0x52,0x03,0x05,0x6A,0xAF,0x6F,0x59,0x43,0x02,0xCB,0x98,0xE0,0x3E,0x56,0xE3,},
      .addr="rNXHq25tNB23Ce6fbPw2wakxnmdzE3Fq6Q",},
 };
+
+// Derived by OpenSSL 3.6 ML-DSA-44 KeyGen from xi = sha512Half(seed), independently of xrpld.
+inline static DilithiumTestKeyData const kDilithiumTestVectors[] = {
+    {.seed={0x0e, 0x28, 0xeb, 0xfe, 0x3e, 0x68, 0x32, 0xf9, 0xae, 0x52, 0x96, 0x02,
+            0x14, 0x6e, 0x39, 0x71,},
+        .pubkeyDigest="F2FE43CC11CD77D33B8AA1817BFD6FFF2DF87404DDBE75B5FCD97585CE5045F0",
+        .seckeyDigest="AA4B49E3E4A33CF8D9E28D8EAB20222B973D37A894DF19E3D30F45B678E56B7E",
+        .addr="r3USk4XNTsg2EtnFG2UnboJHXDZ3QPPbiT",},
+    {.seed={0xb6, 0xcb, 0xfe, 0xe0, 0x30, 0xe3, 0xe5, 0x6a, 0x71, 0x11, 0x9a, 0x42,
+            0xbd, 0xe2, 0x07, 0x23,},
+        .pubkeyDigest="280AE7604540D3FDE56D34BC75D68E8999E1D3A170EC2616471FE03CC1E35480",
+        .seckeyDigest="8FB55DD32B8147CF067E2ED775646A40D67F01408AE9B6717B393C58D598F54E",
+        .addr="rGfjWTsCjK2BvnKQRdEyYfKDPmTvSZYYic",},
+    {.seed={0x5a, 0xe6, 0xd7, 0x80, 0x8a, 0x7b, 0x6f, 0x53, 0xe3, 0x2a, 0x87, 0xfc,
+            0x89, 0x43, 0xdd, 0x6d,},
+        .pubkeyDigest="423E46F71D500A686DD3B43D672B7DBE37A4A7B4CABE2BCD472EA9238BB6BBF2",
+        .seckeyDigest="60519179076D2DE4BC146ACE9AE9A0B954A1CFA49136E0464E0B422CC75E17F2",
+        .addr="rf6V6tM8WeDFHqkXdRPDAm5T6s2wjSUL7j",},
+    {.seed={0x17, 0x8d, 0x1b, 0x4c, 0xc2, 0xcd, 0x41, 0xf8, 0x7c, 0x5d, 0x41, 0x89,
+            0xab, 0x37, 0xe2, 0x90,},
+        .pubkeyDigest="EF026B818C69DFCC9F03B2B6DB3889AAF50A7B0DC00351F6B55C60AD686E0648",
+        .seckeyDigest="5FC035A94C0DB02CB17638D04796A28D1B22CCA36711AFF65ABC17FA15D095F5",
+        .addr="rDjiFAuuJiWAkJCbom6MVaNEXgLAz6sEWy",},
+    {.seed={0x2c, 0xc6, 0xf7, 0x2d, 0xe6, 0x3c, 0xaa, 0x87, 0xa1, 0xe8, 0x50, 0xfd,
+            0x36, 0xfb, 0x17, 0x2d,},
+        .pubkeyDigest="EA23CF21246405692E0FAC5A4639945885132242E4EA228306C693E6881E22E2",
+        .seckeyDigest="E01C0CDFF3A3EDBBB0D70F18CAD4DA1BF22FFFFBD2236F022C50DFE0CAE0F444",
+        .addr="rEqgPNjDS251YYggRF1SinfKRhKZfDTTDQ",},
+    {.seed={0xd5, 0xe4, 0xb7, 0xf4, 0x12, 0x98, 0xe2, 0x4f, 0x18, 0x39, 0xbb, 0x65,
+            0x55, 0x4e, 0xb6, 0xf1,},
+        .pubkeyDigest="E95FE9117521477D41BD6403DB0E74E5621FA2067B36ADC9C181296803338A49",
+        .seckeyDigest="4A91A4051B2EF899609D56614EDB43C3A56B0FB1360013A9E2C2B089A2F11440",
+        .addr="rH9iWcmgTfNyccUaXMjtbPGg6w6vLPqnNp",},
+    {.seed={0xc8, 0x28, 0x75, 0x66, 0xf1, 0xf8, 0xee, 0xf1, 0xd8, 0xde, 0x1d, 0x62,
+            0xeb, 0x17, 0xb4, 0x10,},
+        .pubkeyDigest="1C2809CA19CA8264DF4D2E3DC4103F298B5C4C370867E7188C3BCDBC7D65DEAA",
+        .seckeyDigest="3F716F9353EF6A55D76986FCF42FA1AFE21E270F013EC680B0CE90D088B915B7",
+        .addr="rhjaKZJgdM2Ez3kNpKWj4wQjunoM1rkYjH",},
+    {.seed={0x75, 0x59, 0xd6, 0x7e, 0xbd, 0x0e, 0x9f, 0xf2, 0x94, 0xde, 0x08, 0x98,
+            0x36, 0x8d, 0x0f, 0x56,},
+        .pubkeyDigest="E63FF21379FE4A7743ADD307BCC46902523BF5E1823013131111A780412307CD",
+        .seckeyDigest="7D9C62944EC32BA1497702B95CF265438AA8D7CC508D8E63899BCC67063D3357",
+        .addr="rGPeVKR2Uccfn18PaTambtPbSZJ7QgoLiV",},
+    {.seed={0x8d, 0x7c, 0x14, 0x86, 0x4f, 0xcd, 0x4d, 0x5e, 0x32, 0x6d, 0x79, 0xed,
+            0x9e, 0xa8, 0xde, 0x50,},
+        .pubkeyDigest="6BBE4383650119E9FA8A0C6DFB7302D9BEE7CD53E47C2F403D206C85726C91F7",
+        .seckeyDigest="78CF496463B5F74FD1C26F91213E82ABEFFA2D85544D92A01C04A40E382CAE58",
+        .addr="rwDvSRxFyG75MP4QGmJ9NLFmoakSph99dn",},
+    {.seed={0x4f, 0xef, 0x47, 0x4f, 0xa9, 0x5c, 0x17, 0x60, 0x61, 0x20, 0x29, 0x5a,
+            0x25, 0xec, 0xe3, 0x6d,},
+        .pubkeyDigest="7E3CC1616204A08CEC585BEE5DB7FC26413DB2D0922816A7F353B90A65CB04A6",
+        .seckeyDigest="E1E9F5B1CC70DEB1AF3EBD181DEBABA39BD7FBBD60D06A65CF91CE519A21CF9B",
+        .addr="rEWJRvD2Yo3bQ789GKBjvHWMb8TtNEU3qK",},
+    {.seed={0x88, 0x9a, 0x2e, 0x99, 0xfa, 0x00, 0x07, 0xcf, 0x1a, 0x76, 0xb1, 0x50,
+            0xc2, 0xbb, 0x59, 0x64,},
+        .pubkeyDigest="83C2303B12703936CAE94779BA2F93FF0F0EF9A46DB6FE640124E8AB1722F3E7",
+        .seckeyDigest="8BF8F798BB6705A91A6FF4BA4AEFC9EC68F3A741E00A40C942DA95C028F74F18",
+        .addr="r95sDtg6UwX5S4n6WaUrs2Fvw8wF6yLFsu",},
+    {.seed={0x9c, 0x68, 0xd3, 0xfd, 0x79, 0x00, 0x93, 0x4e, 0x50, 0x5e, 0x8e, 0x10,
+            0xf3, 0x8d, 0x33, 0x6e,},
+        .pubkeyDigest="3E40D2CFE41AC6F5C89D689BDA592B4C4B507582CCE739A6F99D5F5F3F5745C6",
+        .seckeyDigest="D13342BB1DB69E97AC70848A6B868C649DED1558D955F5357435E77FB56469BA",
+        .addr="rGJKFbWt7uadFptAEpCVKPS8aAUJsJq77b",},
+    {.seed={0xd3, 0xed, 0x8e, 0xe5, 0xde, 0xb7, 0xa9, 0xe2, 0x20, 0xa4, 0x9e, 0x3a,
+            0x27, 0xef, 0x7e, 0x28,},
+        .pubkeyDigest="5F2F05E5BF767425230500BD2C3E78ED5C4BD9348BB5597F37BE9D2C8BB78044",
+        .seckeyDigest="06E521750BBA0ED0740B64F20A330D8860A02592B30C9D6AFFD94D24EF75B761",
+        .addr="r3adkhmWk1dJh5AgX3KTSfTQbmHSzVEvws",},
+    {.seed={0x63, 0xeb, 0x1f, 0x06, 0xee, 0xc8, 0x46, 0x39, 0x50, 0x8c, 0x61, 0xc9,
+            0x17, 0x7e, 0x3a, 0x60,},
+        .pubkeyDigest="3E236DB46AF487E1312E453345754A70786595A2D0AE867BAD7F875D0E787554",
+        .seckeyDigest="97D402D196D3F12E7EAC5BDC85FEF4E076CD4873DC539992281AF09C8C36968F",
+        .addr="rfKzQ4NGTTwSgSEWAtTs1hWKndJ131FTUV",},
+    {.seed={0xd8, 0x77, 0x6b, 0xb2, 0xc3, 0xe9, 0xb5, 0xa0, 0xeb, 0x79, 0xfa, 0xc4,
+            0x04, 0x5c, 0x56, 0xab,},
+        .pubkeyDigest="737C881C1E834996BC262A3249E222FD5D31CC4857CEB9C5A89D46B257FAF990",
+        .seckeyDigest="C0C517F41AA2FBA15068EFF058863CED9DF503265EFE96251760AA4DA560BD13",
+        .addr="rPesekhXtSifyfWU1c2eweuTgyrGdkzESr",},
+    {.seed={0x78, 0xda, 0x79, 0x7c, 0x67, 0x39, 0x2a, 0xf2, 0xe0, 0x73, 0x7f, 0x27,
+            0xe8, 0x0e, 0x4d, 0x42,},
+        .pubkeyDigest="2CEC458A74BEC6C06A3649488283ABDF0DE235D1E29AD75E4EB3B772334B5142",
+        .seckeyDigest="767708662E14257BC3F37F4DBCDA424B421EE335271873621FF518B8AB9B97DF",
+        .addr="rNZ5rZD6Ju8BtaKoHsT9Ufm4BygrWNcpdz",},
+    {.seed={0x9a, 0x08, 0x88, 0x0a, 0x05, 0x38, 0x64, 0x49, 0x07, 0x02, 0x5a, 0xc9,
+            0x7a, 0x69, 0x4a, 0xd5,},
+        .pubkeyDigest="3CE81D233672D4B70AB7DBCCC9E03008143474D9DD06C03A3C23BF1E65D82B1D",
+        .seckeyDigest="3CE66D0BA23B7D94C2C9A5595072FF751174FC50B1E33326138A8A6EE2678DC4",
+        .addr="rxcZR4K2svE5fhWao2KcgZ6kHLAHzvk6n",},
+    {.seed={0x5e, 0xd0, 0xb0, 0xba, 0x4c, 0x32, 0xde, 0x08, 0xff, 0x40, 0xbe, 0x96,
+            0x78, 0x85, 0x68, 0xaa,},
+        .pubkeyDigest="6208720FF8DEC6CE94D275638C6E39A4B5A8306FAD697424B9D66D94B4629BA8",
+        .seckeyDigest="616A5CE5382BF102A382FB49FCB26E66DADB1C2FBCC7643E01929CEA8DF43E51",
+        .addr="rLrPtynodjGycx3p9KTLuwMpNN6Pk8m9sX",},
+    {.seed={0x36, 0xed, 0xa6, 0x07, 0x34, 0x98, 0xe7, 0x15, 0xf1, 0x63, 0xc5, 0x0a,
+            0x8d, 0x43, 0xf4, 0xcd,},
+        .pubkeyDigest="C7B4FB05C2AF8D941BA9F26D0CEF5DE823F2A20DBA7525866ED7697863D1BFDF",
+        .seckeyDigest="0BEC19A07F790137A3E5D2F6D5192FF86E4DC751261EBE4D9F19571A705742F2",
+        .addr="r3KCfyJcq6Zfp1sZwZwJtVJW38cH3ijaNW",},
+    {.seed={0xab, 0xb8, 0xd8, 0xaa, 0x1d, 0x2a, 0xaf, 0x81, 0x9d, 0xef, 0x09, 0x52,
+            0x27, 0x27, 0x7b, 0xa9,},
+        .pubkeyDigest="1FF79F0472A4B40FF32DDCF01289CBC3B551E6030716DAE216957E8C27CCF1AA",
+        .seckeyDigest="E8A3DD68740E9D8914B01C51B8FEBA4A8A2FB7A2D9F7A1C3F975433C3F743E3A",
+        .addr="rpAGgf9DsQfisYahboFsk2km1YfHL32eNE",},
+    {.seed={0xab, 0xef, 0xa7, 0x0c, 0x34, 0x85, 0x84, 0x88, 0x5c, 0x54, 0x26, 0x6c,
+            0xfd, 0x44, 0x7b, 0x90,},
+        .pubkeyDigest="07184B615081DE8AA3226D9EDA50597789DDBE0137F6D31A4ABA25C624D8714C",
+        .seckeyDigest="EE848D5D8BD7CFAEDCC8BE19741EC711AEE8775AED940CCB449EE52613929D62",
+        .addr="rMRwjtKmdkMBXZnEBd2ikSF1pY9TCyiapb",},
+    {.seed={0x75, 0x58, 0x58, 0xa5, 0xf1, 0x7e, 0x64, 0x11, 0x75, 0x7e, 0xe8, 0xe6,
+            0xe7, 0x6d, 0x5d, 0x16,},
+        .pubkeyDigest="4D353EAE6A6E8C62910A98AE0DF1B8902A95291F5566901F644B2BDC7A4B1FDB",
+        .seckeyDigest="73B8F092BEE9A0229FF39690F5273B98A8C6CB718437CCA79A680955369EDEA6",
+        .addr="rDRmEM21iYMfHxafHWxJ48kiQbwdCvndm7",},
+    {.seed={0x88, 0xed, 0x88, 0xc0, 0xdd, 0xa7, 0xaa, 0xdb, 0x56, 0x98, 0x95, 0xb6,
+            0x9c, 0xb8, 0x30, 0xbb,},
+        .pubkeyDigest="D2C0DA01052D217AC7FC2088464F698783776E268655FC736D2541459D505105",
+        .seckeyDigest="B5B369F7BED6D484F6E6481095DAC6DABCC195714E4660D82D0EE67730230B75",
+        .addr="rNETb8YWLWcn1k7RDrxh3Pe5dnuSCu3KQq",},
+    {.seed={0x7e, 0x49, 0xf9, 0x69, 0x1e, 0x61, 0xd3, 0xe7, 0x32, 0x3c, 0x6b, 0x9f,
+            0x0f, 0x22, 0x5d, 0xa8,},
+        .pubkeyDigest="57477C240EAB3BE179D93F08E4FE495E2AD32E158E49CDD3FE23B5B944C9EC45",
+        .seckeyDigest="C7A8ECFB0487E234AD081AC5ECAD0230FD38E02F6D7851AB11A8DE260907366B",
+        .addr="r9Z5tg6je5t9ihMEty6uDkYUFRQk4EQbnT",},
+    {.seed={0x70, 0x04, 0x92, 0x5e, 0x36, 0x6d, 0x48, 0x60, 0x59, 0x82, 0x56, 0x9d,
+            0xb5, 0xbe, 0xa4, 0x7c,},
+        .pubkeyDigest="222171079AF8EA199F867C7906D0E557C9EA8FFB368D91E1D1281048579EFE2E",
+        .seckeyDigest="1BD4AD52FA3B4EFA100CBF30F24DF5C73359B66ACCFDA9CA5AEA9AC7D4273D19",
+        .addr="r9CdxnhLFeavpPQ5i5LDtNu7Ch2MxSXiW9",},
+    {.seed={0xf7, 0x70, 0xc6, 0x6a, 0x2d, 0xce, 0xff, 0xf7, 0x37, 0xc4, 0x84, 0x3b,
+            0xf8, 0x16, 0x33, 0x2c,},
+        .pubkeyDigest="ED1FD25AC7A49F594E95BA1E8F1F56E71DC9792754173DC3F02C5EA94326556F",
+        .seckeyDigest="1BB76C407D54AE4A888BFDC5741DE120DFD96D0773E9717F6B552C5E938152F9",
+        .addr="rHrLq6ZdTyUCtCHx7bc6JzuL7HUByTLNDf",},
+    {.seed={0xa2, 0x3d, 0xe3, 0xcf, 0x25, 0xeb, 0x3c, 0x3c, 0x04, 0x16, 0x39, 0xb1,
+            0xff, 0xaf, 0x9a, 0xf1,},
+        .pubkeyDigest="833AAED092F4F4551BACF8F7B8DD5A645606B5C81258B1163906D05CD8D7E02E",
+        .seckeyDigest="9546280EE511083A621466E9F82B589BDAE1FAF32184D94A22F0F71E81EA5910",
+        .addr="r2ixnkA6RxEETACTQtUkexYX4QRU1U3cc",},
+    {.seed={0xbf, 0x78, 0xbc, 0xfd, 0xc8, 0x97, 0x23, 0xf5, 0x51, 0x57, 0x6b, 0xac,
+            0xc4, 0xbf, 0x94, 0x83,},
+        .pubkeyDigest="7B79905EDAE321D1DC825E9874B26894F38C6624CB8F77941EB2012522B9808B",
+        .seckeyDigest="66FD3DC2A78CD1BD4D615A64A2A5536F14362611F89997C1DCDE0F3C4A842172",
+        .addr="rwAon9eg3V78oWHKPXBMvrvoarhwpJ1vRi",},
+    {.seed={0xf6, 0x82, 0xcc, 0xe6, 0xfc, 0x57, 0x60, 0x35, 0xb8, 0x13, 0xce, 0x6c,
+            0xeb, 0x3d, 0x2a, 0xc7,},
+        .pubkeyDigest="2ABF7589B13DAC02CB793AF3C4F1E1B52477ADC95EBA8725280A1AF4BFF0E2DA",
+        .seckeyDigest="2E5DFF6871A314313686A10B319ED958A19396DDBA8C3D2BC92C9488967E273E",
+        .addr="rEEP2YyyNzwqdZ4pmAb3G67gdqwmeRbbzt",},
+    {.seed={0xe0, 0x14, 0xaa, 0x27, 0x15, 0xf5, 0x41, 0x3a, 0x2c, 0x3a, 0x2b, 0xd9,
+            0x50, 0xd4, 0x88, 0xa8,},
+        .pubkeyDigest="7625FF7147FBC27B31CAFA6EF1CA0A129E2CBCD857A6B3D3EC09D33A96E964FF",
+        .seckeyDigest="357FC31456D67DF60918DA1464372335F6BC6893217B7A892FB5490BDF5A4562",
+        .addr="rUoUuKZMaqsyroUoNT7wsNmKZQUCzzbqb3",},
+    {.seed={0x61, 0x35, 0x69, 0x17, 0x63, 0x0b, 0x73, 0xc0, 0x85, 0xbc, 0xa8, 0x48,
+            0x0e, 0xa5, 0x55, 0x4e,},
+        .pubkeyDigest="AA68804DE30AB805A8F23CD052AF66F0920B4D2D0F1D52848139BD54D4D41824",
+        .seckeyDigest="DB2BC75DEEE5246611580A3BA420DB761EEC3E2F931990C2F9D4BD6C93962D65",
+        .addr="rHZdUHJbKDpTZKq7oMvuU9a4XUMHCmAp1o",},
+    {.seed={0xeb, 0x54, 0xdb, 0x37, 0xb8, 0x6e, 0x12, 0xa9, 0xe2, 0xaa, 0x0a, 0xc6,
+            0x9a, 0x79, 0x9e, 0x17,},
+        .pubkeyDigest="EB7133ACADEDDC2C5688ED6CD926AD3EBBE6310375194D7F369C2D5C8BCE8F7E",
+        .seckeyDigest="B6190908FD1CF74473CA8D4F8D52DCA445F054FB3C7F9308AC46FCEA3D469C20",
+        .addr="r3LCKDrC9LzbagZqJw7UCtULdeSeaZgjvd",},
+    {.seed={0xfa, 0xaa, 0x5a, 0x1b, 0x8e, 0xee, 0x77, 0x57, 0x58, 0x96, 0x7b, 0x52,
+            0x40, 0xff, 0x0e, 0xc2,},
+        .pubkeyDigest="C9DF4FAA55E50A52A2D8009358ED14D98AA8C002D76D2B29E7E4EF2D0D654C67",
+        .seckeyDigest="F95CD4D069CAFC5C1985BAB72EAE7AFBF59BFDF1A29F90A2F4C81DAE92A402EA",
+        .addr="rKnMqy73Q94XNFkN1fgDtYeyWh74Mzbn8V",},
+    {.seed={0xf2, 0x78, 0x78, 0x49, 0x96, 0x5c, 0xc7, 0xf0, 0x0b, 0xa0, 0x06, 0xa2,
+            0xf1, 0x51, 0x36, 0xd9,},
+        .pubkeyDigest="BC57DE9E7FB38EC4195DC680DF5E5717ECAEE8E2FC325B1133547B8D5A4F0F4B",
+        .seckeyDigest="D06D233D53E6E3A871BE90D275FF1C72C78B02A91F0BC7A03D3A428AF3A0A073",
+        .addr="rUvSMCbGiuKmVkJmpoPK9FnULprvVTf25q",},
+    {.seed={0xcc, 0x9e, 0x92, 0xb7, 0x12, 0x38, 0x11, 0x91, 0x50, 0xa9, 0xa6, 0x70,
+            0x2a, 0x74, 0xf0, 0x85,},
+        .pubkeyDigest="B720C295C1C387D46FF232267A2AFE8F10F0F30629B50D496F16349E525A1FCC",
+        .seckeyDigest="D65F5D54AEC1DC41C55E77AF843F83445319960D2BC8C9F3C89F21A74DE8FAB3",
+        .addr="rsvzQVWUrFqX63nEpQNFoA1Wx8MNT8Nsxn",},
+    {.seed={0x4b, 0x62, 0xd4, 0x89, 0xb2, 0x0f, 0x66, 0xe4, 0xea, 0x48, 0x03, 0xf5,
+            0x0c, 0x11, 0x91, 0x05,},
+        .pubkeyDigest="1F1FCD79BB652E39FEFA75988A0E084444EA918EA178984502F916BE4974B6D1",
+        .seckeyDigest="5D8A3F23E192837EA4B7D8176486F5EA747EE9012D7E52160ACA33C929CCF4A4",
+        .addr="rfvwyS9iPa345yPhsH4tNdDsDkmHbHE3zf",},
+    {.seed={0x6f, 0x34, 0x71, 0xc8, 0x63, 0x96, 0x0c, 0xf0, 0xcf, 0xfc, 0x74, 0xf0,
+            0x63, 0x33, 0x82, 0x4d,},
+        .pubkeyDigest="168AB732FEEEC4E547873642CC46C6D697DF292D6260747ABE73C4BE43A75437",
+        .seckeyDigest="02C789486B124CE90DA38193FDE34ED849A144267D1069AF24E36727255A2BE4",
+        .addr="rk9DWkzYLz6SZF7agHvsAcuuEDNDBnqRy",},
+    {.seed={0xbb, 0xf6, 0x23, 0xae, 0x41, 0x67, 0x52, 0x86, 0x9f, 0x62, 0x0f, 0x5e,
+            0x64, 0x15, 0x43, 0x8c,},
+        .pubkeyDigest="60E3297F96A3EA5CFBC2907A51C7E45976FE4D898ECB071FA1C0C156686619DF",
+        .seckeyDigest="666E08573A69354D651EC11EDF903A3E66B2E6C14EDE6F90EC8EF50C9D36BCEC",
+        .addr="rUnMgZgFXUs9LCKgMFakcUf5hxJNRgHcAw",},
+    {.seed={0xa4, 0x52, 0xef, 0x56, 0xb5, 0xe2, 0x2d, 0x1b, 0xa0, 0xdd, 0xa1, 0x5e,
+            0xd4, 0x32, 0x14, 0x75,},
+        .pubkeyDigest="2B3BE6B663BD14552480AFD99C4DCBA640A94CA0B93123489A33068A4AA0B5EF",
+        .seckeyDigest="26421F5169006CA115197C7DDD3488FA2FAC5B5A5DDCFC949A8BB25BB3F677CF",
+        .addr="rGrA5iDaefgsJ1dzEYtAfA6xTsAZFURQKW",},
+    {.seed={0xcf, 0xf5, 0x36, 0x1a, 0x2b, 0xfa, 0xda, 0xb6, 0x96, 0x93, 0xb7, 0xe1,
+            0x2d, 0x6a, 0xdf, 0xd3,},
+        .pubkeyDigest="A2C9D130C2AC3BD5A628103892A2E69F891F57D1BC07E227B30285B4D03C986F",
+        .seckeyDigest="F58B09684DE8F27083C2232F41B726F9098BBBB6B32E8B5CA656C24DB8031966",
+        .addr="rPyGkoFafqHSEbcwZ2bMfykEoW4R7zcdMJ",},
+    {.seed={0x2a, 0xdf, 0x52, 0x84, 0xf1, 0x66, 0xeb, 0xd7, 0x4d, 0x96, 0x9f, 0x31,
+            0xc1, 0x1c, 0xa5, 0x55,},
+        .pubkeyDigest="3E4DBD07697DED9227F2247731F02205A8AD9680CD0F1F73CB1FA5D876433717",
+        .seckeyDigest="18166BC5E9CAF7FA080184233FCF3EBBF6D851F15B8D94B10062755D40BEE8C1",
+        .addr="r3pyTTZFhiZfuxbQae3rS94TCto1CXubZ4",},
+    {.seed={0xa7, 0xb9, 0x56, 0x96, 0xfa, 0x0f, 0xc5, 0x3d, 0x3f, 0x7f, 0x59, 0x0c,
+            0x80, 0xf6, 0xc3, 0x19,},
+        .pubkeyDigest="D357FF5D81DB7CCE8F6307DC06D745CC539207675F19036A757B3500497C56E6",
+        .seckeyDigest="6029F486475399ED4D8611E08847730D255DA3343B6296CD3F1646D9362494CF",
+        .addr="r42uYhwcM5edeCxh5ziiMYpAm9S4U7o1ns",},
+    {.seed={0xa4, 0xa6, 0x65, 0x48, 0x51, 0x33, 0xca, 0xfd, 0x89, 0x82, 0x37, 0x92,
+            0x68, 0x2d, 0xe0, 0xc7,},
+        .pubkeyDigest="0216CA3355B1AE146773D15FEC8A6BEEDAAE9A48F94FE8489965473EB2970882",
+        .seckeyDigest="FEA1C0FAFC6DCF5F8DB8FE1F2175ABDE401FEEA8C4CBBF026CB40D59E72141CD",
+        .addr="rNW8BXy8SqNp2GyGGBPGuoywYjCi4NdkoC",},
+    {.seed={0x2c, 0xef, 0xba, 0xaa, 0xa9, 0x03, 0x8a, 0x49, 0x8f, 0xad, 0xe2, 0xbe,
+            0x8d, 0x37, 0x63, 0x9e,},
+        .pubkeyDigest="4AFA26C5E2E58679FDE71174A52D58003F40B3CEF350944E54DC38105BCEA1F2",
+        .seckeyDigest="DC73460E6CB214A06126DE04B19164F73CDFEBA77CA65364882F374271316836",
+        .addr="rJdGLqiNJ2yR5UDHZxenWXSLKa48zp71xV",},
+    {.seed={0x92, 0xd5, 0xd6, 0x0e, 0xa4, 0x47, 0x61, 0xaa, 0x90, 0x6b, 0x81, 0x41,
+            0xe9, 0xf3, 0x36, 0xbe,},
+        .pubkeyDigest="B7D3617A4E4E790C73E0BD52EE83063378232A6792534B184BEB1C4C7DDBC305",
+        .seckeyDigest="3757E506C31F03F97589EAB6B0000CB7081DAA9378FDB0ACBB8A1E1B57237B58",
+        .addr="rDBkRDFLLgx6E4sTugvoQZgGUmAJ9bwe1s",},
+    {.seed={0x59, 0x5c, 0xaa, 0xa0, 0x4e, 0x78, 0x60, 0x5c, 0x55, 0x5c, 0x19, 0x59,
+            0x75, 0xd7, 0xec, 0x93,},
+        .pubkeyDigest="A5FD68C62290243AF4847BCC297902CE12EBE92322421D870DC500A49C6FA405",
+        .seckeyDigest="7CD9AEE5E7D90518B570E5E33243365EF3E226D7DAAB8393C9E35BE7FB11D3E2",
+        .addr="rnuU6rJTjBnBBExtaKkiTZwqgboyMJfamp",},
+    {.seed={0x55, 0x7c, 0xf5, 0xdd, 0x0e, 0x82, 0xfc, 0xd9, 0x4d, 0x45, 0x0f, 0xb4,
+            0x6e, 0x80, 0x4d, 0x49,},
+        .pubkeyDigest="5786AC0D84E4821136EFF5DFFAD1AD4D31A0B37D1A3383F36B995F5A396AC932",
+        .seckeyDigest="8F379EF19CF5A6D87132D67BAC08A3A59F6ECCD9A9FA65E3A5DF4BF773795732",
+        .addr="rp3k8ahBMNxVbar4rZnSbRFC4VW6MVth8V",},
+    {.seed={0xa3, 0xa1, 0x2f, 0x05, 0xb8, 0xf6, 0x9f, 0xe4, 0x7d, 0x64, 0xbe, 0x7d,
+            0xa2, 0xca, 0x0a, 0x11,},
+        .pubkeyDigest="3B0A55CEBEA9DA1C065B3E92AFCEBDD58CB4BA62582C307779780BB62E65908B",
+        .seckeyDigest="48638279ACCCA262912677CAE721B5F08FD2AE9A9CEE5D5EC87AE1753848C176",
+        .addr="rBmzVzRPW5FhhDgWYXeE2fEB52uVt3MiCf",},
+    {.seed={0x81, 0x45, 0xe4, 0x79, 0xbd, 0x03, 0xd5, 0x09, 0x74, 0x14, 0xfc, 0x2a,
+            0x5a, 0xc8, 0xac, 0x8f,},
+        .pubkeyDigest="BA95C92BCA9C74E30448442B09514779981F069FD0D18025BF30FD62BDA6A34A",
+        .seckeyDigest="7CFFED3764DE7AB2589DA7B68851907A2888CDE5074BCB01CF8B45FF3FCFBE51",
+        .addr="rBEs2bUCgwSWGkJo7XFoPbp9Ly9QFmjdN",},
+    {.seed={0xff, 0x6d, 0x9e, 0x44, 0x50, 0x72, 0xcd, 0x7c, 0xc1, 0x48, 0x2a, 0x71,
+            0x52, 0xe8, 0x74, 0x89,},
+        .pubkeyDigest="9263B076E3D33D00D579E8A3FB3211926729A82E07DC491CCB7C4A190F84D7F1",
+        .seckeyDigest="5C35A6E3F27196641F16EEBF9392C1A605BA9C60A4EDDFA26D1E41E787405CFA",
+        .addr="rnt5o4eELg38ue8ds5VWrxf2wE2EYUxNKn",},
+    {.seed={0x50, 0xd8, 0x48, 0xad, 0x32, 0x4f, 0x76, 0x84, 0x41, 0x87, 0x2f, 0xe9,
+            0xad, 0xbd, 0x6e, 0x13,},
+        .pubkeyDigest="ADDC5F3DC974B5D10EF7F588913BD78E61467862CB951016A3CF605A60C0806D",
+        .seckeyDigest="B3BC068C5AA8E481538C923622059FBF3793EF182FF3ECA9A5B2B1B5C037A762",
+        .addr="rETxbCPUQPQcTCph64rf8LVjBo7M6yzoxb",},
+    {.seed={0x28, 0xb3, 0x46, 0x54, 0x90, 0x5e, 0x3c, 0x14, 0x8d, 0xf7, 0x94, 0xfe,
+            0x2e, 0x15, 0xb5, 0x41,},
+        .pubkeyDigest="1D4379CD0168230D66D379E10C741AE4C31497003B43D641763F3C364AC2640A",
+        .seckeyDigest="877B04D80314112981B81A6C112329DFAF654878C676144A94C9AD3E257A6A57",
+        .addr="rsvrK7u4LHGM65JcSfDhTEA3io5kdTqHgp",},
+    {.seed={0xdc, 0xa7, 0x02, 0x0a, 0x3e, 0xf9, 0x6f, 0xdf, 0x06, 0x07, 0xf5, 0x93,
+            0x97, 0x0c, 0x8b, 0x88,},
+        .pubkeyDigest="85228F088CD0E32925B8A36553107A0CF52805A0DED048D8CE8F852C9AE88D9E",
+        .seckeyDigest="788B58A34170E15CBEA45E81E17D6A94F7F86492CFA0AEB4F09B2E45E97521D7",
+        .addr="rBeho2XZiaEpcupQ78YubjtLhhp1bysnb4",},
+    {.seed={0x23, 0xb2, 0x81, 0x54, 0xb8, 0xb5, 0xdb, 0xea, 0x65, 0x87, 0x34, 0x8e,
+            0x57, 0xa9, 0x28, 0x67,},
+        .pubkeyDigest="1981B313CA91D60F49C2B274D27D536CE8965BBB9DD8061DEBB9E86C27AF1971",
+        .seckeyDigest="751911C1A60C0486B4C5BDFF7CBAAD0AD17A29A25FFBA1F065DF77EF4FBF357A",
+        .addr="rMGDFv9dQsmcRQqherPw3psX1wpHFiAqgY",},
+    {.seed={0x9c, 0xa2, 0x96, 0x4e, 0x17, 0x93, 0x9a, 0xaa, 0xc4, 0x3a, 0x1e, 0xc2,
+            0x45, 0xd1, 0xe7, 0x26,},
+        .pubkeyDigest="907A7FEFD79D430115AB9B7F30D3DBA23EAF2BB2A427E5B4A993E3C47AA9B17E",
+        .seckeyDigest="D30B172C649339214566610EF4868B583F148086BC073907B66394696B7EA254",
+        .addr="rNwtTtWz4HtH9FzRgPjHavf5VQSB3WABdb",},
+    {.seed={0x82, 0xf0, 0xdf, 0xf4, 0x11, 0x12, 0xcd, 0x2b, 0x89, 0xf1, 0x8e, 0xec,
+            0x0a, 0xeb, 0xf4, 0x4e,},
+        .pubkeyDigest="802417DFEEBADB538A74C8D7488E9A1109E1AA16DB927EFE2845FE47E1C7D90C",
+        .seckeyDigest="0EA086FF7059E1362F04DBACEAA8C44AC774DE06865EA82A8D95A8A3034C4D69",
+        .addr="rNM1x4eiMgWc9nKQSCWvgMZ5wz4qgVj8T1",},
+    {.seed={0x83, 0x91, 0x0b, 0x9a, 0x8d, 0x92, 0x0d, 0x3e, 0x1d, 0x73, 0x0d, 0x15,
+            0xaf, 0xb8, 0x06, 0xdc,},
+        .pubkeyDigest="A77A55FE6001717E1B4ABDAC3349E76038FD549EE32411393C211F70E9ED84B7",
+        .seckeyDigest="3F7E91C2B18E816DEB21F244754287617C22A12F62A7AF20000C005479BE8C1E",
+        .addr="rNQxuq6SX4dVdcJRt5jWYVrPAdwxkQq6Kf",},
+    {.seed={0xd7, 0x11, 0xf7, 0xeb, 0x96, 0x0d, 0xb6, 0x6b, 0xd0, 0xf0, 0x53, 0x47,
+            0x28, 0x20, 0xb4, 0x8f,},
+        .pubkeyDigest="E0C4BFF2F7B428E21E1F631A0831EAB2C78F66B9F428785B0F24B7C7B2A787DF",
+        .seckeyDigest="D03C47F4E57841823E77BD89B881A21863F0F5EDD360EB018F8B84E51017852F",
+        .addr="rMSJm6SwjgsergCLdFf944Wq5HyRJipFxz",},
+    {.seed={0x53, 0x41, 0x0c, 0x35, 0xe9, 0x97, 0x33, 0x2a, 0xda, 0xbe, 0xe5, 0x92,
+            0x10, 0x09, 0xbf, 0x73,},
+        .pubkeyDigest="9B6AFABD229EAF06A12C3D3EEEF8F4DC605897E9450CD04E27B3BDB77165A463",
+        .seckeyDigest="8D45715A225E82E4C1F7C2CBC21E978AF038A4DA3BC8B2DBA98A8560BCF854FA",
+        .addr="rNDUwoRgWptdjCQk11fYQNUnZJ14ksSt7Q",},
+    {.seed={0xdd, 0xd4, 0xd8, 0xc9, 0x4c, 0x3d, 0x8c, 0x46, 0x38, 0x34, 0x42, 0x20,
+            0x3b, 0x71, 0xf2, 0xfa,},
+        .pubkeyDigest="6B6EE2AC3D8EF744046932FF4190B993BA5B9DDFC526BD675CA69FD3F79AA854",
+        .seckeyDigest="02FB18A279A7BAB6AEFB3A84DBF457CDA380ABEC9EC00064CE56477BAD28D61F",
+        .addr="rwzpLLtzr88DQDk59Tw9i14MkRCUM6vu5N",},
+    {.seed={0x79, 0x85, 0x06, 0xc6, 0xee, 0x4a, 0x92, 0x8d, 0x41, 0xec, 0x45, 0x7c,
+            0xe5, 0xb9, 0x9e, 0xb4,},
+        .pubkeyDigest="9282D6C1259FEA755FD5EBDB30A64C4CD6B9D8CBE2C2CC2DC3268BE1F4EBF77C",
+        .seckeyDigest="BE75338883BCE7821713625C9720A4526FCCB1016EF304FE2A998442FBC9D21D",
+        .addr="raRbKfBYRB1YJAL7xue3CdAmhoQkhrEu8L",},
+    {.seed={0xaf, 0x77, 0x2d, 0x50, 0x65, 0x87, 0x03, 0x52, 0xd0, 0x08, 0xd6, 0x07,
+            0xd1, 0xfd, 0x91, 0x50,},
+        .pubkeyDigest="E7BF0C1992BE89E5F960356AC3974BD932D1A9C912E87F8CD8D723DBB9926356",
+        .seckeyDigest="AC617DC03AF0F741EF7AD20EFD2F6EBECF3317573738DBE3FBED731A85CCCAE7",
+        .addr="rnczVPSNt6TXXqBRspzjxTAkEXFfaLZWJE",},
+    {.seed={0x51, 0xc2, 0xf1, 0x9b, 0xf8, 0xb1, 0x4b, 0x75, 0x53, 0x7a, 0x10, 0xeb,
+            0x1b, 0xfb, 0xe5, 0x71,},
+        .pubkeyDigest="64355488C58AD222981E07FAA886B9636D73B05B0D170E93F9729C198F1CB647",
+        .seckeyDigest="4541B7073141C9998B46D06D4516CF55179F6048195127E04CD62075D978A7F9",
+        .addr="rahEdtTXQhY2RmtuPWtGA93mxFj5i8CHcL",},
+    {.seed={0x43, 0xb9, 0xb5, 0x8a, 0x18, 0x47, 0xbc, 0xa9, 0xa8, 0xf2, 0xdb, 0xd6,
+            0xef, 0xa0, 0x45, 0x63,},
+        .pubkeyDigest="E17209BBE62989CD57DC951CDB704131E4DB7E3680918604F818CB6AAE5E1E2A",
+        .seckeyDigest="55D7E1E88B6E025809A904859375004212D1A1C902F0744574249D9F4147C2D8",
+        .addr="r3qAVfPF7LskDDMPsQkheUYpFgy4nbEiAa",},
+    {.seed={0xa0, 0x78, 0x0b, 0x8f, 0x94, 0xc5, 0x16, 0x96, 0x56, 0xf4, 0xe7, 0x4f,
+            0x6a, 0x64, 0xc3, 0xb8,},
+        .pubkeyDigest="40A4330134EC4273C02354B06517CDAD3EA0D8D235F678C26B61C67EE3E4F19E",
+        .seckeyDigest="3C73F4E7E0FD95B34529EAD9AB5B448BE8ADD1DB749A9B5C6162D031AA9FE1CD",
+        .addr="rHu3CkvFNTmm7N1sANCvuZeMZBzx8EcMoJ",},
+    {.seed={0x64, 0x55, 0x8d, 0x33, 0x9e, 0x82, 0x0d, 0x21, 0xc7, 0x54, 0xf8, 0x5e,
+            0xad, 0x1f, 0x63, 0x44,},
+        .pubkeyDigest="069E4573FF599BBEEA43E6D0C3B3B7EC24131B51F797FD994DDDB911C84504D4",
+        .seckeyDigest="6F9EA227CE9BF49CA67CD93625481EAB83A0B6C70C92D602716070EFD7BC908F",
+        .addr="rpfcqzfkWWPBoo9s55o4LisDvDfr9TF7SJ",},
+    {.seed={0x11, 0xd3, 0xe8, 0x3e, 0xb7, 0x1e, 0x5d, 0x8e, 0xfd, 0xcd, 0xe8, 0x86,
+            0xa9, 0xa8, 0x3c, 0x68,},
+        .pubkeyDigest="31781611BE4515B7748F143DD638DB4D7C75A36F6E3B0942EED839A82ECF27BB",
+        .seckeyDigest="36D1AF74F9D9A92079B3DB90F8694B9E5C848E334996155BDDFD4C9933476A3D",
+        .addr="rUHb6NVLGVSjGEi3WofbeCpEYXkb7SSe2Y",},
+    {.seed={0x6a, 0x30, 0xc9, 0x74, 0xf0, 0x4a, 0x69, 0x22, 0x54, 0x76, 0xb3, 0xb5,
+            0xad, 0x7a, 0x3d, 0x5e,},
+        .pubkeyDigest="5DAF9E0C6766DCE27D14D1D3BA058FA72763C4F141EC88AA4A5C34C19A493038",
+        .seckeyDigest="2646014A6C2F8081FC7C1BA68DE009D01679A8501BBADAEC419E4726A452C836",
+        .addr="r3pjVVxCXf9BNuFPZmmfqF4dwNivSKrAyW",},
+    {.seed={0xd3, 0xe3, 0x93, 0x18, 0x47, 0x47, 0x77, 0xe7, 0xea, 0x6c, 0x06, 0x48,
+            0xff, 0x9a, 0x69, 0x3e,},
+        .pubkeyDigest="7BF7589656C912BEF65BD2A157E1E9BA4BD1853F0CB512D59971806DCF2D3480",
+        .seckeyDigest="0E091601539825A01166E0AC7DD1424BF123E7E41C9203477F35715CC503DD99",
+        .addr="r3i7njdBh6keZxM8jqeAx5n4UzQpv2jpaJ",},
+    {.seed={0xd1, 0x32, 0xc4, 0x58, 0x19, 0x14, 0xa0, 0x58, 0xd6, 0xa6, 0x0e, 0xc1,
+            0x76, 0xc2, 0x6e, 0xea,},
+        .pubkeyDigest="2A018A2539E4C1F9044D02531AFC7BC68DD8B89386EBBDF56DE72B96FFD3D638",
+        .seckeyDigest="ECA27D9EA1D0874677BDB3BBB0916724DED1A55CF73F5EDCE71E691FFA141A5C",
+        .addr="rh1K9MqNqWfgsCumwppZ8LNHaV1WhjtwQ7",},
+    {.seed={0xe9, 0xc0, 0x3b, 0x54, 0x47, 0x52, 0x1e, 0xc0, 0x5c, 0xd0, 0x8e, 0xe9,
+            0x66, 0x88, 0xca, 0x18,},
+        .pubkeyDigest="695D7C9FD7CD8287C670A6C9745BD14EB9D07C941D4125F1B194B31E6906BE0F",
+        .seckeyDigest="72F780BD649A6E1CBFBCFF64A8E2906896E5AC7C9562EDDD8ACB7ADE830E68C2",
+        .addr="rnWDbETeExRgs5CWbzKYHrxHPmfcuRiVKG",},
+    {.seed={0x68, 0x85, 0x77, 0xcc, 0xb0, 0x3a, 0xec, 0xa4, 0x73, 0x6e, 0xa0, 0xb9,
+            0x1b, 0x09, 0x5d, 0xff,},
+        .pubkeyDigest="EAC1CA5E88F8E9A691C8F7A8E2E7CA486E92E81ACA272CE6E22ED6255126F5A0",
+        .seckeyDigest="A931DC942E8707691BA1CAC75B2FC896E9CABEEBE7EAC788E19D8A5563FD1EE8",
+        .addr="rHs2qSssFXktSvgcQJY8KYejWZ9U89fDHT",},
+    {.seed={0xc6, 0xb4, 0xc4, 0xed, 0x34, 0x35, 0xfa, 0xb3, 0x0d, 0x41, 0x2b, 0x2f,
+            0x89, 0x2a, 0x05, 0xf9,},
+        .pubkeyDigest="142A2E0FA1582CF66D4333C949639A3A15EAD9B5F40785B09F3FF3D4C0BE53F1",
+        .seckeyDigest="82F092987718DAF494DE921871946DBE05797B54566B043239903FF64F31A8CB",
+        .addr="rBqN8fwm4qeA9tLCe3iqwK5XwVUNF7TNVC",},
+    {.seed={0x86, 0x73, 0xfa, 0x5d, 0x66, 0x33, 0x4e, 0x90, 0xa4, 0x09, 0xae, 0x41,
+            0xf2, 0x74, 0x1c, 0x6b,},
+        .pubkeyDigest="41B656EB7FAEB0B4D5BE51E757D072B710545C0BE296C8C808D3A3A598FFC2B4",
+        .seckeyDigest="A38AA947B5034774744DDCEA0DA0E1BD997E5DC671D61FAA16BB98E9740BF440",
+        .addr="rKQvdKTcXUVsAoCicqnHpanZN8Ljf4pj7g",},
+    {.seed={0xbd, 0x78, 0x1e, 0xed, 0xb7, 0x86, 0x41, 0xfe, 0x08, 0x52, 0x11, 0xfd,
+            0x77, 0xe1, 0x6d, 0x98,},
+        .pubkeyDigest="1690A488504B714B13BEFBD55D6D6D8FBA7C58FA8965046A0C8825E1FB5BC931",
+        .seckeyDigest="4AF8B70032DA1825323D1AAC0F73C3B498B0297B84FF1A51F88C2F43B7CEB1BC",
+        .addr="rDYzi1EjYgDLzUBtwAVj2hMpvMdeSnV5uJ",},
+    {.seed={0x83, 0xcd, 0x0a, 0xf3, 0x20, 0xe4, 0x4a, 0xbe, 0x86, 0xcc, 0x5f, 0xc8,
+            0x34, 0x1f, 0xf4, 0x4c,},
+        .pubkeyDigest="7F6384D07602C640E9B88CA4594E5B619CD0F5A7EE3070073E2845F60F1199CC",
+        .seckeyDigest="05314E936AF6741490F62EDBBCA9C60C8E3442E05B907076AC64A495D6F35ACE",
+        .addr="rxrBABGTGXKZVqFabzv8K6jbYdPfuFmao",},
+    {.seed={0xcb, 0x12, 0x56, 0xcd, 0x7a, 0x33, 0x85, 0xb3, 0x88, 0xd3, 0xa2, 0x92,
+            0x67, 0x50, 0xa1, 0x4c,},
+        .pubkeyDigest="F8232646316C6BD26BD5F0B81242F483AF974420D7F707BE27A7A31FBEBFE009",
+        .seckeyDigest="94B4763C3C965C962095B84114952436390AE2B416AFEE06FEC6371E36C441B6",
+        .addr="rMbacPJWNniX741xR5wWADxBHNwJC82awp",},
+    {.seed={0xa2, 0xda, 0x64, 0xdc, 0xb3, 0xd2, 0xd6, 0x95, 0x7b, 0x66, 0x0b, 0x73,
+            0xa0, 0xe8, 0x0d, 0xcf,},
+        .pubkeyDigest="726BC0B50B5AA2BC5ADB740377AEE1CCB6FC01DD8424258E54760810ABB91FBF",
+        .seckeyDigest="5E2BC116248D38082E992D2AFA870B7F849B603DF16FEDD5A70425C0C6E6FB28",
+        .addr="rKvVReSvSXsp9qxXpaw419nTCK38iWAqwF",},
+    {.seed={0x4b, 0x46, 0x8d, 0x52, 0x52, 0xfc, 0xf9, 0x41, 0x27, 0x52, 0x4e, 0x74,
+            0xc6, 0x0c, 0x7c, 0x99,},
+        .pubkeyDigest="68F380FE6AEF2FA033DFAE2383433171AA4D942BC6FCEA3D1BA642941B3A5B1C",
+        .seckeyDigest="3FAF91BD61114E9F84D1983B8CCDD755CA4B3198CAC263ACAB28F73CAFE5A951",
+        .addr="rKVTZYUfXZCjYVPxizEoLKxZsB5YzfYdQJ",},
+    {.seed={0x0c, 0xf2, 0xd0, 0x51, 0x2a, 0xb0, 0x27, 0xa5, 0x1a, 0x06, 0x93, 0x36,
+            0xeb, 0x56, 0x65, 0xdb,},
+        .pubkeyDigest="949CD67E173750299DC9C8FE301680F617E6B6178CFBC344E7FC07C3627FC0A9",
+        .seckeyDigest="1C6FBB29600ACC718DDEFD117038DAD32042C51D374008A77F6DBC38A39C0BBA",
+        .addr="rLgp7fP9U8okqZB3Q4xdvua5w9KRHu5uWa",},
+    {.seed={0xd8, 0x63, 0x7d, 0xf3, 0x4f, 0x34, 0xee, 0x1a, 0xa8, 0x88, 0x80, 0x97,
+            0x6c, 0x91, 0xf4, 0xf7,},
+        .pubkeyDigest="2C9EB5DBE9CD7210E346060C141BB872BD3BE5DC9D138D385B244F8C1C3C5F2B",
+        .seckeyDigest="22D034A819476D1402123C61EFC6F5A1B8EBB27AEE184197D6B82AABC8B920CC",
+        .addr="rfTKBZzcyhJ5HuGUvhKxSFQKuXzaKri8R2",},
+    {.seed={0xbc, 0x87, 0x75, 0xbf, 0xe2, 0xa0, 0x11, 0x39, 0x7c, 0x81, 0x6a, 0xca,
+            0x3b, 0x13, 0x06, 0xeb,},
+        .pubkeyDigest="01C0071401B6CA6747D15C590EDEDAD774AFAAADE5AF9298F0D369396484DA4F",
+        .seckeyDigest="35D742BC25BA3A3BFC12CC193EDE31F93A904885D44FE0B602EA88AB12233A1C",
+        .addr="rniwEHjCpheL5fGSCQFyrec5QGqa7h6xyk",},
+    {.seed={0xc1, 0x2e, 0x7f, 0x74, 0xa6, 0xce, 0x4c, 0xac, 0xaf, 0x7f, 0xd7, 0x5f,
+            0x9f, 0x00, 0x13, 0xa8,},
+        .pubkeyDigest="E1FE714BA33C0CB08FD3E6E00C22344E246A462338C8E98392B960EDE36D7E3B",
+        .seckeyDigest="E858E13609A8071637719F989EF041429933405B12E46AC0DFF90F812C674CD6",
+        .addr="rPdP57R87m3J4XYFkqtxCcyzVzt9k3gaLU",},
+    {.seed={0x17, 0xd4, 0x96, 0x7d, 0x8a, 0x2b, 0xe5, 0x53, 0xdf, 0x09, 0xb5, 0xd4,
+            0xad, 0x4d, 0x88, 0xd7,},
+        .pubkeyDigest="4DE787D8829A08B5BD17877A3BAA8E1DF97C00F81417A2B5C8175758411B09E9",
+        .seckeyDigest="8CB218BE7B3A0256E52F3FB97CD606B8D2C6AB81C5CDB4BD608F376CD13A3D1F",
+        .addr="r9JY5DnLBjHqTAJiruenjg3b9i7AuQXLdB",},
+    {.seed={0x37, 0xf8, 0x94, 0xe4, 0x39, 0x91, 0x8a, 0xb3, 0xf5, 0x42, 0x6a, 0x80,
+            0x7c, 0x05, 0x97, 0xd3,},
+        .pubkeyDigest="6A3C541419AC30CA4E0293389B721F17360AC1EBACE377DD40E74128497FE79E",
+        .seckeyDigest="7494FAC0EFC07107B3308100632F739455F48B294F6D08FF06091ECD4BD67ACA",
+        .addr="rwqZCuHDmceoHc2mFxxMHEHKibRp7T5dEs",},
+    {.seed={0x18, 0x8f, 0xac, 0xb8, 0xa8, 0x4d, 0x3a, 0x04, 0xd0, 0x56, 0xbf, 0xe1,
+            0x58, 0xf2, 0x3c, 0xc4,},
+        .pubkeyDigest="BD4BD24BC166625FC063E64F2796BCFE561C32E888A6F9391F88951B2E738623",
+        .seckeyDigest="6C39F58FD199D7F734C73C704E78700A5D9C92469005BB361EA6DCF9954C6E6B",
+        .addr="rfZnwgvVHxeLZbEavtf1AseX1niUv1P56Q",},
+    {.seed={0x15, 0xb8, 0xce, 0x79, 0x8c, 0x78, 0x5d, 0x43, 0xef, 0x1b, 0xec, 0x81,
+            0x4f, 0x33, 0x62, 0xa1,},
+        .pubkeyDigest="829E2A20188C721F58FACCBD03B0D21E15D6B2B76FEEAF85CF4F2C4064A1A056",
+        .seckeyDigest="738758E55BB5D65DE6BD5F358A3A6321A790EA7B7491D36F39EF0F18342418AE",
+        .addr="rEEJsrEcykYKw4SxZcpZZtoHhvuQjLpHCH",},
+    {.seed={0x18, 0xd7, 0xde, 0x8c, 0x5f, 0xd9, 0xad, 0x8e, 0x45, 0xa6, 0x2d, 0x78,
+            0xae, 0x5c, 0xb8, 0xce,},
+        .pubkeyDigest="5263F97B8DA32499A7F1E14AF9AF1DEFC4C40C4B8836630DCA928FD8DAB4A723",
+        .seckeyDigest="B07E3B156792924586F6D2257D8614902BE8BF9C70F58D49763ED896B356F227",
+        .addr="rheV3GgCyKZVZd1C5eV4ik11wD76EBNK8L",},
+    {.seed={0x05, 0x3b, 0x8a, 0x68, 0x65, 0x3c, 0x4b, 0x5d, 0x96, 0xe6, 0x38, 0x54,
+            0x93, 0xfc, 0x64, 0xc0,},
+        .pubkeyDigest="0D38EE6801FB6F2D52FFF22EA9246A9533EC61766BDF8D7B2919ED728F0848A3",
+        .seckeyDigest="B7C1B4D0C01B462EB0A964F0C246506D1C04C939A3BAFB493E67112098F9591C",
+        .addr="rNZM1Y6t8f7SuoZWbcGasGsmXkThnKEYFG",},
+    {.seed={0x71, 0xf5, 0x5c, 0x91, 0xac, 0xe6, 0x98, 0x38, 0xf6, 0x1b, 0x15, 0x0d,
+            0x0d, 0xe7, 0xca, 0xf0,},
+        .pubkeyDigest="A3E3B9AE903344AE5811EE73CAC2E2DFF1CDB24FC1199EDDD3F4A6D2E791BF9B",
+        .seckeyDigest="C6EA946F6073605891AAF77A2A4EA66DAB2732CD4D5501F6E3EF47C0D3AA7D0B",
+        .addr="rGkCPok1t5YkkrFmKdLdAmcMhk1jSNvv3",},
+    {.seed={0x64, 0x87, 0x59, 0x26, 0x8b, 0x2e, 0xcd, 0x39, 0x53, 0x55, 0x49, 0xa1,
+            0x48, 0xc4, 0x84, 0x7f,},
+        .pubkeyDigest="73CA6EE0BF28019661E827630E563B28E1A7EC99903ADF16260375E31AF982C3",
+        .seckeyDigest="EE42B5E6BA41A056789AB04D4E9E2C662F6BBFB05C5AF4F375D3A973A80EA625",
+        .addr="rh79g8LRG1PkSS2CMKzZehgc6v6yFmhoXx",},
+    {.seed={0x18, 0x80, 0xf3, 0x27, 0x0e, 0xdc, 0x69, 0x2c, 0x77, 0x14, 0x54, 0xcd,
+            0x82, 0xbf, 0xa1, 0x31,},
+        .pubkeyDigest="2E65B0B1A5447ABEB0A62B1C01A32BD22BA69A71818D46AA99E7F9F99C76539B",
+        .seckeyDigest="F7DC73CFD1284D71C14BC95F2BE916BF73005634590D515C9475A4578FD36064",
+        .addr="rG9R1vz386ogiDVqxtZ2rvMcwXsR3uSGWY",},
+    {.seed={0x82, 0x99, 0xe6, 0xac, 0x48, 0x00, 0xc7, 0x4b, 0xf0, 0x58, 0xfd, 0x3d,
+            0x7b, 0x7e, 0x9c, 0x8f,},
+        .pubkeyDigest="AF1265572BEA87CFC1C61AEFCE122A02F29AF16A0F05F74484C6EB9137CCEBB2",
+        .seckeyDigest="2E309E7276D3833EB2DA87835E75823CEFA4C398DBCAF6E27626604999040A60",
+        .addr="rfDEUKRXvAYw9sXMCxWmvKvodLMpTVZVbv",},
+    {.seed={0x51, 0xb5, 0x2f, 0xba, 0xde, 0xe4, 0x04, 0x89, 0x76, 0xbf, 0xe9, 0x08,
+            0x8a, 0x84, 0x4f, 0x07,},
+        .pubkeyDigest="25DA98B3489B4115F93069543B2FE652E31C922AEF66F14B8971FC92C6D4816F",
+        .seckeyDigest="0C2DBA6D4F1ED8063F309444A61387E2115FE9729986F3C97E2444D5BB4B6C53",
+        .addr="rKWbwooUrJ9gLLaB9Y4bK1DBc4tUYBZUpS",},
+    {.seed={0xc7, 0xdb, 0x5a, 0x6a, 0x61, 0x17, 0x7e, 0xb1, 0x27, 0x45, 0x4e, 0x67,
+            0x89, 0xb6, 0x2f, 0x25,},
+        .pubkeyDigest="FEB46AF74023901ACB0DFDB0520E018E12FD6680D43A58379949EC760436F977",
+        .seckeyDigest="2C36ADB6046B18D66F7574A23FC6A9D76BB999611CDF70F246ADED392B1DBC9D",
+        .addr="rsQ9YJxAHFV9vsoECqtB8HFZJ6mCdJPwZc",},};
 
     // clang-format on
 };
