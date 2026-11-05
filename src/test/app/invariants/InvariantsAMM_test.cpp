@@ -177,7 +177,7 @@ class InvariantsAMM_test : public InvariantsBase
             return true;
         };
 
-        auto test = [&](auto const txType, auto&& update, bool isMPT) {
+        auto const test = [&](auto const txType, auto&& update, bool isMPT) {
             doInvariantCheck(
                 {{"AMM"}},
                 [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },

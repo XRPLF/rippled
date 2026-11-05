@@ -34,6 +34,7 @@
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -134,14 +135,14 @@ FailedTransaction::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef
 
     // Returns whether the object matched the target type. If it was, the caller may do additional
     // checks related to that type, and should return.
-    auto validateFeePayer = [isDelete, &err, this](
-                                LedgerEntryType target,
-                                SLE::const_pointer& tracker,
-                                SLE::ConstRef before,
-                                SLE::ConstRef after,
-                                SF_AMOUNT const& field,
-                                std::string_view desc,
-                                std::function<std::string(SLE::ConstRef)> labelMaker) {
+    auto const validateFeePayer = [isDelete, &err, this](
+                                      LedgerEntryType target,
+                                      SLE::const_pointer& tracker,
+                                      SLE::ConstRef before,
+                                      SLE::ConstRef after,
+                                      SF_AMOUNT const& field,
+                                      std::string_view desc,
+                                      std::function<std::string(SLE::ConstRef)> labelMaker) {
         if (after->getType() != target)
             return false;
 
@@ -195,14 +196,15 @@ FailedTransaction::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef
             // LCOV_EXCL_STOP
         }
 
-        auto const allowedFields = std::to_array<SField const*>(
-            {&sfSequence,
-             &sfBalance,
-             &sfOwnerCount,
-             &sfTicketCount,
-             &sfFeeAmount,
-             &sfPreviousTxnID,
-             &sfPreviousTxnLgrSeq});
+        auto const allowedFields = std::to_array<SField const*>({
+            &sfSequence,
+            &sfBalance,
+            &sfOwnerCount,
+            &sfTicketCount,
+            &sfFeeAmount,
+            &sfPreviousTxnID,
+            &sfPreviousTxnLgrSeq,
+        });
         for (auto const& elem : format->getSOTemplate())
         {
             auto const& sf = elem.sField();
