@@ -338,11 +338,6 @@ OverlayImpl::onHandoff(
             // while holding the lock, otherwise new I/O can be
             // queued after a call to stop().
             std::scoped_lock const lock(mutex_);
-            {
-                auto const result = peers_.emplace(peer->slot(), peer);
-                XRPL_ASSERT(result.second, "xrpl::OverlayImpl::onHandoff : peer is inserted");
-                (void)result.second;
-            }
             list_.emplace(peer.get(), peer);
 
             peer->run();
@@ -477,12 +472,6 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
     std::scoped_lock const lock(mutex_);
 
     {
-        auto const result = peers_.emplace(peer->slot(), peer);
-        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer is inserted");
-        (void)result.second;
-    }
-
-    {
         auto const result = ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer));
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer ID is inserted");
@@ -497,15 +486,6 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
     // while holding the lock, otherwise new I/O can be
     // queued after a call to stop().
     peer->run();
-}
-
-void
-OverlayImpl::remove(std::shared_ptr<peer_finder::Slot> const& slot)
-{
-    std::scoped_lock const lock(mutex_);
-    auto const iter = peers_.find(slot);
-    XRPL_ASSERT(iter != peers_.end(), "xrpl::OverlayImpl::remove : valid input");
-    peers_.erase(iter);
 }
 
 // Well-known high-capacity servers to bootstrap from when [ips] and [ips_fixed] are empty.
@@ -1461,17 +1441,29 @@ void
 OverlayImpl::sendEndpoints()
 {
     auto const result = peerFinder_->buildEndpointsForPeers();
-    for (auto const& e : result)
+    if (result.empty())
+        return;
+
+    // PeerFinder identifies peers by slot. Endpoints are broadcast rarely
+    // (see peer_finder::tuning::kSecondsPerMessage), so a linear search for
+    // the peer owning each slot is cheaper than maintaining a slot-keyed index
+    // on every connect and disconnect.
+    std::vector<std::shared_ptr<PeerImp>> peers;
     {
-        std::shared_ptr<PeerImp> peer;
+        std::scoped_lock const lock(mutex_);
+        peers.reserve(ids_.size());
+        for (auto const& [id, weak] : ids_)
         {
-            std::scoped_lock const lock(mutex_);
-            auto const iter = peers_.find(e.first);
-            if (iter != peers_.end())
-                peer = iter->second.lock();
+            if (auto peer = weak.lock())
+                peers.push_back(std::move(peer));
         }
-        if (peer)
-            peer->sendEndpoints(e.second.begin(), e.second.end());
+    }
+
+    for (auto const& [slot, endpoints] : result)
+    {
+        auto const iter = std::ranges::find(peers, slot, &PeerImp::slot);
+        if (iter != peers.end())
+            (*iter)->sendEndpoints(endpoints.begin(), endpoints.end());
     }
 }
 
