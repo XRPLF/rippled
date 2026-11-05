@@ -63,16 +63,9 @@
 
       {
         "compiler": ["gcc", "clang"],
-        "build_type": ["Debug", "Release"],
+        "build_type": ["Debug"],
         "arch": ["amd64"],
-        "events": [
-          "ready_to_merge",
-          "merge_group",
-          "push",
-          "schedule",
-          "tag",
-          "workflow_dispatch"
-        ],
+        "events": ["merge_group", "push", "schedule", "workflow_dispatch"],
         "sanitizers": ["address", "undefinedbehavior"]
       },
       {
@@ -167,6 +160,45 @@
           "type": "deb",
           "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
           "variant": "assert"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": ["schedule", "tag", "workflow_dispatch"],
+        "sanitizers": ["address"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "asan"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": ["schedule", "tag", "workflow_dispatch"],
+        "sanitizers": ["undefinedbehavior"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "ubsan"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": ["schedule", "tag", "workflow_dispatch"],
+        "sanitizers": ["thread"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "tsan"
         }
       }
     ],

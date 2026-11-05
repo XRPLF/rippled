@@ -94,6 +94,12 @@ def test_packaged_config_must_list_tag() -> None:
     assert rejected(package={**package, "type": "msi"}, events=[g.TAG])
 
 
+def test_packaged_config_has_one_sanitizer_at_most() -> None:
+    package = {"type": "deb", "image": "debian:trixie"}
+    assert not rejected(package=package, events=[g.TAG], sanitizers=["address"])
+    assert rejected(package=package, events=[g.TAG], sanitizers=["address", "thread"])
+
+
 # --- invariants over the JSON files -------------------------------------------
 
 

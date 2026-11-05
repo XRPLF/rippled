@@ -153,6 +153,11 @@ class LinuxConfig:
             f"a config with a 'package' map must list the '{TAG}' event; "
             f"got {self.events}."
         )
+        # The variant names the package, so one config packages one sanitizer.
+        assert self.package is None or len(self.sanitizers) <= 1, (
+            f"a config with a 'package' map may list one sanitizer at most; "
+            f"got {self.sanitizers}."
+        )
         self.events = _read_events(self.events)
 
 
@@ -316,8 +321,8 @@ def expand_linux_packaging(linux: LinuxFile, event: str) -> list[PackagingEntry]
     and list 'event'.
 
     Packaging consumes the binaries that config's build job uploaded, so the
-    artifact names come from the same config name, and a packaged config is one
-    that passes -Dvalidator_keys=ON.
+    artifact names come from the same config name, sanitizer included, and a
+    packaged config is one that passes -Dvalidator_keys=ON.
 
     Packaging itself runs in vanilla distro images (debian:trixie, almalinux:10)
     instead of the nix-based build images, because deb/rpm tooling (debhelper,
@@ -328,12 +333,14 @@ def expand_linux_packaging(linux: LinuxFile, event: str) -> list[PackagingEntry]
         for cfg in configs:
             if cfg.package is None or event not in cfg.events:
                 continue
-            for compiler, build_type, arch in itertools.product(
-                cfg.compiler, cfg.build_type, cfg.arch
+            for compiler, build_type, sanitizer, arch in itertools.product(
+                cfg.compiler, cfg.build_type, cfg.sanitizers or [""], cfg.arch
             ):
                 # The packaging workflow hardcodes an amd64 runner.
                 assert arch == "amd64", f"cannot package {distro} on {arch}"
-                name = config_name(distro, compiler, build_type, arch, cfg.suffix)
+                name = config_name(
+                    distro, compiler, build_type, arch, cfg.suffix, sanitizer
+                )
                 entries.append(
                     PackagingEntry(
                         xrpld_artifact_name=f"xrpld-{name}",
