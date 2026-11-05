@@ -1,9 +1,12 @@
 #include <test/app/perp/PerpTestBase.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -418,6 +421,62 @@ class PerpExchange_test : public PerpTestBase
     }
 
     void
+    testDeletePayoutChecks()
+    {
+        testcase("delete payout checks");
+        using namespace test::jtx;
+
+        // The owner's USD is not authorized by the issuer, so it cannot receive the payout.
+        {
+            Env env{*this, all_};
+            env.fund(XRP(100'000), owner_, alice_, gw_);
+            env.close();
+            env(fset(gw_, asfRequireAuth));
+            env.close();
+            env.trust(usd_(1'000), alice_);
+            env(trust(gw_, alice_["USD"](0), tfSetfAuth));
+            env(pay(gw_, alice_, usd_(1'000)));
+            env.close();
+            auto const keylet = createExchange(env, owner_, usd_);
+            auto const created = env.le(keylet);
+            if (!BEAST_EXPECT(created))
+                return;
+            auto const pseudoID = (*created)[sfAccount];
+            seed(env, keylet, [&](ApplyView& view, SLE::pointer const& exchange) {
+                BEAST_EXPECT(
+                    isTesSuccess(accountSend(view, alice_.id(), pseudoID, usd_(500), env.journal)));
+                (*exchange)[sfAssetsTotal] = Number{500};
+                (*exchange)[sfOwnerFees] = Number{500};
+            });
+            env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(env.le(keylet));
+            BEAST_EXPECT(!env.le(keylet::trustLine(owner_.id(), usd_.issue())));
+        }
+
+        // A frozen asset cannot be paid out.
+        {
+            Env env{*this, all_};
+            fundAccounts(env);
+            auto const keylet = createExchange(env, owner_, usd_);
+            auto const created = env.le(keylet);
+            if (!BEAST_EXPECT(created))
+                return;
+            auto const pseudoID = (*created)[sfAccount];
+            env(fset(gw_, asfGlobalFreeze));
+            seed(env, keylet, [&](ApplyView& view, SLE::pointer const& exchange) {
+                BEAST_EXPECT(
+                    isTesSuccess(accountSend(view, alice_.id(), pseudoID, usd_(500), env.journal)));
+                (*exchange)[sfAssetsTotal] = Number{500};
+                (*exchange)[sfOwnerFees] = Number{500};
+            });
+            env(Perp::exchangeDelete(owner_, keylet.key), Ter(tecFROZEN));
+            env.close();
+            BEAST_EXPECT(env.le(keylet));
+        }
+    }
+
+    void
     testDeleteWithBadDebt()
     {
         testcase("delete with bad debt");
@@ -441,6 +500,7 @@ public:
         testTightenOnly();
         testDelete();
         testDeleteWithBadDebt();
+        testDeletePayoutChecks();
     }
 };
 

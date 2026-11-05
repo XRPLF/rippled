@@ -345,6 +345,58 @@ class PerpMarket_test : public PerpTestBase
     }
 
     void
+    testForeignArrayElements()
+    {
+        testcase("foreign array elements");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        setupMarketWorld(env);
+        auto const exchange = createExchange(env, owner_, usd_);
+
+        // An element of another object type is malformed, not an exception.
+        auto memo = [] {
+            json::Value array{json::ValueType::Array};
+            json::Value entry;
+            entry[sfMemo][sfMemoData] = "AB";
+            array.append(entry);
+            return array;
+        };
+
+        auto oracles = Perp::marketSet(owner_, exchange.key, marketArgs());
+        oracles[sfIndexOracles] = memo();
+        env(oracles, Ter(temMALFORMED));
+
+        auto tiers = Perp::marketSet(owner_, exchange.key, marketArgs());
+        tiers[sfMarginTiers] = memo();
+        env(tiers, Ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(!env.le(marketKeylet(exchange.key)));
+
+        env(Perp::marketSet(owner_, exchange.key, marketArgs()));
+        env.close();
+        auto update = Perp::marketUpdate(owner_, marketKeylet(exchange.key).key);
+        update[sfMarginTiers] = memo();
+        env(update, Ter(temMALFORMED));
+    }
+
+    void
+    testPriceTickFloor()
+    {
+        testcase("price tick floor");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        setupMarketWorld(env);
+        auto const exchange = createExchange(env, owner_, usd_);
+
+        // A tick below the smallest STAmount would allow orders with no book quality.
+        auto args = marketArgs();
+        args.priceTick = Number(1, -98);
+        env(Perp::marketSet(owner_, exchange.key, args), Ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(!env.le(marketKeylet(exchange.key)));
+    }
+
+    void
     testSettleLive()
     {
         testcase("settle live");
@@ -515,6 +567,8 @@ public:
     {
         testCreateNeedsQuorum();
         testTierValidation();
+        testForeignArrayElements();
+        testPriceTickFloor();
         testTightenOnly();
         testSettleLive();
         testDeleteRequirements();

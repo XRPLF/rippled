@@ -840,6 +840,72 @@ class PerpLiquidate_test : public PerpTestBase
         expectAccounting(env, t);
     }
 
+    void
+    testTakeoverClosesLiquidatorPosition()
+    {
+        testcase("takeover closes the liquidator's position");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        auto t = setup(env);
+        deposit(env, t, alice_, 1'100);
+        deposit(env, t, bob_, 2'000);
+        deposit(env, t, carol_, 2'000);
+        deposit(env, t, liq_, 1'000);
+        env.close();
+        trade(env, t.xrp, bob_, alice_, Number(100), Number(100));
+        trade(env, t.xrp, liq_, carol_, Number(100), Number(100));
+        BEAST_EXPECT(sizeOf(env, liq_, t, t.xrp) == Number(100));
+        movePrices(env, t, 110, std::nullopt);
+
+        // The liquidator is long 100, so taking the short of 100 leaves it flat and its position
+        // is deleted.
+        auto const ownerCount = env.ownerCount(liq_);
+        env(liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateTakeover));
+        env.close();
+        BEAST_EXPECT(!env.le(positionKeylet(alice_, t, t.xrp)));
+        BEAST_EXPECT(!env.le(positionKeylet(liq_, t, t.xrp)));
+        BEAST_EXPECT(env.ownerCount(liq_) == ownerCount - 1);
+        auto const margin = env.le(marginKeylet(liq_, t));
+        BEAST_EXPECT(margin && margin->getFieldV256(sfMarkets).empty());
+        auto const market = env.le(t.xrp);
+        BEAST_EXPECT(market && (*market)[sfOpenInterestLong] == Number(100));
+        BEAST_EXPECT(market && (*market)[sfOpenInterestShort] == Number(100));
+        expectAccounting(env, t);
+    }
+
+    void
+    testRequestedSize()
+    {
+        testcase("requested size");
+        using namespace test::jtx;
+
+        // A requested size takes at most that much of the position.
+        {
+            Env env{*this, all_};
+            auto t = setup(env);
+            shortAt100(env, t, 1'100);
+            auto request = liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateTakeover);
+            request[sfSize] = "40";
+            env(request);
+            env.close();
+            BEAST_EXPECT(sizeOf(env, alice_, t, t.xrp) == Number(-60));
+            BEAST_EXPECT(sizeOf(env, liq_, t, t.xrp) == Number(-40));
+            expectAccounting(env, t);
+        }
+
+        // A size that is not a whole number of lots is refused.
+        {
+            Env env{*this, all_};
+            auto t = setup(env);
+            shortAt100(env, t, 1'100);
+            auto request = liquidate(liq_, alice_, t, t.xrp, tfPerpLiquidateTakeover);
+            request[sfSize] = "40.5";
+            env(request, Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(sizeOf(env, alice_, t, t.xrp) == Number(-100));
+        }
+    }
+
 public:
     void
     run() override
@@ -861,6 +927,8 @@ public:
         testLossIndexCharged();
         testLossIndexZeroDivisorToBadDebt();
         testWaterfallCreditRepaid();
+        testTakeoverClosesLiquidatorPosition();
+        testRequestedSize();
     }
 };
 

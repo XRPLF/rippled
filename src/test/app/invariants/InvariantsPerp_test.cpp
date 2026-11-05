@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/perp.h>
 #include <test/jtx/vault.h>
@@ -279,6 +280,52 @@ class InvariantsPerp_test : public InvariantsBase
             ttPERP_REFRESH);
     }
 
+    /**
+     * Creates the owner's exchange in asset and checks that moving its assets total alone breaks
+     * the collateral mirror.
+     */
+    void
+    expectMirrorBreaks(Env&& env, Asset const& asset)
+    {
+        auto const exchange = Perp::exchangeKeylet(env, owner_);
+        env(Perp::exchangeSet(owner_, asset));
+        env.close();
+        doInvariantCheck(
+            std::move(env),
+            alice_,
+            bob_,
+            {"perp exchange assets total does not match its pseudo-account balance"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return edit(ac, exchange, [](SLE& sle) {
+                    add(sle, sfAssetsTotal, Number{1});
+                    add(sle, sfInsuranceFund, Number{1});
+                });
+            },
+            XRPAmount{},
+            STTx{ttPERP_ORDER_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+    }
+
+    void
+    testCollateralMirrorNativeAndMpt()
+    {
+        testcase("1 collateral mirror, XRP and MPT");
+        {
+            auto env = makeEnv(all_);
+            env.fund(jtx::XRP(100'000), owner_, alice_, bob_);
+            env.close();
+            expectMirrorBreaks(std::move(env), xrpIssue());
+        }
+        {
+            auto env = makeEnv(all_);
+            env.fund(jtx::XRP(100'000), owner_, alice_, bob_, gw_);
+            env.close();
+            jtx::MPTTester mpt{env, gw_, jtx::kMptInitNoFund};
+            mpt.create({.flags = tfMPTCanTransfer});
+            expectMirrorBreaks(std::move(env), Asset{mpt});
+        }
+    }
+
     void
     testAccountingIdentity()
     {
@@ -324,14 +371,30 @@ class InvariantsPerp_test : public InvariantsBase
         testcase("3 zero-sum fills");
 
         check(
-            {"perp fills in a live market are not zero-sum",
-             "perp live market open interest is unbalanced"},
+            {"perp fills in an unsettled market are not zero-sum",
+             "perp unsettled market open interest is unbalanced"},
             [&](World const& w, ApplyContext& ac) {
                 return edit(
                            ac,
                            position(w, alice_, w.xrp),
                            [](SLE& sle) { add(sle, sfSize, Number{1}); }) &&
                     edit(ac, w.xrp, [](SLE& sle) { add(sle, sfOpenInterestLong, Number{1}); });
+            },
+            ttPERP_ORDER_CREATE);
+
+        // A Stale market takes no fills either.
+        check(
+            {"perp fills in an unsettled market are not zero-sum",
+             "perp unsettled market open interest is unbalanced"},
+            [&](World const& w, ApplyContext& ac) {
+                return edit(
+                           ac,
+                           position(w, alice_, w.xrp),
+                           [](SLE& sle) { add(sle, sfSize, Number{1}); }) &&
+                    edit(ac, w.xrp, [](SLE& sle) {
+                           sle.setFieldU8(sfMarketStatus, 1);
+                           add(sle, sfOpenInterestLong, Number{1});
+                       });
             },
             ttPERP_ORDER_CREATE);
     }
@@ -628,6 +691,7 @@ public:
     run() override
     {
         testCollateralMirror();
+        testCollateralMirrorNativeAndMpt();
         testAccountingIdentity();
         testZeroSumFills();
         testSettledCloseOneWay();

@@ -847,6 +847,64 @@ class PerpOrder_test : public PerpTestBase
     }
 
     void
+    testPostOnlyAtOpenInterestCap()
+    {
+        testcase("post only at open interest cap");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        auto const t = setupTrading(
+            env, {}, [](Perp::MarketArgs& args) { args.openInterestMax = Number(10); });
+
+        auto const bobAsk = Perp::orderKeylet(env, bob_);
+        env(order(bob_, t.market, Number(2), Number(15), tfPerpSell));
+        env(order(alice_, t.market, Number(2), Number(10)));
+        env.close();
+
+        // A post-only order that would cross is killed even when the cap also stops the fill.
+        env(order(carol_, t.market, Number(2), Number(5), tfPerpPostOnly), Ter(tecKILLED));
+        env.close();
+        auto const ask = env.le(bobAsk);
+        BEAST_EXPECT(ask && (*ask)[sfSize] == Number(5));
+        BEAST_EXPECT(!env.le(positionKeylet(carol_, t)));
+    }
+
+    void
+    testPriceBelowQualityFloor()
+    {
+        testcase("price below quality floor");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        auto const t = setupTrading(env);
+
+        // A price below the smallest STAmount has no book quality, so the order is malformed.
+        env(order(alice_, t.market, Number(1, -98), Number(1)), Ter(temMALFORMED));
+        env(order(alice_, t.market, Number(1, -98), Number(1), tfPerpSell), Ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(!env.le(positionKeylet(alice_, t)));
+    }
+
+    void
+    testPostMatchInsufficientMargin()
+    {
+        testcase("post-match insufficient margin");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        auto const t = setupTrading(env, [](json::Value& jv) { jv[sfTakerFee] = 10'000; });
+
+        // Alice's equity of 1000 equals the initial requirement of the notional 10 000 she
+        // buys, so the order passes the pre-match check and the taker fee then breaks it.
+        env(order(bob_, t.market, Number(2), Number(5'000), tfPerpSell));
+        env.close();
+        auto const ownerCount = env.ownerCount(alice_);
+        env(order(alice_, t.market, Number(2), Number(5'000)), Ter(tecPERP_INSUFFICIENT_MARGIN));
+        env.close();
+        BEAST_EXPECT(sizeOf(env, alice_, t) == Number());
+        BEAST_EXPECT(env.ownerCount(alice_) == ownerCount);
+        BEAST_EXPECT(cashOf(env, alice_, t.exchange) == Number(1'000));
+        expectAccounting(env, t);
+    }
+
+    void
     testFillOrKillKeepsCleanup()
     {
         testcase("fill or kill keeps cleanup");
@@ -1140,6 +1198,9 @@ public:
         testOpenInterestCap();
         testCoverGate();
         testPostOnly();
+        testPostOnlyAtOpenInterestCap();
+        testPriceBelowQualityFloor();
+        testPostMatchInsufficientMargin();
         testFillOrKillKeepsCleanup();
         testFillCap();
         testIsolatedOnly();

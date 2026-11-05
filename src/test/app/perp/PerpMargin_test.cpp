@@ -782,6 +782,45 @@ class PerpMargin_test : public PerpTestBase
     }
 
     void
+    testTotalPrecision()
+    {
+        testcase("assets total precision");
+        using namespace test::jtx;
+        Env env{*this, all_};
+        fundAccounts(env);
+        env.trust(usd_(10'000'000'000), alice_);
+        env(pay(gw_, alice_, usd_(200'000'000)));
+        env.close();
+        auto const exchange = Perp::exchangeKeylet(env, owner_);
+        auto create = Perp::exchangeSet(owner_, usd_);
+        create[sfScale] = 10;
+        env(create);
+        env.close();
+
+        auto const total = [&] {
+            auto const sle = env.le(exchange);
+            return sle ? Number((*sle)[sfAssetsTotal]) : Number(-1);
+        };
+
+        // A deposit whose new total has more digits than an IOU holds is refused.
+        env(Perp::deposit(alice_, exchange.key, usd_(100'000'000)));
+        env.close();
+        env(Perp::deposit(
+                alice_, exchange.key, STAmount{usd_.issue(), std::uint64_t{123'456'789}, -9}),
+            Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(total() == Number(100'000'000));
+        expectAccounting(env, exchange);
+
+        // So is a withdrawal whose new total needs 17 digits.
+        env(Perp::withdraw(alice_, exchange.key, STAmount{usd_.issue(), std::uint64_t{1}, -9}),
+            Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(total() == Number(100'000'000));
+        expectAccounting(env, exchange);
+    }
+
+    void
     testSettlement()
     {
         testcase("settlement");
@@ -874,6 +913,7 @@ public:
         testIouTransferRateWaived();
         testMptCollateral();
         testSettlement();
+        testTotalPrecision();
     }
 };
 
