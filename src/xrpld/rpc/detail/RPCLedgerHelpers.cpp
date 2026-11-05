@@ -471,7 +471,7 @@ getOrAcquireLedger(rpc::JsonContext const& context)
         {
             if (jsonIndex.asInt() < 0)
                 return std::unexpected(
-                    rpc::makeParamError("Ledger index too small"));
+                    rpc::makeParamError("Ledger index too large"));
 
             ledgerIndex = static_cast<std::uint32_t>(jsonIndex.asInt());
         }

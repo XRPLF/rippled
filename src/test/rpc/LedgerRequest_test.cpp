@@ -159,7 +159,7 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
             BEAST_EXPECT(
                 result[jss::result][jss::error_message] ==
-                "Ledger index too small");
+                "Ledger index too large");
         }
     }
 
