@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <optional>
 #include <set>
 #include <utility>
 
@@ -394,22 +393,6 @@ inline Keylet
 withdrawPreauth(UInt256 const& key)
 {
     return {ltWITHDRAW_PREAUTH, key};
-}
-
-/**
- * A firewall limit, keyed by owner, asset and the signer it is scoped to; an
- * account-wide limit has no signer.
- */
-Keylet
-firewallLimit(
-    AccountID const& owner,
-    Asset const& asset,
-    std::optional<AccountID> const& limitSigner = std::nullopt) noexcept;
-
-inline Keylet
-firewallLimit(UInt256 const& key)
-{
-    return {ltFIREWALL_LIMIT, key};
 }
 
 inline Keylet

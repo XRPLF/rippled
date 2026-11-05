@@ -24,7 +24,6 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <optional>
 #include <set>
 #include <utility>
 #include <variant>
@@ -118,7 +117,6 @@ enum class LedgerNameSpace : std::uint16_t {
     TransactionProposal = 'y',
     Firewall = 'U',
     WithdrawPreauth = 'W',
-    FirewallLimit = '8',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -609,43 +607,6 @@ withdrawPreauth(AccountID const& owner, AccountID const& preauthorized, std::uin
     return {
         ltWITHDRAW_PREAUTH,
         indexHash(LedgerNameSpace::WithdrawPreauth, owner, preauthorized, dtag)};
-}
-
-Keylet
-firewallLimit(
-    AccountID const& owner,
-    Asset const& asset,
-    std::optional<AccountID> const& limitSigner) noexcept
-{
-    return asset.visit(
-        [&](Issue const& issue) {
-            if (limitSigner)
-            {
-                return Keylet{
-                    ltFIREWALL_LIMIT,
-                    indexHash(
-                        LedgerNameSpace::FirewallLimit,
-                        owner,
-                        issue.currency,
-                        issue.account,
-                        *limitSigner)};
-            }
-            return Keylet{
-                ltFIREWALL_LIMIT,
-                indexHash(LedgerNameSpace::FirewallLimit, owner, issue.currency, issue.account)};
-        },
-        [&](MPTIssue const& issue) {
-            if (limitSigner)
-            {
-                return Keylet{
-                    ltFIREWALL_LIMIT,
-                    indexHash(
-                        LedgerNameSpace::FirewallLimit, owner, issue.getMptID(), *limitSigner)};
-            }
-            return Keylet{
-                ltFIREWALL_LIMIT,
-                indexHash(LedgerNameSpace::FirewallLimit, owner, issue.getMptID())};
-        });
 }
 
 }  // namespace keylet

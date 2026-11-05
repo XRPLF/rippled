@@ -31,7 +31,6 @@
 #include <expected>
 #include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 
@@ -209,41 +208,6 @@ parseFirewall(
         return keylet::firewall(*account).key;
 
     return ledger_entry_helpers::invalidFieldError("malformedAddress", fieldName, "AccountID");
-}
-
-static std::expected<UInt256, json::Value>
-parseFirewallLimit(
-    json::Value const& params,
-    json::StaticString const fieldName,
-    [[maybe_unused]] unsigned const apiVersion)
-{
-    if (!params.isObject())
-    {
-        return parseObjectID(params, fieldName);
-    }
-
-    auto const owner =
-        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
-    if (!owner)
-        return std::unexpected(owner.error());
-
-    auto const asset = ledger_entry_helpers::requiredAsset(params, jss::asset, "malformedRequest");
-    if (!asset)
-        return std::unexpected(asset.error());
-
-    // An account-wide limit names no signer.
-    std::optional<AccountID> limitSigner;
-    if (params.isMember(jss::limit_signer))
-    {
-        limitSigner = ledger_entry_helpers::parse<AccountID>(params[jss::limit_signer]);
-        if (!limitSigner)
-        {
-            return ledger_entry_helpers::invalidFieldError(
-                "malformedAddress", jss::limit_signer, "AccountID");
-        }
-    }
-
-    return keylet::firewallLimit(*owner, *asset, limitSigner).key;
 }
 
 static std::expected<UInt256, json::Value>

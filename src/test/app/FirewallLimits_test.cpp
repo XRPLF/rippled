@@ -885,7 +885,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
     {
         testcase("period reset helper");
 
-        SLE limit{keylet::firewallLimit(AccountID{1}, xrpIssue())};
+        STObject limit = STObject::makeInnerObject(sfFirewallLimit);
         limit.setFieldAmount(sfSpent, STAmount{XRPAmount{10}});
         limit.setFieldU32(sfStartDate, 1000);
         limit.setFieldU32(sfPeriod, 100);

@@ -14,14 +14,16 @@
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -67,6 +69,36 @@ ValidFirewall::finalize(
     });
 }
 
+namespace {
+
+// The limit fields an entry of this type can carry.
+std::vector<SField const*>
+limitFieldsOf(LedgerEntryType type)
+{
+    switch (type)
+    {
+        case ltACCOUNT_ROOT:
+        case ltMPTOKEN:
+            return {&sfFirewallLimit};
+        case ltRIPPLE_STATE:
+            return {&sfLowFirewallLimit, &sfHighFirewallLimit};
+        default:
+            return {};
+    }
+}
+
+// The limit stored in the field of the entry, unseated when the entry is
+// absent or does not carry it.
+std::optional<STObject>
+limitOn(SLE::const_pointer const& sle, SField const& field)
+{
+    if (!sle || !sle->isFieldPresent(field))
+        return std::nullopt;
+    return sle->getFieldObject(field);
+}
+
+}  // namespace
+
 void
 ValidFirewallOutflow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
@@ -94,7 +126,10 @@ ValidFirewallOutflow::finalize(
     {
         if (std::ranges::any_of(entries_, [](auto const& entry) {
                 auto const& [before, after] = entry;
-                return (before ? before : after)->getType() == ltFIREWALL_LIMIT;
+                return std::ranges::any_of(
+                    limitFieldsOf((before ? before : after)->getType()), [&](SField const* field) {
+                        return limitOn(before, *field) != limitOn(after, *field);
+                    });
             }))
         {
             JLOG(j.fatal()) << "Invariant failed: a firewall limit changed on a failed "
@@ -118,63 +153,55 @@ ValidFirewallOutflow::checkLimitSet(
 {
     auto const now = view.parentCloseTime();
     std::int64_t limitDelta = 0;
-    std::int64_t signerDelta = 0;
     std::int64_t countDelta = 0;
-    std::int64_t signerCountDelta = 0;
 
     for (auto const& [before, after] : entries_)
     {
         SLE const& sle = before ? *before : *after;
         if (sle.getType() == ltFIREWALL)
         {
-            auto const count = [](SLE::const_pointer const& firewall, SF_UINT32 const& field) {
-                return firewall ? std::int64_t{(*firewall)[~field].value_or(0)} : 0;
+            auto const count = [](SLE::const_pointer const& firewall) {
+                return firewall ? std::int64_t{(*firewall)[~sfLimitCount].value_or(0)} : 0;
             };
             if (sle.getAccountID(sfOwner) == owner)
-            {
-                countDelta = count(after, sfLimitCount) - count(before, sfLimitCount);
-                signerCountDelta =
-                    count(after, sfSignerLimitCount) - count(before, sfSignerLimitCount);
-            }
+                countDelta = count(after) - count(before);
             continue;
         }
 
-        if (sle.getType() != ltFIREWALL_LIMIT)
-            continue;
-
-        if (!before)
+        for (SField const* field : limitFieldsOf(sle.getType()))
         {
-            ++limitDelta;
-            if (after->isFieldPresent(sfLimitSigner))
-                ++signerDelta;
-            if (after->getFieldAmount(sfSpent) != beast::kZero)
+            auto const limitBefore = limitOn(before, *field);
+            auto const limitAfter = limitOn(after, *field);
+            if (!limitBefore && limitAfter)
             {
-                JLOG(j.fatal()) << "Invariant failed: a created firewall limit has spent";
-                return false;
+                ++limitDelta;
+                if (limitAfter->getFieldAmount(sfSpent) != beast::kZero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: a created firewall limit has spent";
+                    return false;
+                }
             }
-        }
-        else if (!after)
-        {
-            --limitDelta;
-            if (before->isFieldPresent(sfLimitSigner))
-                --signerDelta;
-        }
-        else
-        {
-            auto const period = firewallLimitPeriod(*before, now);
-            if (after->getFieldAmount(sfSpent) != period.spent ||
-                after->getFieldU32(sfStartDate) != period.startDate)
+            else if (limitBefore && !limitAfter)
             {
-                JLOG(j.fatal()) << "Invariant failed: a firewall limit update changed what "
-                                   "was spent";
-                return false;
+                --limitDelta;
+            }
+            else if (limitBefore && limitAfter && *limitBefore != *limitAfter)
+            {
+                auto const period = firewallLimitPeriod(*limitBefore, now);
+                if (limitAfter->getFieldAmount(sfSpent) != period.spent ||
+                    limitAfter->getFieldU32(sfStartDate) != period.startDate)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: a firewall limit update changed what "
+                                       "was spent";
+                    return false;
+                }
             }
         }
     }
 
-    if (limitDelta != countDelta || signerDelta != signerCountDelta)
+    if (limitDelta != countDelta)
     {
-        JLOG(j.fatal()) << "Invariant failed: a firewall's limit counts do not match its limits";
+        JLOG(j.fatal()) << "Invariant failed: a firewall's limit count does not match its limits";
         return false;
     }
 
@@ -192,59 +219,56 @@ ValidFirewallOutflow::checkCharges(
     AccountID const owner = tx.getAccountID(sfAccount);
     AccountID const backup = firewall.getAccountID(sfBackup);
     bool const refusesUnlisted = firewall[~sfUnlistedAssets].value_or(0) == 1;
-    bool const unmatchedSigner =
-        tx.isFlag(tfInnerBatchTxn) && firewall[~sfSignerLimitCount].value_or(0) > 0;
     auto const now = view.parentCloseTime();
 
     for (auto const& asset : firewallChargedAssets(entries_, tx, owner))
     {
         Number const charge = firewallCharge(entries_, tx, owner, backup, asset, fee);
-        if (unmatchedSigner && charge > Number{})
-        {
-            JLOG(j.fatal()) << "Invariant failed: a Batch inner transaction moved an asset out "
-                               "of an account with a signer's firewall limit";
-            return false;
-        }
-        bool matched = false;
-        for (auto const& limitKeylet : firewallMatchingLimits(tx, owner, asset))
+        auto const location = firewallLimitField(owner, asset);
+        std::optional<STObject> limitBefore;
+        std::optional<STObject> limitAfter;
+        if (location)
         {
             auto const modified = std::ranges::find_if(entries_, [&](auto const& entry) {
                 auto const& [before, after] = entry;
-                return (before ? before : after)->key() == limitKeylet.key;
+                return (before ? before : after)->key() == location->entry.key;
             });
             SLE::const_pointer const before =
-                modified == entries_.end() ? view.read(limitKeylet) : modified->first;
+                modified == entries_.end() ? view.read(location->entry) : modified->first;
             SLE::const_pointer const after = modified == entries_.end() ? before : modified->second;
-            if (!before)
-                continue;
-            matched = true;
-
-            if (!after)
-            {
-                JLOG(j.fatal()) << "Invariant failed: a firewall limit was deleted by a charge";
-                return false;
-            }
-
-            auto const period = firewallLimitPeriod(*before, now);
-            Number const spent = Number(period.spent) + charge;
-            if (charge > Number{} && spent > Number(before->getFieldAmount(sfLimitAmount)))
-            {
-                JLOG(j.fatal()) << "Invariant failed: an outflow exceeded a firewall limit";
-                return false;
-            }
-
-            if (after->getFieldAmount(sfSpent) != STAmount{asset, spent})
-            {
-                JLOG(j.fatal()) << "Invariant failed: a firewall limit's spent does not "
-                                   "match its charge";
-                return false;
-            }
+            limitBefore = limitOn(before, *location->field);
+            limitAfter = limitOn(after, *location->field);
         }
 
-        if (!matched && refusesUnlisted && charge > Number{})
+        if (!limitBefore)
         {
-            JLOG(j.fatal()) << "Invariant failed: an asset with no firewall limit left an "
-                               "account that refuses unlisted assets";
+            if (refusesUnlisted && charge > Number{})
+            {
+                JLOG(j.fatal()) << "Invariant failed: an asset with no firewall limit left an "
+                                   "account that refuses unlisted assets";
+                return false;
+            }
+            continue;
+        }
+
+        if (!limitAfter)
+        {
+            JLOG(j.fatal()) << "Invariant failed: a firewall limit was deleted by a charge";
+            return false;
+        }
+
+        auto const period = firewallLimitPeriod(*limitBefore, now);
+        Number const spent = Number(period.spent) + charge;
+        if (charge > Number{} && spent > Number(limitBefore->getFieldAmount(sfLimitAmount)))
+        {
+            JLOG(j.fatal()) << "Invariant failed: an outflow exceeded a firewall limit";
+            return false;
+        }
+
+        if (limitAfter->getFieldAmount(sfSpent) != STAmount{asset, spent})
+        {
+            JLOG(j.fatal()) << "Invariant failed: a firewall limit's spent does not "
+                               "match its charge";
             return false;
         }
     }

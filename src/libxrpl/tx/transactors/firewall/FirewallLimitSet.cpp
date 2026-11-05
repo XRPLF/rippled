@@ -3,18 +3,16 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -24,7 +22,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -33,11 +31,7 @@ namespace {
 // Whether the change widens what can leave the account, which needs the
 // counterparty's signature.
 bool
-isLoosening(
-    ReadView const& view,
-    STTx const& tx,
-    SLE const& firewall,
-    SLE::const_pointer const& limit)
+isLoosening(STTx const& tx, SLE const& firewall, std::optional<STObject> const& limit)
 {
     bool const refusesUnlisted = firewall[~sfUnlistedAssets].value_or(0) == 1;
 
@@ -45,31 +39,20 @@ isLoosening(
         return refusesUnlisted;
 
     if (tx.isFlag(tfLimitDelete))
-    {
-        if (!limit->isFieldPresent(sfLimitSigner))
-            return !refusesUnlisted;
-
-        // Without an account-wide limit, deleting a signer's limit leaves the
-        // signer refused on the asset only while unlisted assets are refused.
-        return !refusesUnlisted ||
-            view.exists(keylet::firewallLimit(tx.getAccountID(sfAccount), tx[sfAsset]));
-    }
+        return !refusesUnlisted;
 
     return tx[sfLimitAmount] > (*limit)[sfLimitAmount] || tx[sfPeriod] < (*limit)[sfPeriod];
 }
 
-// Writes a count on the firewall, absent when zero.
-void
-setCount(SLE& firewall, SF_UINT32 const& field, std::uint32_t value)
+// Whether the account issues the asset.
+bool
+isIssuedBy(Asset const& asset, AccountID const& account)
 {
-    if (value == 0)
-    {
-        firewall.makeFieldAbsent(field);
-    }
-    else
-    {
-        firewall.setFieldU32(field, value);
-    }
+    if (asset.native())
+        return false;
+    return asset.visit(
+        [&account](Issue const& issue) { return issue.account == account; },
+        [&account](MPTIssue const& issue) { return issue.getIssuer() == account; });
 }
 
 }  // namespace
@@ -99,6 +82,12 @@ FirewallLimitSet::preflight(PreflightContext const& ctx)
     // transaction cannot carry.
     if (ctx.tx.isFlag(tfInnerBatchTxn))
         return temINVALID_INNER_BATCH;
+
+    if (isIssuedBy(ctx.tx[sfAsset], ctx.tx.getAccountID(sfAccount)))
+    {
+        JLOG(ctx.j.trace()) << "FirewallLimitSet: an asset the account issues has no limit";
+        return temBAD_ISSUER;
+    }
 
     bool const hasAmount = ctx.tx.isFieldPresent(sfLimitAmount);
     bool const hasPeriod = ctx.tx.isFieldPresent(sfPeriod);
@@ -155,9 +144,41 @@ FirewallLimitSet::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
-    auto const sleLimit =
-        ctx.view.read(keylet::firewallLimit(account, ctx.tx[sfAsset], ctx.tx[~sfLimitSigner]));
-    if (ctx.tx.isFlag(tfLimitDelete) && !sleLimit)
+    Asset const asset = ctx.tx[sfAsset];
+    auto const location = firewallLimitField(account, asset);
+    if (!location)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const sleHolding = ctx.view.read(location->entry);
+    if (asset.holds<Issue>() && !asset.native())
+    {
+        // The owner's side of the line holds nothing without its reserve flag.
+        bool const ownerIsLow = location->field == &sfLowFirewallLimit;
+        if (!sleHolding || !sleHolding->isFlag(ownerIsLow ? lsfLowReserve : lsfHighReserve))
+        {
+            JLOG(ctx.j.trace()) << "FirewallLimitSet: the account holds no line of the asset";
+            return tecNO_LINE;
+        }
+
+        // A limit on an LP token's line would keep the AMM from being deleted.
+        auto const sleIssuer = ctx.view.read(keylet::account(asset.get<Issue>().account));
+        if (sleIssuer && sleIssuer->isFieldPresent(sfAMMID))
+        {
+            JLOG(ctx.j.trace()) << "FirewallLimitSet: an AMM's LP token takes no limit";
+            return tecNO_PERMISSION;
+        }
+    }
+    else if (!sleHolding)
+    {
+        JLOG(ctx.j.trace()) << "FirewallLimitSet: the account holds none of the asset";
+        return tecOBJECT_NOT_FOUND;
+    }
+
+    std::optional<STObject> limit;
+    if (sleHolding->isFieldPresent(*location->field))
+        limit = sleHolding->getFieldObject(*location->field);
+
+    if (ctx.tx.isFlag(tfLimitDelete) && !limit)
     {
         JLOG(ctx.j.trace()) << "FirewallLimitSet: the limit to delete does not exist";
         return tecNO_ENTRY;
@@ -165,7 +186,7 @@ FirewallLimitSet::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
     {
-        if (isLoosening(ctx.view, ctx.tx, *sleFirewall, sleLimit))
+        if (isLoosening(ctx.tx, *sleFirewall, limit))
         {
             JLOG(ctx.j.trace()) << "FirewallLimitSet: a loosening needs the counterparty's "
                                    "signature";
@@ -186,90 +207,63 @@ FirewallLimitSet::preclaim(PreclaimContext const& ctx)
 TER
 FirewallLimitSet::doApply()
 {
-    auto const sleOwner = view().peek(keylet::account(accountID_));
-    auto const sleFirewall = view().peek(keylet::firewall(accountID_));
-    if (!sleOwner || !sleFirewall)
+    auto const location = firewallLimitField(accountID_, ctx_.tx[sfAsset]);
+    if (!location)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    Asset const asset = ctx_.tx[sfAsset];
-    auto const limitSigner = ctx_.tx[~sfLimitSigner];
-    Keylet const limitKeylet = keylet::firewallLimit(accountID_, asset, limitSigner);
-    auto const sleLimit = view().peek(limitKeylet);
-    SLE const& firewall = *sleFirewall;
-    std::uint32_t const limitCount = firewall[~sfLimitCount].value_or(0);
-    std::uint32_t const signerLimitCount = firewall[~sfSignerLimitCount].value_or(0);
+    auto const sleHolding = view().peek(location->entry);
+    auto const sleFirewall = view().peek(keylet::firewall(accountID_));
+    if (!sleHolding || !sleFirewall)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    SField const& field = *location->field;
+    std::uint32_t const limitCount = (*sleFirewall)[~sfLimitCount].valueOr(0);
 
     if (ctx_.tx.isFlag(tfLimitDelete))
     {
-        if (!sleLimit)
+        if (!sleHolding->isFieldPresent(field))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        if (!view().dirRemove(
-                keylet::ownerDir(accountID_), (*sleLimit)[sfOwnerNode], sleLimit->key(), false))
+        sleHolding->makeFieldAbsent(field);
+        view().update(sleHolding);
+
+        // A count of zero is stored as absent.
+        if (limitCount <= 1)
         {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "FirewallLimitSet: could not remove the limit from the owner dir";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
+            sleFirewall->makeFieldAbsent(sfLimitCount);
         }
-
-        decreaseOwnerCountForObject(view(), sleOwner, sleLimit, 1, j_);
-        view().erase(sleLimit);
-
-        setCount(*sleFirewall, sfLimitCount, limitCount - 1);
-        if (limitSigner)
-            setCount(*sleFirewall, sfSignerLimitCount, signerLimitCount - 1);
+        else
+        {
+            sleFirewall->setFieldU32(sfLimitCount, limitCount - 1);
+        }
         view().update(sleFirewall);
         return tesSUCCESS;
     }
 
     auto const now = view().parentCloseTime();
 
-    if (sleLimit)
+    if (sleHolding->isFieldPresent(field))
     {
         // What was spent in the current period is kept across a change.
-        auto const period = firewallLimitPeriod(*sleLimit, now);
-        sleLimit->setFieldAmount(sfSpent, period.spent);
-        sleLimit->setFieldU32(sfStartDate, period.startDate);
-        sleLimit->setFieldAmount(sfLimitAmount, ctx_.tx[sfLimitAmount]);
-        sleLimit->setFieldU32(sfPeriod, ctx_.tx[sfPeriod]);
-        view().update(sleLimit);
+        STObject& limit = sleHolding->peekFieldObject(field);
+        auto const period = firewallLimitPeriod(limit, now);
+        limit.setFieldAmount(sfSpent, period.spent);
+        limit.setFieldU32(sfStartDate, period.startDate);
+        limit.setFieldAmount(sfLimitAmount, ctx_.tx[sfLimitAmount]);
+        limit.setFieldU32(sfPeriod, ctx_.tx[sfPeriod]);
+        view().update(sleHolding);
         return tesSUCCESS;
     }
 
-    auto const applyViewContext = ctx_.getApplyViewContext();
-    if (auto const ret =
-            checkReserve(applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
-        !isTesSuccess(ret))
-        return ret;
+    STObject limit = STObject::makeInnerObject(field);
+    limit.setFieldAmount(sfLimitAmount, ctx_.tx[sfLimitAmount]);
+    limit.setFieldU32(sfPeriod, ctx_.tx[sfPeriod]);
+    limit.setFieldAmount(sfSpent, STAmount{ctx_.tx[sfAsset]});
+    limit.setFieldU32(sfStartDate, now.time_since_epoch().count());
+    sleHolding->setFieldObject(field, limit);
+    view().update(sleHolding);
 
-    auto const sleNew = std::make_shared<SLE>(limitKeylet);
-    sleNew->setAccountID(sfOwner, accountID_);
-    sleNew->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    if (limitSigner)
-        sleNew->setAccountID(sfLimitSigner, *limitSigner);
-    sleNew->setFieldAmount(sfLimitAmount, ctx_.tx[sfLimitAmount]);
-    sleNew->setFieldU32(sfPeriod, ctx_.tx[sfPeriod]);
-    sleNew->setFieldAmount(sfSpent, STAmount{asset});
-    sleNew->setFieldU32(sfStartDate, now.time_since_epoch().count());
-    view().insert(sleNew);
-
-    if (auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), limitKeylet, describeOwnerDir(accountID_)))
-    {
-        sleNew->setFieldU64(sfOwnerNode, *page);
-    }
-    else
-    {
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-    }
-
-    increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
-    addSponsorToLedgerEntry(applyViewContext, sleNew);
-
-    setCount(*sleFirewall, sfLimitCount, limitCount + 1);
-    if (limitSigner)
-        setCount(*sleFirewall, sfSignerLimitCount, signerLimitCount + 1);
+    sleFirewall->setFieldU32(sfLimitCount, limitCount + 1);
     view().update(sleFirewall);
     return tesSUCCESS;
 }

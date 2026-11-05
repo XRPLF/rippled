@@ -30,7 +30,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
-    auto const limitSignerValue = canonical_ACCOUNT();
     auto const limitAmountValue = canonical_AMOUNT();
     auto const periodValue = canonical_UINT32();
     auto const counterpartySignatureValue = canonical_OBJECT();
@@ -43,7 +42,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
-    builder.setLimitSigner(limitSignerValue);
     builder.setLimitAmount(limitAmountValue);
     builder.setPeriod(periodValue);
     builder.setCounterpartySignature(counterpartySignatureValue);
@@ -70,14 +68,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = limitSignerValue;
-        auto const actualOpt = tx.getLimitSigner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLimitSigner should be present";
-        expectEqualField(expected, *actualOpt, "sfLimitSigner");
-        EXPECT_TRUE(tx.hasLimitSigner());
-    }
-
     {
         auto const& expected = limitAmountValue;
         auto const actualOpt = tx.getLimitAmount();
@@ -119,7 +109,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
-    auto const limitSignerValue = canonical_ACCOUNT();
     auto const limitAmountValue = canonical_AMOUNT();
     auto const periodValue = canonical_UINT32();
     auto const counterpartySignatureValue = canonical_OBJECT();
@@ -132,7 +121,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
-    initialBuilder.setLimitSigner(limitSignerValue);
     initialBuilder.setLimitAmount(limitAmountValue);
     initialBuilder.setPeriod(periodValue);
     initialBuilder.setCounterpartySignature(counterpartySignatureValue);
@@ -160,13 +148,6 @@ TEST(TransactionsFirewallLimitSetTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = limitSignerValue;
-        auto const actualOpt = rebuiltTx.getLimitSigner();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLimitSigner should be present";
-        expectEqualField(expected, *actualOpt, "sfLimitSigner");
-    }
-
     {
         auto const& expected = limitAmountValue;
         auto const actualOpt = rebuiltTx.getLimitAmount();
@@ -245,8 +226,6 @@ TEST(TransactionsFirewallLimitSetTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasLimitSigner());
-    EXPECT_FALSE(tx.getLimitSigner().has_value());
     EXPECT_FALSE(tx.hasLimitAmount());
     EXPECT_FALSE(tx.getLimitAmount().has_value());
     EXPECT_FALSE(tx.hasPeriod());

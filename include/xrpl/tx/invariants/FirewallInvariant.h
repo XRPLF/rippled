@@ -39,13 +39,12 @@ public:
 /**
  * What leaves a firewalled account is charged to its limits.
  *
- * For a transaction of the owner other than FirewallLimitSet, every matching
- * limit of every asset the owner's balances changed in carries the period's
- * Spent plus the measured charge, and a positive charge never takes a limit
- * over its LimitAmount or lets out an asset the firewall refuses, and an inner
- * Batch transaction moves nothing out while the firewall has a signer-scoped
- * limit. A FirewallLimitSet keeps what was spent and keeps the firewall's
- * counts equal to its limits, and a failed transaction changes no limit.
+ * For a transaction of the owner other than FirewallLimitSet, the owner's limit
+ * on every asset the owner's balances changed in carries the period's Spent
+ * plus the measured charge, and a positive charge never takes a limit over its
+ * LimitAmount or lets out an asset the firewall refuses. A FirewallLimitSet
+ * keeps what was spent and keeps the firewall's LimitCount equal to its limit
+ * fields, and a failed transaction changes no limit.
  */
 class ValidFirewallOutflow
 {

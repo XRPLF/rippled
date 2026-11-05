@@ -60,32 +60,6 @@ public:
     }
 
     /**
-     * @brief Get sfLimitSigner (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
-    getLimitSigner() const
-    {
-        if (hasLimitSigner())
-        {
-            return this->tx_->at(sfLimitSigner);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLimitSigner is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLimitSigner() const
-    {
-        return this->tx_->isFieldPresent(sfLimitSigner);
-    }
-
-    /**
      * @brief Get sfLimitAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
@@ -216,17 +190,6 @@ public:
     setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLimitSigner (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    FirewallLimitSetBuilder&
-    setLimitSigner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
-    {
-        object_[sfLimitSigner] = value;
         return *this;
     }
 

@@ -34,6 +34,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
@@ -1093,9 +1094,9 @@ firewallDelegateGrants(ReadView const& view, STTx const& tx)
     });
 }
 
-// Refuses a transaction whose own fields would take a matching limit of the
-// firewall's owner over its LimitAmount, or would let an asset with no
-// matching limit out while the firewall refuses unlisted assets.
+// Refuses a transaction whose own fields would take the owner's limit on the
+// asset over its LimitAmount, or would let an asset with no limit out while
+// the firewall refuses unlisted assets.
 NotTEC
 checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
 {
@@ -1106,33 +1107,22 @@ checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
     if (!bound)
         return tesSUCCESS;
 
-    // An inner Batch transaction carries no signature to match a signer's
-    // limit against.
-    if (ctx.parentBatchId && firewall[~sfSignerLimitCount].value_or(0) > 0)
-    {
-        JLOG(ctx.j.trace()) << "Firewall: an inner Batch transaction cannot be matched to a "
-                               "signer's limit";
-        return tefFIREWALL_LIMIT;
-    }
-
     AccountID const owner = ctx.tx.getAccountID(sfAccount);
-    auto const now = ctx.view.parentCloseTime();
-    bool matched = false;
-    for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, bound->asset()))
+    auto const location = firewallLimitField(owner, bound->asset());
+    auto const sleHolding = location ? ctx.view.read(location->entry) : nullptr;
+    if (sleHolding && sleHolding->isFieldPresent(*location->field))
     {
-        auto const sleLimit = ctx.view.read(limitKeylet);
-        if (!sleLimit)
-            continue;
-        matched = true;
-        auto const period = firewallLimitPeriod(*sleLimit, now);
-        if (Number(period.spent) + Number(*bound) > Number(sleLimit->getFieldAmount(sfLimitAmount)))
+        STObject const& limit = sleHolding->getFieldObject(*location->field);
+        auto const period = firewallLimitPeriod(limit, ctx.view.parentCloseTime());
+        if (Number(period.spent) + Number(*bound) > Number(limit.getFieldAmount(sfLimitAmount)))
         {
             JLOG(ctx.j.trace()) << "Firewall: the transaction would exceed a limit";
             return tefFIREWALL_LIMIT;
         }
+        return tesSUCCESS;
     }
 
-    if (!matched && firewall[~sfUnlistedAssets].value_or(0) == 1)
+    if (firewall[~sfUnlistedAssets].value_or(0) == 1)
     {
         JLOG(ctx.j.trace()) << "Firewall: the asset has no limit and unlisted assets are refused";
         return tefFIREWALL_LIMIT;
@@ -1141,11 +1131,9 @@ checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
     return tesSUCCESS;
 }
 
-// Charges the measured outflow of an applied transaction to every matching
-// limit of its account, bringing each to the current period, and refuses an
-// outflow of an asset with no matching limit while the firewall refuses
-// unlisted assets, or any outflow of an inner Batch transaction while the
-// firewall has a signer-scoped limit.
+// Charges the measured outflow of an applied transaction to the account's
+// limit on each asset, bringing it to the current period, and refuses an
+// outflow of an asset with no limit while the firewall refuses unlisted assets.
 TER
 chargeFirewallLimits(ApplyContext& ctx)
 {
@@ -1170,39 +1158,33 @@ chargeFirewallLimits(ApplyContext& ctx)
     AccountID const backup = sleFirewall->getAccountID(sfBackup);
     XRPAmount const fee = ctx.tx.getFieldAmount(sfFee).xrp();
     auto const now = view.parentCloseTime();
-    bool const unmatchedSigner =
-        ctx.tx.isFlag(tfInnerBatchTxn) && (*sleFirewall)[~sfSignerLimitCount].value_or(0) > 0;
     for (auto const& asset : firewallChargedAssets(entries, ctx.tx, owner))
     {
         Number const charge = firewallCharge(entries, ctx.tx, owner, backup, asset, fee);
-        // An inner Batch transaction carries no signature to match a signer's
-        // limit against, so it moves nothing out while one exists.
-        if (unmatchedSigner && charge > Number{})
+        auto const location = firewallLimitField(owner, asset);
+        auto const sleHolding = location ? view.peek(location->entry) : nullptr;
+        if (sleHolding && sleHolding->isFieldPresent(*location->field))
         {
-            JLOG(ctx.journal.trace())
-                << "Firewall: an inner Batch transaction cannot be matched to a signer's limit";
-            return tecFIREWALL_LIMIT;
-        }
-        bool matched = false;
-        for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, asset))
-        {
-            auto const sleLimit = view.peek(limitKeylet);
-            if (!sleLimit)
-                continue;
-            matched = true;
-            auto const period = firewallLimitPeriod(*sleLimit, now);
+            STObject& limit = sleHolding->peekFieldObject(*location->field);
+            auto const period = firewallLimitPeriod(limit, now);
             Number const spent = Number(period.spent) + charge;
-            if (charge > Number{} && spent > Number(sleLimit->getFieldAmount(sfLimitAmount)))
+            if (charge > Number{} && spent > Number(limit.getFieldAmount(sfLimitAmount)))
             {
                 JLOG(ctx.journal.trace()) << "Firewall: the outflow exceeded a limit";
                 return tecFIREWALL_LIMIT;
             }
-            sleLimit->setFieldAmount(sfSpent, STAmount{asset, spent});
-            sleLimit->setFieldU32(sfStartDate, period.startDate);
-            view.update(sleLimit);
+            STAmount const newSpent{asset, spent};
+            if (limit.getFieldAmount(sfSpent) != newSpent ||
+                limit.getFieldU32(sfStartDate) != period.startDate)
+            {
+                limit.setFieldAmount(sfSpent, newSpent);
+                limit.setFieldU32(sfStartDate, period.startDate);
+                view.update(sleHolding);
+            }
+            continue;
         }
 
-        if (!matched && refusesUnlisted && charge > Number{})
+        if (refusesUnlisted && charge > Number{})
         {
             JLOG(ctx.journal.trace())
                 << "Firewall: an asset with no limit left and unlisted assets are refused";

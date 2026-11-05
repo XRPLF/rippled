@@ -14,7 +14,8 @@
 namespace xrpl {
 
 /**
- * Creates, updates or deletes one FirewallLimit of a firewalled account.
+ * Creates, updates or deletes a firewalled account's limit on one asset, stored
+ * on the entry that holds the balance.
  *
  * A change that tightens what can leave the account needs only the owner; a
  * change that loosens it needs the firewall's counterparty to countersign.

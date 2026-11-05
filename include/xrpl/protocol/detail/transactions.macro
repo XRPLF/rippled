@@ -1191,7 +1191,6 @@ TRANSACTION(ttFIREWALL_LIMIT_SET, 241, FirewallLimitSet,
     ({.amendment = featureFirewallLimits, .firewall = FirewallAction::Allow}),
     ({
     {sfAsset,                 SoeRequired, SoeMptSupported},
-    {sfLimitSigner,           SoeOptional},
     {sfLimitAmount,           SoeOptional, SoeMptSupported},
     {sfPeriod,                SoeOptional},
     {sfCounterpartySignature, SoeOptional},

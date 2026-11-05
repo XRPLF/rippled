@@ -896,19 +896,16 @@ json::Value
 unauthorize(AccountID const& account, UInt256 const& firewallID, AccountID const& unauthorized);
 
 /**
- * Create or update the account-wide limit on the amount's asset. Name a signer
- * with kLimitSigner.
+ * Create or update the account's limit on the amount's asset.
  */
 json::Value
 limitSet(AccountID const& account, STAmount const& limitAmount, std::uint32_t period);
 
 /**
- * Delete the account-wide limit on an asset. Name a signer with kLimitSigner.
+ * Delete the account's limit on an asset.
  */
 json::Value
 limitDelete(AccountID const& account, Asset const& asset);
-
-auto const kLimitSigner = JTxFieldWrapper<AccountIdField>(sfLimitSigner);
 
 auto const kCounterparty = JTxFieldWrapper<AccountIdField>(sfCounterparty);
 

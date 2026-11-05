@@ -356,7 +356,6 @@ JSS(levels);                         // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers, AccountLines, AccountObjects
                                   // in: LedgerData, BookOffers
 JSS(limit_peer);                  // out: AccountLines
-JSS(limit_signer);                // in: LedgerEntry
 JSS(lines);                       // out: AccountLines
 JSS(list);                        // out: ValidatorList
 JSS(load);                        // out: NetworkOPs, PeerImp

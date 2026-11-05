@@ -27,7 +27,6 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
     auto const maxFeeValue = canonical_AMOUNT();
     auto const unlistedAssetsValue = canonical_UINT8();
     auto const limitCountValue = canonical_UINT32();
-    auto const signerLimitCountValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -45,7 +44,6 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
     builder.setMaxFee(maxFeeValue);
     builder.setUnlistedAssets(unlistedAssetsValue);
     builder.setLimitCount(limitCountValue);
-    builder.setSignerLimitCount(signerLimitCountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -124,14 +122,6 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLimitCount());
     }
 
-    {
-        auto const& expected = signerLimitCountValue;
-        auto const actualOpt = entry.getSignerLimitCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSignerLimitCount");
-        EXPECT_TRUE(entry.hasSignerLimitCount());
-    }
-
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -152,7 +142,6 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
     auto const maxFeeValue = canonical_AMOUNT();
     auto const unlistedAssetsValue = canonical_UINT8();
     auto const limitCountValue = canonical_UINT32();
-    auto const signerLimitCountValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -166,7 +155,6 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
     sle->at(sfMaxFee) = maxFeeValue;
     sle->at(sfUnlistedAssets) = unlistedAssetsValue;
     sle->at(sfLimitCount) = limitCountValue;
-    sle->at(sfSignerLimitCount) = signerLimitCountValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
@@ -292,19 +280,6 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLimitCount");
     }
 
-    {
-        auto const& expected = signerLimitCountValue;
-
-        auto const fromSleOpt = entryFromSle.getSignerLimitCount();
-        auto const fromBuilderOpt = entryFromBuilder.getSignerLimitCount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSignerLimitCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfSignerLimitCount");
-    }
-
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -377,7 +352,5 @@ TEST(FirewallTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getUnlistedAssets().has_value());
     EXPECT_FALSE(entry.hasLimitCount());
     EXPECT_FALSE(entry.getLimitCount().has_value());
-    EXPECT_FALSE(entry.hasSignerLimitCount());
-    EXPECT_FALSE(entry.getSignerLimitCount().has_value());
 }
 }

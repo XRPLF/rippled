@@ -1,19 +1,15 @@
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -106,7 +102,7 @@ addAsset(std::vector<Asset>& assets, Asset const& asset)
 }  // namespace
 
 FirewallLimitPeriod
-firewallLimitPeriod(SLE const& limit, NetClock::time_point now)
+firewallLimitPeriod(STObject const& limit, NetClock::time_point now)
 {
     STAmount const spent = limit.getFieldAmount(sfSpent);
     std::uint64_t const start = limit.getFieldU32(sfStartDate);
@@ -152,44 +148,7 @@ bool
 isFirewallEntry(LedgerEntryType type) noexcept
 {
     return type == ltACCOUNT_ROOT || type == ltRIPPLE_STATE || type == ltMPTOKEN ||
-        type == ltFIREWALL || type == ltFIREWALL_LIMIT;
-}
-
-std::vector<AccountID>
-firewallLimitSigners(STTx const& tx)
-{
-    if (tx.isFieldPresent(sfDelegate))
-        return {tx.getAccountID(sfDelegate)};
-
-    if (tx.isFlag(tfInnerBatchTxn))
-        return {};
-
-    std::vector<AccountID> signers;
-    if (tx.isFieldPresent(sfSigners))
-    {
-        STArray const& txSigners = tx.getFieldArray(sfSigners);
-        for (auto const& signer : txSigners)
-            signers.push_back(signer.getAccountID(sfAccount));
-        return signers;
-    }
-
-    auto const pk = tx.getSigningPubKey();
-    if (!pk.empty() && publicKeyType(makeSlice(pk)))
-        signers.push_back(calcAccountID(PublicKey(makeSlice(pk))));
-    return signers;
-}
-
-std::vector<Keylet>
-firewallMatchingLimits(STTx const& tx, AccountID const& owner, Asset const& asset)
-{
-    std::vector<Keylet> keylets{keylet::firewallLimit(owner, asset)};
-    for (auto const& signer : firewallLimitSigners(tx))
-    {
-        auto const k = keylet::firewallLimit(owner, asset, signer);
-        if (std::ranges::none_of(keylets, [&k](Keylet const& kl) { return kl.key == k.key; }))
-            keylets.push_back(k);
-    }
-    return keylets;
+        type == ltFIREWALL;
 }
 
 std::optional<STAmount>

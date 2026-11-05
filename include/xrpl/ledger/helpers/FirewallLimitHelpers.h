@@ -9,6 +9,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -20,17 +21,17 @@
 namespace xrpl {
 
 /**
- * The shortest period a FirewallLimit may have, in seconds.
+ * The shortest period a firewall limit may have, in seconds.
  */
 inline constexpr std::uint32_t kFirewallLimitMinPeriod = 60;
 
 /**
- * The longest period a FirewallLimit may have, in seconds: 365 days.
+ * The longest period a firewall limit may have, in seconds: 365 days.
  */
 inline constexpr std::uint32_t kFirewallLimitMaxPeriod = 31'536'000;
 
 /**
- * A FirewallLimit's Spent and StartDate brought to a given time.
+ * A firewall limit's Spent and StartDate brought to a given time.
  */
 struct FirewallLimitPeriod
 {
@@ -39,13 +40,13 @@ struct FirewallLimitPeriod
 };
 
 /**
- * The effective Spent and StartDate of a FirewallLimit at `now`.
+ * The effective Spent and StartDate of a firewall limit at `now`.
  *
  * When the stored period has ended, Spent is zero and StartDate advances by
  * whole periods; otherwise both are the stored values.
  */
 [[nodiscard]] FirewallLimitPeriod
-firewallLimitPeriod(SLE const& limit, NetClock::time_point now);
+firewallLimitPeriod(STObject const& limit, NetClock::time_point now);
 
 /**
  * Where a firewall limit is stored: the ledger entry that holds the limited
@@ -77,21 +78,6 @@ using FirewallEntries = std::vector<std::pair<SLE::const_pointer, SLE::const_poi
  */
 [[nodiscard]] bool
 isFirewallEntry(LedgerEntryType type) noexcept;
-
-/**
- * The accounts a transaction is matched to for limits with a LimitSigner: its
- * sfDelegate, otherwise the accounts of its signatures. A Batch inner
- * transaction carries no signature and matches none.
- */
-[[nodiscard]] std::vector<AccountID>
-firewallLimitSigners(STTx const& tx);
-
-/**
- * The keylets of every FirewallLimit of `owner` on `asset` that can bind the
- * transaction: the account-wide one and one per matched signer.
- */
-[[nodiscard]] std::vector<Keylet>
-firewallMatchingLimits(STTx const& tx, AccountID const& owner, Asset const& asset);
 
 /**
  * The most the transaction's own fields let leave the owner before it is

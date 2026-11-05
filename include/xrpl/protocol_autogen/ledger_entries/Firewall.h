@@ -175,30 +175,6 @@ public:
     }
 
     /**
-     * @brief Get sfSignerLimitCount (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getSignerLimitCount() const
-    {
-        if (hasSignerLimitCount())
-            return this->sle_->at(sfSignerLimitCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSignerLimitCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSignerLimitCount() const
-    {
-        return this->sle_->isFieldPresent(sfSignerLimitCount);
-    }
-
-    /**
      * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
@@ -354,17 +330,6 @@ public:
     setLimitCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfLimitCount] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfSignerLimitCount (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    FirewallBuilder&
-    setSignerLimitCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfSignerLimitCount] = value;
         return *this;
     }
 
