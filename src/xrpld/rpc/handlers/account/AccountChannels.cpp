@@ -48,8 +48,13 @@ appendChannelJson(SLE const& channel, json::Value& channels)
     jDst[jss::channel_id] = to_string(channel.key());
     jDst[jss::account] = to_string(channel[sfAccount]);
     jDst[jss::destination_account] = to_string(channel[sfDestination]);
-    jDst[jss::amount] = channel[sfAmount].getText();
-    jDst[jss::balance] = channel[sfBalance].getText();
+    // A token amount is an Amount JSON object; an XRP amount stays a string of drops.
+    auto const amountJson = [](STAmount const& amount) {
+        return amount.native() ? json::Value{amount.getText()}
+                               : amount.getJson(JsonOptions::Values::None);
+    };
+    jDst[jss::amount] = amountJson(channel[sfAmount]);
+    jDst[jss::balance] = amountJson(channel[sfBalance]);
     if (publicKeyType(channel[sfPublicKey]))
     {
         PublicKey const pk(channel[sfPublicKey]);

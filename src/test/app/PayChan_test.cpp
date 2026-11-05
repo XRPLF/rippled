@@ -118,8 +118,12 @@ struct PayChan_test : public beast::unit_test::Suite
 
         {
             // bad amounts (non-xrp, negative amounts)
-            env(create(alice, bob, usda(1000), settleDelay, pk), Ter(temBAD_AMOUNT));
-            env(fund(alice, chan, usda(1000)), Ter(temBAD_AMOUNT));
+            // A token amount needs TokenPaychan (temBAD_AMOUNT) and
+            // fixCleanup3_2_0, which this suite disables (temDISABLED).
+            auto const tokenResult =
+                features[featureTokenPaychan] ? Ter(temDISABLED) : Ter(temBAD_AMOUNT);
+            env(create(alice, bob, usda(1000), settleDelay, pk), tokenResult);
+            env(fund(alice, chan, usda(1000)), tokenResult);
             env(create(alice, bob, XRP(-1000), settleDelay, pk), Ter(temBAD_AMOUNT));
             env(fund(alice, chan, XRP(-1000)), Ter(temBAD_AMOUNT));
         }
@@ -140,9 +144,13 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const iou = usda(100).value();
             auto const negXRP = XRP(-100).value();
             auto const posXRP = XRP(100).value();
-            env(claim(alice, chan, iou, iou), Ter(temBAD_AMOUNT));
-            env(claim(alice, chan, posXRP, iou), Ter(temBAD_AMOUNT));
-            env(claim(alice, chan, iou, posXRP), Ter(temBAD_AMOUNT));
+            // A token Balance or Amount needs TokenPaychan (temBAD_AMOUNT) and
+            // fixCleanup3_2_0, which this suite disables (temDISABLED).
+            auto const tokenResult =
+                features[featureTokenPaychan] ? Ter(temDISABLED) : Ter(temBAD_AMOUNT);
+            env(claim(alice, chan, iou, iou), tokenResult);
+            env(claim(alice, chan, posXRP, iou), tokenResult);
+            env(claim(alice, chan, iou, posXRP), tokenResult);
             env(claim(alice, chan, negXRP, negXRP), Ter(temBAD_AMOUNT));
             env(claim(alice, chan, posXRP, negXRP), Ter(temBAD_AMOUNT));
             env(claim(alice, chan, negXRP, posXRP), Ter(temBAD_AMOUNT));
@@ -2316,6 +2324,7 @@ public:
         // pre-amendment behavior, so run it with the amendment disabled.
         FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
         testWithFeats(all);
+        testWithFeats(all - featureTokenPaychan);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);
     }

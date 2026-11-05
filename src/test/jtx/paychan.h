@@ -1,6 +1,7 @@
 #pragma once
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -10,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
 
@@ -84,5 +86,23 @@ signClaimAuth(
     SecretKey const& sk,
     uint256 const& channel,
     STAmount const& authAmt);
+
+Rate
+rate(Env const& env, Account const& account, Account const& dest, std::uint32_t const& seq);
+
+json::Value
+clawback(
+    AccountID const& account,
+    uint256 const& channel,
+    std::optional<STAmount> const& amount = std::nullopt);
+
+inline json::Value
+clawback(
+    Account const& account,
+    uint256 const& channel,
+    std::optional<STAmount> const& amount = std::nullopt)
+{
+    return clawback(account.id(), channel, amount);
+}
 
 }  // namespace xrpl::test::jtx::paychan
