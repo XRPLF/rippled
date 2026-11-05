@@ -32,8 +32,8 @@ namespace xrpl {
  * the same ledger can run, and a synchronous caller waiting on it wakes up.
  * The SAVED flag pendSaveValidated() set on the ledger hash is cleared as
  * well, so that later save is not deduplicated away. The sequence is also
- * removed from the complete range, as on a database failure that does not
- * throw, since the write may have deleted the ledger's row before it failed.
+ * removed from the complete range, since the write may have deleted the
+ * ledger's row before it failed.
  *
  * @param registry The services that hold the pending saves and the database.
  * @param ledger The ledger to save.
@@ -64,9 +64,8 @@ saveValidatedLedger(
     }
     catch (...)
     {
-        // The ledger's row may be gone, so stop advertising the sequence as complete, as the
-        // non-throwing failure path in the database layer does.
-        registry.getLedgerMaster().failedSave(seq, ledger->header().hash);
+        // The ledger's row may be gone, so stop advertising the sequence as complete.
+        registry.getLedgerMaster().clearLedger(seq);
 
         // Neither the in-progress mark nor the SAVED flag may outlive a save that did not happen,
         // or a retry would be deduplicated away. Release them in the reverse of the order
