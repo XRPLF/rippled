@@ -992,6 +992,46 @@ class InvariantsFirewall_test : public InvariantsBase
             {tesSUCCESS, tesSUCCESS},
             limitedLine);
 
+        // removeEmptyHolding refuses an emptied line with a limit before it
+        // changes an owner count or a reserve flag.
+        {
+            std::uint32_t ownersA1 = 0;
+            std::uint32_t ownersGw = 0;
+            doInvariantCheck(
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    if (!isTesSuccess(
+                            accountSend(ac.view(), a1.id(), gw->id(), usd(100), ac.journal)))
+                        return false;
+                    auto const before = ac.view().read(keylet::trustLine(a1.id(), usd.issue()));
+                    auto const a1Before = ac.view().read(keylet::account(a1.id()));
+                    auto const gwBefore = ac.view().read(keylet::account(gw->id()));
+                    if (!before || !a1Before || !gwBefore ||
+                        !before->isFieldPresent(sfLowFirewallLimit))
+                        return false;
+                    ownersA1 = a1Before->at(sfOwnerCount);
+                    ownersGw = gwBefore->at(sfOwnerCount);
+                    bool const lowReserve = before->isFlag(lsfLowReserve);
+                    bool const highReserve = before->isFlag(lsfHighReserve);
+                    if (removeEmptyHolding(
+                            ac.getApplyViewContext(), a1.id(), usd.issue(), ac.journal) !=
+                        tecHAS_OBLIGATIONS)
+                        return false;
+                    auto const line = ac.view().read(keylet::trustLine(a1.id(), usd.issue()));
+                    auto const a1After = ac.view().read(keylet::account(a1.id()));
+                    auto const gwAfter = ac.view().read(keylet::account(gw->id()));
+                    return line && a1After && gwAfter &&
+                        line->isFlag(lsfLowReserve) == lowReserve &&
+                        line->isFlag(lsfHighReserve) == highReserve &&
+                        a1After->at(sfOwnerCount) == ownersA1 &&
+                        gwAfter->at(sfOwnerCount) == ownersGw;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                limitedLine);
+        }
+
         // removeEmptyHolding refuses an MPToken with a limit.
         std::optional<MPTID> mptID;
         doInvariantCheck(

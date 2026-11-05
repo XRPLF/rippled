@@ -24,6 +24,7 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -695,6 +696,46 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(firewall::limitSet(alice.id(), lpTokens, kDay), Ter(tecNO_PERMISSION));
         env.close();
         BEAST_EXPECT(limitCount(env, alice) == 0);
+
+        // A limit on the issuer's side of the line to a Vault pseudo-account
+        // is refused: it would keep the vault owner from deleting the vault.
+        {
+            Env vaultEnv{*this, features};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const counterparty{"counterparty"};
+            Account const issuerBackup{"issuerBackup"};
+            vaultEnv.fund(XRP(10000), issuer, owner, depositor, counterparty, issuerBackup);
+            vaultEnv(fset(issuer, asfDefaultRipple));
+            vaultEnv.close();
+
+            PrettyAsset const iou = issuer["USD"];
+            vaultEnv(trust(depositor, iou(1000)));
+            vaultEnv(pay(issuer, depositor, iou(100)));
+            vaultEnv.close();
+
+            Vault const vault{vaultEnv};
+            auto [createTx, vaultKeylet] = vault.create({.owner = owner, .asset = iou});
+            vaultEnv(createTx);
+            vaultEnv.close();
+            vaultEnv(
+                vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = iou(50)}));
+            vaultEnv.close();
+
+            auto const vaultSle = vaultEnv.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            Account const pseudo{"vaultPseudo", vaultSle->at(sfAccount)};
+            vaultEnv(trust(issuer, pseudo["USD"](100)));
+            vaultEnv.close();
+
+            makeFirewall(vaultEnv, issuer, counterparty, issuerBackup, {});
+            vaultEnv(
+                firewall::limitSet(issuer.id(), pseudo["USD"](10), kDay), Ter(tecNO_PERMISSION));
+            vaultEnv.close();
+            BEAST_EXPECT(limitCount(vaultEnv, issuer) == 0);
+        }
     }
 
     // The permissions of the Delegate entry for (account, authorized).
