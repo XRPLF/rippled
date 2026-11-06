@@ -1467,7 +1467,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // This function is called by several different parts of the codebase
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
-    auto const sttx = *transaction->getSTransaction();
+    auto const& sttx = *transaction->getSTransaction();
     if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
@@ -1881,7 +1881,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *e.transaction->getSTransaction(); toSkip &&
+                if (auto const& sttx = *e.transaction->getSTransaction(); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
