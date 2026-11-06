@@ -44,9 +44,22 @@ else()
     set(pkg_type rpm)
 endif()
 
-# Unquoted below, so an empty value adds no argument at all.
+# A build with one sanitizer packages as that sanitizer's variant, asserts or
+# not. Unquoted below, so an empty value adds no argument at all.
 set(pkg_variant_option "")
-if(assert)
+if(SANITIZERS STREQUAL "address")
+    set(pkg_variant_option --variant=asan)
+elseif(SANITIZERS STREQUAL "undefinedbehavior")
+    set(pkg_variant_option --variant=ubsan)
+elseif(SANITIZERS STREQUAL "thread")
+    set(pkg_variant_option --variant=tsan)
+elseif(SANITIZERS)
+    message(
+        STATUS
+        "no package variant for sanitizers '${SANITIZERS}'; 'package' target not available"
+    )
+    return()
+elseif(assert)
     set(pkg_variant_option --variant=assert)
 endif()
 
