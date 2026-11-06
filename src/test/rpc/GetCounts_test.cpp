@@ -9,6 +9,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/container/static_vector.hpp>
+
 #include <thread>
 
 namespace xrpl {
@@ -18,6 +20,7 @@ class GetCounts_test : public beast::unit_test::Suite
     void
     testGetCounts()
     {
+        testcase("Get counts");
         using namespace test::jtx;
         Env env(*this);
 
@@ -91,11 +94,49 @@ class GetCounts_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testBadMinCount()
+    {
+        testcase("Invalid min_count");
+        using namespace test::jtx;
+        Env env{*this};
+
+        json::Value objMinCount{json::ValueType::Object};
+        objMinCount["nope"] = 0;
+        json::Value arrMinCount{json::ValueType::Array};
+        arrMinCount.append(0);
+
+        // Note that a whole number beyond the range of a uint, e.g.
+        // 4294967296, is rejected by the json parser itself, so it never
+        // reaches the handler and is not covered here.
+        boost::container::static_vector<json::Value, 9> const badMinCounts{
+            json::Value{-1},     // negative
+            json::Value{"abc"},  // not a number
+            json::Value{"5"},    // numeric, but a string
+            json::Value{1.5},    // not a whole number
+            json::Value{1e30},   // beyond the range of a uint
+            json::Value{true},   // bool
+            json::Value{},       // null
+            objMinCount,
+            arrMinCount,
+        };
+
+        for (auto const& badMinCount : badMinCounts)
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::min_count] = badMinCount;
+            auto const result = env.client().invoke("get_counts", params)[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+        }
+    }
+
 public:
     void
     run() override
     {
         testGetCounts();
+        testBadMinCount();
     }
 };
 
