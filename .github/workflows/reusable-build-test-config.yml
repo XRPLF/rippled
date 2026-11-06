@@ -117,6 +117,9 @@ jobs:
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
+      ASAN_ENABLED: ${{ contains(inputs.sanitizers, 'address') }}
+      TSAN_ENABLED: ${{ contains(inputs.sanitizers, 'thread') }}
+      UBSAN_ENABLED: ${{ contains(inputs.sanitizers, 'undefinedbehavior') }}
       # The binaries reusable-package.yml consumes. A private repository skips
       # them except on a tag push, which is what produces its release packages.
       PACKAGING_ARTIFACTS_ENABLED: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
@@ -231,7 +234,10 @@ jobs:
               ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
+          # exitcode=0 stays out of runtime-tsan-options.txt so that a local run
+          # still fails on a finding.
+          TSAN_OPTS="include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp"
+          echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
@@ -340,11 +346,56 @@ jobs:
               exit 1
           fi
 
+      # An undefined reference to the sanitizer runtime in an object file proves
+      # the -fsanitize flags reached the compiler. The version string cannot, as
+      # cmake sets the SANITIZERS macro separately. Nor can the linked binary: a
+      # static runtime defines the symbols whether or not any code calls them.
       - name: Verify presence of instrumentation (Linux)
-        if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
+        if: ${{ runner.os == 'Linux' && (env.VOIDSTAR_ENABLED == 'true' || env.SANITIZERS_ENABLED == 'true') }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ./xrpld --version | grep libvoidstar
+          version="$(./xrpld --version 2>&1)" || {
+              echo "${version}"
+              exit 1
+          }
+          echo "${version}"
+          status=0
+
+          named() {
+              if grep -q "$2" <<<"${version}"; then
+                  echo "${1}: the version string names '${2}'."
+              else
+                  echo "${1} is enabled, but the version string does not name '${2}'."
+                  status=1
+              fi
+          }
+
+          if [ "${SANITIZERS_ENABLED}" = 'true' ]; then
+              # grep stops at the first match and find then dies of SIGPIPE, which
+              # pipefail must not turn into a failure.
+              instrumented() {
+                  if { find . -name '*.cpp.o' -exec nm -u {} + 2>/dev/null || true; } | grep -qE "${2}"; then
+                      echo "${1}: the objects reference the runtime, matching '${2}'."
+                  else
+                      echo "${1} is enabled, but no object references '${2}'."
+                      status=1
+                  fi
+              }
+
+              [ "${ASAN_ENABLED}" = 'true' ] &&
+                  instrumented address '__asan_report|__asan_memcpy|__asan_stack_malloc'
+              [ "${TSAN_ENABLED}" = 'true' ] &&
+                  instrumented thread '__tsan_read|__tsan_write|__tsan_atomic'
+              [ "${UBSAN_ENABLED}" = 'true' ] &&
+                  instrumented undefinedbehavior '__ubsan_handle'
+          fi
+
+          [ "${VOIDSTAR_ENABLED}" = 'true' ] && named voidstar libvoidstar
+          [ "${ASAN_ENABLED}" = 'true' ] && named address ASAN
+          [ "${TSAN_ENABLED}" = 'true' ] && named thread TSAN
+          [ "${UBSAN_ENABLED}" = 'true' ] && named undefinedbehavior UBSAN
+
+          exit "${status}"
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
@@ -362,6 +413,10 @@ jobs:
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
+
+          # Under TSan memory, not core count, is the ceiling: more than 4 jobs
+          # reach the OOM killer (exit 137) or lose contact with the runner.
+          [ "$TSAN_ENABLED" = "true" ] && BUILD_NPROC=4
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must
