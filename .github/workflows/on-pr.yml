@@ -3,8 +3,8 @@
 # However, it will not run if the PR is a draft
 # unless it has the 'DraftRunCI' or 'Full CI build' label.
 #
-# By default a PR builds only a minimal matrix.
-# The full matrix runs once the PR is labeled "Ready to merge" or "Full CI build".
+# An unlabeled PR builds the 'pull_request' matrix. The "Ready to merge" label
+# selects the 'ready_to_merge' matrix, and "Full CI build" builds every config.
 # For commits to PRs that target a release branch,
 # it also uploads the libxrpl recipe to the Conan remote.
 name: PR
@@ -20,7 +20,7 @@ on:
       - synchronize
       - ready_for_review
       # Trigger on label changes so toggling "Ready to merge" or "Full CI build"
-      # switches between the minimal and full matrix without needing a new push.
+      # switches the matrix without needing a new push.
       - labeled
       - unlabeled
 
@@ -40,8 +40,8 @@ jobs:
   # This job determines whether the rest of the workflow should run at all,
   # based on the current set of labels: it runs when the PR is not a draft
   # (which should also cover merge-group) or has the 'DraftRunCI' or
-  # 'Full CI build' label. Whether a build then happens, and whether it is the
-  # minimal or full matrix, is decided further below and in the strategy matrix.
+  # 'Full CI build' label. Whether a build then happens, and with which matrix,
+  # is decided further below and in the strategy matrix.
   should-run:
     if: >-
       ${{
@@ -226,9 +226,9 @@ jobs:
 
   package:
     needs: [should-run, build-test]
-    # Packaging consumes the debian/rhel release binaries, which are only built
-    # by the full matrix. Skip it for pull requests that ran only the minimal
-    # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
+    # Packaging consumes the debian/rhel release binaries, which no unlabeled
+    # pull request builds, so skip it until the PR is labeled "Ready to merge"
+    # or "Full CI build".
     if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
     with:
