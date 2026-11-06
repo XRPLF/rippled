@@ -280,6 +280,13 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *   2. The max of the "large" range, 10^19-1, is the largest 10^X-1 value that
  *      fits in an unsigned 64-bit number. (10^19-1 < 2^64-1 and
  *      10^20-1 > 2^64-1). This avoids under- and overflows.
+ *   3. Do not store a Number in a static, inline, or global variable. A Number
+ *      is normalized to the MantissaRange that is active when it is built, and
+ *      operator< and operator== give wrong results when the two operands were
+ *      built under different ranges. Store the mantissa and exponent instead,
+ *      and build the Number where you use it. Changing a runtime Number into a
+ *      stored constant changes transaction results, so gate that change behind
+ *      an amendment.
  *
  * ---- External Interface ----
  *
