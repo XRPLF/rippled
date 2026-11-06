@@ -173,8 +173,10 @@ public:
         {
             peer->charge(resource::kFeeInvalidData, "ledger_data invalid");
         }
-        else if (!san.isUseful())
+        else if (!san.isGood())
         {
+            // Good rather than useful: a batch of nodes we already hold is what an honest second
+            // responder to trigger()'s fan-out sends.
             peer->charge(resource::kFeeUselessData, "ledger_data useless");
         }
     }
