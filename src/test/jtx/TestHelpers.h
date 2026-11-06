@@ -909,6 +909,8 @@ auto const kPaymentInterval = SimpleField<SF_UINT32>(sfPaymentInterval);
 
 auto const kGracePeriod = SimpleField<SF_UINT32>(sfGracePeriod);
 
+auto const kLoanSequence = SimpleField<SF_UINT32>(sfLoanSequence);
+
 json::Value
 manage(AccountID const& account, UInt256 const& loanID, std::uint32_t flags);
 
