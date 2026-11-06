@@ -11,18 +11,21 @@
 #include <boost/thread/csbl/memory/allocator_arg.hpp>
 
 #include <condition_variable>
+#include <cstddef>
+#include <exception>
 #include <mutex>
 #include <thread>
 #include <vector>
 
 namespace beast::test {
 
-/** Mix-in to support tests using asio coroutines.
-
-    Derive from this class and use yield_to to launch test
-    functions inside coroutines. This is handy for testing
-    asynchronous asio code.
-*/
+/**
+ * Mix-in to support tests using asio coroutines.
+ *
+ * Derive from this class and use yield_to to launch test
+ * functions inside coroutines. This is handy for testing
+ * asynchronous asio code.
+ */
 class EnableYieldTo
 {
 protected:
@@ -36,8 +39,10 @@ private:
     std::size_t running_ = 0;
 
 public:
-    /// The type of yield context passed to functions.
-    using yield_context = boost::asio::yield_context;
+    /**
+     * The type of yield context passed to functions.
+     */
+    using YieldContext = boost::asio::yield_context;
 
     explicit EnableYieldTo(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
     {
@@ -55,24 +60,27 @@ public:
             t.join();
     }
 
-    /// Return the `io_context` associated with the object
+    /**
+     * Return the `io_context` associated with the object
+     */
     boost::asio::io_context&
     getIoContext()
     {
         return ios_;
     }
 
-    /** Run one or more functions, each in a coroutine.
-
-        This call will block until all coroutines terminate.
-
-        Each functions should have this signature:
-        @code
-            void f(yield_context);
-        @endcode
-
-        @param fn... One or more functions to invoke.
-    */
+    /**
+     * Run one or more functions, each in a coroutine.
+     *
+     * This call will block until all coroutines terminate.
+     *
+     * Each functions should have this signature:
+     * @code
+     *     void f(yield_context);
+     * @endcode
+     *
+     * @param fn... One or more functions to invoke.
+     */
 #if BEAST_DOXYGEN
     template <class... FN>
     void
@@ -112,7 +120,7 @@ EnableYieldTo::spawn(F0&& f, FN&&... fn)
         ios_,
         boost::allocator_arg,
         boost::context::fixedsize_stack(2 * 1024 * 1024),
-        [&](yield_context yield) {
+        [&](YieldContext yield) {
             f(yield);
             std::scoped_lock const lock{m_};
             if (--running_ == 0)

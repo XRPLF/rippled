@@ -339,7 +339,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)
@@ -512,7 +514,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     PayChannel
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return PayChannel{std::make_shared<SLE>(std::move(object_), index)};
     }

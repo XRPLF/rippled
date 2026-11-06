@@ -98,13 +98,13 @@ STArray::getFullText() const
     for (auto const& obj : v_)
     {
         if (!first)
-            r += ",";
+            r += ',';
 
         r += obj.getFullText();
         first = false;
     }
 
-    r += "]";
+    r += ']';
     return r;
 }
 
@@ -117,13 +117,13 @@ STArray::getText() const
     for (STObject const& o : v_)
     {
         if (!first)
-            r += ",";
+            r += ',';
 
         r += o.getText();
         first = false;
     }
 
-    r += "]";
+    r += ']';
     return r;
 }
 

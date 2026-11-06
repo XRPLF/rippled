@@ -2,6 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <string>
+
 namespace xrpl {
 class TestSink : public beast::Journal::Sink
 {

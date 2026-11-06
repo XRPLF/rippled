@@ -8,6 +8,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -20,14 +21,14 @@
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDomain::visitEntry(bool isDel, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
+    auto const check = [isDel](std::vector<SleStatus>& sleStatus, SLE::ConstRef sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
@@ -35,7 +36,8 @@ ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::cons
             .credentialsSize = credentials.size(),
             .isSorted = false,
             .isUnique = !sorted.empty(),
-            .isDelete = isDel};
+            .isDelete = isDel,
+        };
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique)
@@ -65,7 +67,7 @@ ValidPermissionedDomain::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
+    auto const check = [](SleStatus const& sleStatus, beast::Journal const& j) {
         if (!sleStatus.credentialsSize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain with "

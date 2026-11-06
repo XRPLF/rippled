@@ -1,26 +1,24 @@
+#include <xrpld/rpc/handlers/orderbook/NFTBuyOffers.h>
+
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/handlers/orderbook/NFTOffersHelpers.h>
+#include <xrpld/rpc/handlers/orderbook/NFTOffersCommon.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
+#include <rpcspec/Errors.hpp>
 
-json::Value
-doNFTBuyOffers(RPC::JsonContext& context)
+#include <expected>
+
+namespace xrpl::rpc {
+
+NFTBuyOffersHandler::NFTBuyOffersHandler(JsonContext& context) : NFTOffersHandlerBase(context)
 {
-    if (!context.params.isMember(jss::nft_id))
-        return RPC::missingFieldError(jss::nft_id);
-
-    uint256 nftId;
-
-    if (!nftId.parseHex(context.params[jss::nft_id].asString()))
-        return RPC::invalidFieldError(jss::nft_id);
-
-    return enumerateNFTOffers(context, nftId, keylet::nftBuys(nftId));
 }
 
-}  // namespace xrpl
+std::expected<NFTBuyOffersHandler::Output, ::rpc::Status>
+NFTBuyOffersHandler::process(Input const& input) const
+{
+    return enumerateOffers(input, keylet::nftBuys(input.nftID));
+}
+
+}  // namespace xrpl::rpc

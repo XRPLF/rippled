@@ -1,12 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <span>
 #include <system_error>
 #include <tuple>
@@ -117,13 +119,13 @@ inplaceBigintDivRem(std::span<uint64_t> numerator, std::uint64_t divisor)
         // LCOV_EXCL_STOP
     }
 
-    auto toU128 = [](std::uint64_t high, std::uint64_t low) -> unsigned __int128 {
+    auto const toU128 = [](std::uint64_t high, std::uint64_t low) -> unsigned __int128 {
         unsigned __int128 const high128 = high;
         unsigned __int128 const low128 = low;
         return ((high128 << 64) | low128);
     };
-    auto divRe64 = [](unsigned __int128 num,
-                      std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
+    auto const divRe64 = [](unsigned __int128 num,
+                            std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);

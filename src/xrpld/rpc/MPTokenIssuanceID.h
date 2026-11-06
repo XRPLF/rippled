@@ -1,23 +1,22 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 /**
-   Add a `mpt_issuance_id` field to the `meta` input/output parameter.
-   The field is only added to successful MPTokenIssuanceCreate transactions.
-   The mpt_issuance_id is parsed from the sequence and the issuer in the
-   MPTokenIssuance object.
-
-   @{
+ * Add a `mpt_issuance_id` field to the `meta` input/output parameter.
+ * The field is only added to successful MPTokenIssuanceCreate transactions.
+ * The mpt_issuance_id is parsed from the sequence and the issuer in the
+ * MPTokenIssuance object.
  */
+/** @{ */
 bool
 canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
@@ -33,4 +32,4 @@ insertMPTokenIssuanceID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 
@@ -40,7 +41,7 @@ public:
     operator=(NodePtr node)
     {
         node_ = node;
-        return static_cast<LockFreeStackIterator&>(*this);
+        return *this;
     }
 
     LockFreeStackIterator&
@@ -58,7 +59,7 @@ public:
         return result;
     }
 
-    NodePtr
+    [[nodiscard]] NodePtr
     node() const
     {
         return node_;
@@ -102,18 +103,19 @@ operator!=(
 
 //------------------------------------------------------------------------------
 
-/** Multiple Producer, Multiple Consumer (MPMC) intrusive stack.
-
-    This stack is implemented using the same intrusive interface as List.
-    All mutations are lock-free.
-
-    The caller is responsible for preventing the "ABA" problem:
-        http://en.wikipedia.org/wiki/ABA_problem
-
-    @param Tag  A type name used to distinguish lists and nodes, for
-                putting objects in multiple lists. If this parameter is
-                omitted, the default tag is used.
-*/
+/**
+ * Multiple Producer, Multiple Consumer (MPMC) intrusive stack.
+ *
+ * This stack is implemented using the same intrusive interface as List.
+ * All mutations are lock-free.
+ *
+ * The caller is responsible for preventing the "ABA" problem:
+ *     http://en.wikipedia.org/wiki/ABA_problem
+ *
+ * @param Tag  A type name used to distinguish lists and nodes, for
+ *             putting objects in multiple lists. If this parameter is
+ *             omitted, the default tag is used.
+ */
 template <class Element, class Tag = void>
 class LockFreeStack
 {
@@ -161,24 +163,27 @@ public:
     LockFreeStack&
     operator=(LockFreeStack const&) = delete;
 
-    /** Returns true if the stack is empty. */
+    /**
+     * Returns true if the stack is empty.
+     */
     [[nodiscard]] bool
     empty() const
     {
         return head_.load() == &end_;
     }
 
-    /** Push a node onto the stack.
-        The caller is responsible for preventing the ABA problem.
-        This operation is lock-free.
-        Thread safety:
-            Safe to call from any thread.
-
-        @param node The node to push.
-
-        @return `true` if the stack was previously empty. If multiple threads
-                are attempting to push, only one will receive `true`.
-    */
+    /**
+     * Push a node onto the stack.
+     * The caller is responsible for preventing the ABA problem.
+     * This operation is lock-free.
+     * Thread safety:
+     *     Safe to call from any thread.
+     *
+     * @param node The node to push.
+     *
+     * @return `true` if the stack was previously empty. If multiple threads
+     *         are attempting to push, only one will receive `true`.
+     */
     // VFALCO NOTE Fix this, shouldn't it be a reference like intrusive list?
     bool
     pushFront(Node* node)
@@ -194,15 +199,16 @@ public:
         return first;
     }
 
-    /** Pop an element off the stack.
-        The caller is responsible for preventing the ABA problem.
-        This operation is lock-free.
-        Thread safety:
-            Safe to call from any thread.
-
-        @return The element that was popped, or `nullptr` if the stack
-                was empty.
-    */
+    /**
+     * Pop an element off the stack.
+     * The caller is responsible for preventing the ABA problem.
+     * This operation is lock-free.
+     * Thread safety:
+     *     Safe to call from any thread.
+     *
+     * @return The element that was popped, or `nullptr` if the stack
+     *         was empty.
+     */
     Element*
     popFront()
     {
@@ -218,12 +224,13 @@ public:
         return static_cast<Element*>(node);
     }
 
-    /** Return a forward iterator to the beginning or end of the stack.
-        Undefined behavior results if push_front or pop_front is called
-        while an iteration is in progress.
-        Thread safety:
-            Caller is responsible for synchronization.
-    */
+    /**
+     * Return a forward iterator to the beginning or end of the stack.
+     * Undefined behavior results if push_front or pop_front is called
+     * while an iteration is in progress.
+     * Thread safety:
+     *     Caller is responsible for synchronization.
+     */
     /** @{ */
     iterator
     begin()

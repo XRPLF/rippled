@@ -4,14 +4,57 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/server/Manifest.h>
 
-#include <algorithm>
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
 constexpr std::size_t kMaximumMessageSize = megabytes(64);
+// Ping messages should be much smaller than the maximum message size,
+// so we define a separate limit for them.
+constexpr std::size_t kMaximumPingMessageSize = kilobytes(1);
+
+// Allowance for protobuf framing around each manifest in a TMManifests message.
+constexpr std::size_t kManifestFramingBytes = 8;
+
+/**
+ * Upper bound on the wire size of a TMManifests message.
+ *
+ * Allows both counts' worth of entries at @ref kMaxManifestBytes each, plus
+ * framing per entry. Messages larger than this are dropped before parsing,
+ * which bounds the work an oversized message can cause.
+ *
+ * @param trustedCount Trusted manifests per message.
+ *
+ * @param untrustedCount Untrusted manifests per message.
+ *
+ * @note A node that raises either count accepts larger messages than a peer
+ *     running the defaults, and the messages it sends may be dropped by such a
+ *     peer. Lowering either count below what peers send drops their manifest
+ *     messages, including any trusted key rotations they carry, and the drop
+ *     is not recorded on either side.
+ */
+constexpr std::size_t
+maximumManifestsMessageSize(std::size_t const trustedCount, std::size_t const untrustedCount)
+{
+    return (trustedCount + untrustedCount) * (kMaxManifestBytes + kManifestFramingBytes);
+}
+
+// The message size the defaults imply must stay within the overall protocol
+// message limit. The same check for the largest configurable counts lives in
+// OverlayImpl.h, where the configured bound is visible.
+static_assert(
+    maximumManifestsMessageSize(kMaxTrustedCount, kMaxUntrustedCount) < kMaximumMessageSize);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
@@ -32,7 +75,8 @@ class Message : public std::enable_shared_from_this<Message>
     using Algorithm = compression::Algorithm;
 
 public:
-    /** Constructor
+    /**
+     * Constructor
      * @param message Protocol message to serialize
      * @param type Protocol message type
      * @param validator Public Key of the source validator for Validation or
@@ -43,7 +87,9 @@ public:
         protocol::MessageType type,
         std::optional<PublicKey> const& validator = {});
 
-    /** Retrieve the size of the packed but uncompressed message data. */
+    /**
+     * Retrieve the size of the packed but uncompressed message data.
+     */
     std::size_t
     getBufferSize();
 
@@ -53,7 +99,8 @@ public:
     static std::size_t
     totalSize(::google::protobuf::Message const& message);
 
-    /** Retrieve the packed message data. If compressed message is requested but
+    /**
+     * Retrieve the packed message data. If compressed message is requested but
      * the message is not compressible then the uncompressed buffer is returned.
      * @param compressed Request compressed (Compress::On) or
      *     uncompressed (Compress::Off) payload buffer
@@ -62,14 +109,18 @@ public:
     std::vector<uint8_t> const&
     getBuffer(Compressed tryCompressed);
 
-    /** Get the traffic category */
+    /**
+     * Get the traffic category
+     */
     std::size_t
     getCategory() const
     {
         return category_;
     }
 
-    /** Get the validator's key */
+    /**
+     * Get the validator's key
+     */
     std::optional<PublicKey> const&
     getValidatorKey() const
     {
@@ -83,7 +134,8 @@ private:
     std::once_flag onceFlag_;
     std::optional<PublicKey> validatorKey_;
 
-    /** Set the payload header
+    /**
+     * Set the payload header
      * @param in Pointer to the payload
      * @param payloadBytes Size of the payload excluding the header size
      * @param type Protocol message type
@@ -99,14 +151,16 @@ private:
         Algorithm compression,
         std::uint32_t uncompressedBytes);
 
-    /** Try to compress the payload.
+    /**
+     * Try to compress the payload.
      * Can be called concurrently by multiple peers but is compressed once.
      * If the message is not compressible then the serialized buffer_ is used.
      */
     void
     compress();
 
-    /** Get the message type from the payload header.
+    /**
+     * Get the message type from the payload header.
      * First four bytes are the compression/algorithm flag and the payload size.
      * Next two bytes are the message type
      * @param in Payload header pointer

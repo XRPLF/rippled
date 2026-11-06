@@ -1,14 +1,19 @@
 #pragma once
 
-/** An embedded database wrapper with an intuitive, type-safe interface.
+/**
+ * An embedded database wrapper with an intuitive, type-safe interface.
+ *
+ * This collection of classes let's you access embedded SQLite databases
+ * using C++ syntax that is very similar to regular SQL.
+ *
+ * This module requires the @ref beast_sqlite external module.
+ */
 
-    This collection of classes let's you access embedded SQLite databases
-    using C++ syntax that is very similar to regular SQL.
+#include <soci/blob.h>
+#include <soci/session.h>
 
-    This module requires the @ref beast_sqlite external module.
-*/
-
-#if defined(__clang__)
+#include <memory>
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -17,7 +22,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 
 #define SOCI_USE_BOOST
-#include <soci/soci.h>
 
 #include <cstdint>
 #include <string>
@@ -32,9 +36,9 @@ namespace xrpl {
 class BasicConfig;
 
 /**
-   DBConfig is used when a client wants to delay opening a soci::session after
-   parsing the config parameters. If a client want to open a session
-   immediately, use the free function "open" below.
+ * DBConfig is used when a client wants to delay opening a soci::session after
+ * parsing the config parameters. If a client want to open a session
+ * immediately, use the free function "open" below.
  */
 class DBConfig
 {
@@ -50,27 +54,27 @@ public:
 };
 
 /**
-   Open a soci session.
-
-   @param s Session to open.
-
-   @param config Parameters to pick the soci backend and how to connect to that
-                 backend.
-
-   @param dbName Name of the database. This has different meaning for different
-                 backends. Sometimes it is part of a filename (sqlite3),
-                 other times it is a database name (postgresql).
-*/
+ * Open a soci session.
+ *
+ * @param s Session to open.
+ *
+ * @param config Parameters to pick the soci backend and how to connect to that
+ *               backend.
+ *
+ * @param dbName Name of the database. This has different meaning for different
+ *               backends. Sometimes it is part of a filename (sqlite3),
+ *               other times it is a database name (postgresql).
+ */
 void
 open(soci::session& s, BasicConfig const& config, std::string const& dbName);
 
 /**
- *  Open a soci session.
+ * Open a soci session.
  *
- *  @param s Session to open.
- *  @param beName Backend name.
- *  @param connectionString Connection string to forward to soci::open.
- *         see the soci::open documentation for how to use this.
+ * @param s Session to open.
+ * @param beName Backend name.
+ * @param connectionString Connection string to forward to soci::open.
+ *        see the soci::open documentation for how to use this.
  *
  */
 void
@@ -104,17 +108,18 @@ public:
     checkpoint() = 0;
 };
 
-/** Returns a new checkpointer which makes checkpoints of a
-    soci database every checkpointPageCount pages, using a job on the job queue.
-
-    The checkpointer contains references to the session and job queue
-    and so must outlive them both.
+/**
+ * Returns a new checkpointer which makes checkpoints of a
+ * soci database every checkpointPageCount pages, using a job on the job queue.
+ *
+ * The checkpointer contains references to the session and job queue
+ * and so must outlive them both.
  */
 std::shared_ptr<Checkpointer>
 makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, ServiceRegistry&);
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif

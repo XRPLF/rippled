@@ -8,12 +8,15 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 #include <stdexcept>
 
 namespace beast {
 
-/** Measures handler latency on an io_context queue. */
+/**
+ * Measures handler latency on an io_context queue.
+ */
 template <class Clock>
 class IOLatencyProbe
 {
@@ -41,7 +44,9 @@ public:
         cancel(lock, true);
     }
 
-    /** Return the io_context associated with the latency probe. */
+    /**
+     * Return the io_context associated with the latency probe.
+     */
     /** @{ */
     boost::asio::io_context&
     getIoContext()
@@ -56,9 +61,10 @@ public:
     }
     /** @} */
 
-    /** Cancel all pending i/o.
-        Any handlers which have already been queued will still be called.
-    */
+    /**
+     * Cancel all pending i/o.
+     * Any handlers which have already been queued will still be called.
+     */
     /** @{ */
     void
     cancel()
@@ -75,10 +81,11 @@ public:
     }
     /** @} */
 
-    /** Measure one sample of i/o latency.
-        Handler will be called with this signature:
-            void Handler (Duration d);
-    */
+    /**
+     * Measure one sample of i/o latency.
+     * Handler will be called with this signature:
+     *     void Handler (Duration d);
+     */
     template <class Handler>
     void
     sampleOne(Handler&& handler)
@@ -90,10 +97,11 @@ public:
             ios_, SampleOp<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
-    /** Initiate continuous i/o latency sampling.
-        Handler will be called with this signature:
-            void Handler (std::chrono::milliseconds);
-    */
+    /**
+     * Initiate continuous i/o latency sampling.
+     * Handler will be called with this signature:
+     *     void Handler (std::chrono::milliseconds);
+     */
     template <class Handler>
     void
     sample(Handler&& handler)

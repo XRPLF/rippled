@@ -1,10 +1,24 @@
 #include <xrpl/protocol/MPTAmount.h>
 
+#include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+
+#include <stdexcept>
+
 namespace xrpl {
 
 MPTAmount&
 MPTAmount::operator+=(MPTAmount const& other)
 {
+    if (auto const result = checkedAdd(value_, other.value()))
+    {
+        value_ = *result;
+        return *this;
+    }
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
+        Throw<std::overflow_error>("MPTAmount::operator+= overflow");
     value_ += other.value();
     return *this;
 }
@@ -12,6 +26,13 @@ MPTAmount::operator+=(MPTAmount const& other)
 MPTAmount&
 MPTAmount::operator-=(MPTAmount const& other)
 {
+    if (auto const result = checkedSub(value_, other.value()))
+    {
+        value_ = *result;
+        return *this;
+    }
+    if (isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
+        Throw<std::overflow_error>("MPTAmount::operator-= overflow");
     value_ -= other.value();
     return *this;
 }

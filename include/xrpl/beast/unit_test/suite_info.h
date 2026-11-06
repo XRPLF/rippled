@@ -4,26 +4,28 @@
 
 #pragma once
 
-#include <cstring>
 #include <functional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace beast::unit_test {
 
 class Runner;
 
-/** Associates a unit test type with metadata. */
+/**
+ * Associates a unit test type with metadata.
+ */
 class SuiteInfo
 {
-    using run_type = std::function<void(Runner&)>;
+    using RunType = std::function<void(Runner&)>;
 
     std::string name_;
     std::string module_;
     std::string library_;
     bool manual_;
     int priority_;
-    run_type run_;
+    RunType run_;
 
 public:
     SuiteInfo(
@@ -32,7 +34,7 @@ public:
         std::string library,
         bool manual,
         int priority,
-        run_type run)
+        RunType run)
         : name_(std::move(name))
         , module_(std::move(module))
         , library_(std::move(library))
@@ -60,21 +62,27 @@ public:
         return library_;
     }
 
-    /// Returns `true` if this suite only runs manually.
+    /**
+     * Returns `true` if this suite only runs manually.
+     */
     [[nodiscard]] bool
     manual() const
     {
         return manual_;
     }
 
-    /// Return the canonical suite name as a string.
+    /**
+     * Return the canonical suite name as a string.
+     */
     [[nodiscard]] std::string
     fullName() const
     {
         return library_ + "." + module_ + "." + name_;
     }
 
-    /// Run a new instance of the associated test suite.
+    /**
+     * Run a new instance of the associated test suite.
+     */
     void
     run(Runner& r) const
     {
@@ -93,7 +101,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-/// Convenience for producing SuiteInfo for a given test type.
+/**
+ * Convenience for producing SuiteInfo for a given test type.
+ */
 template <class Suite>
 SuiteInfo
 makeSuiteInfo(std::string name, std::string module, std::string library, bool manual, int priority)

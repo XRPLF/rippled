@@ -9,11 +9,11 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <gtest/gtest.h>
@@ -130,7 +130,7 @@ using Vector256Value = std::decay_t<typename SF_VECTOR256::type::value_type>;
 inline Vector256Value
 canonical_VECTOR256()
 {
-    return Vector256Value{uint256{1}};
+    return Vector256Value{UInt256{1}};
 }
 
 using BlobValue = std::decay_t<typename SF_VL::type::value_type>;
@@ -139,13 +139,6 @@ canonical_VL()
 {
     static constexpr std::array<std::uint8_t, 3> data{{'a', 'b', 'c'}};
     return BlobValue{data.data(), data.size()};
-}
-
-using XChainBridgeValue = std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type>;
-inline XChainBridgeValue
-canonical_XCHAIN_BRIDGE()
-{
-    return XChainBridgeValue{xrpAccount(), xrpIssue(), xrpAccount(), xrpIssue()};
 }
 
 // Untyped field canonical values

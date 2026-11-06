@@ -7,8 +7,6 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -16,6 +14,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Consumer.h>
@@ -35,8 +35,8 @@
 #include <boost/system/system_error.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <exception>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -48,11 +48,11 @@ namespace xrpl {
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
-    endpoint_type remoteEndpoint,
-    Resource::Consumer usage,
-    shared_context const& context,
-    Peer::id_t id,
-    std::shared_ptr<PeerFinder::Slot> const& slot,
+    EndpointType remoteEndpoint,
+    resource::Consumer usage,
+    SharedContext const& context,
+    Peer::ID id,
+    std::shared_ptr<peer_finder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)
     : Child(overlay)
@@ -65,8 +65,8 @@ ConnectAttempt::ConnectAttempt(
     , strand_(boost::asio::make_strand(ioContext))
     , timer_(ioContext)
     , streamPtr_(
-          std::make_unique<stream_type>(
-              socket_type(std::forward<boost::asio::io_context&>(ioContext)),
+          std::make_unique<StreamType>(
+              SocketType(std::forward<boost::asio::io_context&>(ioContext)),
               *context))
     , socket_(streamPtr_->next_layer().socket())
     , stream_(*streamPtr_)
@@ -86,7 +86,7 @@ ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
+        boost::asio::post(strand_, [self = shared_from_this()] { self->stop(); });
         return;
     }
     if (socket_.is_open())
@@ -104,8 +104,7 @@ ConnectAttempt::run()
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onConnect(ec); }));
 }
 
 //------------------------------------------------------------------------------
@@ -139,7 +138,7 @@ ConnectAttempt::fail(std::string const& reason)
 }
 
 void
-ConnectAttempt::fail(std::string const& name, error_code ec)
+ConnectAttempt::fail(std::string const& name, ErrorCode ec)
 {
     JLOG(journal_.debug()) << name << ": " << ec.message();
     close();
@@ -160,8 +159,7 @@ ConnectAttempt::setTimer()
 
     timer_.async_wait(
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -178,7 +176,7 @@ ConnectAttempt::cancelTimer()
 }
 
 void
-ConnectAttempt::onTimer(error_code ec)
+ConnectAttempt::onTimer(ErrorCode ec)
 {
     if (!socket_.is_open())
         return;
@@ -198,7 +196,7 @@ ConnectAttempt::onTimer(error_code ec)
 }
 
 void
-ConnectAttempt::onConnect(error_code ec)
+ConnectAttempt::onConnect(ErrorCode ec)
 {
     cancelTimer();
 
@@ -228,12 +226,11 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](ErrorCode const& ec) { self->onHandshake(ec); }));
 }
 
 void
-ConnectAttempt::onHandshake(error_code ec)
+ConnectAttempt::onHandshake(ErrorCode ec)
 {
     cancelTimer();
     if (!socket_.is_open())
@@ -290,11 +287,11 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](ErrorCode const& ec, std::size_t) { self->onWrite(ec); }));
 }
 
 void
-ConnectAttempt::onWrite(error_code ec)
+ConnectAttempt::onWrite(ErrorCode ec)
 {
     cancelTimer();
 
@@ -316,11 +313,11 @@ ConnectAttempt::onWrite(error_code ec)
         response_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](ErrorCode const& ec, std::size_t) { self->onRead(ec); }));
 }
 
 void
-ConnectAttempt::onRead(error_code ec)
+ConnectAttempt::onRead(ErrorCode ec)
 {
     cancelTimer();
 
@@ -339,8 +336,7 @@ ConnectAttempt::onRead(error_code ec)
             stream_.async_shutdown(
                 boost::asio::bind_executor(
                     strand_,
-                    std::bind(
-                        &ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
+                    [self = shared_from_this()](ErrorCode const& ec) { self->onShutdown(ec); }));
             return;
         }
 
@@ -352,7 +348,7 @@ ConnectAttempt::onRead(error_code ec)
 }
 
 void
-ConnectAttempt::onShutdown(error_code ec)
+ConnectAttempt::onShutdown(ErrorCode ec)
 {
     cancelTimer();
     if (!ec)
@@ -398,7 +394,7 @@ ConnectAttempt::processResponse()
                     {
                         if (v.isString())
                         {
-                            error_code ec;
+                            ErrorCode ec;
                             auto const ep = parseEndpoint(v.asString(), ec);
                             if (!ec)
                                 eps.push_back(ep);
@@ -466,7 +462,7 @@ ConnectAttempt::processResponse()
 
         auto const result =
             overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
-        if (result != PeerFinder::Result::Success)
+        if (result != peer_finder::Result::Success)
         {
             fail("Outbound " + std::string(to_string(result)));
             return;

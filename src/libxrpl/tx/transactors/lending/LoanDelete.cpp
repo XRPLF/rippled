@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
@@ -107,9 +108,8 @@ LoanDelete::doApply()
     view.erase(loanSle);
 
     // Decrement the LoanBroker's owner count.
-    // The broker's owner count is solely for the number of outstanding loans,
-    // and is distinct from the broker's pseudo-account's owner count
-    adjustOwnerCount(view, brokerSle, -1, j_);
+    adjustLoanBrokerOwnerCount(view, brokerSle, -1, j_);
+
     // If there are no loans left, then any remaining debt must be forgiven,
     // because there is no other way to pay it back.
     if (brokerSle->at(sfOwnerCount) == 0)
@@ -121,7 +121,7 @@ LoanDelete::doApply()
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
-                    getAssetsTotalScale(vaultSle),
+                    getVaultScale(vaultSle),
                     Number::RoundingMode::TowardsZero) == beast::kZero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
@@ -129,18 +129,15 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    adjustOwnerCount(view, borrowerSle, -1, j_);
+    decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
 
-    // These associations shouldn't do anything, but do them just to be safe
-    associateAsset(*loanSle, vaultAsset);
-    associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
 
 void
-LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

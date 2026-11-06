@@ -2,11 +2,14 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <string>
 #include <utility>
 
 namespace beast {
 
-/** Wraps a Journal::Sink to prefix its output with a string. */
+/**
+ * Wraps a Journal::Sink to prefix its output with a string.
+ */
 
 // A WrappedSink both is a Sink and has a Sink:
 //   o It inherits from Sink so it has the correct interface.

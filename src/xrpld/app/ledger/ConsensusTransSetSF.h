@@ -2,8 +2,16 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -16,6 +24,15 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
     using NodeCache = TaggedCache<SHAMapHash, Blob>;
+
+    /**
+     * The size a node's hash-prefixed wire data must reach before gotNode()
+     * tries to parse and resubmit it as a transaction. One byte past the
+     * smallest a hash-prefixed SHAMap leaf can be, which a signed transaction
+     * clears.
+     */
+    static constexpr std::size_t kMinTxNodeBytesToParse =
+        sizeof(std::uint32_t) + kMinShaMapItemBytes + 1;
 
     ConsensusTransSetSF(Application& app, NodeCache& nodeCache);
 

@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -12,6 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace xrpl {
@@ -88,17 +90,15 @@ ValidBookDirectory::finalize(
         return false;
     }
 
-    for (auto const& rootIndex : rootIndexes_)
-    {
+    return std::ranges::all_of(rootIndexes_, [&](auto const& rootIndex) {
         auto const root = view.read(Keylet(ltDIR_NODE, rootIndex));
         if (!root)
         {
             JLOG(j.fatal()) << "Invariant failed: book directory root missing";
             return false;
         }
-    }
-
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

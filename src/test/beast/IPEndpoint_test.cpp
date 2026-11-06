@@ -22,7 +22,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace beast::IP {
+namespace beast::ip {
 
 //------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ public:
     failParseAddr(std::string const& s)
     {
         boost::system::error_code ec;
-        auto a = boost::asio::ip::make_address(s, ec);
+        auto const a = boost::asio::ip::make_address(s, ec);
         BEAST_EXPECTS(ec, s + " parses as " + a.to_string());
     }
 
@@ -195,14 +195,14 @@ public:
     void
     failParseEP(std::string s)
     {
-        auto a1 = Endpoint::fromString(s);
+        auto const a1 = Endpoint::fromString(s);
         BEAST_EXPECTS(isUnspecified(a1), s + " parses as " + a1.toString());
 
-        auto a2 = Endpoint::fromString(s);
+        auto const a2 = Endpoint::fromString(s);
         BEAST_EXPECTS(isUnspecified(a2), s + " parses as " + a2.toString());
 
         boost::replace_last(s, ":", " ");
-        auto a3 = Endpoint::fromString(s);
+        auto const a3 = Endpoint::fromString(s);
         BEAST_EXPECTS(isUnspecified(a3), s + " parses as " + a3.toString());
     }
 
@@ -304,6 +304,15 @@ public:
         BEAST_EXPECT(!isMulticast(ep));
         BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "fd00::1", to_string(ep));
+
+        // unspecified IPv6 (::)
+        ep = Endpoint(AddressV6{});
+        BEAST_EXPECT(isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(!isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
+        BEAST_EXPECTS(to_string(ep) == "::", to_string(ep));
 
         {
             ep = Endpoint::fromString("192.0.2.112");
@@ -466,4 +475,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
-}  // namespace beast::IP
+}  // namespace beast::ip

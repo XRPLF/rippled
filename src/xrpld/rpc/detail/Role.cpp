@@ -40,7 +40,7 @@ passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 
 bool
 ipAllowed(
-    beast::IP::Address const& remoteIp,
+    beast::ip::Address const& remoteIp,
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6)
 {
@@ -56,7 +56,7 @@ ipAllowed(
     if (remoteIp.is_v4())
     {
         addrString += "/32";
-        auto ipNet = boost::asio::ip::make_network_v4(addrString);
+        auto const ipNet = boost::asio::ip::make_network_v4(addrString);
         for (auto const& net : nets4)
         {
             if (ipNet.is_subnet_of(net) || ipNet == net)
@@ -66,7 +66,7 @@ ipAllowed(
     else
     {
         addrString += "/128";
-        auto ipNet = boost::asio::ip::make_network_v6(addrString);
+        auto const ipNet = boost::asio::ip::make_network_v6(addrString);
         for (auto const& net : nets6)
         {
             if (ipNet.is_subnet_of(net) || ipNet == net)
@@ -78,7 +78,7 @@ ipAllowed(
 }
 
 bool
-isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::ip::Address const& remoteIp)
 {
     return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
@@ -89,7 +89,7 @@ requestRole(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string_view user)
 {
     if (isAdmin(port, params, remoteIp.address()))
@@ -122,16 +122,16 @@ isUnlimited(
     Role const& required,
     Port const& port,
     json::Value const& params,
-    beast::IP::Endpoint const& remoteIp,
+    beast::ip::Endpoint const& remoteIp,
     std::string const& user)
 {
     return isUnlimited(requestRole(required, port, params, remoteIp, user));
 }
 
-Resource::Consumer
+resource::Consumer
 requestInboundEndpoint(
-    Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
+    resource::Manager& manager,
+    beast::ip::Endpoint const& remoteAddress,
     Role const& role,
     std::string_view user,
     std::string_view forwardedFor)
@@ -146,7 +146,7 @@ static std::string_view
 extractIpAddrFromField(std::string_view field)
 {
     // Lambda to trim leading and trailing spaces on the field.
-    auto trim = [](std::string_view str) -> std::string_view {
+    auto const trim = [](std::string_view str) -> std::string_view {
         std::string_view ret = str;
 
         // Only do the work if there's at least one leading space.
@@ -248,10 +248,10 @@ extractIpAddrFromField(std::string_view field)
 }
 
 std::string_view
-forwardedFor(http_request_type const& request)
+forwardedFor(HttpRequestType const& request)
 {
     // Look for the Forwarded field in the request.
-    if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
+    if (auto const it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
         auto asciiToLower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
@@ -286,7 +286,7 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         auto const end = it->value().end();
-        std::size_t const pos = [&found, &end]() {
+        std::size_t const pos = [&found, &end] {
             std::size_t const pos =
                 std::string_view(found, std::distance(found, end)).find_first_of(",;");
             if (pos != std::string_view::npos)
@@ -299,7 +299,7 @@ forwardedFor(http_request_type const& request)
     }
 
     // Look for the X-Forwarded-For field in the request.
-    if (auto it = request.find("X-Forwarded-For"); it != request.end())
+    if (auto const it = request.find("X-Forwarded-For"); it != request.end())
     {
         // The first X-Forwarded-For entry may be terminated by a comma.
         std::size_t found = it->value().find(',');

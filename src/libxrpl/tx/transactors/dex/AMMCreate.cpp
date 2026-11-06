@@ -2,8 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -41,14 +39,8 @@ namespace xrpl {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAmount].holds<MPTIssue>() || ctx.tx[sfAmount2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAmount].holds<MPTIssue>() && !ctx.tx[sfAmount2].holds<MPTIssue>());
 }
 
 NotTEC
@@ -131,7 +123,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    auto noDefaultRipple = [](ReadView const& view, Asset const& asset) {
+    auto const noDefaultRipple = [](ReadView const& view, Asset const& asset) {
         if (asset.holds<MPTIssue>() || isXRP(asset))
             return false;
 
@@ -156,7 +148,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecINSUF_RESERVE_LINE;
     }
 
-    auto insufficientBalance = [&](STAmount const& amount) {
+    auto const insufficientBalance = [&](STAmount const& amount) {
         if (isXRP(amount))
             return xrpBalance < amount;
         return accountFunds(
@@ -174,7 +166,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecUNFUNDED_AMM;
     }
 
-    auto isLPToken = [&](STAmount const& amount) -> bool {
+    auto const isLPToken = [&](STAmount const& amount) -> bool {
         if (auto const sle = ctx.view.read(keylet::account(amount.asset().getIssuer())))
             return sle->isFieldPresent(sfAMMID);
         return false;
@@ -193,6 +185,23 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
             accountId == beast::kZero)
             return terADDRESS_COLLISION;
+
+        auto const isMPTIssuerPseudo = [&](Asset const& asset) {
+            if (asset.native())
+                return false;
+
+            if (asset.holds<Issue>())
+                return false;
+
+            return isPseudoAccount(ctx.view, asset.getIssuer());
+        };
+
+        if (isMPTIssuerPseudo(amount.asset()) || isMPTIssuerPseudo(amount2.asset()))
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: can't create with vault shares " << amount << " "
+                                << amount2;
+            return tecWRONG_ASSET;
+        }
     }
 
     if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount.asset(), accountID, accountID);
@@ -209,7 +218,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     // Disallow AMM if the issuer has clawback enabled when featureAMMClawback
     // is not enabled
-    auto clawbackDisabled = [&](Asset const& asset) -> TER {
+    auto const clawbackDisabled = [&](Asset const& asset) -> TER {
         return asset.visit(
             [&](MPTIssue const& issue) -> TER {
                 auto const sle = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
@@ -276,7 +285,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
-    auto ammSle = std::make_shared<SLE>(ammKeylet);
+    auto const ammSle = std::make_shared<SLE>(ammKeylet);
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
@@ -286,7 +295,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto ter = dirLink(sb, accountId, ammSle); ter)
+    if (auto const ter = dirLink(sb, accountId, ammSle); ter)
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
@@ -301,7 +310,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         return {res, false};
     }
 
-    auto sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
+    auto const sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
         // Authorize MPT
         return amount.asset().visit(
             [&](MPTIssue const& issue) -> TER {
@@ -315,17 +324,30 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     return err;
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
+                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
+                    !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
+                    sb,
+                    account,
+                    accountId,
+                    amount,
+                    ctx.journal,
+                    {},  // don't sponsor for AMM Trustline
+                    WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
+                        sb,
+                        account,
+                        accountId,
+                        amount,
+                        ctx.journal,
+                        {},  // don't sponsor for AMM Trustline
+                        WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
@@ -363,12 +385,13 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     JLOG(j.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " "
                     << lpTokens << " " << amount << " " << amount2;
-    auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
-        Book const book{assetIn, assetOut, std::nullopt};
-        auto const dir = keylet::quality(keylet::book(book), uRate);
-        if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx.registry.get().getOrderBookDB().addOrderBook(book);
-    };
+    auto const addOrderBook =
+        [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
+            Book const book{assetIn, assetOut, std::nullopt};
+            auto const dir = keylet::quality(keylet::book(book), uRate);
+            if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
+                ctx.addOrderBook(book);
+        };
     addOrderBook(amount.asset(), amount2.asset(), getRate(amount2, amount));
     addOrderBook(amount2.asset(), amount.asset(), getRate(amount, amount2));
 
@@ -390,7 +413,7 @@ AMMCreate::doApply()
 }
 
 void
-AMMCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

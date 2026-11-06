@@ -9,6 +9,10 @@
 # - `pre-commit run <hook_id> --all-files`
 # To run the hooks against only the staged files, use:
 # - `pre-commit run`
+# nodeenv<1.12 resolves the default `latest` to Node pre-releases and crashes parsing them.
+default_language_version:
+  node: lts
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
@@ -28,8 +32,15 @@ repos:
         entry: ./bin/pre-commit/clang_tidy_check.py
         language: python
         types_or: [c++, c]
-        exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # script determines the staged files itself
+        # .ipp fragments are included by their owning header rather than compiled
+        # as standalone translation units, so they have no compile_commands.json
+        # entry to lint (verify_headers checks them transitively).
+        exclude: '^include/xrpl/protocol_autogen|\.ipp$'
+        # run-clang-tidy --fix may edit headers included by files it is not run on,
+        # so pre-commit must not split the files across parallel hook invocations.
+        # The script determines the staged files itself and lets run-clang-tidy
+        # handle parallelism internally.
+        pass_filenames: false
       - id: fix-include-style
         name: fix include style
         entry: ./bin/pre-commit/fix_include_style.py
@@ -41,33 +52,74 @@ repos:
         language: python
         entry: ./bin/pre-commit/fix_pragma_once.py
         files: \.(h|hpp)$
+      - id: check-doxygen-style
+        name: check Doxygen comment style
+        entry: ./bin/pre-commit/check_doxygen_style.py
+        language: python
+        types_or: [c++, c]
+      - id: fix-gtest-names
+        name: "fix gtest names: CamelCase suite, snake_case test case"
+        entry: ./bin/pre-commit/fix_gtest_names.py
+        language: python
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5
+    rev: 98ad4ddb9c057de2f5b9e93e44e6db959807d68c # frozen: v23.1.3
     hooks:
       - id: clang-format
         args: [--style=file]
         types_or: [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --manifest-path crates/Cargo.toml --all
+        language: system
+        types: [rust]
+        pass_filenames: false # rustfmt formats the whole workspace
+      - id: check-coverage-attrs
+        name: check Rust coverage attributes
+        entry: ./bin/pre-commit/check_rust_coverage_attrs.py
+        language: python
+        files: ^crates/.*\.rs$
+
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: faadd6a9d852369ca94f4d15b2404c967ba8cb01 # frozen: 0.27.6
+    rev: 28010ddd6016e1a0f7bd232acb6536ef996ae897 # frozen: 0.29.2
     hooks:
       - id: gersemi
+        args: [-i, --warnings-as-errors]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 515f543f5718ebfd6ce22e16708bb32c68ff96e1 # frozen: v3.8.3
+    rev: 331f33fa4dfbcbca7c3da3620c137fde0faab273 # frozen: v3.9.10
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
 
+  # Scoped to package/: the rest of the repo's Python has pre-existing findings,
+  # so widening these is its own change.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
+    rev: a5439e9af2ff9371297bb1a76a01b8ad17989b88 # frozen: 26.10.1
     hooks:
       - id: black
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: ad26ebfa797fcb9b8f83275937c1c1d6e126719c # frozen: v2.4.1
+    hooks:
+      - id: mypy
+        args: [--strict]
+        files: ^package/.*\.py$
+
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
+    rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1
     hooks:
       - id: shfmt
         args: [--write, --indent=4, --case-indent=true]
@@ -86,22 +138,21 @@ repos:
         files: \.md$
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: 4643f154907327ee0a2c7038f0296e0dd77d9776 # frozen: v10.0.0
+    rev: f6467e1f1ebecf5020560405c7b26e01786a43c8 # frozen: v10.4.0
     hooks:
-      - id: cspell # Spell check changed files
+      - id: cspell
+        name: check changed files spelling
         exclude: |
           (?x)^(
-              .config/cspell.config.yaml|
+              \.cspell\.config\.yaml|
               include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
           )$
-      - id: cspell # Spell check the commit message
+      - id: cspell
         name: check commit message spelling
         args:
           - --no-must-find-files
           - --no-progress
           - --no-summary
-          - --files
-          - .git/COMMIT_EDITMSG
         stages: [commit-msg]
 
   - repo: local

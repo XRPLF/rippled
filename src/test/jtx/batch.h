@@ -2,19 +2,27 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/SignerUtils.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/tags.h>
 
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <concepts>
 #include <cstdint>
 #include <optional>
+#include <source_location>
+#include <string>
 #include <utility>
+#include <vector>
 
-/** @brief Helpers for constructing Batch test transactions. */
+/**
+ * @brief Helpers for constructing Batch test transactions.
+ */
 namespace xrpl::test::jtx::batch {
 
 /**
@@ -53,7 +61,32 @@ calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
-/** @brief Adds an inner Batch transaction to a JTx and autofills it. */
+/**
+ * @brief Expect an inner Batch transaction to be recorded with the given
+ * type and result, and with ParentBatchID pointing at its outer Batch.
+ *
+ * Looks the inner transaction up with the `tx` RPC, so the ledger holding the
+ * batch must already be closed. Failures are reported at the caller's line.
+ *
+ * @param env The test environment.
+ * @param batchID Hash of the outer Batch transaction.
+ * @param txHash Hash of the inner transaction.
+ * @param txType Expected TransactionType, e.g. "Payment".
+ * @param result Expected TransactionResult, e.g. "tesSUCCESS".
+ * @param loc Call site to report failures at.
+ */
+void
+validateInnerTxn(
+    Env& env,
+    std::string const& batchID,
+    std::string const& txHash,
+    std::string const& txType,
+    std::string const& result,
+    std::source_location const& loc = std::source_location::current());
+
+/**
+ * @brief Adds an inner Batch transaction to a JTx and autofills it.
+ */
 class Inner
 {
 private:
@@ -102,7 +135,9 @@ public:
     }
 };
 
-/** @brief Sets the Batch transaction signers on a JTx. */
+/**
+ * @brief Sets the Batch transaction signers on a JTx.
+ */
 class Sig
 {
 public:
@@ -125,7 +160,9 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** @brief Sets a nested multi-signature for a Batch transaction on a JTx. */
+/**
+ * @brief Sets a nested multi-signature for a Batch transaction on a JTx.
+ */
 class Msig
 {
 public:

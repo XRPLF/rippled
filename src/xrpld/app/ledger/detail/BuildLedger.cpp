@@ -6,17 +6,19 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
@@ -74,22 +76,34 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
         "xrpl::buildLedgerImpl : valid ledger fees");
-    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    // The invariant: a ledger this function returns has both maps immutable, which is what
+    // setAccepted() reports on (see Ledger::setImmutable()). Nothing downstream re-checks it.
+    //
+    // logicError() rather than UNREACHABLE(): the consensus caller acts on this ledger straight
+    // away, so the stop has to name this site in every build rather than only where assertions
+    // are on. See RCLConsensus::Adaptor::buildLCL().
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 
     return built;
 }
 
-/** Apply a set of consensus transactions to a ledger.
-
-  @param app Handle to application
-  @param txns the set of transactions to apply,
-  @param failed set of transactions that failed to apply
-  @param view ledger to apply to
-  @param j Journal for logging
-  @return number of transactions applied; transactions to retry left in txns
-*/
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
 
 std::size_t
 applyTransactions(

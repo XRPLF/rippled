@@ -1,11 +1,23 @@
 #pragma once
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/ter.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
@@ -21,7 +33,8 @@ struct TestAMMArg
     std::vector<FeatureBitset> features = {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol,
+    };
 
     bool noLog = false;
 };
@@ -91,7 +104,8 @@ public:
     }
 
 protected:
-    /** testAMM() funds 30,000XRP and 30,000IOU
+    /**
+     * testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
      */
     void

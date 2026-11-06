@@ -7,7 +7,7 @@
 namespace xrpl {
 
 json::Value
-doConsensusInfo(RPC::JsonContext& context)
+doConsensusInfo(rpc::JsonContext& context)
 {
     json::Value ret(json::ValueType::Object);
 

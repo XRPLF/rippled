@@ -1,14 +1,19 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/protocol/TER.h>
+
+#include <optional>
 #include <tuple>
 
 namespace xrpl::test::jtx {
 
-/** Set the expected result code for a JTx
-    The test will fail if the code doesn't match.
-*/
+/**
+ * Set the expected result code for a JTx
+ * The test will fail if the code doesn't match.
+ */
 class Ter
 {
 private:

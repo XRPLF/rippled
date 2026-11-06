@@ -99,7 +99,7 @@ Env::AppBundle::AppBundle(
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
-    thread = std::thread([&]() { app->run(); });
+    thread = std::thread([&] { app->run(); });
 
     client = makeJSONRPCClient(app->config());
 }
@@ -272,6 +272,33 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
+Env::sponsoredOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoredOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringOwnerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringOwnerCount);
+}
+
+std::uint32_t
+Env::sponsoringAccountCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfSponsoringAccountCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -345,7 +372,7 @@ Env::trust(STAmount const& amount, Account const& account)
 Env::ParsedResult
 Env::parseResult(json::Value const& jr)
 {
-    auto error = [](ParsedResult& parsed, json::Value const& object) {
+    auto const error = [](ParsedResult& parsed, json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
         // engine to distinguish this case.
         parsed.ter = telENV_RPC_FAILED;
@@ -387,7 +414,7 @@ void
 Env::submit(JTx const& jt, std::source_location const& loc)
 {
     ParsedResult parsedResult;
-    auto const jr = [&]() {
+    auto const jr = [&] {
         if (jt.stx)
         {
             txid_ = jt.stx->getTransactionID();
@@ -471,9 +498,9 @@ Env::postconditions(
          !test.expect(
              parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
              "apply " + locStr + ": Got RPC result "s +
-                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 (parsed.rpcCode ? rpc::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
                  " (" + parsed.rpcMessage + "); Expected " +
-                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 rpc::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
                  ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
@@ -540,7 +567,7 @@ Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    ScopeSuccess const success([&]() {
+    ScopeSuccess const success([&] {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -602,7 +629,7 @@ Env::autofill(JTx& jt)
     catch (ParseError const&)
     {
         if (!parseFailureExpected_)
-            test.log << "parse failed:\n" << pretty(jv) << std::endl;
+            test.log << "parse failure:\n" << pretty(jv) << std::endl;
         rethrow();
     }
 }
@@ -679,7 +706,7 @@ Env::doRpc(
 }
 
 void
-Env::enableFeature(uint256 const feature)
+Env::enableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.
@@ -687,7 +714,7 @@ Env::enableFeature(uint256 const feature)
 }
 
 void
-Env::disableFeature(uint256 const feature)
+Env::disableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.

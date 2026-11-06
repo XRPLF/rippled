@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -49,19 +50,25 @@ namespace xrpl {
 // gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
 json::Value
-doGatewayBalances(RPC::JsonContext& context)
+doGatewayBalances(rpc::JsonContext& context)
 {
     auto& params = context.params;
 
     // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
+    auto result = rpc::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
+
+    if (params.isMember(jss::account) && !params[jss::account].isString())
+        return rpc::invalidFieldError(jss::account);
+
+    if (params.isMember(jss::ident) && !params[jss::ident].isString())
+        return rpc::invalidFieldError(jss::ident);
 
     std::string const strIdent(
         params.isMember(jss::account) ? params[jss::account].asString()
@@ -72,13 +79,13 @@ doGatewayBalances(RPC::JsonContext& context)
     if (!id)
         return rpcError(RpcActMalformed);
     auto const accountID{id.value()};
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     result[jss::account] = toBase58(accountID);
 
     if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
     {
-        RPC::injectError(RpcActNotFound, result);
+        rpc::injectError(RpcActNotFound, result);
         return result;
     }
 
@@ -87,7 +94,7 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](json::Value const& j) {
+        auto const addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -106,8 +113,8 @@ doGatewayBalances(RPC::JsonContext& context)
         // null is treated as a valid 0-sized array of hotwallet
         if (hw.isArrayOrNull())
         {
-            for (unsigned i = 0; i < hw.size(); ++i)
-                valid &= addHotWallet(hw[i]);
+            for (auto const& wallet : hw)
+                valid &= addHotWallet(wallet);
         }
         else if (hw.isString())
         {
@@ -126,11 +133,11 @@ doGatewayBalances(RPC::JsonContext& context)
             // not have currency issued by the account from the request.
             if (context.apiVersion < 2u)
             {
-                RPC::injectError(RpcInvalidHotwallet, result);
+                rpc::injectError(RpcInvalidHotwallet, result);
             }
             else
             {
-                RPC::injectError(RpcInvalidParams, result);
+                rpc::injectError(RpcInvalidParams, result);
             }
             return result;
         }
@@ -144,7 +151,15 @@ doGatewayBalances(RPC::JsonContext& context)
 
     // Traverse the cold wallet's trust lines
     {
-        forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
+        forEachItem(*ledger, accountID, [&](SLE::ConstRef sle) {
+            if (!sle)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::doGatewayBalances : null SLE");
+                return;
+                // LCOV_EXCL_STOP
+            }
+
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
@@ -243,9 +258,9 @@ doGatewayBalances(RPC::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array,
-                              json::StaticString const& name) {
+    auto const populateResult = [&result](
+                                    std::map<AccountID, std::vector<STAmount>> const& array,
+                                    json::StaticString const& name) {
         if (!array.empty())
         {
             json::Value j;

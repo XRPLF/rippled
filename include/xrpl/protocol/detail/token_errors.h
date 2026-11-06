@@ -1,6 +1,8 @@
 #pragma once
 
+#include <string>
 #include <system_error>
+#include <type_traits>
 
 namespace xrpl {
 enum class TokenCodecErrc {

@@ -7,22 +7,28 @@
 #include <boost/container/flat_map.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <forward_list>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
-/** Manages a list of known formats.
-
-    Each format has a name, an associated KeyType (typically an enumeration),
-    and a predefined @ref SOElement.
-
-    @tparam KeyType The type of key identifying the format.
-*/
+/**
+ * Manages a list of known formats.
+ *
+ * Each format has a name, an associated KeyType (typically an enumeration),
+ * and a predefined @ref SOElement.
+ *
+ * @tparam KeyType The type of key identifying the format.
+ */
 template <class KeyType, class Derived>
 class KnownFormats
 {
 public:
-    /** A known format.
+    /**
+     * A known format.
      */
     class Item
     {
@@ -42,7 +48,8 @@ public:
                 "KnownFormats KeyType must be integral or enum.");
         }
 
-        /** Retrieve the name of the format.
+        /**
+         * Retrieve the name of the format.
          */
         [[nodiscard]] std::string const&
         getName() const
@@ -50,7 +57,8 @@ public:
             return name_;
         }
 
-        /** Retrieve the transaction type this format represents.
+        /**
+         * Retrieve the transaction type this format represents.
          */
         [[nodiscard]] KeyType
         getType() const
@@ -70,32 +78,35 @@ public:
         KeyType const type_;
     };
 
-    /** Create the known formats object.
-
-        Derived classes will load the object with all the known formats.
-    */
+    /**
+     * Create the known formats object.
+     *
+     * Derived classes will load the object with all the known formats.
+     */
 private:
     KnownFormats() : name_(beast::typeName<Derived>())
     {
     }
 
 public:
-    /** Destroy the known formats object.
-
-        The defined formats are deleted.
-    */
+    /**
+     * Destroy the known formats object.
+     *
+     * The defined formats are deleted.
+     */
     virtual ~KnownFormats() = default;
     KnownFormats(KnownFormats const&) = delete;
     KnownFormats&
     operator=(KnownFormats const&) = delete;
 
-    /** Retrieve the type for a format specified by name.
-
-        If the format name is unknown, an exception is thrown.
-
-        @param  name The name of the type.
-        @return      The type.
-    */
+    /**
+     * Retrieve the type for a format specified by name.
+     *
+     * If the format name is unknown, an exception is thrown.
+     *
+     * @param  name The name of the type.
+     * @return      The type.
+     */
     [[nodiscard]] KeyType
     findTypeByName(std::string const& name) const
     {
@@ -106,7 +117,8 @@ public:
             name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
-    /** Retrieve a format based on its type.
+    /**
+     * Retrieve a format based on its type.
      */
     [[nodiscard]] Item const*
     findByType(KeyType type) const
@@ -131,7 +143,8 @@ public:
     }
 
 protected:
-    /** Retrieve a format based on its name.
+    /**
+     * Retrieve a format based on its name.
      */
     [[nodiscard]] Item const*
     findByName(std::string const& name) const
@@ -142,15 +155,16 @@ protected:
         return itr->second;
     }
 
-    /** Add a new format.
-
-        @param name The name of this format.
-        @param type The type of this format.
-        @param uniqueFields A std::vector of unique fields
-        @param commonFields A std::vector of common fields
-
-        @return The created format.
-    */
+    /**
+     * Add a new format.
+     *
+     * @param name The name of this format.
+     * @param type The type of this format.
+     * @param uniqueFields A std::vector of unique fields
+     * @param commonFields A std::vector of common fields
+     *
+     * @return The created format.
+     */
     Item const&
     add(char const* name,
         KeyType type,

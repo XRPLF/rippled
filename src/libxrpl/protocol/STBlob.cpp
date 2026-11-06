@@ -53,7 +53,7 @@ STBlob::add(Serializer& s) const
 bool
 STBlob::isEquivalent(STBase const& t) const
 {
-    STBlob const* v = dynamic_cast<STBlob const*>(&t);
+    auto const* v = dynamic_cast<STBlob const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 

@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -25,10 +26,14 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -36,7 +41,7 @@ namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
-    auto issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
+    auto const issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
         auto const& issuer = asset.getIssuer();
         return isXRP(issuer) || view.exists(keylet::account(issuer));
     };
@@ -74,7 +79,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p = view.peek(keylet::page(tip_.dir()));
+    auto const p = view.peek(keylet::page(tip_.dir()));
 
     if (p == nullptr)
     {
@@ -83,7 +88,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::ranges::find(v, tip_.index()));
+    auto const it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -136,17 +141,17 @@ template <class TTakerPays, class TTakerGets>
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:
-    //  o `TakerPays` is XRP (because of XRP drops granularity) or
+    //  o `TakerPays` is integral (because XRP/MPT have indivisible units) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    static constexpr bool kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
-    static constexpr bool kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
+    constexpr bool const kInIsIntegral = !std::is_same_v<TTakerPays, IOUAmount>;
+    constexpr bool const kOutIsIntegral = !std::is_same_v<TTakerGets, IOUAmount>;
 
-    if constexpr (kOutIsXrp)
+    if constexpr (!kInIsIntegral && kOutIsIntegral)
     {
-        // If `TakerGets` is XRP, the worst this offer's quality can change is
-        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
-        // remarkably good quality for any realistic asset, so these offers
-        // don't need this extra check.
+        // If only `TakerGets` is integral, the worst this offer's quality can
+        // change is to about 10^-81 `TakerPays` and 1 unit `TakerGets`. This
+        // will be perfect quality for any realistic asset, so these
+        // offers don't need this extra check.
         return false;
     }
 
@@ -154,9 +159,11 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
-        toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
+        toAmount<TTakerPays>(offer_.amount().in),
+        toAmount<TTakerGets>(offer_.amount().out),
+    };
 
-    if constexpr (!kInIsXrp && !kOutIsXrp)
+    if constexpr (!kInIsIntegral && !kOutIsIntegral)
     {
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
@@ -165,7 +172,12 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
 
     auto const effectiveAmounts = [&] {
-        if (offer_.owner() != offer_.assetOut().getIssuer() && ownerFunds < ofrAmts.out)
+        // Issuer-owned IOU offers are self-funded without a limit. MPT issuer
+        // offers are bounded by remaining issuance capacity, so they still need
+        // to be clipped by ownerFunds.
+        bool const issuerHasUnlimitedFunds = offer_.owner() == offer_.assetOut().getIssuer() &&
+            offer_.assetOut().template holds<Issue>();
+        if (!issuerHasUnlimitedFunds && ownerFunds < ofrAmts.out)
         {
             // adjust the amounts by owner funds.
             //
@@ -220,9 +232,9 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         // Remove if expired
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
-        if (entry->isFieldPresent(sfExpiration) && tp{d{(*entry)[sfExpiration]}} <= expire_)
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
+        if (entry->isFieldPresent(sfExpiration) && Tp{D{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) << "Removing expired offer " << entry->key();
             permRmOffer(entry->key());
@@ -248,6 +260,23 @@ TOfferStreamBase<TIn, TOut>::step()
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
+        }
+
+        // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
+        // book must claim that same domain. This can only happen if the book
+        // directory is corrupt (i.e. a separate book indexing bug). An offer
+        // with no sfDomainID at all is just as wrong here: the domain
+        // membership check below is gated on that field being present, so
+        // such an offer would otherwise be consumed from a domain book
+        // without any credential check.
+        if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
+            (!entry->isFieldPresent(sfDomainID) ||
+             entry->getFieldH256(sfDomainID) != *book_.domain))
+        {
+            JLOG(j_.error()) << "Offer " << entry->key()
+                             << " domain missing or does not match book domain";
+            Throw<FlowException>(
+                tecINTERNAL, "Offer domain missing or does not match book domain.");
         }
 
         // Pre-fixCleanup3_3_0: validate domain membership for any book.
@@ -305,7 +334,41 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
+        // Partially funded offers can be reduced before BookStep sees them.
+        // If that strict reduction overflows under MPTokensV2, remove the
+        // unusable offer instead of leaving it at the book tip.
+        bool shouldRemoveSmallIncreasedQOffer = false;
+        try
+        {
+            shouldRemoveSmallIncreasedQOffer = shouldRmSmallIncreasedQOffer<TIn, TOut>();
+        }
+        catch (std::overflow_error const&)
+        {
+            if (view_.rules().enabled(featureMPTokensV2))
+            {
+                SOMETIMES(
+                    true,
+                    "OfferStream::step removed MPT offer with overflowing "
+                    "reduced quality");
+                permRmOffer(entry->key());
+                JLOG(j_.warn()) << "Removing offer with overflowing reduced quality "
+                                << entry->key();
+                offer_ = TOffer<TIn, TOut>{};
+                continue;
+            }
+            // The strict reduction only throws std::overflow_error for a
+            // crafted MPT offer, and MPT offers require featureMPTokensV2
+            // (enforced at OfferCreate preflight). So the amendment is always
+            // enabled here and this legacy re-throw is unreachable in practice.
+            // LCOV_EXCL_START
+            XRPL_ASSERT(
+                view_.rules().enabled(featureMPTokensV2),
+                "xrpl::TOfferStreamBase::step : overflow implies MPTokensV2");
+            throw;
+            // LCOV_EXCL_STOP
+        }
+
+        if (shouldRemoveSmallIncreasedQOffer)
         {
             auto const originalFunds = accountFundsHelper(
                 cancelView_,
@@ -340,7 +403,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
 template <StepAmount TIn, StepAmount TOut>
 void
-FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
+FlowOfferStream<TIn, TOut>::permRmOffer(UInt256 const& offerIndex)
 {
     permToRemove_.insert(offerIndex);
 }

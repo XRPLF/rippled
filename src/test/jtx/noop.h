@@ -1,10 +1,15 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/flags.h>
+
+#include <xrpl/json/json_value.h>
 
 namespace xrpl::test::jtx {
 
-/** The null transaction. */
+/**
+ * The null transaction.
+ */
 inline json::Value
 noop(Account const& account)
 {

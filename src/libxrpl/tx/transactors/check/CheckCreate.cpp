@@ -4,9 +4,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -24,8 +26,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -194,23 +194,21 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    {
-        STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    std::uint32_t const seq = ctx_.tx.getSeqValue();
-    Keylet const checkKeylet = keylet::check(accountID_, seq);
-    auto sleCheck = std::make_shared<SLE>(checkKeylet);
+    auto const seq = ctx_.tx.getSeqProxy();
+    CheckEntryW sleCheck(accountID_, seq, view(), j_);
+    Keylet const checkKeylet = sleCheck.keylet();
+    sleCheck.newSLE();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
-    sleCheck->setFieldU32(sfSequence, seq);
+    sleCheck->setFieldU32(sfSequence, seq.value());
     sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
     if (auto const srcTag = ctx_.tx[~sfSourceTag])
         sleCheck->setFieldU32(sfSourceTag, *srcTag);
@@ -221,9 +219,9 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    view().insert(sleCheck);
+    sleCheck.insert();
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != accountID_)
@@ -253,12 +251,14 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck.mutableRawSle());
     return tesSUCCESS;
 }
 
 void
-CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CheckCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

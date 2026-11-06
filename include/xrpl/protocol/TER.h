@@ -8,7 +8,9 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -49,7 +51,7 @@ enum TELcodes : TERUnderlyingType {
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
     telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    telENV_RPC_FAILED,
 };
 
 //------------------------------------------------------------------------------
@@ -127,8 +129,10 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+
     temBAD_MPT,
     temBAD_CIPHERTEXT,
+    temINVALID_BYTECODE,
 };
 
 //------------------------------------------------------------------------------
@@ -177,6 +181,10 @@ enum TEFcodes : TERUnderlyingType {
     tefINVALID_LEDGER_FIX_TYPE,
     tefNO_DST_PARTIAL,
     tefBAD_PATH_COUNT,
+    tefNO_BYTECODE,
+    tefBYTECODE_NOT_INCLUDED,
+    tefTEMP_DISABLED,
+    tefEXCEEDS_LIMIT,
 };
 
 //------------------------------------------------------------------------------
@@ -223,6 +231,9 @@ enum TERcodes : TERUnderlyingType {
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
+    terNO_PERMISSION,           // No permission but retry
+    terTICKET_RESERVED,         // Ticket is reserved and cannot be consumed
+                                // until the reservation is released
 };
 
 //------------------------------------------------------------------------------
@@ -239,7 +250,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    tesSUCCESS = 0,
 };
 
 //------------------------------------------------------------------------------
@@ -366,6 +377,9 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecBAD_PROOF = 199,
+    tecNO_SPONSOR_PERMISSION = 200,
+    tecOUT_OF_GAS = 201,
+    tecBYTECODE_REJECTED = 202,
 };
 
 //------------------------------------------------------------------------------
@@ -409,7 +423,7 @@ TERtoInt(TECcodes v)
 
 //------------------------------------------------------------------------------
 // Template class that is specific to selected ranges of error codes.  The
-// Trait tells std::enable_if which ranges are allowed.
+// Trait tells the requires-clause which ranges are allowed.
 template <template <typename> class Trait>
 class TERSubset
 {
@@ -435,11 +449,11 @@ public:
         return TERSubset(from);
     }
 
-    // Trait tells enable_if which types are allowed for construction.
-    template <
-        typename T,
-        typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
-    constexpr TERSubset(T rhs) : code_(TERtoInt(rhs))
+    // Trait tells the requires-clause which types are allowed for construction.
+    template <typename T>
+    constexpr TERSubset(T rhs)
+        requires(Trait<std::remove_cvref_t<T>>::value)
+        : code_(TERtoInt(rhs))
     {
     }
 
@@ -449,10 +463,11 @@ public:
     constexpr TERSubset&
     operator=(TERSubset&& rhs) = default;
 
-    // Trait tells enable_if which types are allowed for assignment.
+    // Trait tells the requires-clause which types are allowed for assignment.
     template <typename T>
     constexpr auto
-    operator=(T rhs) -> std::enable_if_t<Trait<T>::value, TERSubset&>
+    operator=(T rhs) -> TERSubset&
+        requires(Trait<T>::value)
     {
         code_ = TERtoInt(rhs);
         return *this;
@@ -506,54 +521,60 @@ public:
 // Only enabled if both arguments return int if TERtiInt is called with them.
 template <typename L, typename R>
 constexpr auto
-operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator==(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator!=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator<(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator<=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator>(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
 }
 
 template <typename L, typename R>
 constexpr auto
-operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
-    bool>
+operator>=(L const& lhs, R const& rhs) -> bool
+    requires(
+        std::is_same_v<decltype(TERtoInt(lhs)), int> &&
+        std::is_same_v<decltype(TERtoInt(rhs)), int>)
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);
 }

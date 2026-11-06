@@ -5,15 +5,17 @@
 
 namespace xrpl {
 
-/** to_string() generalizes std::to_string to handle bools, chars, and strings.
-
-    It's also possible to provide implementation of to_string for a class
-    which needs a string implementation.
+/**
+ * to_string() generalizes std::to_string to handle bools, chars, and strings.
+ *
+ * It's also possible to provide implementation of to_string for a class
+ * which needs a string implementation.
  */
 
 template <class T>
-std::enable_if_t<std::is_arithmetic_v<T>, std::string>
+std::string
 to_string(T t)  // NOLINT(readability-identifier-naming)
+    requires(std::is_arithmetic_v<T>)
 {
     return std::to_string(t);
 }

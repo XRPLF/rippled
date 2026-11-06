@@ -20,7 +20,9 @@ struct DisabledT
 };
 static DisabledT const kDisabled;
 
-/** Used for Fee() calls that use an owner reserve increment */
+/**
+ * Used for Fee() calls that use an owner reserve increment
+ */
 struct IncrementT
 {
     IncrementT() = default;

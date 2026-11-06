@@ -1,10 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+#include <limits>  // IWYU pragma: keep
+#include <stdexcept>
 #include <type_traits>
 
 namespace xrpl {
@@ -144,7 +154,7 @@ T
 toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
     SaveNumberRoundMode const rm(Number::getround());
-    if (isXRP(asset))
+    if (asset.integral())
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)
