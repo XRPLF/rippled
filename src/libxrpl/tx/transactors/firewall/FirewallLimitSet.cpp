@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -160,11 +161,12 @@ FirewallLimitSet::preclaim(PreclaimContext const& ctx)
             return tecNO_LINE;
         }
 
-        // A limit on an LP token's line would keep the AMM from being deleted.
+        // A limit on a line to a pseudo-account would keep its AMM, Vault or
+        // LoanBroker from being deleted.
         auto const sleIssuer = ctx.view.read(keylet::account(asset.get<Issue>().account));
-        if (sleIssuer && sleIssuer->isFieldPresent(sfAMMID))
+        if (sleIssuer && isPseudoAccount(sleIssuer))
         {
-            JLOG(ctx.j.trace()) << "FirewallLimitSet: an AMM's LP token takes no limit";
+            JLOG(ctx.j.trace()) << "FirewallLimitSet: a pseudo-account's line takes no limit";
             return tecNO_PERMISSION;
         }
     }

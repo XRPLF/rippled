@@ -758,6 +758,8 @@ removeEmptyHolding(
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
+    if (line->isFieldPresent(sfLowFirewallLimit) || line->isFieldPresent(sfHighFirewallLimit))
+        return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
     if (line->isFlag(lsfLowReserve))
