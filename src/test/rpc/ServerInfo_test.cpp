@@ -6,6 +6,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -162,7 +163,7 @@ admin = 127.0.0.1
 
         Env env(*this);
 
-        auto testInvalidParams = [&](json::Value const& params) {
+        auto const testInvalidParams = [&](json::Value const& params) {
             auto const result = env.rpc("json", "log_level", to_string(params))[jss::result];
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");
