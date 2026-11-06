@@ -2292,6 +2292,47 @@ computeManagementFee(
         asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::RoundingMode::Downward);
 }
 
+namespace {
+
+// Only round up if there should be interest.
+Number::RoundingMode
+scheduledValueRounding(Number const& periodicRate)
+{
+    return periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward;
+}
+
+// The scheduled value before rounding to the loan scale. Converting to
+// STAmount already rounds an IOU to 16 significant digits and an XRP or MPT
+// amount to a whole unit.
+STAmount
+unroundedScheduledValue(
+    Asset const& asset,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
+{
+    NumberRoundModeGuard const mg(scheduledValueRounding(periodicRate));
+    // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
+    return STAmount{asset, periodicPayment * paymentsRemaining};
+}
+
+}  // namespace
+
+Number
+scheduledValue(
+    Asset const& asset,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    std::int32_t loanScale)
+{
+    return roundToAsset(
+        asset,
+        unroundedScheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining),
+        loanScale,
+        scheduledValueRounding(periodicRate));
+}
+
 /*
  * Given the loan parameters, compute the derived properties of the loan.
  *
@@ -2344,16 +2385,12 @@ computeLoanProperties(
     auto const periodicPayment =
         detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
-    auto const [totalValueOutstanding, loanScale] = [&] {
-        // only round up if there should be interest
-        NumberRoundModeGuard const mg(
-            periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward);
+    auto const loanScale = [&] {
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
-
-        // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
-        STAmount amount{asset, periodicPayment * paymentsRemaining};
+        STAmount const amount =
+            unroundedScheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining);
 
         // Base the loan scale on the total value, since that's going to be
         // the biggest number involved (barring unusual parameters for late,
@@ -2364,13 +2401,12 @@ computeLoanProperties(
                 (!amount.integral() && loanScale >= static_cast<Number>(amount).exponent()),
             "xrpl::computeLoanProperties",
             "loanScale value fits expectations");
-
-        // We may need to truncate the total value because of the minimum
-        // scale
-        amount = roundToAsset(asset, amount, loanScale);
-
-        return std::make_pair(amount, loanScale);
+        return loanScale;
     }();
+
+    // We may need to truncate the total value because of the minimum scale
+    auto const totalValueOutstanding =
+        scheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining, loanScale);
 
     // Since we just figured out the loan scale, we haven't been able to
     // validate that the principal fits in it, so to allow this function to
