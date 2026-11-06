@@ -1,18 +1,22 @@
 #include <xrpl/protocol/STAmount.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 
 using namespace xrpl;
@@ -84,4 +88,65 @@ TEST(STAmount, mul_ratio_xrp)
         mulRatio(
             STAmount{XRPAmount{31}}, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Upward),
         STAmount{XRPAmount{25}});
+}
+
+// A JSON number from 2^31 to 2^32 - 1 parses as a json::UInt. amountFromJson
+// must read it from the "value" member, not from the enclosing object or array.
+TEST(STAmount, from_json_uint_value)
+{
+    Issue const usd{toCurrency("USD"), kUsdIssuer};
+    MPTIssue const mpt{makeMptID(1, kUsdIssuer)};
+
+    auto iouObject = [&](json::Value const& value) {
+        json::Value v(json::ValueType::Object);
+        v[jss::currency] = "USD";
+        v[jss::issuer] = toBase58(kUsdIssuer);
+        v[jss::value] = value;
+        return v;
+    };
+
+    auto iouArray = [&](json::Value const& value) {
+        json::Value v(json::ValueType::Array);
+        v.append(value);
+        v.append("USD");
+        v.append(toBase58(kUsdIssuer));
+        return v;
+    };
+
+    auto mptObject = [&](json::Value const& value) {
+        json::Value v(json::ValueType::Object);
+        v[jss::mpt_issuance_id] = to_string(mpt.getMptID());
+        v[jss::value] = value;
+        return v;
+    };
+
+    std::uint64_t const intMax = std::numeric_limits<std::int32_t>::max();
+    for (std::uint64_t const n :
+         {intMax + 1, std::uint64_t{3'000'000'000}, std::uint64_t{json::Value::kMaxUInt}})
+    {
+        json::Value const value{static_cast<json::UInt>(n)};
+        ASSERT_TRUE(value.isUInt());
+        ASSERT_FALSE(value.isInt());
+
+        EXPECT_EQ(amountFromJson(sfAmount, iouObject(value)), STAmount(usd, n));
+        EXPECT_EQ(amountFromJson(sfAmount, iouArray(value)), STAmount(usd, n));
+        EXPECT_EQ(amountFromJson(sfAmount, mptObject(value)), STAmount(mpt, n));
+
+        // XRP, as a bare number and in array form.
+        STAmount const xrp{XRPAmount{static_cast<std::int64_t>(n)}};
+        json::Value xrpArray(json::ValueType::Array);
+        xrpArray.append(value);
+        EXPECT_EQ(amountFromJson(sfAmount, value), xrp);
+        EXPECT_EQ(amountFromJson(sfAmount, xrpArray), xrp);
+
+        STAmount result;
+        EXPECT_TRUE(amountFromJsonNoThrow(result, iouObject(value)));
+        EXPECT_EQ(result, STAmount(usd, n));
+    }
+
+    // Values that parse as json::Int keep working.
+    json::Value const intValue{std::numeric_limits<std::int32_t>::max()};
+    ASSERT_TRUE(intValue.isInt());
+    EXPECT_EQ(amountFromJson(sfAmount, iouObject(intValue)), STAmount(usd, intMax));
+    EXPECT_EQ(amountFromJson(sfAmount, mptObject(intValue)), STAmount(mpt, intMax));
 }
