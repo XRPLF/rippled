@@ -138,8 +138,9 @@ protected:
     static_assert(std::atomic<bool>::is_always_lock_free);
 
     /**
-     * Whether the task finished successfully. Atomic, so a reader may test it
-     * without taking mtx_.
+     * Whether the task finished successfully. Each subclass sets it only once
+     * the work it reports on is finished, so a reader may act on it without
+     * taking mtx_.
      */
     std::atomic<bool> complete_{false};
 
