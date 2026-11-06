@@ -47,7 +47,7 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
 }
 
 template <class T>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs)
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs) noexcept
     : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
@@ -55,7 +55,7 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs)
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs)
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs) noexcept
     : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
