@@ -63,6 +63,11 @@ struct VaultBalanceChange
      * Signed change to impaired principal (LossUnrealized), exact.
      */
     Number loss = 0;
+
+    /**
+     * Signed change to AssetsReserved, exact.
+     */
+    Number reserved = 0;
 };
 
 /**
@@ -509,6 +514,20 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  */
 [[nodiscard]] VaultVersion
 getVaultDefaultVersion(Rules const& rules);
+
+/**
+ * Whether the two-step (pending loan) flow is enabled: LoanSet proposals
+ * carrying Borrower and StartDate, LoanAccept, and the AssetsReserved
+ * accounting that goes with them.
+ *
+ * The flow needs featureLendingProtocolV1_1, featureLendingProtocolV1_2 and
+ * fixCleanup3_4_0 all enabled, the same set that makes a new Vault
+ * FixedPrecision (see getVaultDefaultVersion).
+ *
+ * @param rules The active ledger rules.
+ */
+[[nodiscard]] bool
+isTwoStepLoanFlowEnabled(Rules const& rules);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when

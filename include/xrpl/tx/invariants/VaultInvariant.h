@@ -32,6 +32,9 @@ namespace xrpl {
  * - loss unrealized does not exceed the difference between assets total and
  *   assets available (Legacy/CashBasis), or AssetsDeployed (FixedPrecision)
  * - assets available do not exceed assets total
+ * - assets reserved is non-negative, and zero on a vault older than
+ *   FixedPrecision (only a FixedPrecision vault can hold a pending loan)
+ * - assets reserved does not exceed AssetsDeployed (FixedPrecision)
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
  * - vault withdrawal and clawback reduce assets and share issuance, and
@@ -47,14 +50,23 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
+ * - loan accept leaves assets available and assets total unchanged (a pending
+ *   loan only exists on a FixedPrecision vault, where acceptance recognizes
+ *   the loan's interest into yield unrealized rather than assets total), does
+ *   not increase assets reserved, and releases from assets reserved at least
+ *   the assets disbursed from the vault
+ * - deleting a pending loan credits assets available by no more than it
+ *   releases from assets reserved
  * - FixedPrecision only: AssetsDeployed is non-negative and exactly
  *   representable at the asset's precision; AssetsDeployed changes only for
- *   ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE; AssetsDeployed is zero right
+ *   ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_DELETE (which reverses
+ *   the principal a pending loan proposed); AssetsDeployed is zero right
  *   after ttVAULT_CREATE and whenever shares outstanding return to zero; the
  *   stored AssetsTotal cache equals AssetsAvailable + AssetsDeployed, rounded
  *   Downward to the asset's precision
  * - FixedPrecision only: YieldUnrealized is non-negative; YieldUnrealized
- *   changes only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE
+ *   changes only for ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT
+ *   (which recognizes the interest of a pending loan)
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -77,6 +89,7 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number assetsReserved = 0;
         Number assetsDeployed = 0;
         Number yieldUnrealized = 0;
         VaultVersion version = VaultVersion::Legacy;
@@ -228,6 +241,31 @@ private:
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_ACCEPT.
+     *
+     * Accepting a pending loan disburses the principal held in @c AssetsReserved from the vault
+     * pseudo-account. @c AssetsAvailable was settled when the pending loan was created and must not
+     * change. The proposal booked no interest, and a pending loan only exists on a FixedPrecision
+     * vault, where acceptance recognizes the interest into @c YieldUnrealized, so @c AssetsTotal
+     * must not change. @c AssetsReserved must not increase, and must release at least what left
+     * the pseudo-account.
+     */
+    [[nodiscard]] bool
+    finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Invariant check for @c ttLOAN_DELETE.
+     *
+     * A LoanDelete only modifies a vault when it deletes a pending loan, returning the principal
+     * from @c AssetsReserved to @c AssetsAvailable. It moves no cash, and it must not credit
+     * @c AssetsAvailable by more than it releases from @c AssetsReserved. On a coarsened vault
+     * the credit is re-canonicalised at the live scale, so that comparison and the check that
+     * @c AssetsTotal does not move both tolerate one unit of that scale.
+     */
+    [[nodiscard]] bool
+    finalizeLoanDelete(ReadView const& view, beast::Journal const& j) const;
 
     /**
      * @brief Check that a vault's AssetsTotal and AssetsAvailable deltas add

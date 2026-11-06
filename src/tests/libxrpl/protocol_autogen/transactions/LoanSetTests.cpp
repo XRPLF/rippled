@@ -31,6 +31,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const borrowerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const loanOriginationFeeValue = canonical_NUMBER();
@@ -46,6 +47,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const startDateValue = canonical_UINT32();
 
     LoanSetBuilder builder{
         accountValue,
@@ -57,6 +59,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setData(dataValue);
+    builder.setBorrower(borrowerValue);
     builder.setCounterparty(counterpartyValue);
     builder.setCounterpartySignature(counterpartySignatureValue);
     builder.setLoanOriginationFee(loanOriginationFeeValue);
@@ -71,6 +74,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     builder.setPaymentTotal(paymentTotalValue);
     builder.setPaymentInterval(paymentIntervalValue);
     builder.setGracePeriod(gracePeriodValue);
+    builder.setStartDate(startDateValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -106,6 +110,14 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
         EXPECT_TRUE(tx.hasData());
+    }
+
+    {
+        auto const& expected = borrowerValue;
+        auto const actualOpt = tx.getBorrower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBorrower should be present";
+        expectEqualField(expected, *actualOpt, "sfBorrower");
+        EXPECT_TRUE(tx.hasBorrower());
     }
 
     {
@@ -220,6 +232,14 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasGracePeriod());
     }
 
+    {
+        auto const& expected = startDateValue;
+        auto const actualOpt = tx.getStartDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfStartDate should be present";
+        expectEqualField(expected, *actualOpt, "sfStartDate");
+        EXPECT_TRUE(tx.hasStartDate());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -238,6 +258,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const borrowerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const loanOriginationFeeValue = canonical_NUMBER();
@@ -253,6 +274,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const startDateValue = canonical_UINT32();
 
     // Build an initial transaction
     LoanSetBuilder initialBuilder{
@@ -264,6 +286,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setData(dataValue);
+    initialBuilder.setBorrower(borrowerValue);
     initialBuilder.setCounterparty(counterpartyValue);
     initialBuilder.setCounterpartySignature(counterpartySignatureValue);
     initialBuilder.setLoanOriginationFee(loanOriginationFeeValue);
@@ -278,6 +301,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setPaymentTotal(paymentTotalValue);
     initialBuilder.setPaymentInterval(paymentIntervalValue);
     initialBuilder.setGracePeriod(gracePeriodValue);
+    initialBuilder.setStartDate(startDateValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -313,6 +337,13 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
+    }
+
+    {
+        auto const& expected = borrowerValue;
+        auto const actualOpt = rebuiltTx.getBorrower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBorrower should be present";
+        expectEqualField(expected, *actualOpt, "sfBorrower");
     }
 
     {
@@ -413,6 +444,13 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
     }
 
+    {
+        auto const& expected = startDateValue;
+        auto const actualOpt = rebuiltTx.getStartDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfStartDate should be present";
+        expectEqualField(expected, *actualOpt, "sfStartDate");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -474,6 +512,8 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasBorrower());
+    EXPECT_FALSE(tx.getBorrower().has_value());
     EXPECT_FALSE(tx.hasCounterparty());
     EXPECT_FALSE(tx.getCounterparty().has_value());
     EXPECT_FALSE(tx.hasCounterpartySignature());
@@ -502,6 +542,8 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getPaymentInterval().has_value());
     EXPECT_FALSE(tx.hasGracePeriod());
     EXPECT_FALSE(tx.getGracePeriod().has_value());
+    EXPECT_FALSE(tx.hasStartDate());
+    EXPECT_FALSE(tx.getStartDate().has_value());
 }
 
 }

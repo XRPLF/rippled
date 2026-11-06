@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -283,6 +284,7 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     STAmount const availableAfter{asset, Number(vault->at(sfAssetsAvailable)) + Number(cash)};
     Number const assetsDeployedAfter = Number(vault->at(sfAssetsDeployed)) + change.deployed;
     Number const lossUnrealizedAfter = Number(vault->at(sfLossUnrealized)) + change.loss;
+    Number const assetsReservedAfter = Number(vault->at(sfAssetsReserved)) + change.reserved;
     // LoanSet, LoanPay and default each move YieldUnrealized by the change in
     // the Loan's own TotalValueOutstanding - PrincipalOutstanding -
     // ManagementFeeOutstanding, so it always equals that sum over the
@@ -290,13 +292,15 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     Number const yieldUnrealizedAfter = Number(vault->at(sfYieldUnrealized)) + change.yield;
 
     if (availableAfter < beast::kZero || assetsDeployedAfter < beast::kZero ||
-        lossUnrealizedAfter < beast::kZero || yieldUnrealizedAfter < beast::kZero)
+        lossUnrealizedAfter < beast::kZero || yieldUnrealizedAfter < beast::kZero ||
+        assetsReservedAfter < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "adjustVaultBalances: a balance would become negative."
                         << " AssetsAvailable: " << Number(availableAfter)
                         << ", AssetsDeployed: " << assetsDeployedAfter
                         << ", LossUnrealized: " << lossUnrealizedAfter
+                        << ", AssetsReserved: " << assetsReservedAfter
                         << ", YieldUnrealized: " << yieldUnrealizedAfter;
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
@@ -304,7 +308,7 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
 
     // The impairment rule: a Loan can only be impaired for as much as it
     // still owes. Reachable only through LoanManage's impair.
-    if (lossUnrealizedAfter > assetsDeployedAfter)
+    if (lossUnrealizedAfter > assetsDeployedAfter - assetsReservedAfter)
         return tecLIMIT_EXCEEDED;
 
     // Every caller derives principal from a Loan's own PrincipalOutstanding so the new total must
@@ -318,11 +322,15 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     XRPL_ASSERT(
         (STAmount{asset, yieldUnrealizedAfter} == yieldUnrealizedAfter),
         "xrpl::adjustVaultBalances : YieldUnrealized is a 16-digit STAmount value");
+    XRPL_ASSERT(
+        (STAmount{asset, assetsReservedAfter} == assetsReservedAfter),
+        "xrpl::adjustVaultBalances : AssetsReserved is a 16-digit STAmount value");
 
     vault->at(sfAssetsAvailable) = availableAfter;
     vault->at(sfAssetsDeployed) = assetsDeployedAfter;
     vault->at(sfLossUnrealized) = lossUnrealizedAfter;
     vault->at(sfYieldUnrealized) = yieldUnrealizedAfter;
+    vault->at(sfAssetsReserved) = assetsReservedAfter;
     syncAssetsTotal(vault);
 
     return tesSUCCESS;
@@ -757,12 +765,20 @@ getVaultDefaultVersion(Rules const& rules)
     // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
     // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
     // sees both enabled. fixCleanup3_2_0 is already enabled on the network.
+    // The two-step loan flow is gated on the same three amendments, see
+    // isTwoStepLoanFlowEnabled.
     if (rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
         rules.enabled(fixCleanup3_4_0))
         return VaultVersion::FixedPrecision;
     if (rules.enabled(featureLendingProtocolV1_1))
         return VaultVersion::CashBasis;
     return VaultVersion::Legacy;
+}
+
+[[nodiscard]] bool
+isTwoStepLoanFlowEnabled(Rules const& rules)
+{
+    return getVaultDefaultVersion(rules) == VaultVersion::FixedPrecision;
 }
 
 [[nodiscard]] VaultKind
