@@ -37,12 +37,16 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-STObject::STObject(STObject&& other)
+// Lets std::vector move, not copy, elements when it grows.
+static_assert(std::is_nothrow_move_constructible_v<STObject>);
+
+STObject::STObject(STObject&& other) noexcept
     : STBase(other.getFName()), v_(std::move(other.v_)), type_(other.type_)
 {
 }
@@ -126,7 +130,7 @@ STObject::add(Serializer& s) const
 }
 
 STObject&
-STObject::operator=(STObject&& other)
+STObject::operator=(STObject&& other) noexcept
 {
     setFName(other.getFName());
     type_ = other.type_;
