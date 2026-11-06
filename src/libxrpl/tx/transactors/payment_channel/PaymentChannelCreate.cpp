@@ -5,12 +5,12 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PayChannelEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -21,8 +21,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-
-#include <memory>
 
 namespace xrpl {
 
@@ -169,8 +167,8 @@ PaymentChannelCreate::doApply()
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqProxy());
-    auto const slep = std::make_shared<SLE>(payChanKeylet);
+    PayChannelEntryW slep(account, dst, ctx_.tx.getSeqProxy(), ctx_.view());
+    slep.newSLE();
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
@@ -188,12 +186,12 @@ PaymentChannelCreate::doApply()
         (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
     }
 
-    ctx_.view().insert(slep);
+    slep.insert();
 
     // Add PayChan to owner directory
     {
         auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
+            keylet::ownerDir(account), slep.keylet(), describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -202,7 +200,7 @@ PaymentChannelCreate::doApply()
     // Add PayChan to the recipient's owner directory
     {
         auto const page =
-            ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
+            ctx_.view().dirInsert(keylet::ownerDir(dst), slep.keylet(), describeOwnerDir(dst));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
@@ -211,7 +209,7 @@ PaymentChannelCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep.mutableRawSle());
     ctx_.view().update(sle);
 
     return tesSUCCESS;
