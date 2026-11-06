@@ -536,6 +536,7 @@ JSS(search_depth);                // in: RipplePathFind
 JSS(searched_all);                // out: Tx
 JSS(secret);                      // in: TransactionSign, ValidationCreate, ValidationSeed,
                                   //     channel_authorize
+JSS(sections);                    // in: ConfigReload
 JSS(seed);                        //
 JSS(seed_hex);                    // in: WalletPropose, TransactionSign
 JSS(send_currencies);             // out: AccountCurrencies
