@@ -52,5 +52,6 @@ jobs:
       sanitizers: ${{ matrix.sanitizers }}
       compiler: ${{ matrix.compiler || '' }}
       toolchain: ${{ matrix.toolchain || '' }}
+      force_supported: ${{ matrix.force_supported || false }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
