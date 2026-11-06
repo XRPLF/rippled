@@ -1,3 +1,8 @@
+#include <tests/libxrpl/helpers/TestNodeFamily.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+#include <tests/libxrpl/shamap/DeepChain.h>
+#include <tests/libxrpl/shamap/InnerNode.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
@@ -25,10 +30,6 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
-#include <shamap/DeepChain.h>
-#include <shamap/InnerNode.h>
-#include <shamap/common.h>
 
 #include <atomic>
 #include <chrono>

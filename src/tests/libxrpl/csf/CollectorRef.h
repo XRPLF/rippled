@@ -1,11 +1,11 @@
 #pragma once
 
-#include <csf/Proposal.h>
-#include <csf/SimTime.h>
-#include <csf/Tx.h>
-#include <csf/Validation.h>
-#include <csf/events.h>
-#include <csf/ledgers.h>
+#include <tests/libxrpl/csf/Proposal.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/Tx.h>
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/events.h>
+#include <tests/libxrpl/csf/ledgers.h>
 
 #include <memory>
 #include <vector>

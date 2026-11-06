@@ -1,6 +1,7 @@
-#include <csf/BasicNetwork.h>
+#include <tests/libxrpl/csf/BasicNetwork.h>
 
-#include <csf/Scheduler.h>
+#include <tests/libxrpl/csf/Scheduler.h>
+
 #include <gtest/gtest.h>
 
 #include <set>

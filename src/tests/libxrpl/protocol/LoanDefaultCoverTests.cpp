@@ -1,3 +1,6 @@
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/protocol/VaultTestHelpers.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Asset.h>
@@ -15,8 +18,6 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <gtest/gtest.h>
-#include <helpers/Account.h>
-#include <protocol/VaultTestHelpers.h>
 
 #include <algorithm>
 #include <cstdint>

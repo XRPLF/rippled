@@ -1,3 +1,6 @@
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/protocol/VaultTestHelpers.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -14,8 +17,6 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <gtest/gtest.h>
-#include <helpers/Account.h>
-#include <protocol/VaultTestHelpers.h>
 
 #include <cstdint>
 #include <memory>

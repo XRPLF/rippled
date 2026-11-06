@@ -1,5 +1,9 @@
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/helpers/IOU.h>
+#include <tests/libxrpl/helpers/TxTest.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -26,9 +30,6 @@
 #include <xrpl/protocol_autogen/transactions/TrustSet.h>
 
 #include <gtest/gtest.h>
-#include <helpers/Account.h>
-#include <helpers/IOU.h>
-#include <helpers/TxTest.h>
 
 #include <algorithm>
 #include <cstddef>

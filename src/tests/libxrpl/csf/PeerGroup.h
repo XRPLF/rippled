@@ -1,9 +1,9 @@
 #pragma once
 
-#include <csf/Peer.h>
-#include <csf/SimTime.h>
-#include <csf/Validation.h>
-#include <csf/random.h>
+#include <tests/libxrpl/csf/Peer.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/random.h>
 
 #include <algorithm>
 #include <cassert>

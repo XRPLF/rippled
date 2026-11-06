@@ -1,10 +1,11 @@
 #include <xrpl/ledger/entries/NFTokenPageEntry.h>
 
+#include <tests/libxrpl/ledger/EntryTestHelpers.h>
+
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 
 #include <gtest/gtest.h>
-#include <ledger/EntryTestHelpers.h>
 
 namespace xrpl::test {
 

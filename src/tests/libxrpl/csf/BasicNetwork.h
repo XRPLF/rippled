@@ -1,7 +1,7 @@
 #pragma once
 
-#include <csf/Digraph.h>
-#include <csf/Scheduler.h>
+#include <tests/libxrpl/csf/Digraph.h>
+#include <tests/libxrpl/csf/Scheduler.h>
 
 #include <cassert>
 

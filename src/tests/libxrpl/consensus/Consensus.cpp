@@ -1,5 +1,17 @@
 #include <xrpl/consensus/Consensus.h>
 
+#include <tests/libxrpl/csf/Peer.h>
+#include <tests/libxrpl/csf/PeerGroup.h>
+#include <tests/libxrpl/csf/Sim.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/Tx.h>
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/collectors.h>
+#include <tests/libxrpl/csf/events.h>
+#include <tests/libxrpl/csf/random.h>
+#include <tests/libxrpl/csf/submitters.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -8,18 +20,7 @@
 #include <xrpl/consensus/DisputedTx.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
-#include <csf/Peer.h>
-#include <csf/PeerGroup.h>
-#include <csf/Sim.h>
-#include <csf/SimTime.h>
-#include <csf/Tx.h>
-#include <csf/Validation.h>
-#include <csf/collectors.h>
-#include <csf/events.h>
-#include <csf/random.h>
-#include <csf/submitters.h>
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <chrono>
 #include <cstddef>
