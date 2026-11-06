@@ -11,11 +11,14 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -1440,14 +1443,28 @@ class LendingHelpers_test : public beast::unit_test::Suite
             };
         };
 
-        auto const fixedOpt = run(testableAmendments());
-        auto const legacyOpt = run(testableAmendments() - fixCleanup3_2_0);
-        if (!fixedOpt || !legacyOpt)
+        // LendingProtocolV1_2 sets the new value to the scheduled value; it is
+        // checked separately below.
+        auto const fixedOpt = run(testableAmendments() - featureLendingProtocolV1_2);
+        auto const legacyOpt =
+            run(testableAmendments() - fixCleanup3_2_0 - featureLendingProtocolV1_2);
+        auto const scheduledOpt = run(testableAmendments());
+        if (!fixedOpt || !legacyOpt || !scheduledOpt)
         {
             BEAST_EXPECT(fixedOpt.has_value());
             BEAST_EXPECT(legacyOpt.has_value());
+            BEAST_EXPECT(scheduledOpt.has_value());
             return;
         }
+        Outcome const& scheduled = *scheduledOpt;
+        // Under LendingProtocolV1_2 the new value is the scheduled value of the
+        // new periodic payment, and the management fee is rounded down from the
+        // new interest.
+        BEAST_EXPECT((scheduled.newState.valueOutstanding == Number{100'393'005, -5}));
+        BEAST_EXPECT((scheduled.newState.principalOutstanding == Number{960}));
+        BEAST_EXPECT((scheduled.newState.managementFeeDue == Number{4'393, -3}));
+        BEAST_EXPECT(
+            (scheduled.parts.valueChange == Number{-164'738, -5} + scheduled.parts.interestPaid));
         Outcome const& fixed = *fixedOpt;
         Outcome const& legacy = *legacyOpt;
 
@@ -1475,6 +1492,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         };
         checkCommon(fixed, "fixed");
         checkCommon(legacy, "legacy");
+        checkCommon(scheduled, "scheduled");
 
         // With fixCleanup3_2_0 the management fee is re-derived from the exact
         // principal; without it, from the one-scale-unit-high round-trip
@@ -2043,8 +2061,127 @@ public:
     }
 
     void
+    testScheduledValue()
+    {
+        testcase("scheduledValue");
+
+        using namespace jtx;
+
+        Env const env{*this};
+        Account const issuer{"issuer"};
+        Asset const iou = PrettyAsset{issuer["USD"]}.raw();
+        Asset const mpt = MPTIssue{makeMptID(1, issuer.id())};
+        Asset const xrp = xrpIssue();
+        Number const rate{1, -3};
+        Number const zeroRate{0};
+
+        // No payments left: the scheduled value is 0.
+        for (auto const& asset : {iou, mpt, xrp})
+        {
+            BEAST_EXPECT(
+                (scheduledValue(asset, Number{1'234'567, -6}, rate, 0, 0) == beast::kZero));
+            BEAST_EXPECT(
+                (scheduledValue(asset, Number{1'234'567, -6}, zeroRate, 0, 0) == beast::kZero));
+        }
+
+        // One unit.
+        BEAST_EXPECT((scheduledValue(iou, Number{1, -2}, rate, 1, -2) == Number{1, -2}));
+        BEAST_EXPECT((scheduledValue(mpt, Number{1}, rate, 1, 0) == Number{1}));
+        BEAST_EXPECT((scheduledValue(xrp, Number{1}, rate, 1, 0) == Number{1}));
+
+        // With interest the value is rounded up to the next unit.
+        BEAST_EXPECT(
+            (scheduledValue(iou, Number{1'234'567'891, -9}, rate, 1, -2) == Number{124, -2}));
+        BEAST_EXPECT(
+            (scheduledValue(iou, Number{1'234'567'891, -9}, rate, 3, -2) == Number{371, -2}));
+        BEAST_EXPECT((scheduledValue(mpt, Number{101, -1}, rate, 3, 0) == Number{31}));
+        BEAST_EXPECT((scheduledValue(xrp, Number{101, -1}, rate, 3, 0) == Number{31}));
+        // An exact multiple of a unit is not rounded up.
+        BEAST_EXPECT((scheduledValue(iou, Number{25, -1}, rate, 2, 0) == Number{5}));
+
+        // Without interest the value is rounded to nearest, with ties to even.
+        BEAST_EXPECT((scheduledValue(iou, Number{101, -1}, zeroRate, 3, 0) == Number{30}));
+        BEAST_EXPECT((scheduledValue(mpt, Number{101, -1}, zeroRate, 3, 0) == Number{30}));
+        BEAST_EXPECT((scheduledValue(iou, Number{25, -1}, zeroRate, 1, 0) == Number{2}));
+        BEAST_EXPECT((scheduledValue(iou, Number{25, -1}, zeroRate, 3, 0) == Number{8}));
+        BEAST_EXPECT((scheduledValue(mpt, Number{25, -1}, zeroRate, 1, 0) == Number{2}));
+        BEAST_EXPECT((scheduledValue(mpt, Number{25, -1}, zeroRate, 3, 0) == Number{8}));
+
+        // The largest MPT amount: 1,317,624,576,693,539,401 x 7 = 2^63 - 1.
+        BEAST_EXPECT(
+            (scheduledValue(mpt, Number{1'317'624'576'693'539'401}, rate, 7, 0) ==
+             Number{kMaxMpTokenAmount}));
+        BEAST_EXPECT(
+            (scheduledValue(mpt, Number{1'317'624'576'693'539'401}, zeroRate, 7, 0) ==
+             Number{kMaxMpTokenAmount}));
+
+        // An IOU total just below and at 10^(16 + LoanScale).
+        BEAST_EXPECT(
+            (scheduledValue(iou, Number{9'999'999'999'999'999, -3}, rate, 1, -2) == Number{1, 13}));
+        BEAST_EXPECT(
+            (scheduledValue(iou, Number{9'999'999'999'999'990, -3}, rate, 1, -2) ==
+             Number{999'999'999'999'999, -2}));
+        BEAST_EXPECT((
+            scheduledValue(iou, Number{1'000'000'000'000'000, -3}, rate, 10, -2) == Number{1, 13}));
+
+        // LoanSet stores exactly the scheduled value with every payment left.
+        struct LoanCase
+        {
+            Asset asset;
+            Number principal;
+            TenthBips32 interestRate;
+            std::uint32_t paymentsRemaining;
+            std::int32_t minimumScale;
+        };
+        std::vector<LoanCase> const loans{
+            {
+                .asset = iou,
+                .principal = Number{190'623, -3},
+                .interestRate = TenthBips32{12'000},
+                .paymentsRemaining = 36,
+                .minimumScale = -8,
+            },
+            {
+                .asset = iou,
+                .principal = Number{1'001},
+                .interestRate = TenthBips32{0},
+                .paymentsRemaining = 10,
+                .minimumScale = 0,
+            },
+            {
+                .asset = mpt,
+                .principal = Number{3'000'000'000'000'000'003},
+                .interestRate = TenthBips32{10'000},
+                .paymentsRemaining = 12,
+                .minimumScale = 0,
+            },
+        };
+        for (auto const& loan : loans)
+        {
+            std::uint32_t const paymentInterval = 30 * 24 * 60 * 60;
+            auto const properties = computeLoanProperties(
+                env.current()->rules(),
+                loan.asset,
+                loan.principal,
+                loan.interestRate,
+                paymentInterval,
+                loan.paymentsRemaining,
+                TenthBips32{0},
+                loan.minimumScale);
+            BEAST_EXPECT(
+                scheduledValue(
+                    loan.asset,
+                    properties.periodicPayment,
+                    loanPeriodicRate(loan.interestRate, paymentInterval),
+                    loan.paymentsRemaining,
+                    properties.loanScale) == properties.loanState.valueOutstanding);
+        }
+    }
+
+    void
     run() override
     {
+        testScheduledValue();
         testTryOverpaymentNoInterestNoFee();
         testTryOverpaymentNoInterestOverpaymentFee();
         testTryOverpaymentLoanInterestNoOverpaymentFees();

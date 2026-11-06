@@ -237,6 +237,9 @@ protected:
         // Useful for tests that need to observe the vault while it is still in the Subscription
         // phase. Ignored for open-ended vaults.
         bool skipPhaseAdvance = false;
+        // Scale of the PrettyAsset createAsset returns for an MPT: one unit of the asset is this
+        // many MPT units. Use 1 for amounts near the MPT maximum.
+        std::uint32_t mptAssetScale = 10'000;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -876,7 +879,7 @@ protected:
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 // Scale the MPT asset so interest is interesting
-                PrettyAsset const asset{mptt.issuanceID(), 10'000};
+                PrettyAsset const asset{mptt.issuanceID(), brokerParams.mptAssetScale};
                 // Need to do the authorization here because mptt isn't
                 // accessible outside
                 if (lender != issuer)
@@ -1026,7 +1029,8 @@ protected:
         LoanParameters const& loanParams,
         jtx::Account const& issuer,
         jtx::Account const& lender,
-        jtx::Account const& borrower)
+        jtx::Account const& borrower,
+        std::function<void(jtx::Env&)> const& beforeLoanSet = {})
     {
         using namespace jtx;
 
@@ -1082,6 +1086,9 @@ protected:
         if (!loanKeyletOpt)
             return std::nullopt;
         Keylet const& loanKeylet = *loanKeyletOpt;
+
+        if (beforeLoanSet)
+            beforeLoanSet(env);
 
         env(loanParams(env, broker));
 
@@ -1229,6 +1236,7 @@ protected:
             STAmount{broker.asset, totalDue * paymentParams.overpaymentFactor} + extraAmount;
 
         auto const borrowerInitialBalance = env.balance(borrower, broker.asset).number();
+        auto const initialBalanceExponent = env.balance(borrower, broker.asset).value().exponent();
         auto const initialState = state;
         xrpl::detail::PaymentComponents totalPaid{
             .trackedValueDelta = 0,
@@ -1249,12 +1257,22 @@ protected:
         auto const validateBorrowerBalance = [&] {
             if (borrower == issuer || !paymentParams.validateBalances)
                 return;
+            auto const balance = env.balance(borrower, broker.asset).value();
             auto const totalSpent =
                 (totalPaid.trackedValueDelta + totalFeesPaid +
                  (broker.asset.native() ? Number(baseFee) * totalPaymentsMade : kNumZero));
-            BEAST_EXPECT(
-                env.balance(borrower, broker.asset).number() ==
-                borrowerInitialBalance - totalSpent);
+            Number const expected = borrowerInitialBalance - totalSpent;
+            // An IOU balance holds 16 digits: once it is too large to hold every
+            // digit at the loan scale, each payment can round it by up to one
+            // unit at the balance's exponent.
+            auto const exponent = std::max(balance.exponent(), initialBalanceExponent);
+            if (!balance.integral() && exponent > state.loanScale)
+            {
+                Number const tolerance{static_cast<std::int64_t>(totalPaymentsMade), exponent};
+                BEAST_EXPECT(abs(Number{balance} - expected) <= tolerance);
+                return;
+            }
+            BEAST_EXPECT(Number{balance} == expected);
         };
 
         auto const defaultRound = broker.asset.integral() ? 3 : 0;
@@ -1286,6 +1304,24 @@ protected:
                 paymentComponents.trackedValueDelta <= roundedPeriodicPayment ||
                 (paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::Final &&
                  paymentComponents.trackedValueDelta >= roundedPeriodicPayment));
+            if (env.current()->rules().enabled(featureLendingProtocolV1_2))
+            {
+                // Every on-time payment takes the floor or the ceiling of the
+                // periodic payment, at least one unit, and the last one takes
+                // exactly the rounded periodic payment.
+                auto const floorPayment = roundToAsset(
+                    broker.asset.raw(),
+                    state.periodicPayment,
+                    state.loanScale,
+                    Number::RoundingMode::Downward);
+                Number const delta = paymentComponents.trackedValueDelta;
+                BEAST_EXPECT(delta == floorPayment || delta == Number{roundedPeriodicPayment});
+                BEAST_EXPECT(delta >= Number(1, state.loanScale));
+                BEAST_EXPECT(
+                    paymentComponents.specialCase != xrpl::detail::PaymentSpecialCase::Final ||
+                    state.interestRate == TenthBips32{0} ||
+                    delta == Number{roundedPeriodicPayment});
+            }
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta ==
                 paymentComponents.trackedPrincipalDelta + paymentComponents.trackedInterestPart() +
