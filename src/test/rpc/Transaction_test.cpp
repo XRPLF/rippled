@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
@@ -766,10 +767,7 @@ class Transaction_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using std::to_string;
 
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
         Account const alice{"alice"};
         Account const alie{"alie"};
         Account const gw{"gw"};
@@ -845,10 +843,7 @@ class Transaction_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using std::to_string;
 
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
         Account const alice{"alice"};
         Account const gw{"gw"};
         auto const usd{gw["USD"]};
