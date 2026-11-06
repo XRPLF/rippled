@@ -177,7 +177,18 @@ public:
     virtual void
     invariants(bool isRoot = false) const = 0;
 
-    static SHAMapTreeNodePtr
+    /**
+     * Parse a prefixed node, adopting `hash` without verifying it.
+     *
+     * Every caller must establish `hash` first. A node from the local store
+     * carries its own key, and a node from a sync filter is covered by
+     * SHAMapSyncFilter::getNode()'s postcondition.
+     *
+     * @param rawNode the serialized node, including its 4-byte hash prefix.
+     * @param hash the hash to adopt.
+     * @return the node.
+     */
+    [[nodiscard]] static SHAMapTreeNodePtr
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
     static SHAMapTreeNodePtr
