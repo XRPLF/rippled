@@ -41,7 +41,7 @@ namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
-    auto issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
+    auto const issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
         auto const& issuer = asset.getIssuer();
         return isXRP(issuer) || view.exists(keylet::account(issuer));
     };
@@ -79,7 +79,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p = view.peek(keylet::page(tip_.dir()));
+    auto const p = view.peek(keylet::page(tip_.dir()));
 
     if (p == nullptr)
     {
@@ -88,7 +88,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::ranges::find(v, tip_.index()));
+    auto const it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -159,7 +159,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
-        toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
+        toAmount<TTakerPays>(offer_.amount().in),
+        toAmount<TTakerGets>(offer_.amount().out),
+    };
 
     if constexpr (!kInIsIntegral && !kOutIsIntegral)
     {
@@ -354,10 +356,10 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_ = TOffer<TIn, TOut>{};
                 continue;
             }
-            // The strict reduction only overflows for a crafted MPT offer, and
-            // MPT offers require featureMPTokensV2 (enforced at OfferCreate
-            // preflight). So the amendment is always enabled here and this
-            // legacy re-throw is unreachable in practice.
+            // The strict reduction only throws std::overflow_error for a
+            // crafted MPT offer, and MPT offers require featureMPTokensV2
+            // (enforced at OfferCreate preflight). So the amendment is always
+            // enabled here and this legacy re-throw is unreachable in practice.
             // LCOV_EXCL_START
             XRPL_ASSERT(
                 view_.rules().enabled(featureMPTokensV2),

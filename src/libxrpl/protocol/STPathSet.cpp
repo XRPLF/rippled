@@ -84,7 +84,8 @@ STPathSet::STPathSet(STPathSet const& other)
     , value_{other.value_}
     , seen_{
           other.seen_ != nullptr ? std::make_unique<HardenedHashSet<STPath>>(*other.seen_)
-                                 : nullptr}
+                                 : nullptr,
+      }
 {
 }
 

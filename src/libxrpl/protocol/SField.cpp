@@ -107,11 +107,11 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
 SField const&
 SField::getField(int code)
 {
-    auto it = knownCodeToField.find(code);
+    auto const it = knownCodeToField.find(code);
 
     if (it != knownCodeToField.end())
     {
-        return *(it->second);
+        return *it->second;
     }
     return sfInvalid;
 }
@@ -135,11 +135,11 @@ SField::compare(SField const& f1, SField const& f2)
 SField const&
 SField::getField(std::string const& fieldName)
 {
-    auto it = knownNameToField.find(fieldName);
+    auto const it = knownNameToField.find(fieldName);
 
     if (it != knownNameToField.end())
     {
-        return *(it->second);
+        return *it->second;
     }
     return sfInvalid;
 }

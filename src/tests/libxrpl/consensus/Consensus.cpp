@@ -411,7 +411,7 @@ TEST(ConsensusTest, slow_peers)
         //  1. The slow peers are participating in consensus
         //  2. The slow peers are just observing
 
-        for (auto isParticipant : {true, false})
+        for (auto const isParticipant : {true, false})
         {
             ConsensusParms const parms{};
 
@@ -582,7 +582,7 @@ TEST(ConsensusTest, wrong_lcl)
 
     // Vary the time it takes to process validations to exercise detecting
     // the wrong LCL at different phases of consensus
-    for (auto validationDelay : {0ms, parms.ledgerMinClose})
+    for (auto const validationDelay : {0ms, parms.ledgerMinClose})
     {
         // Consider 10 peers:
         // 0 1         2 3 4       5 6 7 8 9
@@ -1097,7 +1097,7 @@ TEST(ConsensusTest, pause_for_laggards)
     Rate const rate{.count = 1, .duration = 5s};
     auto peerSelector = makeSelector(
         network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
-    auto txSubmitter = makeSubmitter(
+    auto const txSubmitter = makeSubmitter(
         ConstantDistribution{rate.inv()},
         sim.scheduler.now(),
         sim.scheduler.now() + simDuration,
@@ -1203,8 +1203,8 @@ TEST(ConsensusTest, disputes)
         // 16 validators change their vote to match my original vote
         for (int i = 0; i < 16; ++i)
         {
-            auto pTrue = PeerID(numPeers - i - 1);
-            auto pFalse = PeerID(i);
+            auto const pTrue = PeerID(numPeers - i - 1);
+            auto const pFalse = PeerID(i);
             EXPECT_TRUE(proposingTrue.setVote(pTrue, true));
             EXPECT_TRUE(proposingFalse.setVote(pFalse, false));
             EXPECT_TRUE(followingTrue.setVote(pTrue, true));
@@ -1235,8 +1235,8 @@ TEST(ConsensusTest, disputes)
         // 5 more validators change their vote to match my original vote
         for (int i = 16; i < 21; ++i)
         {
-            auto pTrue = PeerID(numPeers - i - 1);
-            auto pFalse = PeerID(i);
+            auto const pTrue = PeerID(numPeers - i - 1);
+            auto const pFalse = PeerID(i);
             EXPECT_TRUE(proposingTrue.setVote(pTrue, true));
             EXPECT_TRUE(proposingFalse.setVote(pFalse, false));
             EXPECT_TRUE(followingTrue.setVote(pTrue, true));
@@ -1297,8 +1297,8 @@ TEST(ConsensusTest, disputes)
         // 25 more validators change their vote to match my original vote
         for (int i = 21; i < 46; ++i)
         {
-            auto pTrue = PeerID(numPeers - i - 1);
-            auto pFalse = PeerID(i);
+            auto const pTrue = PeerID(numPeers - i - 1);
+            auto const pFalse = PeerID(i);
             EXPECT_TRUE(proposingTrue.setVote(pTrue, true));
             EXPECT_TRUE(proposingFalse.setVote(pFalse, false));
             EXPECT_TRUE(followingTrue.setVote(pTrue, true));
@@ -1325,13 +1325,13 @@ TEST(ConsensusTest, disputes)
             EXPECT_TRUE(clog->str().empty());
         }
 
-        auto expectStalled = [&clog](
-                                 int txid,
-                                 bool ourVote,
-                                 int ourTime,
-                                 int peerTime,
-                                 int support,
-                                 std::uint32_t line) {
+        auto const expectStalled = [&clog](
+                                       int txid,
+                                       bool ourVote,
+                                       int ourTime,
+                                       int peerTime,
+                                       int support,
+                                       std::uint32_t line) {
             using namespace std::string_literals;
 
             auto const s = clog->str();

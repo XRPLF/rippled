@@ -75,12 +75,6 @@ std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
 
 /**
- * Return true if required AMM amendment is enabled
- */
-bool
-ammEnabled(Rules const&);
-
-/**
  * Convert to the fee from the basis points
  * @param tfee  trading fee in {0, 1000}
  * 1 = 1/10bps or 0.001%, 1000 = 1%

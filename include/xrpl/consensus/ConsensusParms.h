@@ -145,18 +145,26 @@ struct ConsensusParms
     std::map<AvalancheState, AvalancheCutoff> const avalancheCutoffs{
         // {state, {time, percent, nextState}},
         // Initial state: 50% of nodes must vote yes
-        {AvalancheState::Init,
-         {.consensusTime = 0, .consensusPct = 50, .next = AvalancheState::Mid}},
+        {
+            AvalancheState::Init,
+            {.consensusTime = 0, .consensusPct = 50, .next = AvalancheState::Mid},
+        },
         // mid-consensus starts after 50% of the previous round time, and
         // requires 65% yes
-        {AvalancheState::Mid,
-         {.consensusTime = 50, .consensusPct = 65, .next = AvalancheState::Late}},
+        {
+            AvalancheState::Mid,
+            {.consensusTime = 50, .consensusPct = 65, .next = AvalancheState::Late},
+        },
         // late consensus starts after 85% time, and requires 70% yes
-        {AvalancheState::Late,
-         {.consensusTime = 85, .consensusPct = 70, .next = AvalancheState::Stuck}},
+        {
+            AvalancheState::Late,
+            {.consensusTime = 85, .consensusPct = 70, .next = AvalancheState::Stuck},
+        },
         // we're stuck after 2x time, requires 95% yes votes
-        {AvalancheState::Stuck,
-         {.consensusTime = 200, .consensusPct = 95, .next = AvalancheState::Stuck}},
+        {
+            AvalancheState::Stuck,
+            {.consensusTime = 200, .consensusPct = 95, .next = AvalancheState::Stuck},
+        },
     };
 
     /**

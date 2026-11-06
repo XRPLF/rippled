@@ -270,7 +270,7 @@ runUnitTests(
     bool ipv6,
     std::size_t numJobs,
     int argc,
-    char** argv)
+    char* const* argv)
 {
     using namespace beast::unit_test;
     using namespace xrpl::test;
@@ -351,7 +351,7 @@ runUnitTests(
 //------------------------------------------------------------------------------
 
 int
-run(int argc, char** argv)
+run(int argc, char* const* argv)
 {
     using namespace std;
 
@@ -572,11 +572,19 @@ run(int argc, char** argv)
 
     auto config = std::make_unique<Config>();
 
-    auto configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
+    auto const configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
-    // config file, quiet flag.
-    config->setup(
-        configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+    // Reading the config file throws for a value the server rejects.
+    try
+    {
+        config->setup(
+            configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+    }
+    catch (std::exception const& e)
+    {
+        std::cerr << "xrpld: startup failed: " << e.what() << std::endl;
+        return 1;
+    }
 
     if (vm.contains("vacuum"))
     {
@@ -588,7 +596,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setupDatabaseCon(*config);
+            auto const setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -605,7 +613,7 @@ run(int argc, char** argv)
     {
         try
         {
-            auto const r = [&vm]() -> std::vector<std::uint32_t> {
+            auto const r = [&vm] -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
                     strVec,
@@ -661,7 +669,7 @@ run(int argc, char** argv)
             if (vm.contains("trap_tx_hash"))
             {
                 UInt256 tmp = {};
-                auto hash = vm["trap_tx_hash"].as<std::string>();
+                auto const hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
                     config->trapTxHash = tmp;
@@ -804,11 +812,22 @@ run(int argc, char** argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        auto app =
-            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        // Building the application and setting it up both throw for a
+        // config section they reject, and for a store they cannot open.
+        std::unique_ptr<Application> app;
+        try
+        {
+            app =
+                makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
-        if (!app->setup(vm))
-            return -1;
+            if (!app->setup(vm))
+                return -1;
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "xrpld: startup failed: " << e.what() << std::endl;
+            return 1;
+        }
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
@@ -834,7 +853,7 @@ run(int argc, char** argv)
 }  // namespace xrpl
 
 int
-main(int argc, char** argv)
+main(int argc, char** argv)  // NOLINT(misc-const-correctness) standard main signature
 {
 #if BOOST_OS_WINDOWS
     {

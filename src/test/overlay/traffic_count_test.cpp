@@ -91,7 +91,7 @@ public:
     void
     testAddCount()
     {
-        auto run = [&](TestCase const& tc) {
+        auto const run = [&](TestCase const& tc) {
             testcase(tc.name);
             TrafficCount traffic;
 

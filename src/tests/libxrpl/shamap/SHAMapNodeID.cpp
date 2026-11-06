@@ -169,7 +169,7 @@ TEST(SHAMapNodeIDTest, deserialize_rejects_out_of_range_depth)
 {
     // getRawString() only serializes a depth already accepted by the constructor's own
     // assertion, so an out-of-range depth here is built by hand instead.
-    auto serializeWithRawDepth = [](unsigned int depth) {
+    auto const serializeWithRawDepth = [](unsigned int depth) {
         Serializer s;
         s.addBitString(UInt256{});
         s.add8(static_cast<unsigned char>(depth));

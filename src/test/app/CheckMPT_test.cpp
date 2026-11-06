@@ -74,7 +74,8 @@ class CheckMPT_test : public beast::unit_test::Suite
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -112,7 +113,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         // Note that no MPToken has been set up for alice, but alice can
         // still write a check for USD.  You don't have to have the funds
         // necessary to cover a check in order to write a check.
-        auto writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
+        auto const writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -208,8 +209,8 @@ class CheckMPT_test : public beast::unit_test::Suite
          * Attempt to create two checks from `from` to `to` and
          * require they both result in error/success code `expected`
          */
-        auto writeTwoChecksDI = [&env, &usd, this](
-                                    Account const& from, Account const& to, TER expected) {
+        auto const writeTwoChecksDI = [&env, &usd, this](
+                                          Account const& from, Account const& to, TER expected) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -685,12 +686,13 @@ class CheckMPT_test : public beast::unit_test::Suite
             Env env(*this, features);
 
             env.fund(XRP(1000), gw, alice, bob);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice},
-                 .flags = kMptDexFlags | tfMPTRequireAuth,
-                 .maxAmt = 20});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice},
+                .flags = kMptDexFlags | tfMPTRequireAuth,
+                .maxAmt = 20,
+            });
             MPT const usd = usdm;
             usdm.authorize({.holder = alice});
             env.close();
@@ -803,12 +805,13 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.fund(XRP(1'000), gw, alice, bob);
 
         // Set gw's transfer rate and see the consequences when cashing a check.
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob},
-             .transferFee = 25'000,
-             .maxAmt = 1'000});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob},
+            .transferFee = 25'000,
+            .maxAmt = 1'000,
+        });
 
         env.close();
         env(pay(gw, alice, usd(1'000)));
@@ -838,12 +841,13 @@ class CheckMPT_test : public beast::unit_test::Suite
         // With the maximum transfer fee, this is the largest output whose
         // fee-adjusted debit is still within SendMax.
         std::uint64_t constexpr maxDeliver = (kMaxMpTokenAmount / 3) * 2;
-        MPT const eur = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob},
-             .transferFee = kMaxTransferFee,
-             .maxAmt = kMaxMpTokenAmount});
+        MPT const eur = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob},
+            .transferFee = kMaxTransferFee,
+            .maxAmt = kMaxMpTokenAmount,
+        });
 
         env(pay(gw, alice, eur(kMaxMpTokenAmount)));
         env.close();
@@ -880,12 +884,13 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         env.fund(XRP(1000), gw, alice, bob, zoe);
 
-        auto usdm = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .flags = kMptDexFlags | tfMPTCanLock,
-             .maxAmt = maxAmt});
+        auto usdm = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .flags = kMptDexFlags | tfMPTCanLock,
+            .maxAmt = maxAmt,
+        });
         MPT const usd = usdm;
 
         env(pay(gw, alice, usd(20)));
@@ -935,8 +940,8 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.close();
 
         // Same set of failing cases for both MPT and XRP check cashing.
-        auto failingCases = [&env, &gw, &alice, &bob](
-                                UInt256 const& chkId, STAmount const& amount) {
+        auto const failingCases = [&env, &gw, &alice, &bob](
+                                      UInt256 const& chkId, STAmount const& amount) {
             // Bad fee.
             env(check::cash(bob, chkId, amount), Fee(drops(-10)), Ter(temBAD_FEE));
             env.close();
@@ -1476,14 +1481,14 @@ class CheckMPT_test : public beast::unit_test::Suite
             void
             set(MPT const& mpt, std::uint32_t flag)
             {
-                auto it = getIt(mpt);
+                auto const it = getIt(mpt);
                 it->second.set({.flags = flag});
             }
 
             void
             authorize(MPT const& mpt, AccountOwns& id)
             {
-                auto it = getIt(mpt);
+                auto const it = getIt(mpt);
                 it->second.authorize({.account = id});
                 ++id.owners;
             }

@@ -146,7 +146,8 @@ public:
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
             .manifest =
-                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1),
+        };
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
@@ -179,7 +180,7 @@ public:
 
         std::vector<BlobInfo> blobInfo;
         blobInfo.reserve(futures.size() + 1);
-        auto const [data, blob] = [&]() -> std::pair<std::string, std::string> {
+        auto const [data, blob] = [&] -> std::pair<std::string, std::string> {
             // Builds the validator list, then encodes it into a blob.
             std::string data = "{\"sequence\":" + std::to_string(sequence) +
                 ",\"expiration\":" + std::to_string(validUntil.time_since_epoch().count()) +
@@ -259,7 +260,7 @@ public:
         acceptor_.listen(boost::asio::socket_base::max_listen_connections);
         acceptor_.async_accept(
             sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
-                if (auto p = wp.lock())
+                if (auto const p = wp.lock())
                 {
                     p->onAccept(ec);
                 }
@@ -495,7 +496,7 @@ private:
         std::thread{Lambda{++nextId, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
             sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](ErrorCode ec) {
-                if (auto p = wp.lock())
+                if (auto const p = wp.lock())
                 {
                     p->onAccept(ec);
                 }

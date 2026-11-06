@@ -5,6 +5,9 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
+// A code marked "reserved" is not assigned to a field. Do not reuse a reserved
+// code until a year or two after its field was removed, so that no supported
+// release or tool still knows the old meaning.
 
 // untyped
 UNTYPED_SFIELD(sfLedgerEntry,            LEDGERENTRY, 257)
@@ -23,8 +26,7 @@ TYPED_SFIELD(sfLEVersion,                UINT8,      6)
 // 8-bit integers (uncommon)
 TYPED_SFIELD(sfTickSize,                 UINT8,     16)
 TYPED_SFIELD(sfUNLModifyDisabling,       UINT8,     17)
-// 18 unused
-TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
+// 18 to 19 reserved
 TYPED_SFIELD(sfWithdrawalPolicy,         UINT8,     20)
 TYPED_SFIELD(sfContractResult,           UINT8,     21)
 TYPED_SFIELD(sfVaultKind,                UINT8,     22)
@@ -39,7 +41,7 @@ TYPED_SFIELD(sfDiscountedFee,            UINT16,     6)
 
 // 16-bit integers (uncommon)
 TYPED_SFIELD(sfVersion,                  UINT16,    16)
-// 17 to 20 unused
+// 17 to 20 reserved
 TYPED_SFIELD(sfLedgerFixType,            UINT16,    21)
 TYPED_SFIELD(sfManagementFeeRate,        UINT16,    22) // 1/10 basis points (bips)
 
@@ -90,7 +92,7 @@ TYPED_SFIELD(sfTicketSequence,           UINT32,    41)
 TYPED_SFIELD(sfNFTokenTaxon,             UINT32,    42)
 TYPED_SFIELD(sfMintedNFTokens,           UINT32,    43)
 TYPED_SFIELD(sfBurnedNFTokens,           UINT32,    44)
-// 45 to 47 unused
+// 45 to 47 reserved
 TYPED_SFIELD(sfVoteWeight,               UINT32,    48)
 TYPED_SFIELD(sfFirstNFTokenSequence,     UINT32,    50)
 TYPED_SFIELD(sfOracleDocumentID,         UINT32,    51)
@@ -145,11 +147,9 @@ TYPED_SFIELD(sfNFTokenOfferNode,         UINT64,    12)
 TYPED_SFIELD(sfEmitBurden,               UINT64,    13)
 
 // 64-bit integers (uncommon)
-// 16 to 18 unused
+// 16 to 18 reserved
 TYPED_SFIELD(sfReferenceCount,           UINT64,    19)
-TYPED_SFIELD(sfXChainClaimID,            UINT64,    20)
-TYPED_SFIELD(sfXChainAccountCreateCount, UINT64,    21)
-TYPED_SFIELD(sfXChainAccountClaimCount,  UINT64,    22)
+// 20 to 22 reserved
 TYPED_SFIELD(sfAssetPrice,               UINT64,    23)
 TYPED_SFIELD(sfMaximumAmount,            UINT64,    24, SField::kSmdBaseTen|SField::kSmdDefault)
 TYPED_SFIELD(sfOutstandingAmount,        UINT64,    25, SField::kSmdBaseTen|SField::kSmdDefault)
@@ -199,7 +199,7 @@ TYPED_SFIELD(sfBookDirectory,            UINT256,   16)
 TYPED_SFIELD(sfInvoiceID,                UINT256,   17)
 TYPED_SFIELD(sfNickname,                 UINT256,   18)
 TYPED_SFIELD(sfAmendment,                UINT256,   19)
-//                                                  20 unused
+//                                                  20 reserved
 TYPED_SFIELD(sfDigest,                   UINT256,   21)
 TYPED_SFIELD(sfChannel,                  UINT256,   22)
 TYPED_SFIELD(sfConsensusHash,            UINT256,   23)
@@ -209,7 +209,7 @@ TYPED_SFIELD(sfPreviousPageMin,          UINT256,   26)
 TYPED_SFIELD(sfNextPageMin,              UINT256,   27)
 TYPED_SFIELD(sfNFTokenBuyOffer,          UINT256,   28)
 TYPED_SFIELD(sfNFTokenSellOffer,         UINT256,   29)
-// 30 to 33 unused
+// 30 to 33 reserved
 TYPED_SFIELD(sfDomainID,                 UINT256,   34)
 TYPED_SFIELD(sfVaultID,                  UINT256,   35,
     SField::kSmdPseudoAccount | SField::kSmdDefault)
@@ -240,6 +240,8 @@ TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfYieldUnrealized,          NUMBER,     18, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfAssetsDeployed,           NUMBER,     19, SField::kSmdNeedsAsset | SField::kSmdDefault)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
@@ -266,7 +268,7 @@ TYPED_SFIELD(sfMinimumOffer,             AMOUNT,    16)
 TYPED_SFIELD(sfRippleEscrow,             AMOUNT,    17)
 TYPED_SFIELD(sfDeliveredAmount,          AMOUNT,    18)
 TYPED_SFIELD(sfNFTokenBrokerFee,         AMOUNT,    19)
-// 20 to 21 unused
+// 20 to 21 reserved
 // currency amount (fees)
 TYPED_SFIELD(sfBaseFeeDrops,             AMOUNT,    22)
 TYPED_SFIELD(sfReserveBaseDrops,         AMOUNT,    23)
@@ -277,8 +279,7 @@ TYPED_SFIELD(sfLPTokenOut,               AMOUNT,    25)
 TYPED_SFIELD(sfLPTokenIn,                AMOUNT,    26)
 TYPED_SFIELD(sfEPrice,                   AMOUNT,    27)
 TYPED_SFIELD(sfPrice,                    AMOUNT,    28)
-TYPED_SFIELD(sfSignatureReward,          AMOUNT,    29)
-TYPED_SFIELD(sfMinAccountCreateAmount,   AMOUNT,    30)
+// 29 to 30 reserved
 TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
 TYPED_SFIELD(sfFeeAmount,                AMOUNT,    32)
 TYPED_SFIELD(sfMaxFee,                   AMOUNT,    33)
@@ -307,7 +308,7 @@ TYPED_SFIELD(sfMasterSignature,          VL,        18, SField::kSmdDefault, SFi
 TYPED_SFIELD(sfUNLModifyValidator,       VL,        19)
 TYPED_SFIELD(sfValidatorToDisable,       VL,        20)
 TYPED_SFIELD(sfValidatorToReEnable,      VL,        21)
-// 22 to 25 unused
+// 22 to 25 reserved
 TYPED_SFIELD(sfDIDDocument,              VL,        26)
 TYPED_SFIELD(sfData,                     VL,        27)
 TYPED_SFIELD(sfAssetClass,               VL,        28)
@@ -330,6 +331,9 @@ TYPED_SFIELD(sfAuditorEncryptionKey,        VL,     44)
 TYPED_SFIELD(sfAmountCommitment,            VL,     45)
 TYPED_SFIELD(sfBalanceCommitment,           VL,     46)
 TYPED_SFIELD(sfBytecode,                    VL,     47)
+TYPED_SFIELD(sfRecoveryKey,                 VL,     48)
+TYPED_SFIELD(sfInitialIssuerEncryptionKey,  VL,     49)
+TYPED_SFIELD(sfIssuerMirrorEncryptionKey,   VL,     50)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
@@ -338,7 +342,7 @@ TYPED_SFIELD(sfDestination,              ACCOUNT,    3)
 TYPED_SFIELD(sfIssuer,                   ACCOUNT,    4)
 TYPED_SFIELD(sfAuthorize,                ACCOUNT,    5)
 TYPED_SFIELD(sfUnauthorize,              ACCOUNT,    6)
-//                                                   7 unused
+//                                                   7 reserved
 TYPED_SFIELD(sfRegularKey,               ACCOUNT,    8)
 TYPED_SFIELD(sfNFTokenMinter,            ACCOUNT,    9)
 TYPED_SFIELD(sfEmitCallback,             ACCOUNT,   10)
@@ -346,13 +350,7 @@ TYPED_SFIELD(sfHolder,                   ACCOUNT,   11)
 TYPED_SFIELD(sfDelegate,                 ACCOUNT,   12)
 
 // account (uncommon)
-// 16 unused
-TYPED_SFIELD(sfOtherChainSource,         ACCOUNT,   18)
-TYPED_SFIELD(sfOtherChainDestination,    ACCOUNT,   19)
-TYPED_SFIELD(sfAttestationSignerAccount, ACCOUNT,   20)
-TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
-TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
-TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
+// 16 to 23 reserved
 TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 TYPED_SFIELD(sfBorrower,                 ACCOUNT,   25)
 TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
@@ -378,13 +376,9 @@ TYPED_SFIELD(sfBaseAsset,                CURRENCY,   1)
 TYPED_SFIELD(sfQuoteAsset,               CURRENCY,   2)
 
 // issue
-TYPED_SFIELD(sfLockingChainIssue,        ISSUE,      1)
-TYPED_SFIELD(sfIssuingChainIssue,        ISSUE,      2)
+// 1 to 2 reserved
 TYPED_SFIELD(sfAsset,                    ISSUE,      3)
 TYPED_SFIELD(sfAsset2,                   ISSUE,      4)
-
-// bridge
-TYPED_SFIELD(sfXChainBridge,             XCHAIN_BRIDGE, 1)
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -400,22 +394,19 @@ UNTYPED_SFIELD(sfMemo,                   OBJECT,    10)
 UNTYPED_SFIELD(sfSignerEntry,            OBJECT,    11)
 UNTYPED_SFIELD(sfNFToken,                OBJECT,    12)
 UNTYPED_SFIELD(sfEmitDetails,            OBJECT,    13)
-// 14 unused
+// 14 reserved
 UNTYPED_SFIELD(sfPermission,             OBJECT,    15)
 
 // inner object (uncommon)
 UNTYPED_SFIELD(sfSigner,                 OBJECT,    16)
-//                                                  17 unused
+//                                                  17 reserved
 UNTYPED_SFIELD(sfMajority,               OBJECT,    18)
 UNTYPED_SFIELD(sfDisabledValidator,      OBJECT,    19)
-// 20 to 24 unused
+// 20 to 24 reserved
 UNTYPED_SFIELD(sfVoteEntry,              OBJECT,    25)
 UNTYPED_SFIELD(sfAuctionSlot,            OBJECT,    26)
 UNTYPED_SFIELD(sfAuthAccount,            OBJECT,    27)
-UNTYPED_SFIELD(sfXChainClaimProofSig,    OBJECT,    28)
-UNTYPED_SFIELD(sfXChainCreateAccountProofSig, OBJECT, 29)
-UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
-UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
+// 28 to 31 reserved
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
@@ -437,17 +428,14 @@ UNTYPED_SFIELD(sfSufficient,             ARRAY,      7)
 UNTYPED_SFIELD(sfAffectedNodes,          ARRAY,      8)
 UNTYPED_SFIELD(sfMemos,                  ARRAY,      9)
 UNTYPED_SFIELD(sfNFTokens,               ARRAY,     10)
-// 11 unused
+// 11 reserved
 UNTYPED_SFIELD(sfVoteSlots,              ARRAY,     12)
 UNTYPED_SFIELD(sfAdditionalBooks,        ARRAY,     13)
 
 // array of objects (uncommon)
 UNTYPED_SFIELD(sfMajorities,             ARRAY,     16)
 UNTYPED_SFIELD(sfDisabledValidators,     ARRAY,     17)
-// 18 to 20 unused
-UNTYPED_SFIELD(sfXChainClaimAttestations, ARRAY,    21)
-UNTYPED_SFIELD(sfXChainCreateAccountAttestations, ARRAY, 22)
-//                                                  23 unused
+// 18 to 23 reserved
 UNTYPED_SFIELD(sfPriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
 UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)

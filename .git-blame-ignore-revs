@@ -5,6 +5,18 @@
 # This file is sorted in reverse chronological order, with the most recent commits at the top.
 # The commits listed here are ignored by git blame, which is useful for formatting-only commits that would otherwise obscure the history of changes to a file.
 
+# chore: CamelCase for typedef/using in `clang-tidy` (#8177)
+97a1824537d20d82d25bf151a37a7a4532ebf085
+# chore: Rename CamelCase namespaces to snake_case (#7933)
+06488c1318d96f56d0536251bee08ac85fa7fdd3
+# style: Unify style for all Doxygen comments (#7776)
+73b6852a122854140336e6e6bc30a3a4b41aa5fd
+# style: More clang-tidy identifier renaming (#7290)
+a830ab10efed8d3e59ef2fc15d66efdf9c6bb0d8
+# refactor: Rename static constants (#7120)
+5b6e8b6f93b19c1e3f6a3467a25639031d9d9a53
+# chore: More fixes for bad renames (#7092)
+7afdd71a54d562b32a50b29a5aa00bb997dc9053
 # refactor: Enable clang-tidy `readability-identifier-naming` check (#6571)
 8995564ed6b9e453e144bb663303072a3c1ba305
 # refactor: Enable remaining clang-tidy `cppcoreguidelines` checks (#6538)

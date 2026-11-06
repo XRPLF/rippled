@@ -47,7 +47,7 @@ public:
             DatabaseCon::Setup::globalPragma.reset();
 
             bool found = false;
-            Env env = [&]() {
+            Env env = [&] {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");
@@ -76,7 +76,7 @@ public:
             DatabaseCon::Setup::globalPragma.reset();
 
             bool found = false;
-            Env env = [&]() {
+            Env env = [&] {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");
@@ -105,7 +105,7 @@ public:
             DatabaseCon::Setup::globalPragma.reset();
 
             bool found = false;
-            Env env = [&]() {
+            Env env = [&] {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");
@@ -137,7 +137,7 @@ public:
             DatabaseCon::Setup::globalPragma.reset();
 
             bool found = false;
-            Env env = [&]() {
+            Env env = [&] {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");
@@ -410,7 +410,7 @@ public:
         }
         {
             // Success: Valid values
-            Env env = [&]() {
+            Env env = [&] {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");

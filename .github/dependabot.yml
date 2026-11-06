@@ -36,3 +36,18 @@ updates:
       rust-dependencies:
         patterns:
           - "*"
+
+  - package-ecosystem: uv
+    directory: /cmake/scripts/codegen
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "chore: [DEPENDABOT] "
+    target-branch: develop
+    groups:
+      codegen-dependencies:
+        patterns:
+          - "*"

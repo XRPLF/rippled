@@ -57,7 +57,7 @@ public:
     public:
         TestThread()
             : work_(std::in_place, boost::asio::make_work_guard(ioContext_))
-            , thread_([&]() { this->ioContext_.run(); })
+            , thread_([&] { this->ioContext_.run(); })
         {
         }
 

@@ -65,7 +65,7 @@ public:
          * Affects the ability of subsequent transactions
          * to claim a fee. Eg. `SetRegularKey`
          */
-        Blocker
+        Blocker,
     };
 
 private:

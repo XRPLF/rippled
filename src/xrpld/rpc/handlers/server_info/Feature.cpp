@@ -64,6 +64,11 @@ doFeature(rpc::JsonContext& context)
         if (!isAdmin)
             return rpcError(RpcNoPermission);
 
+        if (!context.params[jss::vetoed].isBool())
+        {
+            return rpcError(RpcInvalidParams);
+        }
+
         if (context.params[jss::vetoed].asBool())
         {
             table.veto(feature);
@@ -78,7 +83,7 @@ doFeature(rpc::JsonContext& context)
     if (!jvReply)
         return rpcError(RpcBadFeature);
 
-    auto m = majorities.find(feature);
+    auto const m = majorities.find(feature);
     if (m != majorities.end())
         jvReply[jss::majority] = m->second.time_since_epoch().count();
 

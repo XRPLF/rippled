@@ -89,7 +89,7 @@ enum class ListDisposition {
     /**
      * Invalid format or signature
      */
-    Invalid
+    Invalid,
 };
 
 /* Entries in this enum are ordered by "desirability".
