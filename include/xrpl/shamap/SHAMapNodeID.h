@@ -124,6 +124,25 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
 }
 
 /**
+ * Returns the masked id of the child a parent's branch leads to
+ *
+ * An id names the subtree its leading nibbles spell, so a child's id is its
+ * parent's with the nibble at the parent's own depth set to the branch taken.
+ * A parent's id carries no bits below its own depth, so that nibble is free
+ * and the result is already masked to the child's depth.
+ *
+ * This is the write counterpart of selectBranch, and callers that want only
+ * the id use this rather than building a SHAMapNodeID for it.
+ *
+ * @param parentID the masked id of the parent.
+ * @param parentDepth the depth of the parent, below SHAMap::kLeafDepth.
+ * @param branch the branch of the parent leading to the child.
+ * @return the masked id of that child, whose depth is parentDepth + 1.
+ */
+[[nodiscard]] UInt256
+childNodeID(UInt256 const& parentID, unsigned int parentDepth, unsigned int branch);
+
+/**
  * Return an object representing a serialized SHAMap Node ID
  *
  * @param s A string of bytes
