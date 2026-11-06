@@ -41,6 +41,8 @@ Vault::create(CreateArgs const& args) const
         jv[sfRedemptionDate] = *args.redemptionDate;
     if (args.leVersion)
         jv[sfLEVersion] = std::to_underlying(*args.leVersion);
+    if (args.earlyExitFeeRate)
+        jv[sfEarlyExitFeeRate] = *args.earlyExitFeeRate;
     return {jv, keylet};
 }
 
@@ -56,6 +58,7 @@ Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
         .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
         .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count()),
+        .earlyExitFeeRate = args.earlyExitFeeRate,
     });
     return {jv, keylet, sub};
 }

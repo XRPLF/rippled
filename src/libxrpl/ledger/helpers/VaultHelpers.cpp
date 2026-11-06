@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -614,6 +615,50 @@ clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
         return std::unexpected(tecPRECISION_LOSS);
 
     return actualDelta;
+}
+
+[[nodiscard]] TenthBips32
+getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::getEarlyExitFeeRate : valid Vault sle");
+
+    if (!view.rules().enabled(featureLendingProtocolV1_2))
+        return TenthBips32{0};
+
+    auto const feeRate = vault->at(~sfEarlyExitFeeRate);
+    if (!feeRate || getVaultPhase(view, vault) != VaultPhase::Investment)
+        return TenthBips32{0};
+
+    return TenthBips32{*feeRate};
+}
+
+[[nodiscard]] Number
+calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate)
+{
+    XRPL_ASSERT(
+        vault && vault->getType() == ltVAULT, "xrpl::calculateEarlyExitFee : valid Vault sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset),
+        "xrpl::calculateEarlyExitFee : assets and Vault asset match");
+    XRPL_ASSERT(!amount.negative(), "xrpl::calculateEarlyExitFee : non-negative assets");
+    XRPL_ASSERT(rate <= kMaxEarlyExitFeeRate, "xrpl::calculateEarlyExitFee : valid fee rate");
+
+    if (rate == TenthBips32{0} || amount == beast::kZero)
+        return Number{};
+
+    // At 100% the whole withdrawal is retained and nothing leaves the vault.
+    if (rate == kMaxEarlyExitFeeRate)
+        return Number{amount};
+
+    // amount * rate can need more digits than Number keeps, so round up: a
+    // fee rounded down would lift the payout above its exact value, and the
+    // caller's clamp only ever rounds the payout toward zero. The fee stays a
+    // Number on purpose. Converting it to a 16-digit STAmount here would
+    // round again under the caller's mode, and for XRP would truncate it to
+    // whole drops, so a sub-drop fee would vanish.
+    NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
+    return tenthBipsOfValue(Number{amount}, rate);
 }
 
 [[nodiscard]] std::expected<STAmount, TER>
