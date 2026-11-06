@@ -773,6 +773,63 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, backer) == 0);
     }
 
+    // A SponsoredAccountCreate consuming its proposal-reserved ticket deletes
+    // the proposal and releases the reserve against its Owner or reserve
+    // sponsor. Both are accounts the transaction itself never touches, so its
+    // transaction-specific invariants must allow this cleanup.
+    void
+    testSponsoredAccountCreateCleansUp(FeatureBitset features)
+    {
+        testcase("SponsoredAccountCreate consuming a reserved ticket cleans up");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        for (bool const sponsoredReserve : {false, true})
+        {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const target{"target"};
+            Account const backer{"backer"};  // sponsors alice's proposal reserve
+            Account const dest{"dest"};
+            env.fund(XRP(10000), alice, target, backer);
+            env.close();
+            env.memoize(dest);
+            proposal::authorizeProposer(env, target, alice);
+
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            json::Value const payload = proposal::unsignedPayload(
+                env, sponsor::sponsoredAccountCreate(target, dest), ticketSeq);
+
+            if (sponsoredReserve)
+            {
+                env(proposal::create(alice, payload, proposal::expiration(env, 1000s)),
+                    sponsor::As(backer, spfSponsorReserve),
+                    Sig(sfSponsorSignature, backer));
+            }
+            else
+            {
+                env(proposal::create(alice, payload, proposal::expiration(env, 1000s)));
+            }
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+            env(payload);
+            env.close();
+
+            auto const destSle = env.le(keylet::account(dest.id()));
+            if (!BEAST_EXPECT(destSle))
+                return;
+            BEAST_EXPECT(destSle->getAccountID(sfSponsor) == target.id());
+            BEAST_EXPECT(!proposal::entry(env, target, ticketSeq));
+            BEAST_EXPECT(!env.le(keylet::ticket(target.id(), SeqProxy::rawTicket(ticketSeq))));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, backer) == 0);
+        }
+    }
+
     // Deleting the target account sweeps its Tickets without consuming them
     // as a sequence proxy, so the reservation does not block it. A proposal
     // keyed to a swept ticket can never execute and is cleaned up with it,
@@ -1755,6 +1812,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         testInnerBatchSpendBlocked(all);
         testTerminalStillReservesTicket(all);
         testSponsoredReserveAutoDelete(all);
+        testSponsoredAccountCreateCleansUp(all);
         testTargetAccountDeleted(all);
         testTargetDeletionRefundsEachOwner(all);
         testProposalBlocksOwnerAccountDelete(all);

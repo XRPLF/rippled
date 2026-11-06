@@ -1070,6 +1070,23 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
 
 // ttTRANSACTION_PROPOSAL_SIGN arrives in a later PR and takes the next unassigned type.
 
+/** This transaction creates a new account whose reserve is sponsored by the
+    submitter, and optionally a Sponsorship object funding the new account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsoredAccountCreate.h>
+#endif
+TRANSACTION(ttSPONSORED_ACCOUNT_CREATE, 96, SponsoredAccountCreate,
+    ({
+        .amendment = featureSponsorV1_1,
+        .privileges = Privilege::CreateAcct,
+    }),
+    ({
+    {sfDestination, SoeRequired},
+    {sfFeeAmount, SoeOptional},
+    {sfMaxFee, SoeOptional},
+    {sfRemainingOwnerCount, SoeOptional},
+}))
+
 /** This transaction deletes a TransactionProposal, releasing its owner's
     reserve. While the proposal is live only its Owner or its target account
     may cancel; once it is terminal anyone may (On-Chain Cosigner spec §7). */
