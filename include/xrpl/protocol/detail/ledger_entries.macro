@@ -521,6 +521,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfLoanBrokerID,         SoeRequired},
     {sfLoanSequence,         SoeRequired},
     {sfBorrower,             SoeRequired},
+    {sfData,                 SoeDefault},
     {sfLoanOriginationFee,   SoeDefault},
     {sfLoanServiceFee,       SoeDefault},
     {sfLatePaymentFee,       SoeDefault},
