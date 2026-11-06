@@ -2912,8 +2912,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         }
 
         // tecNO_PERMISSION: carol submits; finish MPT not created
+        // Pre-fixCleanup3_5_0: tecNO_PERMISSION
+        // Post-fixCleanup3_5_0: tecNO_ENTRY
+        for (bool const withFix : {true, false})
         {
-            Env env{*this, features};
+            Env env{*this, withFix ? features | fixCleanup3_5_0 : features - fixCleanup3_5_0};
             auto const baseFee = env.current()->fees().base;
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -2942,7 +2945,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kCondition(escrow::kCb1),
                 escrow::kFulfillment(escrow::kFb1),
                 Fee(baseFee * 150),
-                Ter(tecNO_PERMISSION));
+                Ter(withFix ? tecNO_ENTRY : tecNO_PERMISSION));
             env.close();
         }
     }
