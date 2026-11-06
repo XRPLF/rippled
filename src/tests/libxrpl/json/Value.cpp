@@ -719,6 +719,35 @@ TEST(JsonValue, bad_json)
     EXPECT_TRUE(r.parse(s, j));
 }
 
+TEST(JsonValue, reject_null_in_string)
+{
+    // json::Value keeps a string only through its first NUL, so a NUL in the document would make
+    // "3.0\u0000junk" read as "3.0". The reader refuses it, escaped or raw, in a value or a key.
+    using namespace std::string_literals;
+    for (auto const& doc : {
+             R"JSON({"v": "3.0\u0000junk"})JSON"s,
+             R"JSON({"v\u0000junk": 1})JSON"s,
+             R"JSON({"v": "\u0000"})JSON"s,
+             "{\"v\": \"3.0\0junk\"}"s,
+         })
+    {
+        json::Value j;
+        json::Reader r;
+        EXPECT_FALSE(r.parse(doc, j)) << doc;
+
+        // The message names the condition, not the text around it.
+        auto const message = r.getFormattedErrorMessages();
+        EXPECT_TRUE(message.contains("Null character in string")) << message;
+        EXPECT_FALSE(message.contains("junk")) << message;
+    }
+
+    // Every other control character still decodes.
+    json::Value j;
+    json::Reader r;
+    ASSERT_TRUE(r.parse(R"JSON({"v": "a\u0001b"})JSON", j));
+    EXPECT_EQ(j["v"].asString(), "a\x01"s + "b");
+}
+
 namespace {
 
 [[nodiscard]] std::optional<json::Value>
