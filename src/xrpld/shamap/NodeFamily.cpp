@@ -21,14 +21,14 @@
 
 namespace xrpl {
 
-NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
+NodeFamily::NodeFamily(Application& app, CollectorManager& cm, Stopwatch& clock)
     : app_(app)
     , db_(app.getNodeStore())
     , j_(app.getJournal("NodeFamily"))
     , fbCache_(
           std::make_shared<FullBelowCache>(
               "Node family full below cache",
-              stopwatch(),
+              clock,
               app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
               kFullBelowTargetSize,
@@ -38,7 +38,7 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
               "Node family tree node cache",
               app.config().getValueFor(SizedItem::TreeCacheSize),
               std::chrono::seconds(app.config().getValueFor(SizedItem::TreeCacheAge)),
-              stopwatch(),
+              clock,
               j_))
 {
 }
@@ -46,7 +46,17 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
 void
 NodeFamily::sweep()
 {
-    fbCache_->sweep();
+    sweep(app_.getLedgerMaster().haveValidated());
+}
+
+void
+NodeFamily::sweep(bool haveValidated)
+{
+    // Keep FullBelowCache entries until a ledger is validated: a first sync grows the cache past
+    // kFullBelowTargetSize, and TaggedCache::sweep then expires entries far younger than
+    // kFullBelowExpiration.
+    if (haveValidated)
+        fbCache_->sweep();
     tnCache_->sweep();
 }
 
