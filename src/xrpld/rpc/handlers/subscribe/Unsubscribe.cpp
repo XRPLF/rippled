@@ -65,6 +65,10 @@ doUnsubscribe(rpc::JsonContext& context)
             {
                 context.netOps.unsubLedger(ispSub->getSeq());
             }
+            else if (streamName == "book_changes")
+            {
+                context.netOps.unsubBookChanges(ispSub->getSeq());
+            }
             else if (streamName == "manifests")
             {
                 context.netOps.unsubManifests(ispSub->getSeq());

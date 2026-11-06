@@ -96,6 +96,7 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubTransactions(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubRTTransactions(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubLedger(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubBookChanges(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubManifests(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubServer(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
