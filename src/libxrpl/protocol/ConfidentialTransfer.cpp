@@ -15,7 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <openssl/rand.h>
+
 #include <utility/mpt_utility.h>
 
 #include <mpt_protocol.h>
@@ -243,18 +243,6 @@ rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice c
         return std::nullopt;
 
     return homomorphicAdd(ciphertext, *zero);
-}
-
-Buffer
-generateBlindingFactor()
-{
-    unsigned char blindingFactor[kEcBlindingFactorLength];
-
-    // todo: might need to be updated using another RNG
-    if (RAND_bytes(blindingFactor, kEcBlindingFactorLength) != 1)
-        Throw<std::runtime_error>("Failed to generate random number");
-
-    return Buffer(blindingFactor, kEcBlindingFactorLength);
 }
 
 std::optional<Buffer>

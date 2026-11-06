@@ -9,6 +9,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/crypto/secure_erase.h>
+
+#include <openssl/rand.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
@@ -607,6 +610,19 @@ ConfidentialTransferTestBase::getForgedSendProof(
         kEcDoubleBulletproofLength);
 
     return combinedProof;
+}
+
+Buffer
+generateBlindingFactor()
+{
+    unsigned char blindingFactor[kEcBlindingFactorLength];
+
+    if (RAND_bytes(blindingFactor, kEcBlindingFactorLength) != 1)
+        Throw<std::runtime_error>("Failed to generate random number");
+
+    Buffer result(blindingFactor, kEcBlindingFactorLength);
+    secureErase(blindingFactor, kEcBlindingFactorLength);
+    return result;
 }
 
 }  // namespace xrpl
