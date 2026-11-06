@@ -180,6 +180,20 @@ private:
     void
     tryDB(node_store::Database& srcDB);
 
+    /**
+     * Whether either map of the ledger being acquired has been found invalid.
+     *
+     * A walk returns a bare list of hashes, so this is what tells a satisfied
+     * map from an abandoned one. Callers ask it before reading emptiness as
+     * "nothing left to fetch". See SHAMap::addKnownNode for why the verdict is
+     * final.
+     *
+     * @return Whether either map is Invalid, and false while there is no ledger
+     *         yet, since then there is no map to judge.
+     */
+    [[nodiscard]] bool
+    hasInvalidMap() const;
+
     void
     onTimer(bool progress, ScopedLockType& sl) override;
 
