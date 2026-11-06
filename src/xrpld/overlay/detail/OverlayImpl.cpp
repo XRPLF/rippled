@@ -534,6 +534,45 @@ OverlayImpl::start()
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
+        setup_.ipLimit);
+
+    m_peerFinder->setConfig(config);
+    m_peerFinder->start();
+
+    // Populate our boot cache: if there are no entries in [ips] then we use
+    // the entries in [ips_fixed].
+    auto bootstrapIps = app_.config().IPS.empty() ? app_.config().IPS_FIXED : app_.config().IPS;
+
+    // If nothing is specified, default to several well-known high-capacity
+    // servers to serve as bootstrap:
+    if (bootstrapIps.empty())
+    {
+        // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
+        bootstrapIps.emplace_back("r.ripple.com 51235");
+
+        // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
+        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");
+
+        // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
+        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
+    }
+
+    m_resolver.resolve(
+        bootstrapIps,
+        [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+            std::vector<std::string> ips;
+            ips.reserve(addresses.size());
+            for (auto const& addr : addresses)
+            {
+                if (addr.port() == 0)
+                {
+                    ips.push_back(to_string(addr.at_port(DEFAULT_PEER_PORT)));
+                }
+                else
+                {
+                    ips.push_back(to_string(addr));
+                }
+            }
         setup_.ipLimit,
         setup_.verifyEndpoints);
 
