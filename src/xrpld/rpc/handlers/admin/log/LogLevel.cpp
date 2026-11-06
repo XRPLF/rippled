@@ -35,7 +35,15 @@ doLogLevel(rpc::JsonContext& context)
         return ret;
     }
 
-    auto const severity = Logs::fromString(context.params[jss::severity].asString());
+    // Guard the conversion: json::Value::asString() throws for arrays and objects,
+    // which would surface as a generic internal error instead of invalid parameters,
+    // and silently stringifies scalars, so a number or a bool would be matched
+    // against the severity names as its printed form.
+    auto const& jvSeverity = context.params[jss::severity];
+    if (!jvSeverity.isString())
+        return rpcError(RpcInvalidParams);
+
+    auto const severity = Logs::fromString(jvSeverity.asString());
 
     if (not severity.has_value())
         return rpcError(RpcInvalidParams);
@@ -49,24 +57,26 @@ doLogLevel(rpc::JsonContext& context)
     }
 
     // log_level partition severity base?
-    if (context.params.isMember(jss::partition))
+    // Guard the conversion for the same reason, and reject the empty name: Logs::get
+    // creates a partition on demand, so any value that is not a real partition name
+    // adds a junk sink that this command then reports forever.
+    auto const& jvPartition = context.params[jss::partition];
+    if (!jvPartition.isString() || jvPartition.asString().empty())
+        return rpcError(RpcInvalidParams);
+
+    // set partition threshold
+    std::string const partition(jvPartition.asString());
+
+    if (boost::iequals(partition, "base"))
     {
-        // set partition threshold
-        std::string const partition(context.params[jss::partition].asString());
-
-        if (boost::iequals(partition, "base"))
-        {
-            context.app.getLogs().threshold(*severity);
-        }
-        else
-        {
-            context.app.getLogs().get(partition).threshold(*severity);
-        }
-
-        return json::ValueType::Object;
+        context.app.getLogs().threshold(*severity);
+    }
+    else
+    {
+        context.app.getLogs().get(partition).threshold(*severity);
     }
 
-    return rpcError(RpcInvalidParams);
+    return json::ValueType::Object;
 }
 
 }  // namespace xrpl
