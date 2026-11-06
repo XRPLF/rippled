@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## XRP Ledger server version 3.6.0
+
+Version 3.6.0 is not yet released.
+
+### Bugfixes in 3.6.0
+
+- `owner_info`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string. Requests with `ledger`, `ledger_hash`, or `ledger_index` now return owner information for the selected ledger in `accepted`, without a `current` field; requests without a selector still return both closed and current snapshots. [#7590](https://github.com/XRPLF/rippled/pull/7590)
+
 ## XRP Ledger server version 3.5.0
 
 Version 3.5.0 is not yet released.
