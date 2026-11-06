@@ -74,10 +74,6 @@ private:
     std::string const dbPrefix_ = "rippledb";  // cspell: disable-line
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
-    // minimum # of ledgers to maintain for health of network
-    static std::uint32_t const kMinimumDeletionInterval = 256;
-    // minimum # of ledgers required for standalone mode.
-    static std::uint32_t const kMinimumDeletionIntervalSa = 8;
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
@@ -103,24 +99,7 @@ private:
     std::atomic<LedgerIndex> canDelete_;
     int fdRequired_ = 0;
 
-    std::uint32_t deleteInterval_ = 0;
-    bool advisoryDelete_ = false;
-    std::uint32_t deleteBatch_ = 100;
-    std::chrono::milliseconds backOff_{100};
-    std::chrono::seconds ageThreshold_{60};
-    /**
-     * If the node is out of sync, or any recent ledgers are not
-     * available during an online_delete healthWait() call, sleep
-     * the thread for this time, and continue checking until recovery.
-     * See also: "recovery_wait_seconds" in xrpld-example.cfg
-     */
-    std::chrono::seconds recoveryWaitTime_{2};
-    /**
-     * If the rotation stays "unhealthy" for a very long time, the process is aborted, and tried
-     * again later. This value represents the number of ledgers that must be validated without
-     * making rotation progress before the process is aborted.
-     */
-    std::uint32_t maxWaitingLedgers_ = deleteBatch_;
+    SHAMapStore::Setup setup_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -137,7 +116,8 @@ public:
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
     {
-        return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
+        return (setup_.deleteInterval != 0u) ? std::min(fetchDepth, setup_.deleteInterval)
+                                             : fetchDepth;
     }
 
     std::unique_ptr<node_store::Database>
@@ -146,7 +126,7 @@ public:
     LedgerIndex
     setCanDelete(LedgerIndex seq) override
     {
-        if (advisoryDelete_)
+        if (setup_.advisoryDelete)
             canDelete_ = seq;
         return stateDb_.setCanDelete(seq);
     }
@@ -154,7 +134,7 @@ public:
     bool
     advisoryDelete() const override
     {
-        return advisoryDelete_;
+        return setup_.advisoryDelete;
     }
 
     // All ledgers prior to this one are eligible
@@ -246,7 +226,7 @@ public:
     void
     start() override
     {
-        if (deleteInterval_ != 0u)
+        if (setup_.deleteInterval != 0u)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 
