@@ -676,7 +676,7 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         // Under featureLendingProtocolV1_1 the immutability of sfAsset, sfAccount,
-        // sfShareMPTID and sfLEVersion is enforced by NoModifiedUnmodifiableFields.
+        // sfShareMPTID and sfLEVersion is enforced by NoModifiedImmutableFields.
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -746,8 +746,9 @@ class InvariantsVault_test : public InvariantsBase
         // Pre-featureLendingProtocolV1_1 sfAsset, sfAccount and sfShareMPTID are
         // guarded by ValidVault instead, so both paths need coverage. ValidVault
         // returns early once the result is already tec, hence no escalation to
-        // tef on the second pass.
-        auto const preLendingV11Amendments = all_ - featureLendingProtocolV1_1;
+        // tef on the second pass. fixCleanup3_5_0 is also disabled, because its
+        // template-based check would catch these changes too.
+        auto const preLendingV11Amendments = all_ - featureLendingProtocolV1_1 - fixCleanup3_5_0;
         doInvariantCheck(
             makeEnv(preLendingV11Amendments),
             {"violation of vault immutable data"},
@@ -1786,7 +1787,7 @@ class InvariantsVault_test : public InvariantsBase
         }
 
         // ttVAULT_SET: owner is immutable (enforced by
-        // NoModifiedUnmodifiableFields under featureLendingProtocolV1_1.
+        // NoModifiedImmutableFields under featureLendingProtocolV1_1.
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2051,6 +2052,7 @@ class InvariantsVault_test : public InvariantsBase
                 "shares issuer and vault pseudo-account must be the same",
                 "shares issuer must be a pseudo-account",
                 "shares issuer pseudo-account must point back to the vault",
+                "changed an unchangeable field",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
@@ -2068,7 +2070,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});

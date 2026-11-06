@@ -57,10 +57,10 @@ namespace xrpl {
  *   changes only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
- * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
+ * by NoModifiedImmutableFields (see InvariantCheck.cpp). From
  * featureLendingProtocolV1_1 onwards, immutability of the vault's Asset,
  * pseudo-account and ShareMPTID is likewise enforced by
- * NoModifiedUnmodifiableFields; prior to that amendment it is checked here.
+ * NoModifiedImmutableFields; prior to that amendment it is checked here.
  */
 class ValidVault
 {

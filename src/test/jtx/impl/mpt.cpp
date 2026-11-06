@@ -762,7 +762,7 @@ MPTTester::isTransferFeePresent() const
 [[nodiscard]] bool
 MPTTester::checkImmutableFlags(std::uint32_t expectedFlags) const
 {
-    // sfImmutableFlags is soeDEFAULT, defaulting to 0 if not present.
+    // sfImmutableFlags is SoeDefault, defaulting to 0 if not present.
     return forObject([&](SLEP const& sle) -> bool {
         return sle->getFieldU32(sfImmutableFlags) == expectedFlags;
     });
