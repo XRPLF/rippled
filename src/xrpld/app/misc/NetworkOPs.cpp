@@ -3764,7 +3764,7 @@ NetworkOPsImp::pubAccountTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
-    HashSet<InfoSub::pointer> notify;
+    HashMap<std::uint64_t, InfoSub::pointer> notify;
     int iProposed = 0;
     int iAccepted = 0;
 
@@ -3788,7 +3788,7 @@ NetworkOPsImp::pubAccountTransaction(
 
                         if (p)
                         {
-                            notify.insert(p);
+                            notify.emplace(p->getSeq(), p);
                             ++it;
                             ++iProposed;
                         }
@@ -3809,7 +3809,7 @@ NetworkOPsImp::pubAccountTransaction(
 
                         if (p)
                         {
-                            notify.insert(p);
+                            notify.emplace(p->getSeq(), p);
                             ++it;
                             ++iAccepted;
                         }
@@ -3864,7 +3864,7 @@ NetworkOPsImp::pubAccountTransaction(
         auto const trResult = transaction.getResult();
         MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
-        for (InfoSub::Ref isrListener : notify)
+        for (auto const& [seq, isrListener] : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
@@ -3899,7 +3899,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::shared_ptr<STTx const> const& tx,
     TER result)
 {
-    HashSet<InfoSub::pointer> notify;
+    HashMap<std::uint64_t, InfoSub::pointer> notify;
     int iProposed = 0;
 
     std::vector<SubAccountHistoryInfo> accountHistoryNotify;
@@ -3925,7 +3925,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
                         if (p)
                         {
-                            notify.insert(p);
+                            notify.emplace(p->getSeq(), p);
                             ++it;
                             ++iProposed;
                         }
@@ -3946,7 +3946,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         // Create two different Json objects, for different API versions
         MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
-        for (InfoSub::Ref isrListener : notify)
+        for (auto const& [seq, isrListener] : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
@@ -4189,7 +4189,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
 
     // Declared before the lock so a last-reference ~InfoSub runs after
     // mptLock_ is released (see the deferred-destruction rule).
-    HashSet<InfoSub::pointer> notify;
+    HashMap<std::uint64_t, InfoSub::pointer> notify;
 
     {
         std::scoped_lock const sl(mptLock_);
@@ -4205,7 +4205,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
 
                     if (p)
                     {
-                        notify.insert(p);
+                        notify.emplace(p->getSeq(), p);
                         ++it;
                     }
                     else
@@ -4220,7 +4220,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     if (notify.empty())
         return;
 
-    for (InfoSub::Ref isrListener : notify)
+    for (auto const& [seq, isrListener] : notify)
     {
         jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
             isrListener->send(jv, true);
