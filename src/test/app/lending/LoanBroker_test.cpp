@@ -35,6 +35,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -1154,8 +1155,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
             // fails in doSubmit() on STTx construction
             BEAST_EXPECT(jrr[jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!jrr.isMember(jss::error_code));
-            BEAST_EXPECT(jrr[jss::error_message].isNull());
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(jrr[jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(jrr[jss::error_exception] == "invalid native account");
         }
 
