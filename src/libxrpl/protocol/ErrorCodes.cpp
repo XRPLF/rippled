@@ -132,6 +132,7 @@ static constexpr ErrorInfo kUnorderedErrorInfos[]{
     {RpcMalformedSeq,                             "malformedSeq",                             "Seq is malformed.",                                                   400},
     {RpcMalformedSponsee,                         "malformedSponsee",                         "Sponsee is malformed.",                                               400},
     {RpcMalformedSponsor,                         "malformedSponsor",                         "Sponsor is malformed.",                                               400},
+    {RpcApiVersionConflict,                       "apiVersionConflict",                       "Subscriptions on one connection must all name the same api_version.", 400},
 };
 // clang-format on
 
