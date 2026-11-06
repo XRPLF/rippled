@@ -1850,6 +1850,49 @@ r.ripple.com:51235
     }
 
     void
+    testValidValue()
+    {
+        testcase("valid value is parsed");
+
+        // The typed parse sites in Config::loadFromString had no test that
+        // supplied a numeric value. Each load below sets one section, then
+        // checks the member it fills and the clamp or bound applied to it.
+        auto const load = [](std::string const& text) {
+            Config c;
+            c.loadFromString(text);
+            return c;
+        };
+        auto const single = [&load](std::string const& section, std::string const& value) {
+            return load(std::format("[{}]\n{}\n", section, value));
+        };
+
+        // The peer limits are read only when [peers_max] is absent, and each
+        // one requires the other.
+        {
+            auto const c = load(
+                std::format(
+                    "[{}]\n200\n[{}]\n20\n", Sections::kPeersInMax, Sections::kPeersOutMax));
+            BEAST_EXPECT(c.peersInMax == 200);
+            BEAST_EXPECT(c.peersOutMax == 20);
+        }
+
+        BEAST_EXPECT(single(Sections::kNodeSize, "3").nodeSize == 3);
+        BEAST_EXPECT(single(Sections::kNodeSize, "9").nodeSize == 4);
+        BEAST_EXPECT(
+            single(Sections::kMaxSubscriptionsPerConnection, "500").maxSubscriptionsPerConnection ==
+            500);
+        BEAST_EXPECT(single(Sections::kLedgerHistory, "5000").ledgerHistory == 5000);
+        BEAST_EXPECT(single(Sections::kFetchDepth, "500").fetchDepth == 500);
+        BEAST_EXPECT(single(Sections::kFetchDepth, "5").fetchDepth == 10);
+        BEAST_EXPECT(single(Sections::kSweepInterval, "60").sweepInterval == 60);
+        BEAST_EXPECT(single(Sections::kMaxTransactions, "500").maxTransactions == 500);
+        BEAST_EXPECT(
+            single(Sections::kMaxTransactions, "50").maxTransactions == Config::kMinJobQueueTx);
+        BEAST_EXPECT(
+            single(Sections::kMaxTransactions, "5000").maxTransactions == Config::kMaxJobQueueTx);
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1871,6 +1914,7 @@ r.ripple.com:51235
         testSingleSection();
         testToFees();
         testInvalidValue();
+        testValidValue();
     }
 };
 
