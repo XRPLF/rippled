@@ -36,6 +36,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -1460,20 +1461,24 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
+    auto const& startupCommands = config_->section(Sections::kRpcStartup).lines();
+    for (std::size_t i = 0; i < startupCommands.size(); ++i)
     {
         json::Reader jrReader;
         json::Value jvCommand;
 
-        if (!jrReader.parse(cmd, jvCommand))
+        // A line that does not parse has no field to mask, and the parser's message can quote the
+        // text it rejected, so the line is reported by position only and no command runs for it.
+        if (!jrReader.parse(startupCommands[i], jvCommand))
         {
             JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
+                << "Couldn't parse entry " << (i + 1) << " in [" << Sections::kRpcStartup << "]";
+            continue;
         }
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+            JLOG(journal_.fatal()) << "Startup RPC: " << rpc::loggable(jvCommand) << std::endl;
         }
 
         resource::Charge loadType = resource::kFeeReferenceRpc;
@@ -1499,7 +1504,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Result: " << jvResult << std::endl;
+            JLOG(journal_.fatal()) << "Result: " << rpc::loggable(jvResult) << std::endl;
         }
     }
 
