@@ -59,7 +59,8 @@ public:
  * @param rpcVersion The legacy `ripplerpc` envelope to select.
  * @param headers Extra headers to send with the upgrade request.
  * @param apiVersion Sent as `api_version` on every request. From version 3 it
- *        selects the JSON-RPC 2.0 envelope.
+ *        selects the JSON-RPC 2.0 envelope and turns asynchronous messages into
+ *        notifications.
  * @return The client.
  */
 std::unique_ptr<WSClient>

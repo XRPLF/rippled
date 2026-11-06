@@ -82,6 +82,15 @@ public:
 
     ~RPCSubImp() override = default;
 
+    /**
+     * Queues @p jvObj for the sending thread, which posts it to the url as
+     * the parameters of an `event` call.
+     *
+     * @param jvObj The message, queued as it arrived at every API version.
+     *        See wantsNotifications below.
+     * @param broadcast Whether the message was published to a stream; only
+     *        the log level reads it.
+     */
     void
     send(json::Value const& jvObj, bool broadcast) override
     {
@@ -100,6 +109,19 @@ public:
             sending_ =
                 jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this] { sendThread(); });
         }
+    }
+
+    /**
+     * sendThread nests what `send` queued inside an `event` request, beside
+     * `seq`, so a notification would arrive nested and is never built for this
+     * subscriber.
+     *
+     * @return false, always.
+     */
+    [[nodiscard]] bool
+    wantsNotifications() const noexcept override
+    {
+        return false;
     }
 
     void
