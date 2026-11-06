@@ -27,7 +27,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -906,17 +905,18 @@ trust-these-validators.gov
 [validator_list_threshold]
 -1
 )xrpldConfig");
-            bool error = false;
+            std::string error;
+            auto const expectedError = "Invalid value '-1' in [validator_list_threshold] section";
             try
             {
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::bad_cast& e)
+            catch (std::runtime_error const& e)
             {
-                error = true;
+                error = e.what();
             }
-            BEAST_EXPECT(error);
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load should throw if [validator_list_sites] is configured but
@@ -1817,6 +1817,82 @@ r.ripple.com:51235
     }
 
     void
+    testInvalidValue()
+    {
+        testcase("invalid value names the section");
+
+        // A value that does not parse must surface as std::runtime_error
+        // naming the section and the text, not as the std::bad_cast the
+        // underlying parse throws.
+        auto const load = [this](std::string const& section, std::string const& value) {
+            std::string error;
+            try
+            {
+                Config c;
+                c.loadFromString("[" + section + "]\n" + value + "\n");
+                fail("no exception for [" + section + "] " + value);
+            }
+            catch (std::runtime_error const& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT(
+                error == std::format("Invalid value '{}' in [{}] section", value, section));
+        };
+
+        // One site of each shape: a typed read, a typed read followed by a
+        // range check, a read whose named values come first, and a read
+        // whose target type differs from the member.
+        load(Sections::kPeerPrivate, "maybe");
+        load(Sections::kWorkers, "many");
+        load(Sections::kNetworkId, "abc!");
+        load(Sections::kFeeDefault, "ten");
+    }
+
+    void
+    testValidValue()
+    {
+        testcase("valid value is parsed");
+
+        // The typed parse sites in Config::loadFromString had no test that
+        // supplied a numeric value. Each load below sets one section, then
+        // checks the member it fills and the clamp or bound applied to it.
+        auto const load = [](std::string const& text) {
+            Config c;
+            c.loadFromString(text);
+            return c;
+        };
+        auto const single = [&load](std::string const& section, std::string const& value) {
+            return load(std::format("[{}]\n{}\n", section, value));
+        };
+
+        // The peer limits are read only when [peers_max] is absent, and each
+        // one requires the other.
+        {
+            auto const c = load(
+                std::format(
+                    "[{}]\n200\n[{}]\n20\n", Sections::kPeersInMax, Sections::kPeersOutMax));
+            BEAST_EXPECT(c.peersInMax == 200);
+            BEAST_EXPECT(c.peersOutMax == 20);
+        }
+
+        BEAST_EXPECT(single(Sections::kNodeSize, "3").nodeSize == 3);
+        BEAST_EXPECT(single(Sections::kNodeSize, "9").nodeSize == 4);
+        BEAST_EXPECT(
+            single(Sections::kMaxSubscriptionsPerConnection, "500").maxSubscriptionsPerConnection ==
+            500);
+        BEAST_EXPECT(single(Sections::kLedgerHistory, "5000").ledgerHistory == 5000);
+        BEAST_EXPECT(single(Sections::kFetchDepth, "500").fetchDepth == 500);
+        BEAST_EXPECT(single(Sections::kFetchDepth, "5").fetchDepth == 10);
+        BEAST_EXPECT(single(Sections::kSweepInterval, "60").sweepInterval == 60);
+        BEAST_EXPECT(single(Sections::kMaxTransactions, "500").maxTransactions == 500);
+        BEAST_EXPECT(
+            single(Sections::kMaxTransactions, "50").maxTransactions == Config::kMinJobQueueTx);
+        BEAST_EXPECT(
+            single(Sections::kMaxTransactions, "5000").maxTransactions == Config::kMaxJobQueueTx);
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1837,6 +1913,8 @@ r.ripple.com:51235
         testNetworkID();
         testSingleSection();
         testToFees();
+        testInvalidValue();
+        testValidValue();
     }
 };
 
