@@ -821,7 +821,7 @@ ServerHandler::processRequest(
             params = jsonRPC;
         }
 
-        std::string ripplerpc = "1.0";
+        std::string ripplerpc{rpc::kRippleRpcVersion1};
         if (params.isMember(jss::ripplerpc))
         {
             if (!params[jss::ripplerpc].isString())
@@ -902,7 +902,7 @@ ServerHandler::processRequest(
             result[jss::warning] = jss::load;
 
         json::Value r(json::ValueType::Object);
-        if (ripplerpc >= "2.0")
+        if (ripplerpc >= rpc::kRippleRpcVersion2)
         {
             if (result.isMember(jss::error))
             {
@@ -984,7 +984,7 @@ ServerHandler::processRequest(
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
         if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
-            reply[jss::ripplerpc].asString() >= "3.0")
+            reply[jss::ripplerpc].asString() >= rpc::kRippleRpcVersion3)
         {
             // If there's an error_code, use that to determine the HTTP Status.
             if (reply.isMember(jss::error) && reply[jss::error].isMember(jss::error_code) &&
