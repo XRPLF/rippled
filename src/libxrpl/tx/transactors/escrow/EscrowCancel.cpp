@@ -171,7 +171,7 @@ EscrowCancel::doApply()
     }
 
     // Remove escrow from ledger
-    escrow.erase();
+    escrow.eraseFromView();
 
     return tesSUCCESS;
 }

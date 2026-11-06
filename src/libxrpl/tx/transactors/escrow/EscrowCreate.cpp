@@ -357,7 +357,7 @@ EscrowCreate::doApply()
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     EscrowEntryW escrow(accountID_, ctx_.tx.getSeqProxy(), ctx_.view(), j_);
     Keylet const escrowKeylet = escrow.keylet();
-    escrow.newSLE();
+    escrow.newSle();
     (*escrow)[sfAmount] = amount;
     (*escrow)[sfAccount] = accountID_;
     (*escrow)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -381,7 +381,7 @@ EscrowCreate::doApply()
             (*escrow)[sfTransferRate] = xferRate.value;
     }
 
-    escrow.insert();
+    escrow.insertIntoView();
 
     // Add escrow to sender's owner directory
     {
