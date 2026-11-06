@@ -806,6 +806,36 @@ MPTTester::getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const
     return epoch;
 }
 
+[[nodiscard]] std::optional<std::uint32_t>
+MPTTester::getHolderEpoch(Account const& holder) const
+{
+    // Holder balances are encrypted under the registered holder key, which
+    // is not the latest generated key while a recovery key is pending.
+    std::optional<std::uint32_t> epoch;
+
+    auto const holderIt = pubKeys_.find(holder.id());
+    if (holderIt == pubKeys_.end())
+        return epoch;
+    auto const& holderKeys = holderIt->second;
+
+    auto const cb = [&](SLEP const& sle) {
+        auto const holderKey = (*sle)[~sfHolderEncryptionKey];
+        if (!holderKey)
+            return false;
+
+        auto const keyIt = std::ranges::find_if(
+            holderKeys, [&holderKey](Buffer const& pubKey) { return Slice(pubKey) == *holderKey; });
+        if (keyIt == holderKeys.end())
+            return false;
+
+        epoch = static_cast<std::uint32_t>(keyIt - holderKeys.begin());
+        return true;
+    };
+
+    forObject(cb, holder);
+    return epoch;
+}
+
 [[nodiscard]] bool
 MPTTester::checkEncryptionKeys(
     std::optional<Account> const& issuerKeyOwner,
@@ -2014,6 +2044,10 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
         decryptor = *auditor_;
         epoch = getMirrorEpoch(account, sfAuditorKeyMirrorEpoch).value_or(0);
     }
+    else
+    {
+        epoch = getHolderEpoch(account);
+    }
 
     return decryptAmount(decryptor, *encryptedAmt, epoch);
 }
@@ -2334,6 +2368,40 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location c
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
 
     submit(arg, {jv, loc});
+}
+
+json::Value
+MPTTester::recoverBalanceJV(MPTConfidentialRecover const& arg)
+{
+    json::Value jv;
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    Account const& holder = requireValue(arg.holder, "holder");
+    jv[sfHolder] = holder.human();
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
+    setIssuanceIdField(jv, arg.id);
+
+    if (arg.spendingCiphertext)
+        jv[sfConfidentialBalanceSpending] = strHex(*arg.spendingCiphertext);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
+    }
+
+    return jv;
+}
+
+void
+MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
+{
+    submit(arg, {recoverBalanceJV(arg), loc});
 }
 
 }  // namespace xrpl::test::jtx

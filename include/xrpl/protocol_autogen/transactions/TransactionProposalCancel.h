@@ -18,7 +18,7 @@ class TransactionProposalCancelBuilder;
 /**
  * @brief Transaction: TransactionProposalCancel
  *
- * Type: ttTRANSACTION_PROPOSAL_CANCEL (94)
+ * Type: ttTRANSACTION_PROPOSAL_CANCEL (96)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCosign
  * Privileges: Privilege::NoPriv
