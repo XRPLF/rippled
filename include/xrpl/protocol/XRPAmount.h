@@ -113,7 +113,7 @@ public:
         return XRPAmount{-drops_};
     }
 
-    bool
+    constexpr bool
     operator==(XRPAmount const& other) const
     {
         return drops_ == other.drops_;
