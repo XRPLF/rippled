@@ -2767,8 +2767,6 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
         newObj.set_hash(hash.begin(), hash.size());
         auto const& data = nodeObject->getData();
         newObj.set_data(data.data(), data.size());
-        if (obj.has_nodeid())
-            newObj.set_index(obj.nodeid());
         if (obj.has_ledgerseq())
             newObj.set_ledgerseq(obj.ledgerseq());
     }

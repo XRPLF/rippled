@@ -277,15 +277,11 @@ public:
         getObject->set_query(true);
         UInt256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
-        getObject->set_fat(true);
         for (int i = 0; i < 100; i++)
         {
             UInt256 hash(xrpl::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
-            xrpl::SHAMapNodeID const sha(64, hash);
-            object->set_nodeid(sha.getRawString());
-            object->set_index("");
             object->set_data("");
             object->set_ledgerseq(i);
         }
