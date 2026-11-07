@@ -206,7 +206,6 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        transaction->set_receivetimestamp(randInt<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;
