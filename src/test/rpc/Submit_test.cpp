@@ -8,6 +8,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
@@ -39,6 +40,7 @@ public:
                 params[jss::fail_hard] = param;
                 auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'fail_hard', not boolean.");
             }
 
@@ -50,6 +52,7 @@ public:
                 params[jss::fail_hard] = param;
                 auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'fail_hard', not boolean.");
             }
         };

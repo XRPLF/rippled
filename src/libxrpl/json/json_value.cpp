@@ -187,8 +187,11 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::Int:
-        case ValueType::UInt:
             value_.intVal = 0;
+            break;
+
+        case ValueType::UInt:
+            value_.uintVal = 0;
             break;
 
         case ValueType::Real:
@@ -713,8 +716,10 @@ Value::asBool() const
             return false;
 
         case ValueType::Int:
-        case ValueType::UInt:
             return value_.intVal != 0;
+
+        case ValueType::UInt:
+            return value_.uintVal != 0;
 
         case ValueType::Real:
             return value_.realVal != 0.0;

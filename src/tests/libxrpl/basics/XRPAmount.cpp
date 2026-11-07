@@ -1,11 +1,18 @@
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -312,6 +319,152 @@ TEST_F(XRPAmountMulRatioTest, underflow_saturates_at_the_minimum)
     XRPAmount const bigNegative(kMinXrp + 10);
 
     EXPECT_EQ(mulRatio(bigNegative, 2, 1, true), kMinXrp);
+}
+
+namespace {
+
+constexpr auto kMaxDrops = std::numeric_limits<XRPAmount::value_type>::max();
+constexpr auto kMinDrops = std::numeric_limits<XRPAmount::value_type>::min();
+
+Rules
+makeRules(bool withFix)
+{
+    // Rules keeps a reference to its presets, so they must outlive it.
+    static std::unordered_set<uint256, beast::Uhash<>> const kWithFix{fixCleanup3_5_0};
+    static std::unordered_set<uint256, beast::Uhash<>> const kWithoutFix;
+    return Rules{withFix ? kWithFix : kWithoutFix};
+}
+
+void
+expectBoundariesDoNotThrow()
+{
+    XRPAmount const max(kMaxDrops);
+    XRPAmount const min(kMinDrops);
+
+    EXPECT_EQ(XRPAmount(kMaxDrops - 1) + XRPAmount(1), max);
+    EXPECT_EQ(XRPAmount(kMinDrops + 1) - XRPAmount(1), min);
+    EXPECT_EQ(max + min, XRPAmount(-1));
+    EXPECT_EQ(min - min, XRPAmount(0));
+
+    XRPAmount a(kMaxDrops - 1);
+    a += XRPAmount::value_type{1};
+    EXPECT_EQ(a, max);
+    a -= kMaxDrops;
+    EXPECT_EQ(a, XRPAmount(0));
+
+    EXPECT_EQ(XRPAmount(kMaxDrops / 2) * 2, XRPAmount(kMaxDrops - 1));
+    EXPECT_EQ(2 * XRPAmount(kMaxDrops / 2), XRPAmount(kMaxDrops - 1));
+    EXPECT_EQ(min * 1, min);
+    EXPECT_EQ(min * 0, XRPAmount(0));
+    EXPECT_EQ(0 * min, XRPAmount(0));
+    EXPECT_EQ(max * -1, XRPAmount(-kMaxDrops));
+    EXPECT_EQ(XRPAmount(-2) * -3, XRPAmount(6));
+    EXPECT_EQ(XRPAmount(3) * -2, XRPAmount(-6));
+    EXPECT_EQ(XRPAmount(-3) * 2, XRPAmount(-6));
+
+    XRPAmount b(kMinDrops / 2);
+    b *= 2;
+    EXPECT_EQ(b, min);
+
+    // The largest legal XRP amounts cannot overflow a single operation
+    XRPAmount const maxLegal(kInitialXrp);
+    EXPECT_EQ(maxLegal + maxLegal, XRPAmount(2 * kInitialXrp.drops()));
+    EXPECT_EQ(XRPAmount(0) - maxLegal - maxLegal, XRPAmount(-2 * kInitialXrp.drops()));
+}
+
+void
+expectOverflowsThrow()
+{
+    // += and -= with an XRPAmount leave the lhs unchanged after the throw
+    {
+        XRPAmount a(kMaxDrops);
+        EXPECT_THROW(a += XRPAmount(1), std::overflow_error);
+        EXPECT_EQ(a, XRPAmount(kMaxDrops));
+
+        XRPAmount b(kMinDrops);
+        EXPECT_THROW(b += XRPAmount(-1), std::overflow_error);
+        EXPECT_EQ(b, XRPAmount(kMinDrops));
+
+        XRPAmount c(kMinDrops);
+        EXPECT_THROW(c -= XRPAmount(1), std::overflow_error);
+        EXPECT_EQ(c, XRPAmount(kMinDrops));
+
+        XRPAmount d(kMaxDrops);
+        EXPECT_THROW(d -= XRPAmount(-1), std::overflow_error);
+        EXPECT_EQ(d, XRPAmount(kMaxDrops));
+    }
+
+    // += and -= with a scalar
+    {
+        XRPAmount a(kMaxDrops);
+        EXPECT_THROW(a += XRPAmount::value_type{1}, std::overflow_error);
+        EXPECT_EQ(a, XRPAmount(kMaxDrops));
+
+        XRPAmount b(kMinDrops);
+        EXPECT_THROW(b -= XRPAmount::value_type{1}, std::overflow_error);
+        EXPECT_EQ(b, XRPAmount(kMinDrops));
+
+        XRPAmount c(kMinDrops);
+        EXPECT_THROW(c += XRPAmount::value_type{-1}, std::overflow_error);
+        EXPECT_EQ(c, XRPAmount(kMinDrops));
+
+        XRPAmount d(kMaxDrops);
+        EXPECT_THROW(d -= XRPAmount::value_type{-1}, std::overflow_error);
+        EXPECT_EQ(d, XRPAmount(kMaxDrops));
+    }
+
+    // Binary + and - are built from the compound operators
+    {
+        XRPAmount const max(kMaxDrops);
+        EXPECT_THROW((void)(max + XRPAmount(1)), std::overflow_error);
+        EXPECT_THROW((void)((XRPAmount(0) - max) - max), std::overflow_error);
+    }
+
+    // *= and both orders of binary *
+    {
+        XRPAmount a(kMaxDrops);
+        EXPECT_THROW(a *= 2, std::overflow_error);
+        EXPECT_EQ(a, XRPAmount(kMaxDrops));
+
+        XRPAmount b(kMinDrops);
+        EXPECT_THROW(b *= -1, std::overflow_error);
+        EXPECT_EQ(b, XRPAmount(kMinDrops));
+
+        XRPAmount const half((kMaxDrops / 2) + 1);
+        EXPECT_THROW((void)(half * 2), std::overflow_error);
+        EXPECT_THROW((void)(2 * half), std::overflow_error);
+        EXPECT_THROW((void)(XRPAmount(kMinDrops) * -1), std::overflow_error);
+        EXPECT_THROW((void)(-1 * XRPAmount(kMinDrops)), std::overflow_error);
+        // Mixed signs
+        EXPECT_THROW((void)(XRPAmount(kMaxDrops) * -2), std::overflow_error);
+        EXPECT_THROW((void)(XRPAmount(kMinDrops) * 2), std::overflow_error);
+    }
+}
+
+}  // namespace
+
+TEST(XRPAmountTest, overflow_throws_with_fix)
+{
+    CurrentTransactionRulesGuard const rg(makeRules(true));
+    expectOverflowsThrow();
+    expectBoundariesDoNotThrow();
+}
+
+// With no rules set (RPC, pathfinding) the operators throw as if the
+// amendment were enabled.
+TEST(XRPAmountTest, overflow_throws_without_rules)
+{
+    ASSERT_FALSE(getCurrentTransactionRules());
+    expectOverflowsThrow();
+    expectBoundariesDoNotThrow();
+}
+
+// Without the amendment an overflow keeps the legacy signed arithmetic, which
+// is undefined behavior, so only results that do not overflow are checked.
+TEST(XRPAmountTest, boundaries_without_fix)
+{
+    CurrentTransactionRulesGuard const rg(makeRules(false));
+    expectBoundariesDoNotThrow();
 }
 
 }  // namespace xrpl

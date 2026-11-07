@@ -14,6 +14,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -66,6 +67,8 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         // reflects this
         auto jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
 
         // now create a credit limit
         env(trust(alice, gw["USD"](800)));
@@ -100,6 +103,8 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         // ensure line is deleted
         jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
 
         // TODO Check in both owner books.
 
