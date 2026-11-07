@@ -1195,6 +1195,18 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             logs_->threshold(Severity::Debug);
     }
 
+    if (auto const now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+        now < NetClock::to_sys(NetClock::time_point::min()) ||
+        now > NetClock::to_sys(NetClock::time_point::max()))
+    {
+        JLOG(journal_.fatal()) << "The system clock reports the time as '" << to_string(now)
+                               << "'. Valid system clock times are between "
+                               << to_string(NetClock::to_sys(NetClock::time_point::min()))
+                               << " and "
+                               << to_string(NetClock::to_sys(NetClock::time_point::max())) << ".";
+        return false;
+    }
+
     JLOG(journal_.info()) << "Process starting: " << build_info::getFullVersionString()
                           << ", Instance Cookie: " << instanceCookie_;
 
