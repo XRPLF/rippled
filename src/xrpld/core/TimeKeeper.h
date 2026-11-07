@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 
 #include <atomic>
 #include <chrono>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -37,7 +39,18 @@ public:
     [[nodiscard]] time_point
     now() const override
     {
-        return NetClock::from_sys(std::chrono::system_clock::now());
+        try
+        {
+            return NetClock::from_sys(std::chrono::system_clock::now());
+        }
+        catch (std::domain_error const& e)
+        {
+            // The system clock has stepped outside the range network time
+            // represents since the check at startup. Nothing in the server
+            // is prepared for that, so stop here rather than let the
+            // exception surface somewhere arbitrary.
+            logicError(e.what());
+        }
     }
 
     /**
