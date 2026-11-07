@@ -109,13 +109,13 @@ struct TxMetrics
      * @param notEnabled number of peers with tx reduce-relay featured disabled
      */
     void
-    addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notEnabled);
+    addMetrics(std::uint64_t selected, std::uint64_t suppressed, std::uint64_t notEnabled);
     /**
      * Add number of missing transactions that a node requested
      * @param missing number of missing transactions
      */
     void
-    addMetrics(std::uint32_t missing);
+    addMetrics(std::uint64_t missing);
     /**
      * Get json representation of the metrics
      * @return json object
