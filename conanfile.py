@@ -68,7 +68,6 @@ class Xrpl(ConanFile):
         "boost/*:without_context": False,
         "boost/*:without_coroutine": True,
         "boost/*:without_coroutine2": False,
-        "date/*:header_only": True,
         "ed25519/*:shared": False,
         "grpc/*:shared": False,
         "grpc/*:secure": True,
@@ -125,7 +124,6 @@ class Xrpl(ConanFile):
         if self.options.benchmark:
             self.requires("benchmark/1.9.5")
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
-        self.requires("date/3.0.4", transitive_headers=True)
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         self.requires("lz4/1.10.0", force=True)
@@ -212,7 +210,6 @@ class Xrpl(ConanFile):
             "boost::process",
             "boost::regex",
             "boost::thread",
-            "date::date",
             "ed25519::ed25519",
             "fast_float::fast_float",
             "grpc::grpc++",

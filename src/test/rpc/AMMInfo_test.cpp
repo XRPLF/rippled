@@ -10,14 +10,18 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -369,6 +373,27 @@ public:
                                 to_string(ammAlice.lptIssue().currency) &&
                             auctionSlot[jss::price][jss::issuer].asString() ==
                                 to_string(ammAlice.lptIssue().account));
+
+                        // expiration is the ledger's Expiration (seconds since
+                        // the XRPL epoch) rendered as an ISO 8601 UTC timestamp
+                        // with the "Z" designator and no fractional seconds, as
+                        // in "2000-01-02T00:01:00Z". The expected string is
+                        // built with <chrono> alone, from the Unix time of the
+                        // XRPL epoch, so that this does not test toStringIso
+                        // against itself.
+                        {
+                            using namespace std::chrono;
+                            auto const amm = env.current()->read(keylet::amm(ammAlice.ammID()));
+                            if (!BEAST_EXPECT(amm && amm->isFieldPresent(sfAuctionSlot)))
+                                return;
+                            auto const expiration =
+                                amm->getFieldObject(sfAuctionSlot)[sfExpiration];
+                            auto const expected = std::format(
+                                "{:%FT%TZ}", sys_seconds{seconds{946684800} + seconds{expiration}});
+                            BEAST_EXPECTS(
+                                auctionSlot[jss::expiration].asString() == expected,
+                                auctionSlot[jss::expiration].asString() + " != " + expected);
+                        }
                     }
                     catch (std::exception const& e)
                     {

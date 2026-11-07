@@ -101,7 +101,6 @@ endif()
 include(deps/Boost)
 
 add_subdirectory(external/antithesis-sdk)
-find_package(date REQUIRED)
 find_package(ed25519 REQUIRED)
 find_package(FastFloat REQUIRED)
 find_package(gRPC REQUIRED)
