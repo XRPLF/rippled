@@ -17,7 +17,6 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/unit_test/suite.h>

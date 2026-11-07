@@ -2,7 +2,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/Log.h>
