@@ -52,12 +52,7 @@ getAsset(json::Value const& v, beast::Journal j)
 std::string
 toIso8601(NetClock::time_point tp)
 {
-    // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
-    using namespace std::chrono;
-    return date::format(
-        "%Y-%Om-%dT%H:%M:%OS%z",
-        date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + kEpochOffset}));
+    return date::format("%Y-%Om-%dT%H:%M:%OS%z", NetClock::to_sys(tp));
 }
 
 json::Value

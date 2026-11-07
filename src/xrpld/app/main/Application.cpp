@@ -114,8 +114,6 @@
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <date/date.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -2016,25 +2014,28 @@ ApplicationImp::loadOldLedger(
                 }
             }
         }
-        using namespace std::chrono_literals;
-        using namespace date;
-        static constexpr NetClock::time_point kLedgerWarnTimePoint{
-            sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
+        // Ledgers before 2018 were closed under rules this version no longer
+        // implements; replaying them will not reproduce the original results.
+        static constexpr std::chrono::year_month_day kLedgerWarnDate{
+            std::chrono::year{2018}, std::chrono::January, std::chrono::day{1}};
+        static constexpr NetClock::time_point kLedgerWarnTimePoint =
+            NetClock::from_sys(std::chrono::sys_seconds{std::chrono::sys_days{kLedgerWarnDate}});
         if (loadLedger->header().closeTime < kLedgerWarnTimePoint)
         {
             JLOG(journal_.fatal()) << "\n\n***  WARNING   ***\n"
                                       "You are replaying a ledger from before "
-                                   << to_string(kLedgerWarnTimePoint)
-                                   << " UTC.\n"
+                                   << kLedgerWarnDate
+                                   << ".\n"
                                       "This replay will not handle your ledger as it was "
-                                      "originally "
-                                      "handled.\nConsider running an earlier version of xrpld "
-                                      "to "
-                                      "get the older rules.\n*** CONTINUING ***\n";
+                                      "originally handled.\n"
+                                      "Consider running an earlier version of xrpld to get "
+                                      "the older rules.\n"
+                                      "*** CONTINUING ***\n";
         }
 
         JLOG(journal_.info()) << "Loading ledger " << loadLedger->header().hash
-                              << " seq:" << loadLedger->header().seq;
+                              << ", seq: " << loadLedger->header().seq
+                              << ", closed: " << to_string(loadLedger->header().closeTime);
 
         if (loadLedger->header().accountHash.isZero())
         {
