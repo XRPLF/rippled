@@ -209,7 +209,7 @@ LedgerMaster::getPublishedLedgerAge()
     if (pubClose == 0s)
     {
         JLOG(journal_.debug()) << "No published ledger";
-        return Weeks{2};
+        return std::chrono::weeks{2};
     }
 
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
@@ -234,7 +234,7 @@ LedgerMaster::getValidatedLedgerAge()
     if (valClose == 0s)
     {
         JLOG(journal_.debug()) << "No validated ledger";
-        return Weeks{2};
+        return std::chrono::weeks{2};
     }
 
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
@@ -1087,7 +1087,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         }
         // To throttle the warning messages, instead of printing a warning
         // every flag ledger, we print every week.
-        else if (currentTime - upgradeWarningPrevTime_ >= Weeks{1})
+        else if (currentTime - upgradeWarningPrevTime_ >= std::chrono::weeks{1})
         {
             // Printed the warning before, and assuming most validators
             // do not downgrade, we keep printing the warning
