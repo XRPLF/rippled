@@ -433,8 +433,8 @@ LoanPay::doApply()
     {
         if (auto const ret = LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
         {
-            JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
-            return ret;  // LCOV_EXCL_LINE
+            JLOG(j_.warn()) << "Failed to unimpair loan before payment.";
+            return ret;
         }
     }
 
