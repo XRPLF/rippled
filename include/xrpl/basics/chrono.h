@@ -5,10 +5,9 @@
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/clock/manual_clock.h>
 
-#include <date/date.h>
-
 #include <chrono>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <ratio>
 #include <stdexcept>
@@ -129,6 +128,43 @@ public:
     }
 };
 
+}  // namespace xrpl
+
+// [namespace.std] permits this specialization: it depends on NetClock, a
+// program-defined type. clang-tidy does not see that through time_point.
+// NOLINTBEGIN(bugprone-std-namespace-modification)
+
+/**
+ * Formats a network time point with std::format.
+ *
+ * The time point is converted to std::chrono::sys_seconds and formatted
+ * with the chrono format specification given, so every conversion
+ * specifier that applies to a sys_time (%F, %T, %Z and so on) applies
+ * here: std::format("{:%FT%TZ}", tp).
+ */
+template <>
+struct std::formatter<xrpl::NetClock::time_point> : std::formatter<std::chrono::sys_seconds>
+{
+    /**
+     * Formats a network time point as the equivalent sys_seconds.
+     *
+     * @tparam FormatContext The format context type.
+     * @param tp The network time point to format.
+     * @param ctx The format context to write to.
+     * @return An iterator past the end of the output written to @p ctx.
+     */
+    template <class FormatContext>
+    auto
+    format(xrpl::NetClock::time_point tp, FormatContext& ctx) const
+    {
+        return std::formatter<std::chrono::sys_seconds>::format(xrpl::NetClock::to_sys(tp), ctx);
+    }
+};
+
+// NOLINTEND(bugprone-std-namespace-modification)
+
+namespace xrpl {
+
 /**
  * Renders a system_clock time point for logs: "2026-Mar-07 09:04:05 UTC".
  *
@@ -140,9 +176,9 @@ public:
  */
 template <class Duration>
 std::string
-to_string(date::sys_time<Duration> tp)
+to_string(std::chrono::sys_time<Duration> tp)
 {
-    return date::format("%Y-%b-%d %T %Z", tp);
+    return std::format("{:%Y-%b-%d %T %Z}", tp);
 }
 
 /**
@@ -162,22 +198,18 @@ to_string(NetClock::time_point tp)
     return to_string(std::chrono::system_clock::time_point{NetClock::to_sys(tp)});
 }
 
-template <class Duration>
-std::string
-toStringIso(date::sys_time<Duration> tp)
-{
-    using namespace std::chrono;
-    return date::format("%FT%TZ", tp);
-}
-
 /**
  * Renders a network time point as an ISO 8601 UTC timestamp with the "Z"
- * designator: "2026-03-07T09:04:05Z".
+ * designator: "2026-03-07T09:04:05Z". This is the form of every ISO 8601
+ * timestamp in the RPC API.
+ *
+ * @param tp The network time point to render.
+ * @return The rendered time point.
  */
 inline std::string
 toStringIso(NetClock::time_point tp)
 {
-    return toStringIso(NetClock::to_sys(tp));
+    return std::format("{:%FT%TZ}", tp);
 }
 
 /**

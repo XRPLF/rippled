@@ -17,11 +17,11 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
-#include <date/date.h>
-
 #include <chrono>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <ostream>
 #include <sstream>
@@ -273,10 +273,18 @@ private:
             if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
+                // The status renders the time with xrpl::to_string, as
+                // "%Y-%b-%d %T %Z". std::chrono::parse would read it back
+                // directly, but libc++ does not implement it; std::get_time
+                // reads the fields and chrono arithmetic assembles the time
+                // point, which keeps it UTC on every platform.
                 std::stringstream nextRefreshStr{myStatus[jss::next_refresh_time].asString()};
-                system_clock::time_point nextRefresh;
-                date::from_stream(nextRefreshStr, "%Y-%b-%d %T", nextRefresh);
+                std::tm tm{};
+                nextRefreshStr >> std::get_time(&tm, "%Y-%b-%d %H:%M:%S");
                 BEAST_EXPECT(!nextRefreshStr.fail());
+                auto const nextRefresh =
+                    sys_days{year{tm.tm_year + 1900} / (tm.tm_mon + 1) / tm.tm_mday} +
+                    hours{tm.tm_hour} + minutes{tm.tm_min} + seconds{tm.tm_sec};
                 auto const now = system_clock::now();
                 BEAST_EXPECTS(
                     nextRefresh <= now + (u.isRetry ? seconds{30} : minutes{5}),
