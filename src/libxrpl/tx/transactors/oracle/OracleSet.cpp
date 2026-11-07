@@ -68,19 +68,21 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
-    // of the last closed ledger
+    // LastUpdateTime is, per XLS-47, in Unix time rather than network time.
+    // It must lie within kMaxLastUpdateTimeDelta seconds of the close time
+    // of the last closed ledger. The comparison is done in system_clock,
+    // whose arithmetic is signed and 64-bit, so no guards against unsigned
+    // wraparound are needed. The sequence of checks, and the result code
+    // each one yields, is unchanged from the original NetClock arithmetic.
     using namespace std::chrono;
-    std::size_t const closeTime =
-        duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
-    std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
-    if (lastUpdateTime < kEpochOffset.count())
+    constexpr seconds maxDelta{kMaxLastUpdateTimeDelta};
+    sys_seconds const lastUpdateTime{seconds{ctx.tx[sfLastUpdateTime]}};
+    if (lastUpdateTime < NetClock::to_sys(NetClock::time_point{}))
         return tecINVALID_UPDATE_TIME;
-    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEpochOffset.count();
-    if (closeTime < kMaxLastUpdateTimeDelta)
+    if (ctx.view.header().closeTime.time_since_epoch() < maxDelta)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    if (lastUpdateTimeEpoch < (closeTime - kMaxLastUpdateTimeDelta) ||
-        lastUpdateTimeEpoch > (closeTime + kMaxLastUpdateTimeDelta))
+    auto const closeTime = NetClock::to_sys(ctx.view.header().closeTime);
+    if (std::chrono::abs(lastUpdateTime - closeTime) > maxDelta)
         return tecINVALID_UPDATE_TIME;
 
     auto const sle =

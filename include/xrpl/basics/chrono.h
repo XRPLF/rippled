@@ -16,13 +16,6 @@
 
 namespace xrpl {
 
-// The offset between the Unix epoch and the XRPL epoch. Superseded by
-// NetClock::to_sys and NetClock::from_sys; OracleSet is its last user.
-static constexpr std::chrono::seconds kEpochOffset =
-    date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
-
-static_assert(kEpochOffset.count() == 946684800);
-
 /**
  * The clock in which the ledger keeps time.
  *
