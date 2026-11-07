@@ -23,14 +23,11 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <date/date.h>
-
 #include <chrono>
 #include <expected>
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -47,12 +44,6 @@ getAsset(json::Value const& v, beast::Journal j)
         JLOG(j.debug()) << "getAsset " << ex.what();
     }
     return std::unexpected(RpcIssueMalformed);
-}
-
-std::string
-toIso8601(NetClock::time_point tp)
-{
-    return date::format("%Y-%Om-%dT%H:%M:%OS%z", NetClock::to_sys(tp));
 }
 
 json::Value
@@ -228,7 +219,7 @@ doAMMInfo(rpc::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] =
-                toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
+                toStringIso(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 json::Value auth;

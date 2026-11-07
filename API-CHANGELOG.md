@@ -29,6 +29,9 @@ Version 3.6.0 is not yet released.
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+- `amm_info`: The `auction_slot.expiration` timestamp now ends in `Z`, like every other ISO 8601 timestamp in the API
+  (`close_time_iso` and others), instead of `+0000`. For the same instant, `2026-03-07T09:04:05+0000` becomes
+  `2026-03-07T09:04:05Z`. Both are ISO 8601; only the new form is also RFC 3339. This applies to all API versions.
 
 ## XRP Ledger server version 3.5.0
 
