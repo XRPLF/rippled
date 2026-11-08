@@ -393,8 +393,8 @@ public:
         auto const openTxCount = env.current()->txCount();
         BEAST_EXPECT(localTxCnt == 2 && queueTxCount == 0 && openTxCount == 2);
 
-        auto applyTxn = [&env](auto&&... txnArgs) {
-            auto jt = env.jt(txnArgs...);
+        auto const applyTxn = [&env](auto&&... txnArgs) {
+            auto const jt = env.jt(txnArgs...);
             Serializer s;
             jt.stx->add(s);
 
@@ -627,7 +627,7 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        auto seq = env.current()->seq();
+        auto const seq = env.current()->seq();
         BEAST_EXPECT(seq == env.closed()->seq() + 1);
         env.close();
         BEAST_EXPECT(env.closed()->seq() == seq);
@@ -707,7 +707,7 @@ public:
             envs(noop(alice), Fee(kNone), Seq(kNone))();
 
             // Make sure we get the right account back.
-            auto tx = env.tx();
+            auto const tx = env.tx();
             if (BEAST_EXPECT(tx))
             {
                 BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
@@ -716,11 +716,11 @@ public:
         }
 
         {
-            auto params = json::Value(json::ValueType::Null);
+            auto const params = json::Value(json::ValueType::Null);
             envs(noop(alice), Fee(kNone), Seq(kNone))(params);
 
             // Make sure we get the right account back.
-            auto tx = env.tx();
+            auto const tx = env.tx();
             if (BEAST_EXPECT(tx))
             {
                 BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
@@ -738,7 +738,7 @@ public:
                 " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
             envs(noop(alice), Fee(kNone), Seq(kNone), Rpc(RpcHighFee, expectedErrorString))(params);
 
-            auto tx = env.tx();
+            auto const tx = env.tx();
             BEAST_EXPECT(!tx);
         }
     }
@@ -754,7 +754,7 @@ public:
         // the supported amendments list and tests that it can be
         // enabled explicitly
 
-        auto const neverSupportedFeat = [&]() -> std::optional<UInt256> {
+        auto const neverSupportedFeat = [&] -> std::optional<UInt256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
             {
@@ -773,7 +773,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, UInt256 const& f) {
-            return (env.app().config().features.contains(f));
+            return env.app().config().features.contains(f);
         };
 
         {
@@ -786,7 +786,7 @@ public:
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
+            Env env{*this, FeatureBitset{featureDynamicMPT, featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](UInt256 const& f) {
                 bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);

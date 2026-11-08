@@ -2,53 +2,70 @@
 
 #include <xrpld/app/main/Application.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/MethodNames.h>
-#include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
-#include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <string_view>
+#include <rpcspec/Errors.hpp>
+
+#include <cstdint>
+#include <expected>
+#include <functional>
 
 namespace xrpl::rpc {
 
+/**
+ * @brief Handles the `version` RPC method.
+ */
 class VersionHandler
 {
 public:
-    explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().betaRpcApi)
+    /**
+     * @brief The data a `version` request produces, written out by writeResult().
+     */
+    struct Output
+    {
+        std::uint32_t apiVersion;  ///< The API version of the request.
+        bool betaEnabled;          ///< Whether the beta API version is enabled.
+    };
+
+    /**
+     * @brief Construct a handler for a single request.
+     *
+     * @param context The context of the request being handled.
+     */
+    explicit VersionHandler(JsonContext& context) : context_(context)
     {
     }
 
-    static Status
-    check()
+    /**
+     * @brief Process the request.
+     *
+     * @return The output to write, or the status of the error.
+     */
+    [[nodiscard]] std::expected<Output, ::rpc::Status>
+    process() const
     {
-        return Status::kOK;
+        return Output{
+            .apiVersion = context_.get().apiVersion,
+            .betaEnabled = context_.get().app.config().betaRpcApi,
+        };
     }
 
-    void
-    writeResult(json::Value& obj) const
+    /**
+     * @brief Write the output of process() into the response.
+     *
+     * @param obj The response to write into.
+     * @param output The output process() returned.
+     */
+    static void
+    writeResult(json::Value& obj, Output const& output)
     {
-        setVersion(obj, apiVersion_, betaEnabled_);
+        setVersion(obj, output.apiVersion, output.betaEnabled);
     }
-
-    // NOLINTBEGIN(readability-identifier-naming)
-    static constexpr std::string_view name = method::kVersion;
-
-    static constexpr unsigned minApiVer = rpc::kApiMinimumSupportedVersion;
-
-    static constexpr unsigned maxApiVer = rpc::kApiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = Condition::NoCondition;
-    // NOLINTEND(readability-identifier-naming)
 
 private:
-    unsigned int apiVersion_;
-    bool betaEnabled_;
+    std::reference_wrapper<JsonContext> context_;
 };
 
 }  // namespace xrpl::rpc

@@ -224,6 +224,10 @@ TaggedPointer::destroyHashesAndChildren()
 inline std::optional<unsigned int>
 TaggedPointer::getChildIndex(std::uint16_t isBranch, unsigned int i) const
 {
+    XRPL_ASSERT(
+        i < SHAMapInnerNode::kBranchFactor,
+        "xrpl::TaggedPointer::getChildIndex : valid branch input");
+
     if (isDense())
         return i;
 

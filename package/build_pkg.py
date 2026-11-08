@@ -13,7 +13,7 @@ import re
 import shutil
 import subprocess
 import textwrap
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # This script lives in the repository it packages.
@@ -278,9 +278,7 @@ def build_deb(
     # explicitly either way.
     stage_units(staging / "debian", prefix=f"{name}.")
 
-    date = datetime.fromtimestamp(epoch, timezone.utc).strftime(
-        "%a, %d %b %Y %H:%M:%S %z"
-    )
+    date = datetime.fromtimestamp(epoch, UTC).strftime("%a, %d %b %Y %H:%M:%S %z")
     # The leading spaces are significant to dpkg.
     changelog = textwrap.dedent(f"""\
         {name} ({version}-{pkg_release}) {channel}; urgency=medium

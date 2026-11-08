@@ -36,4 +36,4 @@ runs:
 
     - name: Determine release channel and package release
       id: release_info
-      uses: XRPLF/actions/release-info@ebcf6cea14eee258697308a51fea55cad777581b
+      uses: XRPLF/actions/release-info@a9f2eeca6fb3980ba3a84cf68566f1c69ad30674

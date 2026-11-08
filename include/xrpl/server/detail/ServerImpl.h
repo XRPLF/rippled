@@ -163,7 +163,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
     {
         ports_.push_back(port);
         auto& internalPort = ports_.back();
-        if (auto sp = ios_.emplace<Door<Handler>>(handler_, ioContext_, internalPort, j_))
+        if (auto const sp = ios_.emplace<Door<Handler>>(handler_, ioContext_, internalPort, j_))
         {
             list_.push_back(sp);
 

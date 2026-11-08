@@ -236,7 +236,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     jvObj[jss::changes] = json::ValueType::Array;
 
-    auto volToStr = [](STAmount const& vol) {
+    auto const volToStr = [](STAmount const& vol) {
         return vol.asset().visit(
             [&](Issue const& issue) {
                 if (isXRP(issue))

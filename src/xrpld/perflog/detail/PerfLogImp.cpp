@@ -208,7 +208,7 @@ PerfLogImp::Counters::currentJson() const
         for (auto const& m : this->methods)
             methods.push_back(m.second);
     }
-    for (auto m : methods)
+    for (auto const& m : methods)
     {
         json::Value methodobj(json::ValueType::Object);
         // A key of rpc, per methods' declaration, so borrowed as above.
@@ -236,7 +236,7 @@ PerfLogImp::openLog()
     if (logFile_.is_open())
         logFile_.close();
 
-    auto logDir = setup_.perfLog.parent_path();
+    auto const logDir = setup_.perfLog.parent_path();
     if (!std::filesystem::is_directory(logDir))
     {
         std::error_code ec;
@@ -337,7 +337,7 @@ PerfLogImp::~PerfLogImp()
 void
 PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 {
-    auto counter = counters_.rpc.find(method);
+    auto const counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
@@ -358,7 +358,7 @@ PerfLogImp::rpcStart(std::string_view method, std::uint64_t const requestId)
 void
 PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool finish)
 {
-    auto counter = counters_.rpc.find(method);
+    auto const counter = counters_.rpc.find(method);
     if (counter == counters_.rpc.end())
     {
         // LCOV_EXCL_START
@@ -398,7 +398,7 @@ PerfLogImp::rpcEnd(std::string_view method, std::uint64_t const requestId, bool 
 void
 PerfLogImp::jobQueue(JobType const type)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
@@ -413,7 +413,7 @@ PerfLogImp::jobQueue(JobType const type)
 void
 PerfLogImp::jobStart(JobType const type, Microseconds dur, SteadyTimePoint startTime, int instance)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START
@@ -435,7 +435,7 @@ PerfLogImp::jobStart(JobType const type, Microseconds dur, SteadyTimePoint start
 void
 PerfLogImp::jobFinish(JobType const type, Microseconds dur, int instance)
 {
-    auto counter = counters_.jq.find(type);
+    auto const counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
     {
         // LCOV_EXCL_START

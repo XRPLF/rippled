@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -69,7 +70,13 @@ public:
     constexpr XRPAmount
     operator*(value_type const& rhs) const
     {
-        return XRPAmount{drops_ * rhs};
+        if (auto const result = checkedMul(drops_, rhs))
+            return XRPAmount{*result};
+        // Not reached in constant evaluation: an overflowing constant
+        // expression fails to compile instead.
+        XRPAmount product{*this};
+        product *= rhs;
+        return product;
     }
 
     friend constexpr XRPAmount
@@ -82,37 +89,23 @@ public:
     XRPAmount&
     operator+=(XRPAmount const& other)
     {
-        drops_ += other.drops();
-        return *this;
+        return *this += other.drops();
     }
 
     XRPAmount&
     operator-=(XRPAmount const& other)
     {
-        drops_ -= other.drops();
-        return *this;
+        return *this -= other.drops();
     }
 
     XRPAmount&
-    operator+=(value_type const& rhs)
-    {
-        drops_ += rhs;
-        return *this;
-    }
+    operator+=(value_type const& rhs);
 
     XRPAmount&
-    operator-=(value_type const& rhs)
-    {
-        drops_ -= rhs;
-        return *this;
-    }
+    operator-=(value_type const& rhs);
 
     XRPAmount&
-    operator*=(value_type const& rhs)
-    {
-        drops_ *= rhs;
-        return *this;
-    }
+    operator*=(value_type const& rhs);
 
     XRPAmount
     operator-() const

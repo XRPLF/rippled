@@ -129,7 +129,7 @@ ApplyStateTable::apply(
         meta.setParentBatchID(parentBatchId);
 
         Mods newMod;
-        for (auto& item : items_)
+        for (auto const& item : items_)
         {
             SField const* type = nullptr;
             switch (item.second.first)
@@ -148,7 +148,7 @@ ApplyStateTable::apply(
                     break;
             }
             auto const origNode = to.read(keylet::unchecked(item.first));
-            auto curNode = item.second.second;
+            auto const curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
             std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
@@ -570,7 +570,7 @@ SLE::pointer
 ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
     {
-        auto miter = mods.find(key);
+        auto const miter = mods.find(key);
         if (miter != mods.end())
         {
             XRPL_ASSERT(miter->second, "xrpl::ApplyStateTable::getForMod : non-null result");
@@ -578,7 +578,7 @@ ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods
         }
     }
     {
-        auto iter = items_.find(key);
+        auto const iter = items_.find(key);
         if (iter != items_.end())
         {
             auto const& item = iter->second;
@@ -597,7 +597,7 @@ ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods
             // metadata; fall through and track it in the mods table.
         }
     }
-    auto c = base.read(keylet::unchecked(key));
+    auto const c = base.read(keylet::unchecked(key));
     if (!c)
     {
         // The Destination of an Escrow or a PayChannel may have been

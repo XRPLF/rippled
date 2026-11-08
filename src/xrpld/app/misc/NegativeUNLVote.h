@@ -65,8 +65,8 @@ public:
      * a validator.
      */
     enum class NegativeUNLModify {
-        ToDisable,  // UNLModify Tx is to disable a validator
-        ToReEnable  // UNLModify Tx is to re-enable a validator
+        ToDisable,   // UNLModify Tx is to disable a validator
+        ToReEnable,  // UNLModify Tx is to re-enable a validator
     };
 
     /**

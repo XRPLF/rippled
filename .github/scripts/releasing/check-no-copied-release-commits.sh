@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Exit the script as soon as an error occurs.
 set -euo pipefail
@@ -21,11 +21,10 @@ patch_ids() {
     git log --no-merges --patch --no-color --no-ext-diff "$@" | git patch-id --stable | sort
 }
 
-mapfile -t BRANCHES < <(git for-each-ref --format='%(refname)' 'refs/remotes/*/release/*' 'refs/remotes/*/staging/*')
-if [ "${#BRANCHES[@]}" -eq 0 ]; then
-    echo "Error: No release or staging branches found."
-    exit 1
-fi
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=.github/scripts/releasing/common.sh
+source "${SCRIPT_DIR}/common.sh"
+load_release_branches
 
 # Each line is "<patch-id> <commit>".
 RELEASE_PATCHES=$(patch_ids "${BRANCHES[@]}" --not "${HEAD}")

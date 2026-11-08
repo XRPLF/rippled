@@ -16,10 +16,6 @@ namespace xrpl {
 class Config;
 namespace path {
 
-namespace detail {
-struct FlowDebugInfo;
-}  // namespace detail
-
 /**
  * RippleCalc calculates the quality of a payment path.
  *

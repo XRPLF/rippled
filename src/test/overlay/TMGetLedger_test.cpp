@@ -69,7 +69,7 @@ class TMGetLedger_test : public beast::unit_test::Suite
 
         Env env{*this};
 
-        auto peer = makeCapturePeer(env);
+        auto const peer = makeCapturePeer(env);
         peer->onMessage(createRequest(numNodeIds));
 
         // A request outside the accepted node-ID count is charged kFeeInvalidData; one inside
@@ -88,17 +88,17 @@ class TMGetLedger_test : public beast::unit_test::Suite
         Env env{*this};
         env.close();
 
-        auto peer = makeCapturePeer<GetLedgerPeer>(env);
+        auto const peer = makeCapturePeer<GetLedgerPeer>(env);
 
         // Ask for the account-state root node of the closed ledger.
-        auto request = createRequest(numNodeIds);
+        auto const request = createRequest(numNodeIds);
         request->clear_ledgerhash();
         request->set_itype(protocol::liAS_NODE);
         request->set_ltype(protocol::ltCLOSED);
 
         peer->runProcessLedgerRequest(request, std::vector<SHAMapNodeID>(numNodeIds));
 
-        auto sentMessage = peer->lastSent();
+        auto const sentMessage = peer->lastSent();
         BEAST_EXPECT(sentMessage != nullptr);
         if (!sentMessage)
         {

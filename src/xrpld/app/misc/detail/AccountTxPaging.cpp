@@ -30,12 +30,12 @@ convertBlobsToTxResult(
     Application& app)
 {
     SerialIter it(makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx const>(it);
+    auto const txn = std::make_shared<STTx const>(it);
     std::string reason;
 
     auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    auto metaset = std::make_shared<TxMeta>(tr->getID(), ledgerIndex, rawMeta);
+    auto const metaset = std::make_shared<TxMeta>(tr->getID(), ledgerIndex, rawMeta);
 
     // if properly formed meta is available we can use it to generate ctid
     if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
@@ -57,7 +57,7 @@ convertBlobsToTxResult(
 void
 saveLedgerAsync(Application& app, std::uint32_t seq)
 {
-    if (auto l = app.getLedgerMaster().getLedgerBySeq(seq))
+    if (auto const l = app.getLedgerMaster().getLedgerBySeq(seq))
         pendSaveValidated(app, l, false, false);
 }
 

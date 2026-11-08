@@ -79,7 +79,8 @@ private:
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
             .manifest = base64Encode(
-                makeManifest(masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
+                makeManifest(masterPublic, secret, signingKeys.first, signingKeys.second, 1)),
+        };
     }
 
     static std::string
@@ -186,7 +187,7 @@ private:
         std::string const cfgManifest(makeManifest(
             localMasterPublic, localMasterSecret, localSigningPublicOuter, localSigningSecret, 1));
 
-        auto format = [](PublicKey const& publicKey, char const* comment = nullptr) {
+        auto const format = [](PublicKey const& publicKey, char const* comment = nullptr) {
             auto ret = toBase58(TokenType::NodePublic, publicKey);
 
             if (comment)
@@ -202,15 +203,16 @@ private:
             configList.push_back(randomNode());
 
         // Correct configuration
-        std::vector<std::string> cfgKeys(
-            {format(configList[0]),
-             format(configList[1], " Comment"),
-             format(configList[2], " Multi Word Comment"),
-             format(configList[3], "    Leading Whitespace"),
-             format(configList[4], " Trailing Whitespace    "),
-             format(configList[5], "    Leading & Trailing Whitespace    "),
-             format(configList[6], "    Leading, Trailing & Internal    Whitespace    "),
-             format(configList[7], "    ")});
+        std::vector<std::string> cfgKeys({
+            format(configList[0]),
+            format(configList[1], " Comment"),
+            format(configList[2], " Multi Word Comment"),
+            format(configList[3], "    Leading Whitespace"),
+            format(configList[4], " Trailing Whitespace    "),
+            format(configList[5], "    Leading & Trailing Whitespace    "),
+            format(configList[6], "    Leading, Trailing & Internal    Whitespace    "),
+            format(configList[7], "    "),
+        });
 
         {
             ManifestCache manifests;
@@ -417,11 +419,14 @@ private:
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             // these two are not revoked (and not in the manifest cache at all.)
-            auto legitKey1 = randomMasterKey();
-            auto legitKey2 = randomMasterKey();
+            auto const legitKey1 = randomMasterKey();
+            auto const legitKey2 = randomMasterKey();
 
             std::vector<std::string> const cfgPublishers = {
-                strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
+                strHex(pubRevokedPublic),
+                strHex(legitKey1),
+                strHex(legitKey2),
+            };
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -454,10 +459,12 @@ private:
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             // this one is not revoked (and not in the manifest cache at all.)
-            auto legitKey = randomMasterKey();
+            auto const legitKey = randomMasterKey();
 
             std::vector<std::string> const cfgPublishers = {
-                strHex(pubRevokedPublic), strHex(legitKey)};
+                strHex(pubRevokedPublic),
+                strHex(legitKey),
+            };
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -475,7 +482,7 @@ private:
 
         std::string const siteUri = "testApplyList.test";
 
-        auto checkAvailable =
+        auto const checkAvailable =
             [this](
                 auto const& trustedKeys,
                 auto const& hexPublic,
@@ -526,7 +533,7 @@ private:
             app.config().legacy(Sections::kDatabasePath),
             env.journal);
 
-        auto expectTrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
+        auto const expectTrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
             for (auto const& val : list)
             {
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
@@ -534,7 +541,7 @@ private:
             }
         };
 
-        auto expectUntrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
+        auto const expectUntrusted = [this, &trustedKeys](std::vector<Validator> const& list) {
             for (auto const& val : list)
             {
                 BEAST_EXPECT(!trustedKeys->listed(val.masterPublic));
@@ -554,7 +561,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::map<std::size_t, std::vector<Validator>> const lists = []() {
+        std::map<std::size_t, std::vector<Validator>> const lists = [] {
             static constexpr auto kListSize = 20;
             static constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
@@ -586,8 +593,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = expiredblob, .signature = expiredSig, .manifest = {}},
-                 {.blob = blob2, .signature = sig2, .manifest = {}}},
+                {
+                    {.blob = expiredblob, .signature = expiredSig, .manifest = {}},
+                    {.blob = blob2, .signature = sig2, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Expired,
@@ -623,8 +632,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version2,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob8, .signature = sig8, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Pending,
@@ -659,8 +670,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob6a, .signature = sig6a, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob6a, .signature = sig6a, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Pending,
@@ -675,8 +688,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::KnownSequence,
@@ -691,8 +706,10 @@ private:
             trustedKeys->applyLists(
                 "",
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -702,8 +719,10 @@ private:
             trustedKeys->applyLists(
                 base64Encode("not a manifest"),
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob6, .signature = sig6, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -765,8 +784,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob2, .signature = sig2, .manifest = {}},
-                 {.blob = blob3, .signature = sig3, .manifest = {}}},
+                {
+                    {.blob = blob2, .signature = sig2, .manifest = {}},
+                    {.blob = blob3, .signature = sig3, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -775,7 +796,7 @@ private:
         // apply list with new publisher key updated by manifest. Also send some
         // old lists along with the old manifest
         auto const pubSigningKeys2 = randomKeyPair(KeyType::Secp256k1);
-        auto manifest2 = base64Encode(makeManifest(
+        auto const manifest2 = base64Encode(makeManifest(
             publisherPublic, publisherSecret, pubSigningKeys2.first, pubSigningKeys2.second, 2));
 
         auto const sequence4 = 4;
@@ -786,9 +807,11 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{.blob = blob2, .signature = sig2, .manifest = manifest1},
-                 {.blob = blob3, .signature = sig3, .manifest = manifest1},
-                 {.blob = blob4, .signature = sig4, .manifest = {}}},
+                {
+                    {.blob = blob2, .signature = sig2, .manifest = manifest1},
+                    {.blob = blob3, .signature = sig3, .manifest = manifest1},
+                    {.blob = blob4, .signature = sig4, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -828,8 +851,10 @@ private:
             trustedKeys->applyLists(
                 manifest1,
                 version,
-                {{.blob = blob7, .signature = sig7, .manifest = {}},
-                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                {
+                    {.blob = blob7, .signature = sig7, .manifest = {}},
+                    {.blob = blob8, .signature = sig8, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -883,8 +908,10 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{.blob = blob8, .signature = sig8, .manifest = manifest1},
-                 {.blob = blob8, .signature = sig82, .manifest = {}}},
+                {
+                    {.blob = blob8, .signature = sig8, .manifest = manifest1},
+                    {.blob = blob8, .signature = sig82, .manifest = {}},
+                },
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -897,7 +924,7 @@ private:
         // do not apply list with revoked publisher key
         // applied list is removed due to revoked publisher key
         auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
-        auto maxManifest = base64Encode(makeRevocation(publisherPublic, publisherSecret));
+        auto const maxManifest = base64Encode(makeRevocation(publisherPublic, publisherSecret));
 
         auto const sequence9 = 9;
         auto const blob9 = makeList(lists.at(9), sequence9, validUntil.time_since_epoch().count());
@@ -953,7 +980,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::vector<Validator> const list = []() {
+        std::vector<Validator> const list = [] {
             static constexpr auto kListSize = 20;
             std::vector<Validator> list;
             list.reserve(kListSize);
@@ -1563,7 +1590,7 @@ private:
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
             };
 
-            auto addPublishedList = [&, this](int i) {
+            auto const addPublishedList = [&, this](int i) {
                 auto const publisherSecret = randomSecretKey();
                 auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
@@ -1653,7 +1680,7 @@ private:
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
             };
 
-            auto addPublishedList =
+            auto const addPublishedList =
                 [&, this](
                     int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
                     auto const publisherSecret = randomSecretKey();
@@ -1821,7 +1848,7 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
 
-        auto toStr = [](PublicKey const& publicKey) {
+        auto const toStr = [](PublicKey const& publicKey) {
             return toBase58(TokenType::NodePublic, publicKey);
         };
 
@@ -1872,7 +1899,7 @@ private:
             };
 
             using namespace std::chrono_literals;
-            auto addPublishedList = [this, &env, &trustedKeys, &validators]() {
+            auto const addPublishedList = [this, &env, &trustedKeys, &validators] {
                 auto const publisherSecret = randomSecretKey();
                 auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
@@ -1909,10 +1936,13 @@ private:
                     .publisherPublic = publisherPublic,
                     .manifest = manifest,
                     .blobs =
-                        {{.blob = blob1, .signature = sig1, .manifest = {}},
-                         {.blob = blob2, .signature = sig2, .manifest = {}}},
+                        {
+                            {.blob = blob1, .signature = sig1, .manifest = {}},
+                            {.blob = blob2, .signature = sig2, .manifest = {}},
+                        },
                     .version = version,
-                    .expirations = {expiration1, expiration2}};
+                    .expirations = {expiration1, expiration2},
+                };
             };
 
             // Configure two publishers and prepare 2 lists
@@ -1949,7 +1979,7 @@ private:
             // the earliest validUntil, while rotating in the second list
             {
                 env.timeKeeper().set(prep1.expirations.front() - 1s);
-                auto changes = trustedKeys->updateTrusted(
+                auto const changes = trustedKeys->updateTrusted(
                     activeValidators,
                     env.timeKeeper().now(),
                     env.app().getOPs(),
@@ -1966,7 +1996,7 @@ private:
             // the earliest validUntil, while being invalidated
             {
                 env.timeKeeper().set(prep1.expirations.back() + 1s);
-                auto changes = trustedKeys->updateTrusted(
+                auto const changes = trustedKeys->updateTrusted(
                     activeValidators,
                     env.timeKeeper().now(),
                     env.app().getOPs(),
@@ -1988,7 +2018,7 @@ private:
         jtx::Env env(*this);
         ManifestCache manifests;
 
-        auto createValidatorList =
+        auto const createValidatorList =
             [&](std::uint32_t vlSize,
                 std::optional<std::size_t> minimumQuorum = {}) -> std::shared_ptr<ValidatorList> {
             auto trustedKeys = std::make_shared<ValidatorList>(
@@ -2043,11 +2073,11 @@ private:
             //== Combinations ==
             std::array<std::uint32_t, 4> const unlSizes = {34, 35, 39, 60};
             std::array<std::uint32_t, 4> const nUnlPercent = {0, 20, 30, 50};
-            for (auto us : unlSizes)
+            for (auto const us : unlSizes)
             {
-                for (auto np : nUnlPercent)
+                for (auto const np : nUnlPercent)
                 {
-                    auto validators = createValidatorList(us);
+                    auto const validators = createValidatorList(us);
                     BEAST_EXPECT(validators);
                     if (validators)
                     {
@@ -2088,7 +2118,8 @@ private:
                 {
                     //-- set == get,
                     //-- check quorum, with nUNL size: 0, 30, 18, 12
-                    auto nUnlChange = [&](std::uint32_t nUnlSize, std::uint32_t quorum) -> bool {
+                    auto const nUnlChange = [&](std::uint32_t nUnlSize,
+                                                std::uint32_t quorum) -> bool {
                         HashSet<PublicKey> nUnl;
                         auto it = unl.begin();
                         for (std::uint32_t i = 0; i < nUnlSize; ++i)
@@ -2097,7 +2128,7 @@ private:
                             ++it;
                         }
                         validators->setNegativeUNL(nUnl);
-                        auto nUnlTemp = validators->getNegativeUNL();
+                        auto const nUnlTemp = validators->getNegativeUNL();
                         if (nUnlTemp.size() == nUnl.size())
                         {
                             for (auto& n : nUnlTemp)
@@ -2151,7 +2182,7 @@ private:
             //== with UNL size 60
             //-- with command line minimumQuorum = 50%,
             //   seen_reliable affected by nUNL
-            auto validators = createValidatorList(60, 30);
+            auto const validators = createValidatorList(60, 30);
             BEAST_EXPECT(validators);
             if (validators)
             {
@@ -2240,15 +2271,15 @@ private:
             boost::beast::multi_buffer buffers;
 
             // simulate multi-buffer
-            auto start = buffer.begin();
-            auto end = buffer.end();
+            auto const start = buffer.begin();
+            auto const end = buffer.end();
             std::vector<std::uint8_t> slice(start, end);
             buffers.commit(
                 boost::asio::buffer_copy(
                     buffers.prepare(slice.size()), boost::asio::buffer(slice)));
 
             boost::system::error_code ec;
-            auto header = detail::parseMessageHeader(ec, buffers.data(), buffers.size());
+            auto const header = detail::parseMessageHeader(ec, buffers.data(), buffers.size());
             BEAST_EXPECT(!ec);
             return std::make_pair(header, buffers);
         };
@@ -2264,12 +2295,12 @@ private:
             }
             return std::shared_ptr<protocol::TMValidatorListCollection>();
         };
-        auto verifyMessage = [this, manifestCutoff, &extractProtocolMessage](
-                                 auto const version,
-                                 auto const& manifest,
-                                 auto const& blobInfos,
-                                 auto const& messages,
-                                 std::vector<std::vector<std::uint32_t>> expectedInfo) {
+        auto const verifyMessage = [this, manifestCutoff, &extractProtocolMessage](
+                                       auto const version,
+                                       auto const& manifest,
+                                       auto const& blobInfos,
+                                       auto const& messages,
+                                       std::vector<std::vector<std::uint32_t>> expectedInfo) {
             BEAST_EXPECT(messages.size() == expectedInfo.size());
             auto msgIter = expectedInfo.begin();
             for (auto const& messageWithHash : messages)
@@ -2313,10 +2344,10 @@ private:
             }
             BEAST_EXPECT(msgIter == expectedInfo.end());
         };
-        auto verifyBuildMessages = [this](
-                                       std::pair<std::size_t, std::size_t> const& result,
-                                       std::size_t expectedSequence,
-                                       std::size_t expectedSize) {
+        auto const verifyBuildMessages = [this](
+                                             std::pair<std::size_t, std::size_t> const& result,
+                                             std::size_t expectedSequence,
+                                             std::size_t expectedSize) {
             BEAST_EXPECT(result.first == expectedSequence);
             BEAST_EXPECT(result.second == expectedSize);
         };
@@ -2324,7 +2355,7 @@ private:
         std::string const manifest = "This is not a manifest";
         std::uint32_t const version = 2;
         // Mutable so items can be removed in later tests.
-        auto const blobInfos = [manifestCutoff = manifestCutoff]() {
+        auto const blobInfos = [manifestCutoff = manifestCutoff] {
             std::map<std::size_t, ValidatorBlobInfo> bis;
 
             for (auto seq : {5, 6, 7, 10, 12})
@@ -2450,15 +2481,15 @@ private:
 
         // Create ValidatorList with a set of countTotal publishers, of which
         // first countRevoked are revoked and the last one expires early
-        auto makeValidatorList = [&, this](
-                                     std::size_t countTotal,
-                                     std::size_t countRevoked,
-                                     std::size_t listThreshold,
-                                     ManifestCache& pubManifests,
-                                     ManifestCache& valManifests,
-                                     std::optional<Validator> self,
-                                     std::vector<Publisher>& publishers  // out
-                                     ) -> std::unique_ptr<ValidatorList> {
+        auto const makeValidatorList = [&, this](
+                                           std::size_t countTotal,
+                                           std::size_t countRevoked,
+                                           std::size_t listThreshold,
+                                           ManifestCache& pubManifests,
+                                           ManifestCache& valManifests,
+                                           std::optional<Validator> self,
+                                           std::vector<Publisher>& publishers  // out
+                                           ) -> std::unique_ptr<ValidatorList> {
             auto result = std::make_unique<ValidatorList>(
                 valManifests,
                 pubManifests,
@@ -2493,7 +2524,7 @@ private:
             }
 
             std::vector<std::string> const emptyCfgKeys;
-            auto threshold = listThreshold > 0 ? std::optional(listThreshold) : std::nullopt;
+            auto const threshold = listThreshold > 0 ? std::optional(listThreshold) : std::nullopt;
             if (self)
             {
                 valManifests.applyManifest(

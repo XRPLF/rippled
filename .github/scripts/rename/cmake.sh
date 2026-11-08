@@ -57,7 +57,6 @@ find cmake -type f -name '*.cmake' | while read -r FILE; do
 done
 ${SED_COMMAND} -i -E 's/Rippled?/Xrpl/g' CMakeLists.txt
 ${SED_COMMAND} -i 's/ripple/xrpl/g' CMakeLists.txt
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' include/xrpl/protocol/messages.h
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 
