@@ -80,7 +80,7 @@ protected:
     static std::string
     blockBody(std::string const& text, std::string const& section)
     {
-        auto pos = text.find("[" + section + "]\n");
+        auto const pos = text.find("[" + section + "]\n");
         if (pos == std::string::npos)
         {
             ADD_FAILURE() << "no [" << section << "] block in: " << text;
@@ -665,7 +665,8 @@ TEST_F(CommandsTest, list_commands)
             *wrongSecret.tokenFile,
             ValidatorToken{
                 .manifest = loadTokenFile(*publisher.tokenFile).manifest,
-                .validationSecret = secret});
+                .validationSecret = secret,
+            });
         EXPECT_EQ(
             commandError("sign_list", {unsignedList.string()}, wrongSecret),
             "The token's secret does not match its manifest");

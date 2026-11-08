@@ -145,7 +145,8 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
         throw std::runtime_error("Unable to parse json key file: " + keyFile.string());
 
     static constexpr std::array<char const*, 4> kRequiredFields{
-        {"key_type", "secret_key", "token_sequence", "revoked"}};
+        {"key_type", "secret_key", "token_sequence", "revoked"},
+    };
 
     for (auto const* field : kRequiredFields)
     {
@@ -175,7 +176,7 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
         throw invalidField("revoked");
     auto const revoked = jKeys["revoked"].asBool();
 
-    auto keys = [&]() {
+    auto keys = [&] {
         if (jKeys["secret_key"].asString() == "external")
         {
             if (!jKeys.isMember("public_key"))
@@ -248,7 +249,8 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
                 throw invalidField("pending_token_secret");
             keys.pending_ = Pending{
                 .signingKey = derivePublicKey(*pendingKeyType, *secret),
-                .generated = GeneratedKey{.keyType = *pendingKeyType, .secretKey = *secret}};
+                .generated = GeneratedKey{.keyType = *pendingKeyType, .secretKey = *secret},
+            };
         }
         else
         {
@@ -400,7 +402,8 @@ SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& 
     return strHex(startPending(
         Pending{
             .signingKey = derivePublicKey(keyType, secret),
-            .generated = GeneratedKey{.keyType = keyType, .secretKey = secret}}));
+            .generated = GeneratedKey{.keyType = keyType, .secretKey = secret},
+        }));
 }
 
 Blob
@@ -485,11 +488,13 @@ SigningKeys::createToken(KeyType const& keyType)
     auto const secret = generateSecretKey(keyType, randomSeed());
     Pending const pending{
         .signingKey = derivePublicKey(keyType, secret),
-        .generated = GeneratedKey{.keyType = keyType, .secretKey = secret}};
+        .generated = GeneratedKey{.keyType = keyType, .secretKey = secret},
+    };
     auto const data = startPending(pending);
     return ValidatorToken{
         .manifest = finishPending(pending, masterSign(makeSlice(data)), std::nullopt),
-        .validationSecret = secret};
+        .validationSecret = secret,
+    };
 }
 
 std::string

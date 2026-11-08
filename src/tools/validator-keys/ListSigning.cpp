@@ -522,7 +522,7 @@ verifyList(
     json::Value report(json::ValueType::Object);
     report["ok"] = true;
     report["errors"] = json::Value(json::ValueType::Array);
-    auto fail = [&report](std::string const& error) {
+    auto const fail = [&report](std::string const& error) {
         report["ok"] = false;
         report["errors"].append(error);
     };
@@ -588,10 +588,11 @@ verifyList(
             fail(R"(a version 1 list needs "blob" and "signature" and no "blobs_v2")");
             return report;
         }
-        entries.push_back(
-            {.blob = list[jss::blob].asString(),
-             .signature = list[jss::signature].asString(),
-             .manifest = {}});
+        entries.push_back({
+            .blob = list[jss::blob].asString(),
+            .signature = list[jss::signature].asString(),
+            .manifest = {},
+        });
     }
     else
     {
@@ -618,10 +619,11 @@ verifyList(
             std::optional<std::string> entryManifest;
             if (entry.isMember(jss::manifest))
                 entryManifest = entry[jss::manifest].asString();
-            entries.push_back(
-                {.blob = entry[jss::blob].asString(),
-                 .signature = entry[jss::signature].asString(),
-                 .manifest = entryManifest});
+            entries.push_back({
+                .blob = entry[jss::blob].asString(),
+                .signature = entry[jss::signature].asString(),
+                .manifest = entryManifest,
+            });
         }
     }
 

@@ -242,7 +242,7 @@ storedNotice(std::filesystem::path const& keyFile, std::ostream& out)
 SigningKeys
 loadUnrevoked(std::filesystem::path const& keyFile)
 {
-    auto keys = SigningKeys::makeSigningKeys(keyFile);
+    auto const keys = SigningKeys::makeSigningKeys(keyFile);
     if (keys.revoked())
         throw std::runtime_error("Operation error: The specified master key has been revoked!");
     return keys;
@@ -271,7 +271,9 @@ emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Out
             nodePublic(keys),
             tokenToBase64(
                 ValidatorToken{
-                    .manifest = finished.manifest, .validationSecret = *finished.secret}));
+                    .manifest = finished.manifest,
+                    .validationSecret = *finished.secret,
+                }));
     }
     else
     {
@@ -280,7 +282,7 @@ emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Out
 }
 
 void
-emitAttestation(SigningKeys const& keys, Context& ctx)
+emitAttestation(SigningKeys const& keys, Context const& ctx)
 {
     if (keys.domain().empty())
     {
@@ -303,7 +305,7 @@ emitAttestation(SigningKeys const& keys, Context& ctx)
 }
 
 int
-cmdCreateKeys(Args const&, Context& ctx)
+cmdCreateKeys(Args const&, Context const& ctx)
 {
     SigningKeys const keys(KeyType::Ed25519);
     keys.writeToFile(ctx.options.keyFile, OwnerOnlyFile::Existing::Refuse);
@@ -312,7 +314,7 @@ cmdCreateKeys(Args const&, Context& ctx)
 }
 
 int
-cmdCreateExternal(Args const& args, Context& ctx)
+cmdCreateExternal(Args const& args, Context const& ctx)
 {
     auto const publicKey = parsePublicKey(args[0]);
     auto const keyType = publicKeyType(publicKey);
@@ -325,7 +327,7 @@ cmdCreateExternal(Args const& args, Context& ctx)
 }
 
 int
-cmdCreateToken(Args const&, Context& ctx)
+cmdCreateToken(Args const&, Context const& ctx)
 {
     Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
@@ -336,7 +338,7 @@ cmdCreateToken(Args const&, Context& ctx)
 }
 
 int
-cmdStartToken(Args const&, Context& ctx)
+cmdStartToken(Args const&, Context const& ctx)
 {
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const data = keys.startToken(ctx.options.tokenKeyType, ctx.options.signingKey);
@@ -346,7 +348,7 @@ cmdStartToken(Args const&, Context& ctx)
 }
 
 int
-cmdFinishToken(Args const& args, Context& ctx)
+cmdFinishToken(Args const& args, Context const& ctx)
 {
     Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
@@ -360,7 +362,7 @@ cmdFinishToken(Args const& args, Context& ctx)
 }
 
 int
-cmdRevokeKeys(Args const&, Context& ctx)
+cmdRevokeKeys(Args const&, Context const& ctx)
 {
     Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
@@ -372,7 +374,7 @@ cmdRevokeKeys(Args const&, Context& ctx)
 }
 
 int
-cmdStartRevokeKeys(Args const&, Context& ctx)
+cmdStartRevokeKeys(Args const&, Context const& ctx)
 {
     auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     warnRevocation(keys, ctx.err);
@@ -381,7 +383,7 @@ cmdStartRevokeKeys(Args const&, Context& ctx)
 }
 
 int
-cmdFinishRevokeKeys(Args const& args, Context& ctx)
+cmdFinishRevokeKeys(Args const& args, Context const& ctx)
 {
     Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
@@ -393,7 +395,7 @@ cmdFinishRevokeKeys(Args const& args, Context& ctx)
 }
 
 int
-setDomain(std::string const& domain, Context& ctx)
+setDomain(std::string const& domain, Context const& ctx)
 {
     Output output(ctx);
     auto keys = loadUnrevoked(ctx.options.keyFile);
@@ -430,26 +432,26 @@ setDomain(std::string const& domain, Context& ctx)
 }
 
 int
-cmdSetDomain(Args const& args, Context& ctx)
+cmdSetDomain(Args const& args, Context const& ctx)
 {
     return setDomain(args[0], ctx);
 }
 
 int
-cmdClearDomain(Args const&, Context& ctx)
+cmdClearDomain(Args const&, Context const& ctx)
 {
     return setDomain("", ctx);
 }
 
 int
-cmdAttestDomain(Args const&, Context& ctx)
+cmdAttestDomain(Args const&, Context const& ctx)
 {
     emitAttestation(loadUnrevoked(ctx.options.keyFile), ctx);
     return EXIT_SUCCESS;
 }
 
 int
-sign(std::string const& data, bool hex, Context& ctx)
+sign(std::string const& data, bool hex, Context const& ctx)
 {
     if (data.empty())
         throw std::runtime_error("Syntax error: Must specify data string to sign");
@@ -461,19 +463,19 @@ sign(std::string const& data, bool hex, Context& ctx)
 }
 
 int
-cmdSign(Args const& args, Context& ctx)
+cmdSign(Args const& args, Context const& ctx)
 {
     return sign(args[0], false, ctx);
 }
 
 int
-cmdSignHex(Args const& args, Context& ctx)
+cmdSignHex(Args const& args, Context const& ctx)
 {
     return sign(args[0], true, ctx);
 }
 
 int
-cmdShowManifest(Args const& args, Context& ctx)
+cmdShowManifest(Args const& args, Context const& ctx)
 {
     auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     auto const& m = keys.manifest();
@@ -521,7 +523,7 @@ emitSignedList(
     UnsignedList const& list,
     std::string const& signatureHex,
     Resigner const& resign,
-    Context& ctx,
+    Context const& ctx,
     Output& output)
 {
     std::optional<json::Value> append;
@@ -532,7 +534,7 @@ emitSignedList(
 }
 
 int
-cmdSignList(Args const& args, Context& ctx)
+cmdSignList(Args const& args, Context const& ctx)
 {
     if (!ctx.options.tokenFile)
         throw std::runtime_error("sign_list needs --token-file");
@@ -558,7 +560,7 @@ cmdSignList(Args const& args, Context& ctx)
 }
 
 int
-cmdStartSignList(Args const& args, Context& ctx)
+cmdStartSignList(Args const& args, Context const& ctx)
 {
     loadSigningManifest(ctx, "start_sign_list");
     auto const list = loadUnsignedList(args[0]);
@@ -567,7 +569,7 @@ cmdStartSignList(Args const& args, Context& ctx)
 }
 
 int
-cmdFinishSignList(Args const& args, Context& ctx)
+cmdFinishSignList(Args const& args, Context const& ctx)
 {
     auto const [manifest, signingKey] = loadSigningManifest(ctx, "finish_sign_list");
     Output output(ctx, {args[1]}, OwnerOnlyFile::kPublished);
@@ -583,7 +585,7 @@ cmdFinishSignList(Args const& args, Context& ctx)
 }
 
 int
-cmdVerifyList(Args const& args, Context& ctx)
+cmdVerifyList(Args const& args, Context const& ctx)
 {
     std::optional<UnsignedList> roster;
     if (ctx.options.validatorsFile)
@@ -602,85 +604,139 @@ struct Command
     std::size_t maxArgs;
     // Loads, changes and rewrites the key file, so runs under KeyFileLock.
     bool updatesKeyFile;
-    int (*run)(Args const&, Context&);
+    int (*run)(Args const&, Context const&);
 };
 
-constexpr std::array<Command, 18> kCommands{{
-    {.name = "create_keys",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = false,
-     .run = cmdCreateKeys},
-    {.name = "create_external",
-     .minArgs = 1,
-     .maxArgs = 1,
-     .updatesKeyFile = false,
-     .run = cmdCreateExternal},
-    {.name = "create_token",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = true,
-     .run = cmdCreateToken},
-    {.name = "start_token",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = true,
-     .run = cmdStartToken},
-    {.name = "finish_token",
-     .minArgs = 1,
-     .maxArgs = 2,
-     .updatesKeyFile = true,
-     .run = cmdFinishToken},
-    {.name = "revoke_keys",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = true,
-     .run = cmdRevokeKeys},
-    {.name = "start_revoke_keys",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = false,
-     .run = cmdStartRevokeKeys},
-    {.name = "finish_revoke_keys",
-     .minArgs = 1,
-     .maxArgs = 1,
-     .updatesKeyFile = true,
-     .run = cmdFinishRevokeKeys},
-    {.name = "set_domain", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = true, .run = cmdSetDomain},
-    {.name = "clear_domain",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = true,
-     .run = cmdClearDomain},
-    {.name = "attest_domain",
-     .minArgs = 0,
-     .maxArgs = 0,
-     .updatesKeyFile = false,
-     .run = cmdAttestDomain},
-    {.name = "sign", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSign},
-    {.name = "sign_hex", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSignHex},
-    {.name = "show_manifest",
-     .minArgs = 0,
-     .maxArgs = 1,
-     .updatesKeyFile = false,
-     .run = cmdShowManifest},
-    {.name = "sign_list", .minArgs = 1, .maxArgs = 1, .updatesKeyFile = false, .run = cmdSignList},
-    {.name = "start_sign_list",
-     .minArgs = 1,
-     .maxArgs = 1,
-     .updatesKeyFile = false,
-     .run = cmdStartSignList},
-    {.name = "finish_sign_list",
-     .minArgs = 2,
-     .maxArgs = 2,
-     .updatesKeyFile = false,
-     .run = cmdFinishSignList},
-    {.name = "verify_list",
-     .minArgs = 1,
-     .maxArgs = 1,
-     .updatesKeyFile = false,
-     .run = cmdVerifyList},
-}};
+constexpr std::array<Command, 18> kCommands{
+    {
+        {
+            .name = "create_keys",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = false,
+            .run = cmdCreateKeys,
+        },
+        {
+            .name = "create_external",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdCreateExternal,
+        },
+        {
+            .name = "create_token",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = true,
+            .run = cmdCreateToken,
+        },
+        {
+            .name = "start_token",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = true,
+            .run = cmdStartToken,
+        },
+        {
+            .name = "finish_token",
+            .minArgs = 1,
+            .maxArgs = 2,
+            .updatesKeyFile = true,
+            .run = cmdFinishToken,
+        },
+        {
+            .name = "revoke_keys",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = true,
+            .run = cmdRevokeKeys,
+        },
+        {
+            .name = "start_revoke_keys",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = false,
+            .run = cmdStartRevokeKeys,
+        },
+        {
+            .name = "finish_revoke_keys",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = true,
+            .run = cmdFinishRevokeKeys,
+        },
+        {
+            .name = "set_domain",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = true,
+            .run = cmdSetDomain,
+        },
+        {
+            .name = "clear_domain",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = true,
+            .run = cmdClearDomain,
+        },
+        {
+            .name = "attest_domain",
+            .minArgs = 0,
+            .maxArgs = 0,
+            .updatesKeyFile = false,
+            .run = cmdAttestDomain,
+        },
+        {
+            .name = "sign",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdSign,
+        },
+        {
+            .name = "sign_hex",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdSignHex,
+        },
+        {
+            .name = "show_manifest",
+            .minArgs = 0,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdShowManifest,
+        },
+        {
+            .name = "sign_list",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdSignList,
+        },
+        {
+            .name = "start_sign_list",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdStartSignList,
+        },
+        {
+            .name = "finish_sign_list",
+            .minArgs = 2,
+            .maxArgs = 2,
+            .updatesKeyFile = false,
+            .run = cmdFinishSignList,
+        },
+        {
+            .name = "verify_list",
+            .minArgs = 1,
+            .maxArgs = 1,
+            .updatesKeyFile = false,
+            .run = cmdVerifyList,
+        },
+    },
+};
 
 }  // namespace
 
@@ -724,7 +780,7 @@ runCommand(
     std::optional<KeyFileLock> lock;
     if (it->updatesKeyFile)
         lock.emplace(options.keyFile);
-    Context ctx{.options = options, .out = out, .err = err};
+    Context const ctx{.options = options, .out = out, .err = err};
     int const rc = it->run(args, ctx);
     // A result that never reached the caller, such as a token, is a failure.
     out.flush();

@@ -71,7 +71,7 @@ printHelp(boost::program_options::options_description const& desc)
 }  // namespace
 
 int
-main(int argc, char** argv)
+main(int argc, char* const* argv)
 {
     namespace po = boost::program_options;
     using namespace xrpl::tools;
