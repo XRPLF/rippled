@@ -511,7 +511,6 @@ OverlayImpl::remove(std::shared_ptr<peer_finder::Slot> const& slot)
 // Well-known high-capacity servers to bootstrap from when [ips] and [ips_fixed] are empty.
 static constexpr auto kDefaultBootstrapIps = std::to_array<std::string_view>({
     "r.ripple.com 51235",          // Ripple Labs Inc. - https://ripple.com
-    "sahyadri.isrdc.in 51235",     // ISRDC - https://isrdc.in
     "hubs.xrpkuwait.com 51235",    // @Xrpkuwait - https://xrpkuwait.com
     "hub.xrpl-commons.org 51235",  // XRPL Commons - https://xrpl-commons.org
 });
