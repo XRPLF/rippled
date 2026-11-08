@@ -282,9 +282,6 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         else
         {
             // Default Websocket send queue size limit
-            // 100 is too low for transaction stream subscribers where a single
-            // busy ledger can contain hundreds or thousands of transactions,
-            // instantly exceeding the limit and disconnecting the client.
             port.wsQueueLimit = 1000;
         }
     }
