@@ -2,7 +2,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/Log.h>
@@ -149,7 +148,6 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(app.getTimeKeeper().now().time_since_epoch().count());
             app.getOverlay().relay(msg, *toSkip, *tx);
         }
     }

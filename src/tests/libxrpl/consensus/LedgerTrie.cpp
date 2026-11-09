@@ -9,10 +9,23 @@
 
 namespace xrpl::test {
 
-using namespace csf;
-using Seq = Ledger::Seq;
+/**
+ * Fixture that scopes the csf names these tests use.
+ *
+ * A file-scope `using namespace csf;` stays active for every source that a
+ * unity build appends after this one. csf::Ledger would then capture each
+ * unqualified `Ledger` in those sources, such as the return type of
+ * TxTest::getClosedLedger(). Class-scope aliases cannot leak.
+ */
+class LedgerTrieTest : public ::testing::Test
+{
+protected:
+    using Ledger = csf::Ledger;
+    using LedgerHistoryHelper = csf::LedgerHistoryHelper;
+    using Seq = Ledger::Seq;
+};
 
-TEST(LedgerTrieTest, insert_single_entry_by_itself)
+TEST_F(LedgerTrieTest, insert_single_entry_by_itself)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -27,7 +40,7 @@ TEST(LedgerTrieTest, insert_single_entry_by_itself)
     EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
 }
 
-TEST(LedgerTrieTest, insert_suffix_of_existing_extending_tree)
+TEST_F(LedgerTrieTest, insert_suffix_of_existing_extending_tree)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -52,7 +65,7 @@ TEST(LedgerTrieTest, insert_suffix_of_existing_extending_tree)
     EXPECT_TRUE(t.branchSupport(h["abce"]) == 1);
 }
 
-TEST(LedgerTrieTest, insert_uncommitted_of_existing_node)
+TEST_F(LedgerTrieTest, insert_uncommitted_of_existing_node)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -79,7 +92,7 @@ TEST(LedgerTrieTest, insert_uncommitted_of_existing_node)
     EXPECT_TRUE(t.branchSupport(h["abcdf"]) == 1);
 }
 
-TEST(LedgerTrieTest, insert_suffix_uncommitted_of_existing_node)
+TEST_F(LedgerTrieTest, insert_suffix_uncommitted_of_existing_node)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -96,7 +109,7 @@ TEST(LedgerTrieTest, insert_suffix_uncommitted_of_existing_node)
     EXPECT_TRUE(t.branchSupport(h["abce"]) == 1);
 }
 
-TEST(LedgerTrieTest, insert_suffix_uncommitted_with_existing_child)
+TEST_F(LedgerTrieTest, insert_suffix_uncommitted_with_existing_child)
 {
     //  abcd : abcde, abcf
 
@@ -119,7 +132,7 @@ TEST(LedgerTrieTest, insert_suffix_uncommitted_with_existing_child)
     EXPECT_TRUE(t.branchSupport(h["abcde"]) == 1);
 }
 
-TEST(LedgerTrieTest, insert_multiple_counts)
+TEST_F(LedgerTrieTest, insert_multiple_counts)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -138,7 +151,7 @@ TEST(LedgerTrieTest, insert_multiple_counts)
     EXPECT_TRUE(t.branchSupport(h["a"]) == 6);
 }
 
-TEST(LedgerTrieTest, remove_not_in_trie)
+TEST_F(LedgerTrieTest, remove_not_in_trie)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -150,7 +163,7 @@ TEST(LedgerTrieTest, remove_not_in_trie)
     EXPECT_TRUE(t.checkInvariants());
 }
 
-TEST(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
+TEST_F(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -165,7 +178,7 @@ TEST(LedgerTrieTest, remove_in_trie_but_with_0_tip_support)
     EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
+TEST_F(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -189,7 +202,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_multiple_tip_support)
     EXPECT_TRUE(t.tipSupport(h["abc"]) == 0);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_no_children)
+TEST_F(LedgerTrieTest, remove_in_trie_with_1_tip_support_no_children)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -209,7 +222,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_no_children)
     EXPECT_TRUE(t.branchSupport(h["abc"]) == 0);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
+TEST_F(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -230,7 +243,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_1_child)
     EXPECT_TRUE(t.branchSupport(h["abcd"]) == 1);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
+TEST_F(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -248,7 +261,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_multiple_children)
     EXPECT_TRUE(t.branchSupport(h["abc"]) == 2);
 }
 
-TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_parent_compaction)
+TEST_F(LedgerTrieTest, remove_in_trie_with_1_tip_support_parent_compaction)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -270,7 +283,7 @@ TEST(LedgerTrieTest, remove_in_trie_with_1_tip_support_parent_compaction)
     EXPECT_TRUE(t.branchSupport(h["ab"]) == 1);
 }
 
-TEST(LedgerTrieTest, empty)
+TEST_F(LedgerTrieTest, empty)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -288,7 +301,7 @@ TEST(LedgerTrieTest, empty)
     EXPECT_TRUE(t.empty());
 }
 
-TEST(LedgerTrieTest, support)
+TEST_F(LedgerTrieTest, support)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -332,14 +345,14 @@ TEST(LedgerTrieTest, support)
     EXPECT_TRUE(t.branchSupport(h["abe"]) == 1);
 }
 
-TEST(LedgerTrieTest, preferred_empty)
+TEST_F(LedgerTrieTest, preferred_empty)
 {
     LedgerTrie<Ledger> const t;
     EXPECT_TRUE(t.getPreferred(Seq{0}) == std::nullopt);
     EXPECT_TRUE(t.getPreferred(Seq{2}) == std::nullopt);
 }
 
-TEST(LedgerTrieTest, preferred_genesis_support_is_not_empty)
+TEST_F(LedgerTrieTest, preferred_genesis_support_is_not_empty)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -353,7 +366,7 @@ TEST(LedgerTrieTest, preferred_genesis_support_is_not_empty)
     EXPECT_TRUE(!t.remove(genesis));
 }
 
-TEST(LedgerTrieTest, preferred_single_node_no_children)
+TEST_F(LedgerTrieTest, preferred_single_node_no_children)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -363,7 +376,7 @@ TEST(LedgerTrieTest, preferred_single_node_no_children)
     EXPECT_TRUE(t.getPreferred(Seq{3})->id == h["abc"].id());
 }
 
-TEST(LedgerTrieTest, preferred_single_node_smaller_child_support)
+TEST_F(LedgerTrieTest, preferred_single_node_smaller_child_support)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -377,7 +390,7 @@ TEST(LedgerTrieTest, preferred_single_node_smaller_child_support)
     EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abc"].id());
 }
 
-TEST(LedgerTrieTest, preferred_single_node_larger_child)
+TEST_F(LedgerTrieTest, preferred_single_node_larger_child)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -391,7 +404,7 @@ TEST(LedgerTrieTest, preferred_single_node_larger_child)
     EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcd"].id());
 }
 
-TEST(LedgerTrieTest, preferred_single_node_smaller_children_support)
+TEST_F(LedgerTrieTest, preferred_single_node_smaller_children_support)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -410,7 +423,7 @@ TEST(LedgerTrieTest, preferred_single_node_smaller_children_support)
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, preferred_single_node_larger_children)
+TEST_F(LedgerTrieTest, preferred_single_node_larger_children)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -429,7 +442,7 @@ TEST(LedgerTrieTest, preferred_single_node_larger_children)
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, preferred_tie_breaker_by_id)
+TEST_F(LedgerTrieTest, preferred_tie_breaker_by_id)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -448,7 +461,7 @@ TEST(LedgerTrieTest, preferred_tie_breaker_by_id)
     EXPECT_TRUE(t.getPreferred(Seq{4})->id == h["abcd"].id());
 }
 
-TEST(LedgerTrieTest, preferred_tie_breaker_not_needed)
+TEST_F(LedgerTrieTest, preferred_tie_breaker_not_needed)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -471,7 +484,7 @@ TEST(LedgerTrieTest, preferred_tie_breaker_not_needed)
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, preferred_single_node_larger_grand_child)
+TEST_F(LedgerTrieTest, preferred_single_node_larger_grand_child)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -486,7 +499,7 @@ TEST(LedgerTrieTest, preferred_single_node_larger_grand_child)
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, preferred_too_much_uncommitted_support_from_competing_branches)
+TEST_F(LedgerTrieTest, preferred_too_much_uncommitted_support_from_competing_branches)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
@@ -513,7 +526,7 @@ TEST(LedgerTrieTest, preferred_too_much_uncommitted_support_from_competing_branc
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, preferred_changing_largestseq_perspective_changes_preferred_branch)
+TEST_F(LedgerTrieTest, preferred_changing_largestseq_perspective_changes_preferred_branch)
 {
     /**
      * Build the tree below with initial tip support annotated
@@ -615,7 +628,7 @@ TEST(LedgerTrieTest, preferred_changing_largestseq_perspective_changes_preferred
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
-TEST(LedgerTrieTest, root_related)
+TEST_F(LedgerTrieTest, root_related)
 {
     // Since the root is a special node that breaks the no-single child
     // invariant, do some tests that exercise it.
@@ -642,7 +655,7 @@ TEST(LedgerTrieTest, root_related)
     EXPECT_TRUE(t.tipSupport(h[""]) == 0);
 }
 
-TEST(LedgerTrieTest, stress)
+TEST_F(LedgerTrieTest, stress)
 {
     LedgerTrie<Ledger> t;
     LedgerHistoryHelper h;
