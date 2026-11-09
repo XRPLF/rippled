@@ -76,6 +76,8 @@ base64Lines(std::string const& text)
 std::optional<Manifest>
 parseManifest(std::string const& base64)
 {
+    if (base64.size() > kMaxManifestBase64)
+        return std::nullopt;
     auto m = deserializeManifest(base64Decode(base64));
     if (!m || !m->verify())
         return std::nullopt;
@@ -173,8 +175,8 @@ parseObject(std::string const& text)
     return jv;
 }
 
-// A published blob's list, checked as an unsigned list is: the tool copies or
-// signs again only a blob it would sign itself.
+// A published blob's list, checked as an unsigned list is: the tool copies only
+// a blob it would sign itself.
 UnsignedList
 blobList(std::string const& blobBytes)
 {
@@ -339,6 +341,16 @@ loadUnsignedList(std::filesystem::path const& file)
     return parseUnsignedList(readFile(file, kMaxListBytes));
 }
 
+void
+requireUnexpired(UnsignedList const& list, std::uint32_t now)
+{
+    if (list.expiration <= now)
+    {
+        throw std::runtime_error(
+            R"(The list's "expiration" is not after now; a server would take it as expired)");
+    }
+}
+
 std::string
 signList(UnsignedList const& list, PublicKey const& signingKey, SecretKey const& signingSecret)
 {
@@ -353,8 +365,9 @@ makeSignedList(
     std::string const& signatureHex,
     unsigned version,
     std::optional<json::Value> const& append,
-    Resigner const& resign)
+    std::uint32_t now)
 {
+    requireUnexpired(list, now);
     if (version != 1 && version != 2)
         throw std::runtime_error("Unsupported list version");
     if (version == 1 && append)
@@ -383,19 +396,14 @@ makeSignedList(
                 "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
         }
 
-        // The signing key a manifest in the document delegates to, and whether
-        // the manifest is the token's. A server that applied a manifest
-        // rejects an older or equal one, and with it every blob signed under
-        // it, so any other manifest must be older; it must also verify for
-        // the list's master key, or its blobs were never the publisher's.
-        struct Signer
-        {
-            PublicKey key;
-            bool current;
-        };
-        auto const signerOf = [&](std::string const& base64) -> Signer {
-            if (base64 == manifestBase64)
-                return {.key = *current->signingKey, .current = true};
+        // Whether a manifest in the document is the token's. A server that
+        // applied a manifest rejects an older or equal one, and with it every
+        // blob signed under it, so any other manifest must be older; it must
+        // also verify for the list's master key, or its blobs were never the
+        // publisher's.
+        auto const isCurrent = [&](std::string const& base64) {
+            if (base64Decode(base64) == current->serialized)
+                return true;
             auto const published = parseManifest(base64);
             if (!published)
                 throw std::runtime_error("The list to append to holds an invalid manifest");
@@ -413,16 +421,14 @@ makeSignedList(
                     std::to_string(published->sequence) +
                     "; append with a token whose manifest sequence is higher");
             }
-            return {.key = *published->signingKey, .current = false};
+            return false;
         };
-        auto const top = signerOf(existing[jss::manifest].asString());
+        bool const topCurrent = isCurrent(existing[jss::manifest].asString());
 
-        struct Entry
-        {
-            std::string blob;
-            bool current;
-        };
-        std::vector<Entry> entries;
+        // A server ignores an expired blob and verify_list fails a document
+        // holding one, so expired blobs are left out; their sequences still
+        // bound the appended list's.
+        json::Value kept(json::ValueType::Array);
         std::uint32_t highest = 0;
         for (auto const& entry : existing[jss::blobs_v2])
         {
@@ -433,22 +439,29 @@ makeSignedList(
             auto const signature = strUnHex(entry[jss::signature].asString());
             if (!bytes || !signature)
                 throw std::runtime_error("The list to append to holds an invalid blob");
-            auto signer = top;
+            auto entryCurrent = topCurrent;
             if (entry.isMember(jss::manifest))
             {
                 if (!entry[jss::manifest].isString())
                     throw std::runtime_error("The list to append to holds an invalid manifest");
-                signer = signerOf(entry[jss::manifest].asString());
+                entryCurrent = isCurrent(entry[jss::manifest].asString());
             }
-            // Signed under the key its own manifest names: a tampered blob
-            // must not be signed again under the token's key.
-            if (!verify(signer.key, makeSlice(*bytes), makeSlice(*signature)))
+            // A server verifies every blob under the newest manifest it has seen.
+            if (!entryCurrent)
+            {
+                throw std::runtime_error(
+                    "The list to append to holds a blob under an older manifest; sign its lists "
+                    "again with this token, without --append");
+            }
+            if (!verify(*current->signingKey, makeSlice(*bytes), makeSlice(*signature)))
             {
                 throw std::runtime_error(
                     "The list to append to holds a blob whose signature does not verify");
             }
-            entries.push_back({.blob = *bytes, .current = signer.current});
-            highest = std::max(highest, blobList(*bytes).sequence);
+            auto const published = blobList(*bytes);
+            highest = std::max(highest, published.sequence);
+            if (published.expiration > now)
+                kept.append(entry);
         }
         // A server ignores a blob whose sequence is not above the one it holds.
         if (list.sequence <= highest)
@@ -457,32 +470,7 @@ makeSignedList(
                 "The list to append has sequence " + std::to_string(list.sequence) +
                 "; the document already holds sequence " + std::to_string(highest));
         }
-
-        if (std::ranges::all_of(entries, [](Entry const& e) { return e.current; }))
-        {
-            jv[jss::blobs_v2] = existing[jss::blobs_v2];
-        }
-        else
-        {
-            if (!resign)
-            {
-                throw std::runtime_error(
-                    "The list to append to was signed under another manifest and its blobs "
-                    "need signing again");
-            }
-            jv[jss::blobs_v2] = json::Value(json::ValueType::Array);
-            for (auto const& entry : entries)
-            {
-                json::Value resigned(json::ValueType::Object);
-                resigned[jss::blob] = base64Encode(entry.blob);
-                resigned[jss::signature] = resign(entry.blob);
-                jv[jss::blobs_v2].append(resigned);
-            }
-        }
-    }
-    else if (version == 2)
-    {
-        jv[jss::blobs_v2] = json::Value(json::ValueType::Array);
+        jv[jss::blobs_v2] = kept;
     }
 
     jv[jss::manifest] = manifestBase64;
@@ -632,14 +620,21 @@ verifyList(
         want.emplace(expectedRoster->validators.begin(), expectedRoster->validators.end());
 
     report["blobs"] = json::Value(json::ValueType::Array);
+    // held points at the top-level manifest or at heldOwn, an entry's manifest
+    std::optional<Manifest> heldOwn;
+    Manifest const* held = nullptr;
+    // The sequence and index of the last blob that parsed, for the order check
+    std::optional<std::pair<std::uint32_t, std::size_t>> previous;
     std::size_t index = 0;
     for (auto const& entry : entries)
     {
+        auto const current = index;
         auto const where = "blob " + std::to_string(index++);
         json::Value found(json::ValueType::Object);
 
-        // A server applies an entry's manifest before checking the blob and
-        // keeps the newest manifest it has seen for the publisher.
+        // Each blob applies its own manifest, else the top-level one, and a
+        // server keeps the first applied until a higher sequence replaces it.
+        std::optional<Manifest> own;
         if (entry.manifest)
         {
             auto m = parseManifest(*entry.manifest);
@@ -651,21 +646,34 @@ verifyList(
             {
                 fail(where + ": its \"manifest\" revokes the publisher's master key");
             }
-            else if (m->sequence > manifest->sequence)
+            else
             {
-                manifest = std::move(m);
+                own = std::move(m);
+            }
+        }
+        Manifest const& effective = own ? *own : *manifest;
+        if (held == nullptr || effective.sequence > held->sequence)
+        {
+            if (own)
+            {
+                heldOwn = std::move(own);
+                held = &*heldOwn;
+            }
+            else
+            {
+                held = &*manifest;
             }
         }
 
         auto const sig = strUnHex(entry.signature);
         auto const data = base64Decode(entry.blob);
-        if (!sig || !verify(*manifest->signingKey, makeSlice(data), makeSlice(*sig)))
+        if (!sig || !verify(*held->signingKey, makeSlice(data), makeSlice(*sig)))
             fail(where + ": the signature does not verify under the signing key");
 
         std::optional<UnsignedList> parsed;
         try
         {
-            parsed = parseUnsignedList(data);
+            parsed = checkedList(data, parseObject(data));
         }
         catch (std::runtime_error const& e)
         {
@@ -680,9 +688,18 @@ verifyList(
             found[jss::expiration] = parsed->expiration;
             found[jss::validators] = json::UInt(parsed->validators.size());
             found["expired"] = parsed->expiration <= now;
+            found["pending"] = parsed->effective && *parsed->effective > now;
 
             if (parsed->expiration <= now)
                 fail(where + ": expired");
+
+            if (previous && parsed->sequence <= previous->first)
+            {
+                fail(
+                    where + ": \"sequence\" is not above blob " + std::to_string(previous->second) +
+                    "'s");
+            }
+            previous.emplace(parsed->sequence, current);
 
             if (want)
             {
@@ -696,8 +713,8 @@ verifyList(
         report["blobs"].append(found);
     }
 
-    report["signing_key"] = strHex(*manifest->signingKey);
-    report["manifest_sequence"] = manifest->sequence;
+    report["signing_key"] = strHex(*held->signingKey);
+    report["manifest_sequence"] = held->sequence;
     return report;
 }
 

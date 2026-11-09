@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Manifest.h>
 
@@ -13,6 +14,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -85,5 +87,28 @@ unsignedListText(
     std::uint32_t sequence,
     std::uint32_t expiration,
     std::optional<std::uint32_t> effective = std::nullopt);
+
+/**
+ * Sets the working directory for its lifetime; the previous one is restored
+ * even when an expectation throws.
+ */
+class WorkingDirectory
+{
+    std::filesystem::path previous_ = std::filesystem::current_path();
+
+public:
+    explicit WorkingDirectory(std::filesystem::path const& dir)
+    {
+        std::filesystem::current_path(dir);
+    }
+    ~WorkingDirectory()
+    {
+        std::error_code ec;
+        std::filesystem::current_path(previous_, ec);
+    }
+    WorkingDirectory(WorkingDirectory const&) = delete;
+    WorkingDirectory&
+    operator=(WorkingDirectory const&) = delete;
+};
 
 }  // namespace xrpl::tools::test

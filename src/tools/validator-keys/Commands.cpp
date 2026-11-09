@@ -5,15 +5,20 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
+
+#include <boost/algorithm/string/trim.hpp>
 
 #include <sys/file.h>
 #include <tools/validator-keys/ListSigning.h>
@@ -25,14 +30,19 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
 #include <vector>
@@ -43,6 +53,9 @@ namespace {
 
 constexpr std::size_t kMaxDocumentBytes = 4 * 1024 * 1024;
 constexpr std::size_t kBlockLineLength = 72;
+constexpr std::string_view kForPublishers =
+    "This token's signing key is ed25519: it is for sign_list --token-file; "
+    "xrpld loads only secp256k1 validator tokens";
 
 using Args = std::vector<std::string>;
 
@@ -113,14 +126,14 @@ class Output
 
 public:
     /**
-     * @param inputs Files the command reads besides those in the options;
+     * @param input A file the command reads besides those in the options;
      *        `--out` may not name any input except `--append`, whose document
      *        the output replaces once it is complete.
      * @param mode The file's mode: `OwnerOnlyFile::kPublished` for a list
      */
     Output(
         Context const& ctx,
-        std::vector<std::filesystem::path> const& inputs = {},
+        std::optional<std::filesystem::path> const& input = std::nullopt,
         int mode = OwnerOnlyFile::kOwnerOnly)
         : out_(ctx.out)
     {
@@ -128,12 +141,14 @@ public:
         if (!options.outFile)
             return;
 
-        std::vector<std::filesystem::path> read(inputs);
-        read.push_back(options.keyFile);
-        for (auto const& file : {options.tokenFile, options.manifestFile, options.validatorsFile})
+        std::vector<std::filesystem::path> read{options.keyFile};
+        if (input)
+            read.push_back(*input);
+        for (auto const* file :
+             {&options.tokenFile, &options.manifestFile, &options.validatorsFile})
         {
-            if (file)
-                read.push_back(*file);
+            if (*file)
+                read.push_back(**file);
         }
         for (auto const& file : read)
         {
@@ -146,21 +161,36 @@ public:
             *options.outFile, "output file", OwnerOnlyFile::Existing::Replace, mode);
     }
 
-    // A config block in 72-character lines.
+    // A config block in 72-character lines; an ed25519 token is for list
+    // signing, since xrpld loads only secp256k1 validator tokens.
     void
-    block(std::string const& section, std::string const& publicKey, std::string const& body)
+    block(
+        std::string const& section,
+        std::string const& publicKey,
+        std::string const& body,
+        std::optional<KeyType> tokenKeyType)
     {
         std::string text = "# validator public key: " + publicKey + "\n\n[" + section + "]\n";
         for (std::size_t i = 0; i < body.size(); i += kBlockLineLength)
             text.append(body, i, kBlockLineLength).push_back('\n');
 
+        bool const forPublishers = tokenKeyType == KeyType::Ed25519;
         if (!file_)
         {
-            out_ << "Update xrpld.cfg file with these values and restart xrpld:\n\n"
-                 << text << std::endl;
+            if (forPublishers)
+            {
+                out_ << kForPublishers << ":\n\n";
+            }
+            else
+            {
+                out_ << "Update xrpld.cfg file with these values and restart xrpld:\n\n";
+            }
+            out_ << text << std::endl;
             return;
         }
         write(text, "[" + section + "]");
+        if (forPublishers)
+            out_ << kForPublishers << "\n";
     }
 
     // A base64 manifest alone: the file a list publisher names with --manifest-file.
@@ -266,6 +296,10 @@ emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Out
 {
     if (finished.secret)
     {
+        auto const keyType =
+            deserializeManifest(keys.manifest())
+                .and_then([](Manifest const& m) { return m.signingKey; })
+                .and_then([](PublicKey const& signingKey) { return publicKeyType(signingKey); });
         output.block(
             "validator_token",
             nodePublic(keys),
@@ -273,7 +307,8 @@ emitFinished(SigningKeys const& keys, SigningKeys::Finished const& finished, Out
                 ValidatorToken{
                     .manifest = finished.manifest,
                     .validationSecret = *finished.secret,
-                }));
+                }),
+            keyType);
     }
     else
     {
@@ -317,10 +352,8 @@ int
 cmdCreateExternal(Args const& args, Context const& ctx)
 {
     auto const publicKey = parsePublicKey(args[0]);
-    auto const keyType = publicKeyType(publicKey);
-    if (!keyType)
-        logicError("create_external: public key without a key type");  // LCOV_EXCL_LINE
-    SigningKeys const keys(*keyType, publicKey);
+    // Every PublicKey has a type, so value_or never falls back.
+    SigningKeys const keys(publicKeyType(publicKey).value_or(KeyType::Secp256k1), publicKey);
     keys.writeToFile(ctx.options.keyFile, OwnerOnlyFile::Existing::Refuse);
     storedNotice(ctx.options.keyFile, ctx.out);
     return EXIT_SUCCESS;
@@ -331,9 +364,10 @@ cmdCreateToken(Args const&, Context const& ctx)
 {
     Output output(ctx);
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
-    auto const token = keys.createToken(ctx.options.tokenKeyType);
+    auto const keyType = ctx.options.tokenKeyType.value_or(KeyType::Secp256k1);
+    auto const token = keys.createToken(keyType);
     keys.writeToFile(ctx.options.keyFile);
-    output.block("validator_token", nodePublic(keys), tokenToBase64(token));
+    output.block("validator_token", nodePublic(keys), tokenToBase64(token), keyType);
     return EXIT_SUCCESS;
 }
 
@@ -341,7 +375,8 @@ int
 cmdStartToken(Args const&, Context const& ctx)
 {
     auto keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
-    auto const data = keys.startToken(ctx.options.tokenKeyType, ctx.options.signingKey);
+    auto const data = keys.startToken(
+        ctx.options.tokenKeyType.value_or(KeyType::Secp256k1), ctx.options.signingKey);
     keys.writeToFile(ctx.options.keyFile);
     ctx.out << data << std::endl;
     return EXIT_SUCCESS;
@@ -369,7 +404,7 @@ cmdRevokeKeys(Args const&, Context const& ctx)
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.revoke();
     keys.writeToFile(ctx.options.keyFile);
-    output.block("validator_key_revocation", nodePublic(keys), revocation);
+    output.block("validator_key_revocation", nodePublic(keys), revocation, std::nullopt);
     return EXIT_SUCCESS;
 }
 
@@ -390,7 +425,7 @@ cmdFinishRevokeKeys(Args const& args, Context const& ctx)
     warnRevocation(keys, ctx.err);
     auto const revocation = keys.finishRevoke(decodeSignature(args[0]));
     keys.writeToFile(ctx.options.keyFile);
-    output.block("validator_key_revocation", nodePublic(keys), revocation);
+    output.block("validator_key_revocation", nodePublic(keys), revocation, std::nullopt);
     return EXIT_SUCCESS;
 }
 
@@ -402,9 +437,14 @@ setDomain(std::string const& domain, Context const& ctx)
 
     if (domain == keys.domain())
     {
-        ctx.out
-            << (domain.empty() ? "The domain name was already cleared!\n"
-                               : "The domain name was already set.\n");
+        if (domain.empty())
+        {
+            ctx.out << "The domain name was already cleared!\n";
+        }
+        else
+        {
+            ctx.out << "The domain name was already set.\n";
+        }
         return EXIT_SUCCESS;
     }
 
@@ -412,22 +452,38 @@ setDomain(std::string const& domain, Context const& ctx)
     if (!keys.hasSecret())
     {
         keys.writeToFile(ctx.options.keyFile);
-        ctx.out << (domain.empty() ? "The domain name has been cleared.\n"
-                                   : "The domain name has been set to: " + domain + "\n")
-                << "The next token carries it: run start_token and finish_token.\n";
+        if (domain.empty())
+        {
+            ctx.out << "The domain name has been cleared.\n";
+        }
+        else
+        {
+            ctx.out << "The domain name has been set to: " << domain << "\n";
+        }
+        ctx.out << "The next token carries it: run start_token and finish_token.\n";
         return EXIT_SUCCESS;
     }
 
-    auto const token = keys.createToken(ctx.options.tokenKeyType);
+    auto const keyType = ctx.options.tokenKeyType.value_or(KeyType::Secp256k1);
+    auto const token = keys.createToken(keyType);
     keys.writeToFile(ctx.options.keyFile);
 
-    ctx.out
-        << (domain.empty() ? "The domain name has been cleared.\n"
-                           : "The domain name has been set to: " + domain + "\n\n");
+    if (domain.empty())
+    {
+        ctx.out << "The domain name has been cleared.\n";
+    }
+    else
+    {
+        ctx.out << "The domain name has been set to: " << domain << "\n\n";
+    }
     emitAttestation(keys, ctx);
-    ctx.out << "\nYou also need to update the xrpld.cfg file to add a new\n"
-               "validator token and restart xrpld:\n\n";
-    output.block("validator_token", nodePublic(keys), tokenToBase64(token));
+    ctx.out << "\n";
+    if (keyType == KeyType::Secp256k1)
+    {
+        ctx.out << "You also need to update the xrpld.cfg file to add a new\n"
+                   "validator token and restart xrpld:\n\n";
+    }
+    output.block("validator_token", nodePublic(keys), tokenToBase64(token), keyType);
     return EXIT_SUCCESS;
 }
 
@@ -451,27 +507,88 @@ cmdAttestDomain(Args const&, Context const& ctx)
 }
 
 int
-sign(std::string const& data, bool hex, Context const& ctx)
+cmdSign(Args const& args, Context const& ctx)
 {
+    auto const& data = args[0];
     if (data.empty())
         throw std::runtime_error("Syntax error: Must specify data string to sign");
     auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
     if (keys.revoked())
         ctx.err << "WARNING: Validator keys have been revoked!\n\n";
-    ctx.out << (hex ? keys.signHex(data) : keys.sign(data)) << std::endl;
+    ctx.out << keys.sign(data) << std::endl;
     return EXIT_SUCCESS;
 }
 
-int
-cmdSign(Args const& args, Context const& ctx)
+// Writes the fields of manifest signing data to err, so whoever signs sees the
+// key, sequence and domain the signature binds.
+void
+describeManifestSigningData(Blob const& bytes, std::ostream& err)
 {
-    return sign(args[0], false, ctx);
+    auto constexpr prefixSize = sizeof(std::uint32_t);
+    if (bytes.size() < prefixSize)
+        return;
+    std::uint32_t prefix = 0;
+    for (std::size_t i = 0; i < prefixSize; ++i)
+        prefix = (prefix << 8) | bytes[i];
+    if (prefix != static_cast<std::uint32_t>(HashPrefix::Manifest))
+        return;
+
+    // PublicKey aborts on a slice of no key type, so the type is checked first
+    auto const keyOf = [](STObject const& st, SField const& field) {
+        auto const vl = st.getFieldVL(field);
+        if (!publicKeyType(makeSlice(vl)))
+            throw std::runtime_error("not a public key");
+        return toBase58(TokenType::NodePublic, PublicKey(makeSlice(vl)));
+    };
+
+    std::ostringstream fields;
+    try
+    {
+        STObject const st(
+            SerialIter{bytes.data() + prefixSize, bytes.size() - prefixSize}, sfGeneric);
+        fields << "master key: " << keyOf(st, sfPublicKey) << "\n";
+        if (st.isFieldPresent(sfSigningPubKey))
+        {
+            fields << "signing key: " << keyOf(st, sfSigningPubKey) << "\n";
+        }
+        else
+        {
+            fields << "signing key: none (revocation)\n";
+        }
+        fields << "sequence: " << st.getFieldU32(sfSequence) << "\n";
+        if (st.isFieldPresent(sfDomain))
+        {
+            auto const domain = st.getFieldVL(sfDomain);
+            fields << "domain: " << std::string(domain.begin(), domain.end()) << "\n";
+        }
+        else
+        {
+            fields << "domain: none\n";
+        }
+    }
+    catch (std::exception const&)
+    {
+        err << "These bytes start with the manifest prefix and do not parse as manifest fields\n";
+        return;
+    }
+    err << "These bytes are a manifest's signing data:\n" << fields.str();
 }
 
 int
 cmdSignHex(Args const& args, Context const& ctx)
 {
-    return sign(args[0], true, ctx);
+    auto const data = boost::algorithm::trim_copy(args[0]);
+    if (data.empty())
+        throw std::runtime_error("Syntax error: Must specify data string to sign");
+    auto const bytes = strUnHex(data);
+    if (!bytes)
+        throw std::runtime_error("Could not decode hex string: " + data);
+    auto const keys = SigningKeys::makeSigningKeys(ctx.options.keyFile);
+    if (keys.revoked())
+        ctx.err << "WARNING: Validator keys have been revoked!\n\n";
+    describeManifestSigningData(*bytes, ctx.err);
+    ctx.out << keys.signHex(data) << std::endl;
+    return EXIT_SUCCESS;
 }
 
 int
@@ -481,7 +598,9 @@ cmdShowManifest(Args const& args, Context const& ctx)
     auto const& m = keys.manifest();
     // The encoding is optional; base64 is what a list's "manifest" field and
     // --manifest-file take.
-    std::string const encoding = args.empty() ? "base64" : args[0];
+    std::string encoding = "base64";
+    if (!args.empty())
+        encoding = args[0];
     if (m.empty())
     {
         ctx.out << "The last manifest generated is unavailable. You can\n"
@@ -510,7 +629,7 @@ loadSigningManifest(Context const& ctx, char const* command)
     if (!ctx.options.manifestFile)
         throw std::runtime_error(std::string(command) + " needs --manifest-file");
     auto manifest = loadManifestFile(*ctx.options.manifestFile);
-    if (manifest.revoked() || !manifest.signingKey)
+    if (!manifest.signingKey)
         throw std::runtime_error("The manifest is revoked");
     auto const signingKey = *manifest.signingKey;
     return {std::move(manifest), signingKey};
@@ -522,7 +641,6 @@ emitSignedList(
     PublicKey const& masterKey,
     UnsignedList const& list,
     std::string const& signatureHex,
-    Resigner const& resign,
     Context const& ctx,
     Output& output)
 {
@@ -530,7 +648,13 @@ emitSignedList(
     if (ctx.options.appendFile)
         append = readJsonFile(*ctx.options.appendFile);
     output.json(makeSignedList(
-        manifestBase64, masterKey, list, signatureHex, ctx.options.listVersion, append, resign));
+        manifestBase64,
+        masterKey,
+        list,
+        signatureHex,
+        ctx.options.listVersion.value_or(1),
+        append,
+        netClockNow()));
 }
 
 int
@@ -538,24 +662,24 @@ cmdSignList(Args const& args, Context const& ctx)
 {
     if (!ctx.options.tokenFile)
         throw std::runtime_error("sign_list needs --token-file");
-    Output output(ctx, {args[0]}, OwnerOnlyFile::kPublished);
+    Output output(ctx, args[0], OwnerOnlyFile::kPublished);
 
     auto const token = loadTokenFile(*ctx.options.tokenFile);
     auto const manifest = deserializeManifest(base64Decode(token.manifest));
-    if (!manifest || !manifest->verify() || manifest->revoked() || !manifest->signingKey)
+    if (!manifest || !manifest->verify() || !manifest->signingKey)
         throw std::runtime_error("The token's manifest is not valid");
 
     auto const signingKey = *manifest->signingKey;
-    auto const keyType = publicKeyType(signingKey);
-    if (!keyType || derivePublicKey(*keyType, token.validationSecret) != signingKey)
+    // Every PublicKey has a type, so value_or never falls back.
+    if (derivePublicKey(
+            publicKeyType(signingKey).value_or(KeyType::Secp256k1), token.validationSecret) !=
+        signingKey)
         throw std::runtime_error("The token's secret does not match its manifest");
 
     auto const list = loadUnsignedList(args[0]);
-    auto const resign = [&](std::string const& blobBytes) {
-        return strHex(xrpl::sign(signingKey, token.validationSecret, makeSlice(blobBytes)));
-    };
-    emitSignedList(
-        token.manifest, manifest->masterKey, list, resign(list.canonical), resign, ctx, output);
+    auto const signature =
+        strHex(xrpl::sign(signingKey, token.validationSecret, makeSlice(list.canonical)));
+    emitSignedList(token.manifest, manifest->masterKey, list, signature, ctx, output);
     return EXIT_SUCCESS;
 }
 
@@ -564,6 +688,7 @@ cmdStartSignList(Args const& args, Context const& ctx)
 {
     loadSigningManifest(ctx, "start_sign_list");
     auto const list = loadUnsignedList(args[0]);
+    requireUnexpired(list, netClockNow());
     ctx.out << strHex(makeSlice(list.canonical)) << std::endl;
     return EXIT_SUCCESS;
 }
@@ -572,7 +697,7 @@ int
 cmdFinishSignList(Args const& args, Context const& ctx)
 {
     auto const [manifest, signingKey] = loadSigningManifest(ctx, "finish_sign_list");
-    Output output(ctx, {args[1]}, OwnerOnlyFile::kPublished);
+    Output output(ctx, args[1], OwnerOnlyFile::kPublished);
 
     auto const list = loadUnsignedList(args[1]);
     auto const sig = decodeSignature(args[0]);
@@ -580,7 +705,7 @@ cmdFinishSignList(Args const& args, Context const& ctx)
         throw std::runtime_error("The signature does not verify under the manifest's signing key");
 
     emitSignedList(
-        base64Encode(manifest.serialized), manifest.masterKey, list, strHex(sig), {}, ctx, output);
+        base64Encode(manifest.serialized), manifest.masterKey, list, strHex(sig), ctx, output);
     return EXIT_SUCCESS;
 }
 
@@ -597,6 +722,84 @@ cmdVerifyList(Args const& args, Context const& ctx)
     return report["ok"].asBool() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+// The options a command reads, as bits of Command::options.
+enum class Option : unsigned {
+    TokenKeyType = 1U << 0,
+    SigningKey = 1U << 1,
+    TokenFile = 1U << 2,
+    ManifestFile = 1U << 3,
+    Out = 1U << 4,
+    ListVersion = 1U << 5,
+    Append = 1U << 6,
+    Validators = 1U << 7,
+    ExpectedKey = 1U << 8,
+};
+
+// The Command::options mask of the given options.
+template <std::same_as<Option>... Options>
+constexpr unsigned
+optionMask(Options... options)
+{
+    return (0U | ... | static_cast<unsigned>(options));
+}
+
+struct OptionFlag
+{
+    Option option;
+    char const* flag;
+    bool (*isSet)(ToolOptions const&);
+};
+
+constexpr std::array<OptionFlag, 9> kOptionFlags{
+    {
+        {
+            .option = Option::TokenKeyType,
+            .flag = "--token-key-type",
+            .isSet = [](ToolOptions const& o) { return o.tokenKeyType.has_value(); },
+        },
+        {
+            .option = Option::SigningKey,
+            .flag = "--signing-key",
+            .isSet = [](ToolOptions const& o) { return o.signingKey.has_value(); },
+        },
+        {
+            .option = Option::TokenFile,
+            .flag = "--token-file",
+            .isSet = [](ToolOptions const& o) { return o.tokenFile.has_value(); },
+        },
+        {
+            .option = Option::ManifestFile,
+            .flag = "--manifest-file",
+            .isSet = [](ToolOptions const& o) { return o.manifestFile.has_value(); },
+        },
+        {
+            .option = Option::Out,
+            .flag = "--out",
+            .isSet = [](ToolOptions const& o) { return o.outFile.has_value(); },
+        },
+        {
+            .option = Option::ListVersion,
+            .flag = "--list-version",
+            .isSet = [](ToolOptions const& o) { return o.listVersion.has_value(); },
+        },
+        {
+            .option = Option::Append,
+            .flag = "--append",
+            .isSet = [](ToolOptions const& o) { return o.appendFile.has_value(); },
+        },
+        {
+            .option = Option::Validators,
+            .flag = "--validators",
+            .isSet = [](ToolOptions const& o) { return o.validatorsFile.has_value(); },
+        },
+        {
+            .option = Option::ExpectedKey,
+            .flag = "--expected-key",
+            .isSet = [](ToolOptions const& o) { return o.expectedKey.has_value(); },
+        },
+    },
+};
+
 struct Command
 {
     char const* name;
@@ -604,6 +807,8 @@ struct Command
     std::size_t maxArgs;
     // Loads, changes and rewrites the key file, so runs under KeyFileLock.
     bool updatesKeyFile;
+    // The Option bits of the options the command reads; any other is refused.
+    unsigned options;
     int (*run)(Args const&, Context const&);
 };
 
@@ -614,6 +819,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdCreateKeys,
         },
         {
@@ -621,6 +827,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdCreateExternal,
         },
         {
@@ -628,6 +835,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = true,
+            .options = optionMask(Option::TokenKeyType, Option::Out),
             .run = cmdCreateToken,
         },
         {
@@ -635,6 +843,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = true,
+            .options = optionMask(Option::TokenKeyType, Option::SigningKey),
             .run = cmdStartToken,
         },
         {
@@ -642,6 +851,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 2,
             .updatesKeyFile = true,
+            .options = optionMask(Option::Out),
             .run = cmdFinishToken,
         },
         {
@@ -649,6 +859,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = true,
+            .options = optionMask(Option::Out),
             .run = cmdRevokeKeys,
         },
         {
@@ -656,6 +867,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdStartRevokeKeys,
         },
         {
@@ -663,6 +875,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = true,
+            .options = optionMask(Option::Out),
             .run = cmdFinishRevokeKeys,
         },
         {
@@ -670,6 +883,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = true,
+            .options = optionMask(Option::TokenKeyType, Option::Out),
             .run = cmdSetDomain,
         },
         {
@@ -677,6 +891,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = true,
+            .options = optionMask(Option::TokenKeyType, Option::Out),
             .run = cmdClearDomain,
         },
         {
@@ -684,6 +899,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 0,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdAttestDomain,
         },
         {
@@ -691,6 +907,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdSign,
         },
         {
@@ -698,6 +915,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdSignHex,
         },
         {
@@ -705,6 +923,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 0,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(),
             .run = cmdShowManifest,
         },
         {
@@ -712,6 +931,8 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options =
+                optionMask(Option::TokenFile, Option::Out, Option::ListVersion, Option::Append),
             .run = cmdSignList,
         },
         {
@@ -719,6 +940,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(Option::ManifestFile),
             .run = cmdStartSignList,
         },
         {
@@ -726,6 +948,8 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 2,
             .maxArgs = 2,
             .updatesKeyFile = false,
+            .options =
+                optionMask(Option::ManifestFile, Option::Out, Option::ListVersion, Option::Append),
             .run = cmdFinishSignList,
         },
         {
@@ -733,6 +957,7 @@ constexpr std::array<Command, 18> kCommands{
             .minArgs = 1,
             .maxArgs = 1,
             .updatesKeyFile = false,
+            .options = optionMask(Option::Validators, Option::ExpectedKey),
             .run = cmdVerifyList,
         },
     },
@@ -776,6 +1001,14 @@ runCommand(
         throw std::runtime_error("Unknown command: " + command);
     if (args.size() < it->minArgs || args.size() > it->maxArgs)
         throw std::runtime_error("Syntax error: Wrong number of arguments");
+    for (auto const& o : kOptionFlags)
+    {
+        if (o.isSet(options) && (it->options & optionMask(o.option)) == 0)
+        {
+            throw std::runtime_error(
+                std::string("Syntax error: ") + o.flag + " does not apply to " + command);
+        }
+    }
 
     std::optional<KeyFileLock> lock;
     if (it->updatesKeyFile)

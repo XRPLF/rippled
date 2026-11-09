@@ -1,5 +1,6 @@
 #include <tools/validator-keys/SigningKeys.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -16,11 +17,16 @@
 #include <xrpl/server/Manifest.h>
 
 #include <gtest/gtest.h>
+#include <sys/resource.h>
 #include <tools/validator-keys/OwnerOnlyFile.h>
 
 #include <Fixtures.h>
+#include <unistd.h>
 
+#include <algorithm>
 #include <array>
+#include <cerrno>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -35,6 +41,12 @@ namespace {
 
 constexpr std::array<KeyType, 2> kKeyTypes{{KeyType::Ed25519, KeyType::Secp256k1}};
 constexpr std::uint32_t kMaxSequence = std::numeric_limits<std::uint32_t>::max();
+
+// The order n of the secp256k1 group, big-endian.
+constexpr std::array<std::uint8_t, 32> kSecp256k1Order{{
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
+    0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
+}};
 
 std::string const kBadManifest = "Manifest is not properly signed";
 std::string const kRevoked = "Validator keys have been revoked.";
@@ -99,7 +111,121 @@ manifestOf(std::string const& base64, SigningKeys const& keys)
     return m;
 }
 
+// The DER secp256k1 signature @p sig with S replaced by n - S: a signature
+// that verifies over the same bytes but is not fully canonical.
+Blob
+withHighS(Blob const& sig)
+{
+    // 30 <len> 02 <rlen> <R> 02 <slen> <S>, with S at most 33 bytes
+    std::size_t const rLen = sig.at(3);
+    std::size_t const sAt = 4 + rLen;
+    std::size_t const sLen = sig.at(sAt + 1);
+    std::size_t const used = std::min<std::size_t>(sLen, 32);
+    std::array<std::uint8_t, 32> s{};
+    std::copy(sig.begin() + sAt + 2 + (sLen - used), sig.begin() + sAt + 2 + sLen, s.end() - used);
+
+    Blob high(32);
+    int borrow = 0;
+    for (std::size_t i = 32; i-- > 0;)
+    {
+        int const d = kSecp256k1Order.at(i) - s.at(i) - borrow;
+        borrow = d < 0 ? 1 : 0;
+        high[i] = static_cast<std::uint8_t>(d + (borrow * 256));
+    }
+    // n - S is above n / 2, so its first byte is never zero; DER needs a zero
+    // byte before a first byte with the sign bit set.
+    if ((high.front() & 0x80) != 0)
+        high.insert(high.begin(), 0);
+
+    Blob out{0x30, 0, 0x02, static_cast<std::uint8_t>(rLen)};
+    out.insert(out.end(), sig.begin() + 4, sig.begin() + sAt);
+    out.push_back(0x02);
+    out.push_back(static_cast<std::uint8_t>(high.size()));
+    out.insert(out.end(), high.begin(), high.end());
+    out[1] = static_cast<std::uint8_t>(out.size() - 2);
+    return out;
+}
+
 }  // namespace
+
+TEST_F(SigningKeysTest, equality_compares_every_field)
+{
+    auto const expectUnequal = [](SigningKeys const& a, SigningKeys const& b, char const* what) {
+        EXPECT_FALSE(a == b) << what;
+        EXPECT_FALSE(b == a) << what;
+    };
+
+    auto const ed = generateKeyPair(KeyType::Ed25519, randomSeed());
+    SigningKeys const base(KeyType::Ed25519, ed.first);
+
+    expectUnequal(SigningKeys(KeyType::Secp256k1, ed.first), base, "key type");
+    expectUnequal(
+        SigningKeys(KeyType::Ed25519, generateKeyPair(KeyType::Ed25519, randomSeed()).first),
+        base,
+        "public key");
+    expectUnequal(SigningKeys(KeyType::Ed25519, ed.second, 0), base, "secret presence");
+    expectUnequal(SigningKeys(KeyType::Ed25519, ed.first, 1), base, "token sequence");
+    expectUnequal(SigningKeys(KeyType::Ed25519, ed.first, 0, true), base, "revoked");
+
+    SigningKeys withDomain = base;
+    withDomain.domain("validator.example.com");
+    expectUnequal(withDomain, base, "domain");
+
+    // The same key file with and without its manifest
+    SigningKeys withManifest(KeyType::Ed25519);
+    withManifest.createToken(KeyType::Ed25519);
+    withManifest.writeToFile(keyFile_);
+    auto withoutManifest = keyFileJson();
+    withoutManifest.removeMember("manifest");
+    auto const withoutManifestFile = dir_.file("without_manifest.json");
+    writeFile(withoutManifestFile, withoutManifest.toStyledString());
+    expectUnequal(
+        SigningKeys::makeSigningKeys(keyFile_),
+        SigningKeys::makeSigningKeys(withoutManifestFile),
+        "manifest");
+
+    SigningKeys const signerA(KeyType::Ed25519);
+    SigningKeys const signerB(KeyType::Ed25519);
+    SigningKeys pendingA = base;
+    pendingA.startToken(KeyType::Ed25519, signerA.publicKey());
+    expectUnequal(pendingA, base, "pending presence");
+
+    SigningKeys pendingB = base;
+    pendingB.startToken(KeyType::Ed25519, signerB.publicKey());
+    expectUnequal(pendingA, pendingB, "pending signing key");
+
+    // A pending generated key, and an external pending key with its public key
+    SigningKeys generated = base;
+    generated.startToken(KeyType::Secp256k1);
+    generated.writeToFile(keyFile_);
+    auto const secret = required(
+        parseBase58<SecretKey>(
+            TokenType::NodePrivate, keyFileJson()["pending_token_secret"].asString()));
+    SigningKeys external = base;
+    external.startToken(KeyType::Secp256k1, derivePublicKey(KeyType::Secp256k1, secret));
+    expectUnequal(generated, external, "pending generated against external");
+
+    // The same key file with and without its previous signing keys
+    SigningKeys const master(KeyType::Ed25519);
+    SigningKeys const first(KeyType::Ed25519);
+    SigningKeys const second(KeyType::Ed25519);
+    SigningKeys rotated(KeyType::Ed25519, master.publicKey());
+    for (auto const* signer : {&first, &second})
+    {
+        auto const data = rotated.startToken(KeyType::Ed25519, signer->publicKey());
+        rotated.finishToken(
+            required(strUnHex(master.signHex(data))), required(strUnHex(signer->signHex(data))));
+    }
+    rotated.writeToFile(keyFile_);
+    auto withoutPrevious = keyFileJson();
+    withoutPrevious.removeMember("previous_signing_keys");
+    auto const withoutPreviousFile = dir_.file("without_previous.json");
+    writeFile(withoutPreviousFile, withoutPrevious.toStyledString());
+    expectUnequal(
+        SigningKeys::makeSigningKeys(keyFile_),
+        SigningKeys::makeSigningKeys(withoutPreviousFile),
+        "previous signing keys");
+}
 
 TEST_F(SigningKeysTest, key_file_round_trip)
 {
@@ -119,7 +245,7 @@ TEST_F(SigningKeysTest, key_file_round_trip)
     // A token, a domain and a pending external token all survive the round trip
     SigningKeys keys(KeyType::Ed25519);
     keys.domain("validator.example.com");
-    keys.createToken();
+    keys.createToken(KeyType::Secp256k1);
     SigningKeys const signer(KeyType::Ed25519);
     keys.startToken(KeyType::Ed25519, signer.publicKey());
     keys.writeToFile(keyFile_);
@@ -164,6 +290,12 @@ TEST_F(SigningKeysTest, write_to_file_errors)
         errorOf([&] { keys.writeToFile(blocked); }),
         "Cannot create directory: " + blocked.parent_path().string());
 
+    // A directory below the file: mkdir fails with ENOTDIR, as root too
+    auto const underFile = std::filesystem::path(keyFile_.string() + "/sub/keys.json");
+    EXPECT_EQ(
+        errorOf([&] { keys.writeToFile(underFile); }),
+        "Cannot create directory: " + underFile.parent_path().string());
+
     // The target is a directory
     auto const directory = std::filesystem::path(dir_.file("dir"));
     std::filesystem::create_directory(directory);
@@ -171,16 +303,20 @@ TEST_F(SigningKeysTest, write_to_file_errors)
         errorOf([&] { keys.writeToFile(directory); }),
         "Cannot write key file: " + directory.string());
 
-    // The directory cannot be written to
-    auto const sealed = std::filesystem::path(dir_.file("sealed"));
-    std::filesystem::create_directory(sealed);
-    std::filesystem::permissions(
-        sealed, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
-    auto const inSealed = sealed / "keys.json";
-    EXPECT_EQ(
-        errorOf([&] { keys.writeToFile(inSealed); }),
-        "Cannot write key file: " + inSealed.string());
-    std::filesystem::permissions(sealed, std::filesystem::perms::owner_all);
+    // The directory cannot be written to; skipped as root, which writes into
+    // a 0500 directory regardless of its mode.
+    if (::geteuid() != 0)
+    {
+        auto const sealed = std::filesystem::path(dir_.file("sealed"));
+        std::filesystem::create_directory(sealed);
+        std::filesystem::permissions(
+            sealed, std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec);
+        auto const inSealed = sealed / "keys.json";
+        EXPECT_EQ(
+            errorOf([&] { keys.writeToFile(inSealed); }),
+            "Cannot write key file: " + inSealed.string());
+        std::filesystem::permissions(sealed, std::filesystem::perms::owner_all);
+    }
 
     // A stale file at the old fixed ".tmp" sibling name is neither followed
     // nor removed: the temporary now gets a random suffix in the same
@@ -191,6 +327,38 @@ TEST_F(SigningKeysTest, write_to_file_errors)
     keys.writeToFile(linked);
     EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(linked));
     EXPECT_TRUE(std::filesystem::is_symlink(stale));
+}
+
+TEST_F(SigningKeysTest, owner_only_file_edges)
+{
+    // A one-byte write commits
+    {
+        OwnerOnlyFile file(keyFile_, "key file");
+        file.write("x");
+        EXPECT_EQ(errorOf([&] { file.commit(); }), "");
+    }
+    EXPECT_EQ(readFile(keyFile_), "x");
+
+    // Each missing directory on the way is made with mode 0700
+    SigningKeys const keys(KeyType::Ed25519);
+    auto const nested = std::filesystem::path(dir_.file("a/b/key.json"));
+    keys.writeToFile(nested);
+    EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(nested));
+    for (auto const* made : {"a", "a/b"})
+    {
+        EXPECT_EQ(
+            std::filesystem::status(dir_.file(made)).permissions() & std::filesystem::perms::mask,
+            std::filesystem::perms::owner_all)
+            << made;
+    }
+
+    // A relative path whose first mkdir succeeds with errno 0 left from before
+    {
+        WorkingDirectory const cwd(dir_.path());
+        errno = 0;
+        EXPECT_EQ(errorOf([&] { keys.writeToFile("c/key.json"); }), "");
+    }
+    EXPECT_TRUE(keys == SigningKeys::makeSigningKeys(dir_.file("c/key.json")));
 }
 
 TEST_F(SigningKeysTest, create_refuses_existing)
@@ -220,6 +388,62 @@ TEST_F(SigningKeysTest, create_refuses_existing)
     EXPECT_EQ(entries, 1u);
 }
 
+TEST_F(SigningKeysTest, write_past_file_size_limit)
+{
+    OwnerOnlyFile file(keyFile_, "key file");
+
+    // A file size limit of 0 with SIGXFSZ ignored makes write fail with EFBIG;
+    // both are restored before any expectation.
+    auto const previousHandler = std::signal(SIGXFSZ, SIG_IGN);
+    bool const ignored = previousHandler != SIG_ERR;
+    struct rlimit previousLimit = {};
+    bool const gotLimit = ::getrlimit(RLIMIT_FSIZE, &previousLimit) == 0;
+    struct rlimit zero = previousLimit;
+    zero.rlim_cur = 0;
+    bool const limited = gotLimit && ::setrlimit(RLIMIT_FSIZE, &zero) == 0;
+    file.write("{}");
+    bool const restored = !limited || ::setrlimit(RLIMIT_FSIZE, &previousLimit) == 0;
+    if (ignored)
+        std::signal(SIGXFSZ, previousHandler);
+
+    ASSERT_TRUE(ignored);
+    ASSERT_TRUE(limited);
+    ASSERT_TRUE(restored);
+    EXPECT_EQ(errorOf([&] { file.commit(); }), "Cannot write key file: " + keyFile_.string());
+
+    // Neither the target nor the temporary is left in the directory
+    std::size_t entries = 0;
+    for ([[maybe_unused]] auto const& entry :
+         std::filesystem::directory_iterator(keyFile_.parent_path()))
+        ++entries;
+    EXPECT_EQ(entries, 0u);
+}
+
+TEST_F(SigningKeysTest, commit_in_unreadable_directory)
+{
+    if (::geteuid() == 0)
+        GTEST_SKIP() << "root reads a directory of any mode";
+
+    // A directory that can be written and searched but not read: the commit
+    // succeeds although the directory cannot be opened to sync it.
+    auto const unreadable = std::filesystem::path(dir_.file("unreadable"));
+    std::filesystem::create_directory(unreadable);
+    std::filesystem::permissions(
+        unreadable, std::filesystem::perms::owner_write | std::filesystem::perms::owner_exec);
+    auto const target = unreadable / "validator_keys.json";
+    std::string error;
+    {
+        OwnerOnlyFile file(target, "key file");
+        file.write("{}");
+        error = errorOf([&] { file.commit(); });
+    }
+    std::filesystem::permissions(unreadable, std::filesystem::perms::owner_all);
+    std::string const text = readFile(target);
+
+    EXPECT_EQ(error, "");
+    EXPECT_EQ(text, "{}");
+}
+
 TEST_F(SigningKeysTest, key_file_fields)
 {
     EXPECT_EQ(
@@ -227,6 +451,12 @@ TEST_F(SigningKeysTest, key_file_fields)
         "Failed to open key file: " + keyFile_.string());
 
     writeFile(keyFile_, "{{}");
+    EXPECT_EQ(
+        errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }),
+        "Unable to parse json key file: " + keyFile_.string());
+
+    // JSON that is not an object
+    writeFile(keyFile_, "[]");
     EXPECT_EQ(
         errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }),
         "Unable to parse json key file: " + keyFile_.string());
@@ -357,7 +587,7 @@ TEST_F(SigningKeysTest, create_token)
     auto const kp = generateKeyPair(KeyType::Ed25519, randomSeed());
     {
         SigningKeys keys(KeyType::Ed25519, kp.second, kMaxSequence - 1);
-        EXPECT_EQ(errorOf([&] { keys.createToken(); }), kExhausted);
+        EXPECT_EQ(errorOf([&] { keys.createToken(KeyType::Secp256k1); }), kExhausted);
     }
     {
         // A key migrated from a publisher whose manifests carried the list
@@ -369,12 +599,13 @@ TEST_F(SigningKeysTest, create_token)
     {
         SigningKeys keys(KeyType::Ed25519);
         keys.revoke();
-        EXPECT_EQ(errorOf([&] { keys.createToken(); }), kRevoked);
+        EXPECT_EQ(errorOf([&] { keys.createToken(KeyType::Secp256k1); }), kRevoked);
     }
     {
         SigningKeys keys(KeyType::Ed25519, kp.first);
         EXPECT_EQ(
-            errorOf([&] { keys.createToken(); }), "This key file cannot be used to sign tokens.");
+            errorOf([&] { keys.createToken(KeyType::Secp256k1); }),
+            "This key file cannot be used to sign tokens.");
         EXPECT_EQ(
             errorOf([&] { keys.revoke(); }),
             "This key file cannot sign a revocation: the master key is external; use "
@@ -386,7 +617,7 @@ TEST_F(SigningKeysTest, token_with_domain)
 {
     SigningKeys keys(KeyType::Ed25519);
     keys.domain("validator.example.com");
-    auto const m = manifestOf(keys.createToken().manifest, keys);
+    auto const m = manifestOf(keys.createToken(KeyType::Secp256k1).manifest, keys);
     EXPECT_EQ(m.domain, "validator.example.com");
     EXPECT_EQ(
         keys.attestationData(),
@@ -454,6 +685,9 @@ TEST_F(SigningKeysTest, sign)
     }
     SigningKeys const keys(KeyType::Ed25519);
     EXPECT_EQ(errorOf([&] { (void)keys.signHex("zz"); }), "Could not decode hex string: zz");
+    EXPECT_EQ(
+        errorOf([&] { (void)keys.signHex(" "); }),
+        "Syntax error: Must specify data string to sign");
 }
 
 TEST_F(SigningKeysTest, external_master)
@@ -506,13 +740,13 @@ TEST_F(SigningKeysTest, external_master)
         EXPECT_TRUE(keys.revoked());
         manifestOf(keys.finishRevoke(sig), keys);
 
-        EXPECT_EQ(errorOf([&] { keys.startToken(); }), kRevoked);
+        EXPECT_EQ(errorOf([&] { keys.startToken(KeyType::Secp256k1); }), kRevoked);
         EXPECT_EQ(errorOf([&] { keys.finishToken(sig); }), kRevoked);
     }
 
     SigningKeys exhausted(
         KeyType::Ed25519, SigningKeys(KeyType::Ed25519).publicKey(), kMaxSequence - 1);
-    EXPECT_EQ(errorOf([&] { exhausted.startToken(); }), kExhausted);
+    EXPECT_EQ(errorOf([&] { exhausted.startToken(KeyType::Secp256k1); }), kExhausted);
 }
 
 TEST_F(SigningKeysTest, external_signing_key)
@@ -592,11 +826,66 @@ TEST_F(SigningKeysTest, pending_token_is_kept)
             [&] { keys.startToken(KeyType::Ed25519, SigningKeys(KeyType::Ed25519).publicKey()); }),
         pendingError);
     // createToken would replace the pending token too, so it is refused
-    EXPECT_EQ(errorOf([&] { keys.createToken(); }), pendingError);
+    EXPECT_EQ(errorOf([&] { keys.createToken(KeyType::Secp256k1); }), pendingError);
     EXPECT_EQ(keys.startToken(KeyType::Ed25519, signer.publicKey()), external);
     auto const masterSig = required(strUnHex(keys.signHex(external)));
     auto const signingSig = required(strUnHex(signer.signHex(external)));
     EXPECT_EQ(manifestOf(keys.finishToken(masterSig, signingSig).manifest, keys).sequence, 2u);
+}
+
+TEST_F(SigningKeysTest, earlier_signing_key_refused)
+{
+    // The master and both signing keys are held outside the key file
+    SigningKeys const master(KeyType::Ed25519);
+    SigningKeys const a(KeyType::Ed25519);
+    SigningKeys const b(KeyType::Ed25519);
+    SigningKeys keys(KeyType::Ed25519, master.publicKey());
+    std::string const earlierKey =
+        "The signing key was used by an earlier manifest; a rotated-out key is not used again";
+
+    for (auto const* signer : {&a, &b})
+    {
+        auto const data = keys.startToken(KeyType::Ed25519, signer->publicKey());
+        keys.finishToken(
+            required(strUnHex(master.signHex(data))), required(strUnHex(signer->signHex(data))));
+    }
+    EXPECT_EQ(keys.sequence(), 2u);
+
+    EXPECT_EQ(errorOf([&] { keys.startToken(KeyType::Secp256k1, a.publicKey()); }), earlierKey);
+    EXPECT_EQ(keys.sequence(), 2u);
+
+    // The key file keeps the earlier signing keys
+    keys.writeToFile(keyFile_);
+    auto const jv = keyFileJson();
+    ASSERT_TRUE(jv["previous_signing_keys"].isArray());
+    ASSERT_EQ(jv["previous_signing_keys"].size(), 1u);
+    EXPECT_EQ(
+        jv["previous_signing_keys"][0u].asString(), toBase58(TokenType::NodePublic, a.publicKey()));
+    auto fileKeys = SigningKeys::makeSigningKeys(keyFile_);
+    EXPECT_TRUE(keys == fileKeys);
+    EXPECT_EQ(errorOf([&] { fileKeys.startToken(KeyType::Secp256k1, a.publicKey()); }), earlierKey);
+
+    // A previous_signing_keys that is not an array of NodePublic keys is refused
+    std::string const invalidPrevious =
+        "Key file '" + keyFile_.string() + "' contains invalid \"previous_signing_keys\" field";
+    json::Value notKey(json::ValueType::Array);
+    notKey.append("notakey");
+    json::Value notString(json::ValueType::Array);
+    notString.append(5);
+    for (auto const& bad : {json::Value(5), notString, notKey})
+    {
+        auto badFile = jv;
+        badFile["previous_signing_keys"] = bad;
+        writeKeyFile(badFile);
+        EXPECT_EQ(errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }), invalidPrevious);
+    }
+
+    // A key file without previous_signing_keys loads
+    auto withoutField = jv;
+    withoutField.removeMember("previous_signing_keys");
+    writeKeyFile(withoutField);
+    EXPECT_EQ(errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }), "");
+    EXPECT_EQ(SigningKeys::makeSigningKeys(keyFile_).sequence(), 2u);
 }
 
 TEST_F(SigningKeysTest, stored_manifest_is_checked)
@@ -607,8 +896,13 @@ TEST_F(SigningKeysTest, stored_manifest_is_checked)
     auto const good = keyFileJson();
     EXPECT_EQ(loadError(good), "");
 
-    // A token manifest on revoked keys
+    // Hex that is not a manifest
     auto jv = good;
+    jv["manifest"] = "00";
+    EXPECT_EQ(loadError(jv), kBadManifest);
+
+    // A token manifest on revoked keys
+    jv = good;
     jv["revoked"] = true;
     EXPECT_EQ(loadError(jv), kBadManifest);
 
@@ -635,8 +929,8 @@ TEST_F(SigningKeysTest, stored_manifest_is_checked)
         std::string const stale =
             "The stored manifest has sequence 1, above token_sequence 0; a server would reject "
             "the next token as stale";
-        EXPECT_EQ(errorOf([&] { loaded.createToken(); }), stale);
-        EXPECT_EQ(errorOf([&] { loaded.startToken(); }), stale);
+        EXPECT_EQ(errorOf([&] { loaded.createToken(KeyType::Secp256k1); }), stale);
+        EXPECT_EQ(errorOf([&] { loaded.startToken(KeyType::Secp256k1); }), stale);
         EXPECT_EQ(loaded.sequence(), 0u);
         EXPECT_TRUE(manifestOf(loaded.revoke(), loaded).revoked());
     }
@@ -648,7 +942,67 @@ TEST_F(SigningKeysTest, stored_manifest_is_checked)
     EXPECT_EQ(loadError(jv), "");
     {
         auto loaded = SigningKeys::makeSigningKeys(keyFile_);
-        EXPECT_EQ(manifestOf(loaded.createToken().manifest, loaded).sequence, 6u);
+        EXPECT_EQ(manifestOf(loaded.createToken(KeyType::Secp256k1).manifest, loaded).sequence, 6u);
+    }
+}
+
+TEST_F(SigningKeysTest, key_file_too_large)
+{
+    SigningKeys const keys(KeyType::Ed25519);
+    keys.writeToFile(keyFile_);
+    auto text = readFile(keyFile_);
+    ASSERT_LT(text.size(), 65536u);
+
+    // Trailing whitespace keeps the JSON valid, so only the size is refused
+    text.resize(65536, ' ');
+    writeFile(keyFile_, text);
+    EXPECT_EQ(errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }), "");
+
+    text.push_back(' ');
+    writeFile(keyFile_, text);
+    EXPECT_EQ(
+        errorOf([&] { SigningKeys::makeSigningKeys(keyFile_); }),
+        "Failed to open key file: " + keyFile_.string());
+}
+
+TEST_F(SigningKeysTest, non_canonical_signature_refused)
+{
+    SigningKeys const signer(KeyType::Secp256k1);
+    SigningKeys keys(KeyType::Secp256k1, signer.publicKey());
+    auto const data = keys.startToken(KeyType::Secp256k1);
+    auto const sig = required(strUnHex(signer.signHex(data)));
+    auto const high = withHighS(sig);
+    EXPECT_EQ(ecdsaCanonicality(makeSlice(high)), ECDSACanonicality::Canonical);
+
+    EXPECT_EQ(errorOf([&] { keys.finishToken(high); }), kBadManifest);
+    EXPECT_EQ(keys.sequence(), 0u);
+
+    // The fully canonical signature it was made from finishes the token
+    EXPECT_EQ(errorOf([&] { keys.finishToken(sig); }), "");
+    EXPECT_EQ(keys.sequence(), 1u);
+}
+
+TEST_F(SigningKeysTest, revoke_discards_pending)
+{
+    SigningKeys const signer(KeyType::Ed25519);
+    for (bool const externalSigningKey : {false, true})
+    {
+        SigningKeys keys(KeyType::Ed25519);
+        if (externalSigningKey)
+        {
+            keys.startToken(KeyType::Ed25519, signer.publicKey());
+        }
+        else
+        {
+            keys.startToken(KeyType::Secp256k1);
+        }
+        keys.revoke();
+        keys.writeToFile(keyFile_);
+
+        auto const jv = keyFileJson();
+        EXPECT_TRUE(jv["revoked"].asBool()) << externalSigningKey;
+        EXPECT_FALSE(jv.isMember("pending_token_secret")) << externalSigningKey;
+        EXPECT_FALSE(jv.isMember("pending_signing_key")) << externalSigningKey;
     }
 }
 

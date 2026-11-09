@@ -160,7 +160,7 @@ main(int argc, char* const* argv)
                 throw std::runtime_error(
                     "Unknown key type: " + vm["token-key-type"].as<std::string>());
             }
-            options.tokenKeyType = *keyType;
+            options.tokenKeyType = keyType;
         }
         if (vm.contains("signing-key"))
             options.signingKey = parsePublicKey(vm["signing-key"].as<std::string>());

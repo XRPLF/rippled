@@ -147,7 +147,9 @@ it is the manifest a [list publisher](#validator-list-publishers) passes to
 `start_sign_list` and `finish_sign_list` with `--manifest-file`, so save it
 with `--out manifest.txt`. It is not a `[validator_token]` and nothing in
 `xrpld.cfg` takes it. Each token needs a new signing key: a server rejects a
-manifest that names the signing key of the one it already holds.
+manifest that names the signing key of the one it already holds. The key file
+lists the signing keys of earlier manifests under `previous_signing_keys`, and
+`start_token` refuses any of them.
 
 ```
   $ validator-keys start_token --signing-key <signing public key>
@@ -168,6 +170,10 @@ For testing without a hardware signer, a second key file can stand in for it:
 ```
   $ validator-keys --keyfile other-keys.json sign_hex <bytes>
 ```
+
+When the bytes are a manifest's signing data, `sign_hex` prints the manifest
+fields it is about to sign before the signature: the master key, the signing
+key (or `none (revocation)`), the sequence and the domain (or `none`).
 
 ## Validator List Publishers
 
@@ -197,7 +203,7 @@ The unsigned list is a JSON file with the fields a server reads:
 ```json
 {
   "sequence": 2026091301,
-  "expiration": 843955200,
+  "expiration": 1000000000,
   "validators": [
     { "validation_public_key": "ED...", "manifest": "<base64 manifest>" }
   ]
@@ -208,6 +214,8 @@ The unsigned list is a JSON file with the fields a server reads:
 `effective` are seconds since the XRP Ledger epoch, and each validator's
 `manifest` must belong to its `validation_public_key`. Whitespace is removed
 and one space is placed after each `,` and `:` before signing.
+The tool refuses to sign a list whose `expiration` is not after the time of
+signing, since a server would take it as expired.
 
 ```
   $ validator-keys sign_list unsigned.json --token-file publisher-token.txt --out vl.json
@@ -220,6 +228,12 @@ blob into `blobs_v2` instead, and `--append <existing.json>` adds it to a
 version 2 document, which carries at most five blobs, so a list can be
 published alongside the one it will replace. The appended list's `sequence`
 must be above every blob's in the document, as a server ignores the rest.
+Blobs whose `expiration` is not after the time of appending are dropped, as
+a server ignores an expired blob and `verify_list` refuses a document holding
+one; their sequences still count.
+A server verifies every blob under the newest manifest it has seen, so a
+document holding a blob under an older manifest is refused; after a key
+rotation, sign its lists again with the new token, without `--append`.
 `--out` may name the `--append` file: the document is replaced in one step
 once the new one is complete.
 
@@ -238,8 +252,19 @@ steps against the manifest from `finish_token`:
 ```
 
 The checks are the ones a server makes before trusting the list: the manifest
-verifies and names `public_key`, every blob's signature verifies under the
-manifest's signing key, every blob parses, and none has expired. `--validators`
-requires every blob to list exactly the keys in the unsigned list, and
-`--expected-key` requires the master key to be the one given. The result is
-printed as JSON and the exit code is 0 only if every check passed.
+deserializes, verifies, is no longer than a server accepts and names
+`public_key`; each blob applies its own manifest, else the top-level one, and
+the manifest in use is the first applied until one with a higher sequence
+replaces it; every blob's signature verifies under that manifest's signing
+key; every blob parses as a server parses it; none has expired; and each
+blob's `sequence` is above the one before it. A blob whose `effective` time is
+still to come is reported with `"pending": true` and does not fail the check.
+
+Some checks are stricter than a server's, so a list that passes is accepted
+everywhere: `validators` must not be empty, every validator entry must parse,
+no `validation_public_key` may appear twice, every validator manifest must
+verify, and in a version 2 list
+every blob must verify, not only the best one. `--validators` requires every
+blob to list exactly the keys in the unsigned list, and `--expected-key`
+requires the master key to be the one given. The result is printed as JSON and
+the exit code is 0 only if every check passed.

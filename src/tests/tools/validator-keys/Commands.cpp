@@ -17,13 +17,21 @@
 
 #include <gtest/gtest.h>
 #include <sys/file.h>
+#include <sys/wait.h>
 #include <tools/validator-keys/ListSigning.h>
 #include <tools/validator-keys/SigningKeys.h>
 
 #include <Fixtures.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <signal.h>
+#include <spawn.h>
+#include <unistd.h>
 
+#include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -36,7 +44,11 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
+
+// The environment the spawned tool inherits.
+extern char** environ;
 
 namespace xrpl::tools::test {
 
@@ -48,6 +60,11 @@ constexpr std::string_view kRevokedOperation =
 constexpr std::string_view kExhausted =
     "Maximum number of tokens have already been generated.\n"
     "Revoke validator keys if previous token has been compromised.";
+constexpr std::string_view kForPublishers =
+    "This token's signing key is ed25519: it is for sign_list --token-file; "
+    "xrpld loads only secp256k1 validator tokens";
+constexpr std::string_view kUpdateConfig = "Update xrpld.cfg";
+constexpr std::string_view kAlsoUpdateConfig = "You also need to update the xrpld.cfg file";
 
 class CommandsTest : public ::testing::Test
 {
@@ -135,6 +152,40 @@ public:
     }
 };
 
+// Runs the built validator-keys binary with @p args, its stdout and stderr
+// written to files in @p dir.
+Run
+runBinary(TempDir const& dir, std::vector<std::string> const& args)
+{
+    std::string const outFile = dir.file("cli-stdout.txt");
+    std::string const errFile = dir.file("cli-stderr.txt");
+    std::string const binary = VALIDATOR_KEYS_BINARY;
+    std::vector<char*> argv;
+    argv.push_back(const_cast<char*>(binary.c_str()));
+    for (auto const& arg : args)
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    argv.push_back(nullptr);
+
+    posix_spawn_file_actions_t actions;
+    if (::posix_spawn_file_actions_init(&actions) != 0)
+        throw std::runtime_error("posix_spawn_file_actions_init failed");
+    ::posix_spawn_file_actions_addopen(
+        &actions, STDOUT_FILENO, outFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    ::posix_spawn_file_actions_addopen(
+        &actions, STDERR_FILENO, errFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    pid_t pid = 0;
+    int const spawned =
+        ::posix_spawn(&pid, binary.c_str(), &actions, nullptr, argv.data(), environ);
+    ::posix_spawn_file_actions_destroy(&actions);
+    if (spawned != 0)
+        throw std::runtime_error("cannot spawn " + binary);
+
+    int status = 0;
+    if (::waitpid(pid, &status, 0) != pid || !WIFEXITED(status))
+        throw std::runtime_error(binary + " did not exit normally");
+    return {WEXITSTATUS(status), readFile(outFile), readFile(errFile)};
+}
+
 }  // namespace
 
 TEST_F(CommandsTest, dispatch)
@@ -182,6 +233,20 @@ TEST_F(CommandsTest, create_external)
         EXPECT_FALSE(loaded.hasSecret());
         EXPECT_EQ(loaded.publicKey(), key);
     }
+
+    // A secp256k1 master key is written with its own key type
+    SigningKeys const secp(KeyType::Secp256k1);
+    ToolOptions const secpOpts = optionsFor(file("external-secp256k1.json"));
+    EXPECT_EQ(
+        run("create_external", {toBase58(TokenType::NodePublic, secp.publicKey())}, secpOpts).rc,
+        EXIT_SUCCESS);
+    json::Value written;
+    ASSERT_TRUE(json::Reader().parse(readFile(secpOpts.keyFile), written));
+    EXPECT_EQ(written["key_type"].asString(), "secp256k1");
+    auto const loadedSecp = keys(secpOpts);
+    EXPECT_FALSE(loadedSecp.hasSecret());
+    EXPECT_EQ(loadedSecp.publicKey(), secp.publicKey());
+    EXPECT_EQ(publicKeyType(loadedSecp.publicKey()), KeyType::Secp256k1);
     EXPECT_EQ(
         commandError("create_external", {"abcd"}, options_), "Unable to parse public key: abcd");
     auto badHex = strHex(key);
@@ -303,27 +368,24 @@ TEST_F(CommandsTest, external_token)
         "A token is pending: finish it with finish_token before starting another";
     EXPECT_EQ(run("start_token", {}, options_).out, pending.out);
     SigningKeys const signingKey(KeyType::Ed25519);
-    ToolOptions both = options_;
-    both.signingKey = signingKey.publicKey();
-    both.outFile = file("manifest.txt");
-    EXPECT_EQ(commandError("start_token", {}, both), pendingError);
+    ToolOptions withSigningKey = options_;
+    withSigningKey.signingKey = signingKey.publicKey();
+    EXPECT_EQ(commandError("start_token", {}, withSigningKey), pendingError);
     auto const pendingBytes = pending.out.substr(0, pending.out.find('\n'));
     EXPECT_EQ(run("finish_token", {signer.signHex(pendingBytes)}, options_).rc, EXIT_SUCCESS);
     EXPECT_EQ(keys(options_).sequence(), 3u);
 
     // An external signing key too: two signatures, and a manifest without a
     // secret printed as base64 for a list publisher's --manifest-file
-    ToolOptions toStdout = both;
-    toStdout.outFile.reset();
-    auto const start = run("start_token", {}, toStdout);
-    EXPECT_EQ(run("start_token", {}, toStdout).out, start.out);
+    auto const start = run("start_token", {}, withSigningKey);
+    EXPECT_EQ(run("start_token", {}, withSigningKey).out, start.out);
     EXPECT_EQ(commandError("start_token", {}, options_), pendingError);
     auto const bytes = start.out.substr(0, start.out.find('\n'));
     EXPECT_EQ(
-        commandError("finish_token", {signer.signHex(bytes)}, toStdout),
+        commandError("finish_token", {signer.signHex(bytes)}, options_),
         "The pending token's signing key is external; pass its signature too");
     auto const finish =
-        run("finish_token", {signer.signHex(bytes), signingKey.signHex(bytes)}, toStdout);
+        run("finish_token", {signer.signHex(bytes), signingKey.signHex(bytes)}, options_);
     EXPECT_EQ(finish.rc, EXIT_SUCCESS);
     EXPECT_NE(finish.out.find("--manifest-file"), std::string::npos);
     EXPECT_EQ(finish.out.find('['), std::string::npos);
@@ -338,20 +400,22 @@ TEST_F(CommandsTest, external_token)
     // The current manifest's signing key is refused for the next token; with
     // another key the manifest goes to --out as the base64 alone
     EXPECT_EQ(
-        commandError("start_token", {}, both),
+        commandError("start_token", {}, withSigningKey),
         "The signing key is the current manifest's; a server rejects a manifest that reuses it");
     SigningKeys const signingKey2(KeyType::Ed25519);
-    both.signingKey = signingKey2.publicKey();
-    auto const start2 = run("start_token", {}, both);
+    withSigningKey.signingKey = signingKey2.publicKey();
+    auto const start2 = run("start_token", {}, withSigningKey);
     auto const bytes2 = start2.out.substr(0, start2.out.find('\n'));
+    ToolOptions manifestOut = options_;
+    manifestOut.outFile = file("manifest.txt");
     EXPECT_NE(
-        run("finish_token", {signer.signHex(bytes2), signingKey2.signHex(bytes2)}, both)
+        run("finish_token", {signer.signHex(bytes2), signingKey2.signHex(bytes2)}, manifestOut)
             .out.find("The manifest written to"),
         std::string::npos);
-    auto const manifest = loadManifestFile(*both.outFile);
+    auto const manifest = loadManifestFile(*manifestOut.outFile);
     EXPECT_EQ(required(manifest.signingKey), signingKey2.publicKey());
     EXPECT_EQ(manifest.sequence, 5u);
-    EXPECT_EQ(readFile(*both.outFile), base64Encode(manifest.serialized) + "\n");
+    EXPECT_EQ(readFile(*manifestOut.outFile), base64Encode(manifest.serialized) + "\n");
 
     // The domain is stored for the next token; the attestation bytes are printed
     // for the external signer
@@ -437,6 +501,94 @@ TEST_F(CommandsTest, key_file_lock)
     EXPECT_EQ(keys(options_).sequence(), 1u);
 }
 
+TEST_F(CommandsTest, key_file_lock_relative_path)
+{
+    WorkingDirectory const cwd(dir_.path());
+    ToolOptions const opts = optionsFor("validator_keys.json");
+    EXPECT_EQ(run("create_keys", {}, opts).rc, EXIT_SUCCESS);
+    EXPECT_EQ(run("create_token", {}, opts).rc, EXIT_SUCCESS);
+    EXPECT_EQ(keys(options_).sequence(), 1u);
+}
+
+TEST_F(CommandsTest, key_file_lock_open_failures)
+{
+    // A key file under a regular file: opendir fails with ENOTDIR and loading
+    // reports the key file.
+    auto const regular = file("regular");
+    writeFile(regular, "x");
+    ToolOptions const underFile = optionsFor(regular / "validator_keys.json");
+    EXPECT_EQ(
+        commandError("create_token", {}, underFile),
+        "Failed to open key file: " + underFile.keyFile.string());
+    EXPECT_EQ(
+        commandError("create_keys", {}, underFile), "Cannot create directory: " + regular.string());
+
+    // A directory component longer than NAME_MAX: opendir fails with
+    // ENAMETOOLONG, which root gets too.
+    ToolOptions const longName = optionsFor(file(std::string(300, 'a')) / "validator_keys.json");
+    EXPECT_EQ(
+        commandError("create_token", {}, longName),
+        "Cannot lock key file: " + longName.keyFile.string());
+}
+
+TEST_F(CommandsTest, key_file_lock_retries_after_signal)
+{
+    // A SIGUSR1 handler without SA_RESTART, so the signal interrupts the
+    // worker's flock; the previous handler is restored at the end.
+    class SignalHandler
+    {
+        struct sigaction previous_ = {};
+
+    public:
+        SignalHandler()
+        {
+            struct sigaction action = {};
+            action.sa_handler = [](int) {};
+            action.sa_flags = 0;
+            sigemptyset(&action.sa_mask);
+            if (::sigaction(SIGUSR1, &action, &previous_) != 0)
+                throw std::runtime_error("cannot install the SIGUSR1 handler");
+        }
+        ~SignalHandler()
+        {
+            ::sigaction(SIGUSR1, &previous_, nullptr);
+        }
+        SignalHandler(SignalHandler const&) = delete;
+        SignalHandler&
+        operator=(SignalHandler const&) = delete;
+    };
+
+    run("create_keys", {}, options_);
+    SignalHandler const handler;
+    std::promise<int> promise;
+    auto result = promise.get_future();
+    // Declared before the lock so unwinding on a failed expectation releases
+    // the lock before the thread is joined.
+    std::jthread worker;
+    HeldDirectory held(options_.keyFile.parent_path());
+    worker = std::jthread([&] {
+        try
+        {
+            promise.set_value(run("create_token", {}, options_).rc);
+        }
+        catch (...)
+        {
+            promise.set_exception(std::current_exception());
+        }
+    });
+
+    // The worker waits on the lock; the signal interrupts its flock
+    EXPECT_EQ(result.wait_for(std::chrono::milliseconds(300)), std::future_status::timeout);
+    EXPECT_EQ(::pthread_kill(worker.native_handle(), SIGUSR1), 0);
+    EXPECT_EQ(result.wait_for(std::chrono::milliseconds(300)), std::future_status::timeout);
+    EXPECT_EQ(keys(options_).sequence(), 0u);
+
+    held.release();
+    worker.join();
+    EXPECT_EQ(result.get(), EXIT_SUCCESS);
+    EXPECT_EQ(keys(options_).sequence(), 1u);
+}
+
 TEST_F(CommandsTest, default_key_file)
 {
     std::filesystem::path const home = dir_.path();
@@ -482,6 +634,24 @@ TEST_F(CommandsTest, revoke_keys)
     EXPECT_NE(run("sign", {"data"}, options_).err.find("have been revoked"), std::string::npos);
 }
 
+TEST_F(CommandsTest, revocation_loads)
+{
+    // The printed revocation revokes the master key in a server's manifest cache
+    run("create_keys", {}, options_);
+    auto const masterKey = keys(options_).publicKey();
+    auto const printed = run("revoke_keys", {}, options_);
+    auto m = required(
+        deserializeManifest(base64Decode(blockBody(printed.out, "validator_key_revocation"))));
+    EXPECT_TRUE(m.revoked());
+    EXPECT_EQ(m.masterKey, masterKey);
+
+    ManifestCache cache;
+    EXPECT_EQ(
+        cache.applyManifest(std::move(m), ManifestRateLimitCapPolicy::Uncapped),
+        ManifestDisposition::Accepted);
+    EXPECT_TRUE(cache.revoked(masterKey));
+}
+
 TEST_F(CommandsTest, domain)
 {
     run("create_keys", {}, options_);
@@ -495,7 +665,21 @@ TEST_F(CommandsTest, domain)
     EXPECT_NE(
         run("set_domain", {"validator.example.com"}, options_).out.find("already set"),
         std::string::npos);
-    EXPECT_NE(run("attest_domain", {}, options_).out.find("attestation=\""), std::string::npos);
+    // Each attestation printed is the master key's signature over the attestation data
+    auto const loaded = keys(options_);
+    for (auto const& out : {set.out, run("attest_domain", {}, options_).out})
+    {
+        std::string const open = "attestation=\"";
+        auto const begin = out.find(open);
+        ASSERT_NE(begin, std::string::npos) << out;
+        auto const end = out.find('"', begin + open.size());
+        ASSERT_NE(end, std::string::npos) << out;
+        auto const signature =
+            required(strUnHex(out.substr(begin + open.size(), end - begin - open.size())));
+        EXPECT_TRUE(
+            verify(loaded.publicKey(), makeSlice(loaded.attestationData()), makeSlice(signature)))
+            << out;
+    }
     EXPECT_NE(run("show_manifest", {"base64"}, options_).out.find("(Base64)"), std::string::npos);
     EXPECT_NE(run("show_manifest", {}, options_).out.find("(Base64)"), std::string::npos);
     EXPECT_NE(run("show_manifest", {"hex"}, options_).out.find("(Hex)"), std::string::npos);
@@ -511,6 +695,155 @@ TEST_F(CommandsTest, domain)
     EXPECT_EQ(commandError("set_domain", {"other.example.com"}, options_), kExhausted);
 }
 
+TEST_F(CommandsTest, external_domain_cleared)
+{
+    // A key file without the master secret records the domain for the next token
+    SigningKeys const signer(KeyType::Ed25519);
+    run("create_external", {toBase58(TokenType::NodePublic, signer.publicKey())}, options_);
+
+    auto const set = run("set_domain", {"validator.example.com"}, options_);
+    EXPECT_EQ(set.rc, EXIT_SUCCESS);
+    EXPECT_NE(
+        set.out.find("The domain name has been set to: validator.example.com\n"), std::string::npos)
+        << set.out;
+    EXPECT_EQ(keys(options_).domain(), "validator.example.com");
+
+    auto const cleared = run("clear_domain", {}, options_);
+    EXPECT_EQ(cleared.rc, EXIT_SUCCESS);
+    EXPECT_EQ(
+        cleared.out,
+        "The domain name has been cleared.\n"
+        "The next token carries it: run start_token and finish_token.\n");
+    EXPECT_EQ(keys(options_).domain(), "");
+}
+
+TEST_F(CommandsTest, ed25519_token_is_for_publishers)
+{
+    run("create_keys", {}, options_);
+
+    ToolOptions ed25519 = options_;
+    ed25519.tokenKeyType = KeyType::Ed25519;
+    auto const created = run("create_token", {}, ed25519).out;
+    EXPECT_EQ(created.find(kUpdateConfig), std::string::npos) << created;
+    EXPECT_NE(created.find(kForPublishers), std::string::npos) << created;
+    EXPECT_NE(created.find("[validator_token]"), std::string::npos) << created;
+
+    auto const domain = run("set_domain", {"validator.example.com"}, ed25519).out;
+    EXPECT_EQ(domain.find(kUpdateConfig), std::string::npos) << domain;
+    EXPECT_EQ(domain.find(kAlsoUpdateConfig), std::string::npos) << domain;
+    EXPECT_NE(domain.find(kForPublishers), std::string::npos) << domain;
+
+    // A secp256k1 token keeps the xrpld.cfg instructions
+    ToolOptions secp256k1 = options_;
+    secp256k1.tokenKeyType = KeyType::Secp256k1;
+    auto const createdSecp = run("create_token", {}, secp256k1).out;
+    EXPECT_NE(createdSecp.find(kUpdateConfig), std::string::npos) << createdSecp;
+    EXPECT_EQ(createdSecp.find(kForPublishers), std::string::npos) << createdSecp;
+
+    auto const domainSecp = run("set_domain", {"other.example.com"}, secp256k1).out;
+    EXPECT_NE(domainSecp.find(kUpdateConfig), std::string::npos) << domainSecp;
+    EXPECT_NE(domainSecp.find(kAlsoUpdateConfig), std::string::npos) << domainSecp;
+    EXPECT_EQ(domainSecp.find(kForPublishers), std::string::npos) << domainSecp;
+}
+
+TEST_F(CommandsTest, block_line_wrapping)
+{
+    // An ed25519 token's body length depends on the domain length alone; the
+    // first domain whose body fills whole 72-character lines is printed
+    // without an empty line inside the block.
+    run("create_keys", {}, options_);
+    ToolOptions ed25519 = options_;
+    ed25519.tokenKeyType = KeyType::Ed25519;
+
+    std::string const suffix = ".example.com";
+    std::string out;
+    std::string body;
+    for (std::size_t length = 13; length <= 128; ++length)
+    {
+        // Labels of 'a' of at most 63 characters joined by '.', never an empty label
+        std::string domain;
+        for (std::size_t remaining = length - suffix.size(); remaining > 0;)
+        {
+            std::size_t label = std::min<std::size_t>(63, remaining);
+            if (remaining - label == 1)
+                --label;
+            domain.append(label, 'a');
+            remaining -= label;
+            if (remaining > 0)
+            {
+                domain.push_back('.');
+                --remaining;
+            }
+        }
+        domain += suffix;
+        ASSERT_EQ(domain.size(), length);
+
+        auto const set = run("set_domain", {domain}, ed25519);
+        ASSERT_EQ(set.rc, EXIT_SUCCESS) << domain;
+        body = blockBody(set.out, "validator_token");
+        if (!body.empty() && body.size() % 72 == 0)
+        {
+            out = set.out;
+            break;
+        }
+    }
+    ASSERT_FALSE(out.empty()) << "no domain length from 13 to 128 gives a body of whole lines";
+
+    std::string expected =
+        "# validator public key: " + toBase58(TokenType::NodePublic, keys(options_).publicKey()) +
+        "\n\n[validator_token]\n";
+    for (std::size_t i = 0; i < body.size(); i += 72)
+        expected += body.substr(i, 72) + "\n";
+    expected += "\n";
+
+    auto const header = out.find("# validator public key: ");
+    ASSERT_NE(header, std::string::npos) << out;
+    EXPECT_EQ(out.substr(header), expected);
+}
+
+TEST_F(CommandsTest, ed25519_token_file_is_for_publishers)
+{
+    run("create_keys", {}, options_);
+    ToolOptions toFile = options_;
+    toFile.tokenKeyType = KeyType::Ed25519;
+    toFile.outFile = file("token.txt");
+    auto const out = run("create_token", {}, toFile).out;
+    auto const written = out.find("written to");
+    ASSERT_NE(written, std::string::npos) << out;
+    EXPECT_NE(out.find(kForPublishers, written), std::string::npos) << out;
+    EXPECT_EQ(out.find(kUpdateConfig), std::string::npos) << out;
+    EXPECT_NE(readFile(*toFile.outFile).find("[validator_token]"), std::string::npos);
+}
+
+TEST_F(CommandsTest, external_ed25519_token_is_for_publishers)
+{
+    // The signer stands in for the hardware holding the master key
+    SigningKeys const signer(KeyType::Ed25519);
+    run("create_external", {toBase58(TokenType::NodePublic, signer.publicKey())}, options_);
+    ToolOptions ed25519 = options_;
+    ed25519.tokenKeyType = KeyType::Ed25519;
+    auto const start = run("start_token", {}, ed25519).out;
+    auto const finish =
+        run("finish_token", {signer.signHex(start.substr(0, start.find('\n')))}, options_).out;
+    EXPECT_NE(finish.find(kForPublishers), std::string::npos) << finish;
+    EXPECT_EQ(finish.find(kUpdateConfig), std::string::npos) << finish;
+    EXPECT_NE(finish.find("[validator_token]"), std::string::npos) << finish;
+}
+
+TEST_F(CommandsTest, external_secp256k1_token_updates_config)
+{
+    // The signer stands in for the hardware holding the master key
+    SigningKeys const signer(KeyType::Ed25519);
+    run("create_external", {toBase58(TokenType::NodePublic, signer.publicKey())}, options_);
+    ToolOptions secp256k1 = options_;
+    secp256k1.tokenKeyType = KeyType::Secp256k1;
+    auto const start = run("start_token", {}, secp256k1).out;
+    auto const finish =
+        run("finish_token", {signer.signHex(start.substr(0, start.find('\n')))}, options_).out;
+    EXPECT_NE(finish.find(kUpdateConfig), std::string::npos) << finish;
+    EXPECT_EQ(finish.find(kForPublishers), std::string::npos) << finish;
+}
+
 TEST_F(CommandsTest, sign)
 {
     run("create_keys", {}, options_);
@@ -518,19 +851,102 @@ TEST_F(CommandsTest, sign)
         commandError("sign", {""}, options_), "Syntax error: Must specify data string to sign");
     auto const loaded = keys(options_);
     EXPECT_EQ(run("sign", {"data"}, options_).out, loaded.sign("data") + "\n");
-    EXPECT_EQ(run("sign_hex", {"00FF"}, options_).out, loaded.signHex("00FF") + "\n");
+    auto const plain = run("sign_hex", {"00FF"}, options_);
+    EXPECT_EQ(plain.out, loaded.signHex("00FF") + "\n");
+    EXPECT_EQ(plain.err, "");
+    EXPECT_EQ(
+        commandError("sign_hex", {" "}, options_),
+        "Syntax error: Must specify data string to sign");
+
+    // Bytes with the manifest prefix that do not parse are still signed
+    auto const unparsed = run("sign_hex", {"4D414E00FF"}, options_);
+    EXPECT_EQ(unparsed.out, loaded.signHex("4D414E00FF") + "\n");
+    EXPECT_EQ(
+        unparsed.err,
+        "These bytes start with the manifest prefix and do not parse as manifest fields\n");
+
+    // A master key field holding no valid key type does not parse either
+    auto const repeat = [](std::string const& hex, int n) {
+        std::string result;
+        for (int i = 0; i < n; ++i)
+            result += hex;
+        return result;
+    };
+    auto const badKey =
+        "4D414E00"
+        "2400000001"
+        "7121" +
+        repeat("01", 33);
+    auto const invalidKey = run("sign_hex", {badKey}, options_);
+    EXPECT_EQ(invalidKey.out, loaded.signHex(badKey) + "\n");
+    EXPECT_EQ(
+        invalidKey.err,
+        "These bytes start with the manifest prefix and do not parse as manifest fields\n");
+
+    // A signing key field holding no valid key type does not parse
+    auto const badSigningKey =
+        "4D414E00"
+        "2400000001"
+        "7121ED" +
+        repeat("01", 32) + "7321" + repeat("01", 33);
+    auto const invalidSigningKey = run("sign_hex", {badSigningKey}, options_);
+    EXPECT_EQ(invalidSigningKey.out, loaded.signHex(badSigningKey) + "\n");
+    EXPECT_EQ(
+        invalidSigningKey.err,
+        "These bytes start with the manifest prefix and do not parse as manifest fields\n");
+
+    // Manifest signing data: sign_hex prints the fields it signs
+    auto const masterKey = toBase58(TokenType::NodePublic, loaded.publicKey());
+    SigningKeys const signingKey(KeyType::Ed25519);
+    ToolOptions withSigningKey = options_;
+    withSigningKey.signingKey = signingKey.publicKey();
+    ToolOptions const noDomainKeys = optionsFor(file("no-domain.json"));
+    run("create_keys", {}, noDomainKeys);
+    ToolOptions noDomainStart = noDomainKeys;
+    noDomainStart.signingKey = signingKey.publicKey();
+    auto const startNoDomain = run("start_token", {}, noDomainStart);
+    auto const noDomainBytes = startNoDomain.out.substr(0, startNoDomain.out.find('\n'));
+    auto const noDomain = run("sign_hex", {noDomainBytes}, noDomainKeys);
+    EXPECT_EQ(noDomain.out, keys(noDomainKeys).signHex(noDomainBytes) + "\n");
+    EXPECT_NE(noDomain.err.find("domain: none\n"), std::string::npos) << noDomain.err;
+
+    run("set_domain", {"validator.example.com"}, options_);
+    auto const sequence = keys(options_).sequence() + 1;
+    auto const start = run("start_token", {}, withSigningKey);
+    auto const bytes = start.out.substr(0, start.out.find('\n'));
+    auto const token = run("sign_hex", {bytes}, options_);
+    EXPECT_EQ(token.out, keys(options_).signHex(bytes) + "\n");
+    EXPECT_NE(token.err.find("These bytes are a manifest's signing data:\n"), std::string::npos)
+        << token.err;
+    EXPECT_NE(token.err.find("master key: " + masterKey), std::string::npos) << token.err;
+    EXPECT_NE(
+        token.err.find("signing key: " + toBase58(TokenType::NodePublic, signingKey.publicKey())),
+        std::string::npos)
+        << token.err;
+    EXPECT_NE(token.err.find("sequence: " + std::to_string(sequence)), std::string::npos)
+        << token.err;
+    EXPECT_NE(token.err.find("domain: validator.example.com"), std::string::npos) << token.err;
+
+    auto const startRevoke = run("start_revoke_keys", {}, options_);
+    auto const revokeBytes = startRevoke.out.substr(0, startRevoke.out.find('\n'));
+    auto const revocation = run("sign_hex", {revokeBytes}, options_);
+    EXPECT_EQ(revocation.out, keys(options_).signHex(revokeBytes) + "\n");
+    EXPECT_NE(revocation.err.find("signing key: none (revocation)\n"), std::string::npos)
+        << revocation.err;
+    EXPECT_NE(revocation.err.find("master key: " + masterKey), std::string::npos) << revocation.err;
 }
 
 TEST_F(CommandsTest, list_commands)
 {
     // The publisher: a key file and a token carrying an ed25519 signing key
-    ToolOptions publisher = optionsFor(file("publisher.json"));
-    publisher.tokenKeyType = KeyType::Ed25519;
-    publisher.tokenFile = file("publisher-token.txt");
-    publisher.outFile = publisher.tokenFile;
+    ToolOptions const publisher = optionsFor(file("publisher.json"));
     run("create_keys", {}, publisher);
-    run("create_token", {}, publisher);
-    publisher.outFile.reset();
+    ToolOptions tokenOut = publisher;
+    tokenOut.tokenKeyType = KeyType::Ed25519;
+    tokenOut.outFile = file("publisher-token.txt");
+    run("create_token", {}, tokenOut);
+    ToolOptions listSigner = publisher;
+    listSigner.tokenFile = tokenOut.outFile;
     auto const master = keys(publisher).publicKey();
 
     // Three lists with rising sequences, over the same validators
@@ -543,14 +959,12 @@ TEST_F(CommandsTest, list_commands)
     writeFile(unsignedList2, unsignedListText(validators, 2026091302, now + 3600));
     writeFile(unsignedList3, unsignedListText(validators, 2026091303, now + 3600));
 
-    ToolOptions noToken = publisher;
-    noToken.tokenFile.reset();
     EXPECT_EQ(
-        commandError("sign_list", {unsignedList.string()}, noToken),
+        commandError("sign_list", {unsignedList.string()}, publisher),
         "sign_list needs --token-file");
 
     // Sign to a file readable by everyone, then verify with every check on
-    ToolOptions signer = publisher;
+    ToolOptions signer = listSigner;
     signer.outFile = file("vl.json");
     EXPECT_NE(
         run("sign_list", {unsignedList.string()}, signer).out.find("written to"),
@@ -570,19 +984,25 @@ TEST_F(CommandsTest, list_commands)
         wrong.expectedKey = SigningKeys(KeyType::Ed25519).publicKey();
         EXPECT_EQ(run("verify_list", {signer.outFile->string()}, wrong).rc, EXIT_FAILURE);
     }
+    {
+        // Without --validators the list is verified without a roster to compare
+        ToolOptions noRoster = verifier;
+        noRoster.validatorsFile.reset();
+        auto const r = run("verify_list", {signer.outFile->string()}, noRoster);
+        EXPECT_EQ(r.rc, EXIT_SUCCESS) << r.out;
+    }
 
     // To stdout without --out
     {
-        ToolOptions const stdoutSigner = publisher;
-        auto const r = run("sign_list", {unsignedList.string()}, stdoutSigner);
+        auto const r = run("sign_list", {unsignedList.string()}, listSigner);
         json::Reader reader;
         json::Value jv;
         EXPECT_TRUE(reader.parse(r.out, jv)) << r.out;
         EXPECT_EQ(jv[jss::public_key].asString(), strHex(master));
     }
 
-    // Version 2, the next list appended in place, then another appended after
-    // a key rotation
+    // Version 2, the next list appended in place; after a key rotation the
+    // document under the older manifest is refused
     ToolOptions v2 = signer;
     v2.listVersion = 2;
     v2.outFile = file("vl2.json");
@@ -598,21 +1018,17 @@ TEST_F(CommandsTest, list_commands)
         EXPECT_EQ(report["blobs"].size(), 2u);
     }
     {
-        ToolOptions rotated = v2;
-        rotated.appendFile.reset();
+        ToolOptions rotated = tokenOut;
         rotated.outFile = file("publisher-token-2.txt");
         run("create_token", {}, rotated);
-        rotated.tokenFile = rotated.outFile;
-        rotated.appendFile = v2.outFile;
-        rotated.outFile = file("vl2c.json");
-        run("sign_list", {unsignedList3.string()}, rotated);
-        auto const r = run("verify_list", {rotated.outFile->string()}, verifier);
-        EXPECT_EQ(r.rc, EXIT_SUCCESS) << r.out;
-        json::Reader reader;
-        json::Value report;
-        reader.parse(r.out, report);
-        EXPECT_EQ(report["manifest_sequence"].asUInt(), 2u);
-        EXPECT_EQ(report["blobs"].size(), 3u);
+        ToolOptions append = v2;
+        append.tokenFile = rotated.outFile;
+        append.appendFile = v2.outFile;
+        append.outFile = file("vl2c.json");
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList3.string()}, append),
+            "The list to append to holds a blob under an older manifest; sign its lists again "
+            "with this token, without --append");
     }
 
     // Output paths that cannot be opened, inputs that cannot be read
@@ -636,7 +1052,17 @@ TEST_F(CommandsTest, list_commands)
             commandError("sign_list", {file("missing.json").string()}, bad),
             "Failed to open file: " + file("missing.json").string());
         EXPECT_EQ(readFile(*bad.outFile), "previous");
-        EXPECT_FALSE(std::filesystem::exists(file("kept.json.tmp")));
+        for (auto const& entry : std::filesystem::directory_iterator(bad.outFile->parent_path()))
+        {
+            EXPECT_FALSE(entry.path().filename().string().starts_with("kept.json."))
+                << entry.path();
+        }
+
+        // The output may not replace the token it signs with
+        bad.outFile = *signer.tokenFile;
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList.string()}, bad),
+            "--out names an input file: " + signer.tokenFile->string());
     }
     EXPECT_EQ(
         commandError("verify_list", {file("missing.json").string()}, verifier),
@@ -659,18 +1085,137 @@ TEST_F(CommandsTest, list_commands)
         EXPECT_EQ(
             commandError("sign_list", {unsignedList.string()}, badManifest),
             "The token's manifest is not valid");
+
+        // A manifest that deserializes but whose master signature does not verify
+        auto const forger = generateKeyPair(KeyType::Ed25519, randomSeed());
+        auto const signing = generateKeyPair(KeyType::Ed25519, randomSeed());
+        auto const forged =
+            makeManifest(forger.first, randomSecretKey(), signing.first, signing.second, 1);
+        ASSERT_TRUE(deserializeManifest(forged).has_value());
+        ToolOptions unverified = signer;
+        unverified.tokenFile = file("unverified-token.txt");
+        writeToken(
+            *unverified.tokenFile,
+            ValidatorToken{.manifest = base64Encode(forged), .validationSecret = signing.second});
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList.string()}, unverified),
+            "The token's manifest is not valid");
+
+        // A revocation carries no signing key
+        auto const revocation = makeRevocation(forger.first, forger.second);
+        ASSERT_TRUE(required(deserializeManifest(revocation)).verify());
+        ToolOptions revoked = signer;
+        revoked.tokenFile = file("revocation-token.txt");
+        writeToken(
+            *revoked.tokenFile,
+            ValidatorToken{.manifest = base64Encode(revocation), .validationSecret = secret});
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList.string()}, revoked),
+            "The token's manifest is not valid");
         ToolOptions wrongSecret = signer;
         wrongSecret.tokenFile = file("wrong-secret-token.txt");
         writeToken(
             *wrongSecret.tokenFile,
             ValidatorToken{
-                .manifest = loadTokenFile(*publisher.tokenFile).manifest,
+                .manifest = loadTokenFile(*listSigner.tokenFile).manifest,
                 .validationSecret = secret,
             });
         EXPECT_EQ(
             commandError("sign_list", {unsignedList.string()}, wrongSecret),
             "The token's secret does not match its manifest");
     }
+}
+
+TEST_F(CommandsTest, unused_options_refused)
+{
+    run("create_keys", {}, options_);
+    auto const sequence = keys(options_).sequence();
+
+    ToolOptions withSigningKey = options_;
+    withSigningKey.signingKey = SigningKeys(KeyType::Ed25519).publicKey();
+    EXPECT_EQ(
+        commandError("create_token", {}, withSigningKey),
+        "Syntax error: --signing-key does not apply to create_token");
+    EXPECT_EQ(keys(options_).sequence(), sequence);
+
+    ToolOptions withOut = options_;
+    withOut.outFile = file("out.txt");
+    EXPECT_EQ(
+        commandError("start_token", {}, withOut),
+        "Syntax error: --out does not apply to start_token");
+    EXPECT_EQ(
+        commandError("attest_domain", {}, withOut),
+        "Syntax error: --out does not apply to attest_domain");
+
+    ToolOptions withTokenFile = options_;
+    withTokenFile.tokenFile = file("token.txt");
+    EXPECT_EQ(
+        commandError("verify_list", {file("vl.json").string()}, withTokenFile),
+        "Syntax error: --token-file does not apply to verify_list");
+
+    ToolOptions withKeyType = optionsFor(file("other.json"));
+    withKeyType.tokenKeyType = KeyType::Secp256k1;
+    EXPECT_EQ(
+        commandError("create_keys", {}, withKeyType),
+        "Syntax error: --token-key-type does not apply to create_keys");
+    EXPECT_FALSE(std::filesystem::exists(withKeyType.keyFile));
+}
+
+TEST_F(CommandsTest, sign_list_refuses_expired_list)
+{
+    std::string const expired =
+        R"(The list's "expiration" is not after now; a server would take it as expired)";
+
+    ToolOptions const keyFile = optionsFor(file("publisher.json"));
+    run("create_keys", {}, keyFile);
+    ToolOptions tokenOut = keyFile;
+    tokenOut.tokenKeyType = KeyType::Ed25519;
+    tokenOut.outFile = file("publisher-token.txt");
+    run("create_token", {}, tokenOut);
+    ToolOptions publisher = keyFile;
+    publisher.tokenFile = tokenOut.outFile;
+
+    // An external signing key delegated by a second master key
+    ToolOptions const delegator = optionsFor(file("delegator.json"));
+    run("create_keys", {}, delegator);
+    SigningKeys const external(KeyType::Ed25519);
+    ToolOptions delegate = delegator;
+    delegate.signingKey = external.publicKey();
+    auto const start = run("start_token", {}, delegate);
+    auto const bytes = start.out.substr(0, start.out.find('\n'));
+    ToolOptions manifestOut = delegator;
+    manifestOut.outFile = file("manifest.txt");
+    run("finish_token", {keys(delegator).signHex(bytes), external.signHex(bytes)}, manifestOut);
+
+    auto const validators = makeValidators(2);
+    auto const now = netClockNow();
+    auto const current = file("current.json");
+    auto const stale = file("expired.json");
+    writeFile(current, unsignedListText(validators, 1, now + 3600));
+    writeFile(stale, unsignedListText(validators, 2, now - 1));
+
+    ToolOptions signer = publisher;
+    signer.outFile = file("vl.json");
+    EXPECT_EQ(commandError("sign_list", {stale.string()}, signer), expired);
+    EXPECT_FALSE(std::filesystem::exists(*signer.outFile));
+
+    ToolOptions hardware = delegator;
+    hardware.manifestFile = manifestOut.outFile;
+    EXPECT_EQ(commandError("start_sign_list", {stale.string()}, hardware), expired);
+    hardware.outFile = file("vl-external.json");
+    auto const staleSig = external.signHex(strHex(makeSlice(loadUnsignedList(stale).canonical)));
+    EXPECT_EQ(commandError("finish_sign_list", {staleSig, stale.string()}, hardware), expired);
+    EXPECT_FALSE(std::filesystem::exists(*hardware.outFile));
+
+    // A version 2 document holding a current list refuses an expired one appended
+    ToolOptions v2 = publisher;
+    v2.listVersion = 2;
+    v2.outFile = file("vl2.json");
+    ASSERT_EQ(run("sign_list", {current.string()}, v2).rc, EXIT_SUCCESS);
+    v2.appendFile = v2.outFile;
+    v2.outFile = file("vl2b.json");
+    EXPECT_EQ(commandError("sign_list", {stale.string()}, v2), expired);
+    EXPECT_FALSE(std::filesystem::exists(*v2.outFile));
 }
 
 TEST_F(CommandsTest, external_list_signing)
@@ -682,10 +1227,11 @@ TEST_F(CommandsTest, external_list_signing)
     SigningKeys const external(KeyType::Ed25519);
     ToolOptions delegate = publisher;
     delegate.signingKey = external.publicKey();
-    delegate.outFile = file("manifest.txt");
     auto const start = run("start_token", {}, delegate);
     auto const bytes = start.out.substr(0, start.out.find('\n'));
-    run("finish_token", {keys(publisher).signHex(bytes), external.signHex(bytes)}, delegate);
+    ToolOptions manifestOut = publisher;
+    manifestOut.outFile = file("manifest.txt");
+    run("finish_token", {keys(publisher).signHex(bytes), external.signHex(bytes)}, manifestOut);
 
     auto const validators = makeValidators(2);
     auto const now = netClockNow();
@@ -706,7 +1252,7 @@ TEST_F(CommandsTest, external_list_signing)
     EXPECT_EQ(
         commandError("finish_sign_list", {"00", unsignedList.string()}, hardware),
         "finish_sign_list needs --manifest-file");
-    hardware.manifestFile = delegate.outFile;
+    hardware.manifestFile = manifestOut.outFile;
 
     auto const toSign = run("start_sign_list", {unsignedList.string()}, hardware);
     auto const listBytes = toSign.out.substr(0, toSign.out.find('\n'));
@@ -722,12 +1268,26 @@ TEST_F(CommandsTest, external_list_signing)
     EXPECT_EQ(
         run("finish_sign_list", {external.signHex(listBytes), unsignedList.string()}, hardware).rc,
         EXIT_SUCCESS);
+    ToolOptions aliasedManifest = hardware;
+    aliasedManifest.outFile = *hardware.manifestFile;
+    EXPECT_EQ(
+        commandError(
+            "finish_sign_list",
+            {external.signHex(listBytes), unsignedList.string()},
+            aliasedManifest),
+        "--out names an input file: " + hardware.manifestFile->string());
+    ToolOptions aliasedList = hardware;
+    aliasedList.outFile = unsignedList;
+    EXPECT_EQ(
+        commandError(
+            "finish_sign_list", {external.signHex(listBytes), unsignedList.string()}, aliasedList),
+        "--out names an input file: " + unsignedList.string());
     ToolOptions verifier = optionsFor(publisher.keyFile);
     verifier.validatorsFile = unsignedList;
     EXPECT_EQ(run("verify_list", {hardware.outFile->string()}, verifier).rc, EXIT_SUCCESS);
 
-    // A version 2 append under the same manifest works; after a rotation it
-    // cannot re-sign the earlier blobs and says so
+    // A version 2 append under the same manifest works; after a rotation the
+    // document under the older manifest is refused
     ToolOptions v2 = hardware;
     v2.listVersion = 2;
     v2.outFile = file("vl2.json");
@@ -745,13 +1305,15 @@ TEST_F(CommandsTest, external_list_signing)
         append.tokenFile = rotated.outFile;
         append.appendFile = v2.outFile;
         append.outFile = file("vl2c.json");
-        EXPECT_EQ(run("sign_list", {unsignedList3.string()}, append).rc, EXIT_SUCCESS);
-        EXPECT_EQ(run("verify_list", {append.outFile->string()}, verifier).rc, EXIT_SUCCESS);
+        EXPECT_EQ(
+            commandError("sign_list", {unsignedList3.string()}, append),
+            "The list to append to holds a blob under an older manifest; sign its lists again "
+            "with this token, without --append");
     }
 
     // A revoked manifest signs nothing
     SigningKeys revokedKeys(KeyType::Ed25519);
-    ToolOptions revoked = hardware;
+    ToolOptions revoked = publisher;
     revoked.manifestFile = file("revoked-manifest.txt");
     writeFile(*revoked.manifestFile, revokedKeys.revoke() + "\n");
     EXPECT_EQ(
@@ -760,6 +1322,30 @@ TEST_F(CommandsTest, external_list_signing)
     EXPECT_EQ(
         commandError("finish_sign_list", {"00", unsignedList.string()}, revoked),
         "The manifest is revoked");
+}
+
+TEST_F(CommandsTest, cli)
+{
+    auto const version = runBinary(dir_, {"--version"});
+    EXPECT_EQ(version.rc, EXIT_SUCCESS);
+    EXPECT_NE(version.out.find("validator-keys version"), std::string::npos);
+
+    auto const help = runBinary(dir_, {"--help"});
+    EXPECT_EQ(help.rc, EXIT_SUCCESS);
+    EXPECT_NE(help.err.find("Commands:"), std::string::npos);
+
+    auto const noCommand = runBinary(dir_, {});
+    EXPECT_EQ(noCommand.rc, EXIT_SUCCESS);
+    EXPECT_NE(noCommand.err.find("Commands:"), std::string::npos);
+
+    auto const bogus = runBinary(dir_, {"--bogus"});
+    EXPECT_EQ(bogus.rc, EXIT_FAILURE);
+    EXPECT_NE(bogus.err.find("validator-keys: Incorrect command line syntax."), std::string::npos);
+
+    auto const keyType = runBinary(
+        dir_, {"--keyfile", options_.keyFile.string(), "--token-key-type", "foo", "create_token"});
+    EXPECT_EQ(keyType.rc, EXIT_FAILURE);
+    EXPECT_NE(keyType.err.find("Unknown key type: foo"), std::string::npos);
 }
 
 }  // namespace xrpl::tools::test

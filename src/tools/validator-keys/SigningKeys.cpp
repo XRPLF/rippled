@@ -112,23 +112,15 @@ SigningKeys::operator==(SigningKeys const& rhs) const
 {
     if (keyType_ != rhs.keyType_ || keys_.publicKey != rhs.keys_.publicKey ||
         keys_.secretKey.has_value() != rhs.keys_.secretKey.has_value() ||
-        (keys_.secretKey && !sameSecret(*keys_.secretKey, *rhs.keys_.secretKey)))
-        return false;
-    if (tokenSequence_ != rhs.tokenSequence_ || revoked_ != rhs.revoked_ ||
+        tokenSequence_ != rhs.tokenSequence_ || revoked_ != rhs.revoked_ ||
         domain_ != rhs.domain_ || manifest_ != rhs.manifest_ ||
+        previousSigningKeys_ != rhs.previousSigningKeys_ ||
         pending_.has_value() != rhs.pending_.has_value())
         return false;
     if (!pending_)
         return true;
-    auto const& pending = *pending_;
-    auto const& other = *rhs.pending_;
-    if (pending.signingKey != other.signingKey ||
-        pending.generated.has_value() != other.generated.has_value())
-        return false;
-    if (!pending.generated || !other.generated)
-        return true;
-    return pending.generated->keyType == other.generated->keyType &&
-        sameSecret(pending.generated->secretKey, other.generated->secretKey);
+    return pending_->signingKey == rhs.pending_->signingKey &&
+        pending_->generated.has_value() == rhs.pending_->generated.has_value();
 }
 
 SigningKeys
@@ -221,6 +213,22 @@ SigningKeys::makeSigningKeys(std::filesystem::path const& keyFile)
         keys.checkManifest();
     }
 
+    if (jKeys.isMember("previous_signing_keys"))
+    {
+        auto const& previous = jKeys["previous_signing_keys"];
+        if (!previous.isArray())
+            throw invalidField("previous_signing_keys");
+        for (auto const& key : previous)
+        {
+            auto const signingKey = key.isString()
+                ? parseBase58<PublicKey>(TokenType::NodePublic, key.asString())
+                : std::nullopt;
+            if (!signingKey)
+                throw invalidField("previous_signing_keys");
+            keys.previousSigningKeys_.push_back(*signingKey);
+        }
+    }
+
     bool const hasSecret = jKeys.isMember("pending_token_secret");
     bool const hasSigningKey = jKeys.isMember("pending_signing_key");
     if (hasSecret || hasSigningKey)
@@ -276,14 +284,23 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile, OwnerOnlyFile::Ex
     json::Value jv;
     jv["key_type"] = to_string(keyType_);
     jv["public_key"] = toBase58(TokenType::NodePublic, keys_.publicKey);
-    jv["secret_key"] =
-        keys_.secretKey ? toBase58(TokenType::NodePrivate, *keys_.secretKey) : "external";
+    if (keys_.secretKey)
+        jv["secret_key"] = toBase58(TokenType::NodePrivate, *keys_.secretKey);
+    else
+        jv["secret_key"] = "external";
     jv["token_sequence"] = json::UInt(tokenSequence_);
     jv["revoked"] = revoked_;
     if (!domain_.empty())
         jv["domain"] = domain_;
     if (!manifest_.empty())
         jv["manifest"] = strHex(makeSlice(manifest_));
+    if (!previousSigningKeys_.empty())
+    {
+        json::Value previous(json::ValueType::Array);
+        for (auto const& key : previousSigningKeys_)
+            previous.append(toBase58(TokenType::NodePublic, key));
+        jv["previous_signing_keys"] = previous;
+    }
     if (pending_)
     {
         if (auto const& generated = pending_->generated)
@@ -377,6 +394,13 @@ SigningKeys::startToken(KeyType const& keyType, std::optional<PublicKey> const& 
             "The signing key is the current manifest's; a server rejects a manifest that "
             "reuses it");
     }
+    if (externalSigningKey &&
+        std::ranges::find(previousSigningKeys_, *externalSigningKey) != previousSigningKeys_.end())
+    {
+        throw std::runtime_error(
+            "The signing key was used by an earlier manifest; a rotated-out key is not used "
+            "again");
+    }
 
     if (pending_)
     {
@@ -469,7 +493,11 @@ SigningKeys::finishPending(
     }
     st[sfMasterSignature] = makeSlice(masterSig);
 
+    // The stored manifest's signing key is rotated out by this one.
+    auto const stored = storedManifest();
     storeManifest(st);
+    if (stored && stored->signingKey)
+        previousSigningKeys_.push_back(*stored->signingKey);
     ++tokenSequence_;
     pending_.reset();
 
@@ -557,6 +585,8 @@ std::string
 SigningKeys::signHex(std::string data) const
 {
     boost::algorithm::trim(data);
+    if (data.empty())
+        throw std::runtime_error("Syntax error: Must specify data string to sign");
     auto const blob = strUnHex(data);
     if (!blob)
         throw std::runtime_error("Could not decode hex string: " + data);

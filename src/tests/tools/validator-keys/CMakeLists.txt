@@ -21,5 +21,10 @@ target_link_libraries(
     validator_keys_tests
     PRIVATE GTest::gtest GTest::gmock xrpl.validator-keys
 )
+target_compile_definitions(
+    validator_keys_tests
+    PRIVATE VALIDATOR_KEYS_BINARY="$<TARGET_FILE:validator-keys>"
+)
+add_dependencies(validator_keys_tests validator-keys)
 include(GoogleTest)
 gtest_discover_tests(validator_keys_tests)

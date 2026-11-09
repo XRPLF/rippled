@@ -12,15 +12,16 @@
 namespace xrpl::tools {
 
 /**
- * The command-line options every command may read.
+ * The command-line options. Each command reads only some of them; an unset
+ * optional is an option not given.
  */
 struct ToolOptions
 {
     // The master key file.
     std::filesystem::path keyFile;
     // Key type of a token's signing key. xrpld loads only secp256k1 validator
-    // tokens; ed25519 is for a publisher's signing key.
-    KeyType tokenKeyType = KeyType::Secp256k1;
+    // tokens; ed25519 is for a publisher's signing key. Unset is secp256k1.
+    std::optional<KeyType> tokenKeyType;
     // External signing key a token delegates to.
     std::optional<PublicKey> signingKey;
     // File holding a [validator_token] block.
@@ -31,8 +32,8 @@ struct ToolOptions
     // instead of stdout; a signed list is readable by everyone, the rest by
     // the owner only.
     std::optional<std::filesystem::path> outFile;
-    // Version of the signed list document.
-    unsigned listVersion = 1;
+    // Version of the signed list document. Unset is 1.
+    std::optional<unsigned> listVersion;
     // Version 2 list to add a blob to.
     std::optional<std::filesystem::path> appendFile;
     // Unsigned list whose validators a published list must carry.
@@ -61,6 +62,7 @@ defaultKeyFile(std::filesystem::path const& home);
 
 /**
  * Runs one command. Results go to @p out, warnings and notes to @p err.
+ * An option the command does not read is refused before anything runs.
  * A command that updates the key file holds an exclusive lock on the key
  * file's directory for its whole run, so concurrent runs are serialized.
  *

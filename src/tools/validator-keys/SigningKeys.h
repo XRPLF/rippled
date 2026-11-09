@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -85,6 +86,8 @@ private:
     bool revoked_;
     std::string domain_;
     std::optional<Pending> pending_;
+    // Signing keys of the manifests before the stored one; none is used again.
+    std::vector<PublicKey> previousSigningKeys_;
 
 public:
     /**
@@ -163,13 +166,13 @@ public:
      *
      * @throws std::runtime_error if the keys are revoked, the sequence is
      *         exhausted, the stored manifest's sequence is above the token
-     *         sequence, the external signing key is the master key or the
-     *         stored manifest's signing key, or a token with another signing
-     *         key or key type is pending
+     *         sequence, the external signing key is the master key, the
+     *         stored manifest's signing key or an earlier manifest's signing
+     *         key, or a token with another signing key or key type is pending
      */
     std::string
     startToken(
-        KeyType const& keyType = KeyType::Secp256k1,
+        KeyType const& keyType,
         std::optional<PublicKey> const& externalSigningKey = std::nullopt);
 
     /**
@@ -193,7 +196,7 @@ public:
      *         stored manifest's sequence is above the token sequence
      */
     ValidatorToken
-    createToken(KeyType const& keyType = KeyType::Secp256k1);
+    createToken(KeyType const& keyType);
 
     /**
      * Returns the bytes a master signature over a revocation covers, as hex.
@@ -232,8 +235,8 @@ public:
      *
      * @return The hex signature
      *
-     * @throws std::runtime_error if the data is not hex or the master key is
-     *         external
+     * @throws std::runtime_error if the data is empty after trimming, is not
+     *         hex, or the master key is external
      */
     [[nodiscard]] std::string
     signHex(std::string data) const;

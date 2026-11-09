@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -100,15 +99,21 @@ UnsignedList
 loadUnsignedList(std::filesystem::path const& file);
 
 /**
+ * Refuses a list a server would take as expired.
+ *
+ * @param list The list about to be signed
+ * @param now Seconds since the XRP Ledger epoch
+ *
+ * @throws std::runtime_error if @p list's `expiration` is not after @p now
+ */
+void
+requireUnexpired(UnsignedList const& list, std::uint32_t now);
+
+/**
  * Returns the hex signature of the list's canonical bytes.
  */
 std::string
 signList(UnsignedList const& list, PublicKey const& signingKey, SecretKey const& signingSecret);
-
-/**
- * Signs the bytes of an already published blob; returns the hex signature.
- */
-using Resigner = std::function<std::string(std::string const& blobBytes)>;
 
 /**
  * Builds the document a publisher serves.
@@ -118,14 +123,14 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  * must be a version 2 document for the same master key and the new blob is
  * added to it. A server verifies every blob under the newest manifest it has
  * seen for the publisher, so a manifest in @p append, top-level or per entry,
- * whose sequence is not below @p manifestBase64's is refused; any other
+ * whose sequence is not below @p manifestBase64's is refused, and any other
  * manifest must verify for @p masterKey and name a signing key. Every entry's
- * signature must verify under the signing key of its effective manifest (its
- * own, else the top-level one). When that manifest is @p manifestBase64 for
- * every entry the entries are copied, otherwise every blob is signed again
- * with @p resign and the per-entry manifests are dropped. A server ignores a
- * blob whose `sequence` is not above the one it holds, so @p list's must be
- * above every existing blob's.
+ * effective manifest (its own, else the top-level one) must be
+ * @p manifestBase64: a document holding a blob under an older manifest is
+ * refused, and its lists are signed again with the token, without @p append.
+ * Every entry's signature must verify under the token's signing key, and the
+ * entries are copied. A server ignores a blob whose `sequence` is not above
+ * the one it holds, so @p list's must be above every existing blob's.
  *
  * @throws std::runtime_error if @p manifestBase64 does not deserialize and
  *         verify, names no signing key or belongs to another master key than
@@ -134,9 +139,10 @@ using Resigner = std::function<std::string(std::string const& blobBytes)>;
  *         malformed entry, holds a manifest that does not deserialize and
  *         verify or has no signing key, holds a manifest for another master
  *         key, holds a manifest whose sequence is not below the token's,
- *         holds a blob whose signature does not verify under its effective
- *         manifest's signing key, holds a blob whose `sequence` is not below
- *         @p list's, or needs re-signing and @p resign is empty
+ *         holds a blob under an older manifest, holds a blob whose signature
+ *         does not verify under the token's signing key, or holds a blob
+ *         whose `sequence` is not below @p list's; or if @p list's
+ *         `expiration` is not after @p now
  */
 json::Value
 makeSignedList(
@@ -146,7 +152,7 @@ makeSignedList(
     std::string const& signatureHex,
     unsigned version,
     std::optional<json::Value> const& append,
-    Resigner const& resign);
+    std::uint32_t now);
 
 /**
  * Seconds since the XRP Ledger epoch, now.
@@ -156,9 +162,13 @@ netClockNow();
 
 /**
  * Checks a published list the way a server does before trusting it: the
- * manifest verifies and names the `public_key`, every blob's signature
- * verifies under the newest signing key seen for the publisher, every blob
- * parses, and none has expired at @p now.
+ * manifest verifies and names the `public_key`, every blob parses, and none
+ * has expired at @p now. Blobs are taken in order: a blob's manifest is its
+ * entry's own, else the top-level one; the first blob's manifest is held, a
+ * later one replaces it only with a higher sequence, and each blob's
+ * signature verifies under the held manifest's signing key. Each blob's
+ * sequence must be above the previous parsed blob's, and a blob whose
+ * effective time is after @p now is reported as pending.
  *
  * @param list The document as served
  * @param expectedRoster When set, every blob must list exactly these master
