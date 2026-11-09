@@ -285,9 +285,13 @@ SigningKeys::writeToFile(std::filesystem::path const& keyFile, OwnerOnlyFile::Ex
     jv["key_type"] = to_string(keyType_);
     jv["public_key"] = toBase58(TokenType::NodePublic, keys_.publicKey);
     if (keys_.secretKey)
+    {
         jv["secret_key"] = toBase58(TokenType::NodePrivate, *keys_.secretKey);
+    }
     else
+    {
         jv["secret_key"] = "external";
+    }
     jv["token_sequence"] = json::UInt(tokenSequence_);
     jv["revoked"] = revoked_;
     if (!domain_.empty())

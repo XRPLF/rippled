@@ -43,10 +43,10 @@ constexpr std::array<KeyType, 2> kKeyTypes{{KeyType::Ed25519, KeyType::Secp256k1
 constexpr std::uint32_t kMaxSequence = std::numeric_limits<std::uint32_t>::max();
 
 // The order n of the secp256k1 group, big-endian.
-constexpr std::array<std::uint8_t, 32> kSecp256k1Order{{
+constexpr std::array<std::uint8_t, 32> kSecp256k1Order{
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
     0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
-}};
+};
 
 std::string const kBadManifest = "Manifest is not properly signed";
 std::string const kRevoked = "Validator keys have been revoked.";
@@ -394,7 +394,7 @@ TEST_F(SigningKeysTest, write_past_file_size_limit)
 
     // A file size limit of 0 with SIGXFSZ ignored makes write fail with EFBIG;
     // both are restored before any expectation.
-    auto const previousHandler = std::signal(SIGXFSZ, SIG_IGN);
+    auto const previousHandler = ::signal(SIGXFSZ, SIG_IGN);
     bool const ignored = previousHandler != SIG_ERR;
     struct rlimit previousLimit = {};
     bool const gotLimit = ::getrlimit(RLIMIT_FSIZE, &previousLimit) == 0;
@@ -404,7 +404,7 @@ TEST_F(SigningKeysTest, write_past_file_size_limit)
     file.write("{}");
     bool const restored = !limited || ::setrlimit(RLIMIT_FSIZE, &previousLimit) == 0;
     if (ignored)
-        std::signal(SIGXFSZ, previousHandler);
+        ::signal(SIGXFSZ, previousHandler);
 
     ASSERT_TRUE(ignored);
     ASSERT_TRUE(limited);

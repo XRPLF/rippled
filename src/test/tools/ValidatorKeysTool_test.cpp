@@ -354,10 +354,11 @@ class ValidatorKeysTool_test : public beast::unit_test::Suite
         corpus.emplace_back("blob with trailing x", trailing);
 
         // Documents both sides accept
-        for (auto const& [name, doc] :
-             {std::pair<char const*, json::Value const&>{"good v1", good1},
-              {"good v2", good2},
-              {"blob with trailing x", trailing}})
+        for (auto const& [name, doc] : {
+                 std::pair<char const*, json::Value const&>{"good v1", good1},
+                 {"good v2", good2},
+                 {"blob with trailing x", trailing},
+             })
         {
             BEAST_EXPECTS(verifyList(doc, std::nullopt, std::nullopt, now)["ok"].asBool(), name);
             BEAST_EXPECTS(serverBest(env, master, doc) == ListDisposition::Accepted, name);

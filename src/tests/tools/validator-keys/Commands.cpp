@@ -21,11 +21,14 @@
 #include <tools/validator-keys/ListSigning.h>
 #include <tools/validator-keys/SigningKeys.h>
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#endif
+#include <sys/types.h>
+
 #include <Fixtures.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <pthread.h>
-#include <signal.h>
 #include <spawn.h>
 #include <unistd.h>
 
@@ -46,9 +49,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-
-// The environment the spawned tool inherits.
-extern char** environ;
 
 namespace xrpl::tools::test {
 
@@ -152,6 +152,17 @@ public:
     }
 };
 
+// The environment the spawned tool inherits.
+char**
+inheritedEnvironment()
+{
+#ifdef __APPLE__
+    return *_NSGetEnviron();
+#else
+    return environ;
+#endif
+}
+
 // Runs the built validator-keys binary with @p args, its stdout and stderr
 // written to files in @p dir.
 Run
@@ -160,13 +171,15 @@ runBinary(TempDir const& dir, std::vector<std::string> const& args)
     std::string const outFile = dir.file("cli-stdout.txt");
     std::string const errFile = dir.file("cli-stderr.txt");
     std::string const binary = VALIDATOR_KEYS_BINARY;
+    std::vector<std::string> strings{binary};
+    strings.insert(strings.end(), args.begin(), args.end());
     std::vector<char*> argv;
-    argv.push_back(const_cast<char*>(binary.c_str()));
-    for (auto const& arg : args)
-        argv.push_back(const_cast<char*>(arg.c_str()));
+    argv.reserve(strings.size() + 1);
+    for (auto& str : strings)
+        argv.push_back(str.data());
     argv.push_back(nullptr);
 
-    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_t actions{};
     if (::posix_spawn_file_actions_init(&actions) != 0)
         throw std::runtime_error("posix_spawn_file_actions_init failed");
     ::posix_spawn_file_actions_addopen(
@@ -175,7 +188,7 @@ runBinary(TempDir const& dir, std::vector<std::string> const& args)
         &actions, STDERR_FILENO, errFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
     pid_t pid = 0;
     int const spawned =
-        ::posix_spawn(&pid, binary.c_str(), &actions, nullptr, argv.data(), environ);
+        ::posix_spawn(&pid, binary.c_str(), &actions, nullptr, argv.data(), inheritedEnvironment());
     ::posix_spawn_file_actions_destroy(&actions);
     if (spawned != 0)
         throw std::runtime_error("cannot spawn " + binary);
@@ -183,7 +196,11 @@ runBinary(TempDir const& dir, std::vector<std::string> const& args)
     int status = 0;
     if (::waitpid(pid, &status, 0) != pid || !WIFEXITED(status))
         throw std::runtime_error(binary + " did not exit normally");
-    return {WEXITSTATUS(status), readFile(outFile), readFile(errFile)};
+    return {
+        .rc = WEXITSTATUS(status),
+        .out = readFile(outFile),
+        .err = readFile(errFile),
+    };
 }
 
 }  // namespace
@@ -794,7 +811,7 @@ TEST_F(CommandsTest, block_line_wrapping)
         "\n\n[validator_token]\n";
     for (std::size_t i = 0; i < body.size(); i += 72)
         expected += body.substr(i, 72) + "\n";
-    expected += "\n";
+    expected += '\n';
 
     auto const header = out.find("# validator public key: ");
     ASSERT_NE(header, std::string::npos) << out;
