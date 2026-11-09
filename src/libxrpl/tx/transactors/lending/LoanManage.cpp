@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -250,11 +251,11 @@ LoanManage::defaultLoan(
     ApplyView& view,
     SLE::Ref loanSle,
     SLE::Ref brokerSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     beast::Journal j)
 {
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
-        return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, j);
+        return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle.mutableRawSle(), j);
 
     auto const vaultAsset = *vaultSle->at(sfAsset);
     // Calculate the amount of the Default that First-Loss Capital covers:
@@ -293,7 +294,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle.rawSle());
 
     {
         // Decrease the Total Value of the Vault:
@@ -355,7 +356,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        view.update(vaultSle);
+        vaultSle.update();
     }
 
     // Update the LoanBroker object:
@@ -404,7 +405,7 @@ TER
 LoanManage::impairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -424,7 +425,8 @@ LoanManage::impairLoan(
     {
         // adjustVaultBalances's own LU' > AD' check covers the comparison
         // against AssetsDeployed.
-        if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
+        if (auto const ter =
+                adjustVaultBalances(vaultSle.mutableRawSle(), {.loss = lossUnrealized}, j);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
@@ -439,7 +441,7 @@ LoanManage::impairLoan(
         // The vault may be at a different scale than the loan. Reduce rounding
         // errors during the accounting by rounding some of the values to that
         // scale.
-        auto const vaultScale = getVaultScale(vaultSle);
+        auto const vaultScale = getVaultScale(vaultSle.rawSle());
         adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
         if (vaultLossUnrealizedProxy >
             vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
@@ -450,7 +452,7 @@ LoanManage::impairLoan(
             return tecLIMIT_EXCEEDED;  // LCOV_EXCL_LINE
         }
     }
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
@@ -473,7 +475,7 @@ LoanManage::impairLoan(
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref vaultSle,
+    VaultEntryW& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -483,7 +485,8 @@ LoanManage::unimpairLoan(
     if (fixedPrecision)
     {
         // adjustVaultBalances's own LU' < 0 check covers the comparison.
-        if (auto const ter = adjustVaultBalances(vaultSle, {.loss = -lossReversed}, j);
+        if (auto const ter =
+                adjustVaultBalances(vaultSle.mutableRawSle(), {.loss = -lossReversed}, j);
             !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
@@ -500,11 +503,11 @@ LoanManage::unimpairLoan(
         // The vault may be at a different scale than the loan. Reduce rounding
         // errors during the accounting by rounding some of the values to that
         // scale.
-        auto const vaultScale = getVaultScale(vaultSle);
+        auto const vaultScale = getVaultScale(vaultSle.rawSle());
         adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
     }
 
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
@@ -548,7 +551,7 @@ LoanManage::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryW vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);

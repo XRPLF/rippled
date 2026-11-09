@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -53,7 +54,11 @@ fixedBaseScale(SLE::ConstRef vault)
 posteriorScale(SLE::ConstRef vault, Number const& reference, Number const& delta)
 {
     return detail::posteriorAssetScale(
-        getVaultVersion(vault), vault->at(sfAsset), fixedBaseScale(vault), reference, delta);
+        decodeVaultVersion(vault->at(~sfLEVersion)),
+        vault->at(sfAsset),
+        fixedBaseScale(vault),
+        reference,
+        delta);
 }
 
 // FixedPrecision-only counterpart to clampToAssetsTotalScale, for cash
@@ -76,7 +81,7 @@ clampToAvailableScale(SLE::ConstRef vault, STAmount const& delta)
         delta.asset() == vault->at(sfAsset),
         "xrpl::clampToAvailableScale : delta and vault asset match");
     XRPL_ASSERT(
-        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision,
         "xrpl::clampToAvailableScale : FixedPrecision Vault");
     XRPL_ASSERT(delta.negative(), "xrpl::clampToAvailableScale : outflow delta is negative");
 
@@ -142,7 +147,7 @@ debitIsNonZeroDust(SLE::ConstRef vault, Number const& amount)
     if (amount == 0)
         return false;
 
-    auto const total = getVaultVersion(vault) == VaultVersion::FixedPrecision
+    auto const total = decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision
         ? vault->at(sfAssetsAvailable)
         : getAssetsTotal(vault);
     auto const asset = vault->at(sfAsset);
@@ -244,7 +249,7 @@ getAssetsTotal(SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getAssetsTotal : valid Vault sle");
 
-    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vault->at(~sfLEVersion)) != VaultVersion::FixedPrecision)
         return vault->at(sfAssetsTotal);
 
     // AssetsAvailable is at -Scale (or coarser) and AssetsDeployed is always at
@@ -260,7 +265,7 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::adjustVaultBalances : valid Vault sle");
     XRPL_ASSERT(
-        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision,
         "xrpl::adjustVaultBalances : FixedPrecision Vault");
     Asset const asset = vault->at(sfAsset);
     STAmount const cash = change.cash.value_or(STAmount{asset, 0});
@@ -331,7 +336,7 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
 [[nodiscard]] TER
 adjustVaultCash(SLE::Ref vault, STAmount const& delta, beast::Journal j)
 {
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision)
         return adjustVaultBalances(vault, {.cash = delta}, j);
 
     vault->at(sfAssetsTotal) += delta;
@@ -345,7 +350,7 @@ getVaultScale(SLE::ConstRef vault)
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultScale : valid Vault sle");
 
     Number const assetsTotal = getAssetsTotal(vault);
-    switch (getVaultVersion(vault))
+    switch (decodeVaultVersion(vault->at(~sfLEVersion)))
     {
         case VaultVersion::Legacy:
         case VaultVersion::CashBasis:
@@ -364,7 +369,7 @@ getVaultBaseScale(SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultBaseScale : valid Vault sle");
 
-    switch (getVaultVersion(vault))
+    switch (decodeVaultVersion(vault->at(~sfLEVersion)))
     {
         case VaultVersion::Legacy:
         case VaultVersion::CashBasis:
@@ -420,7 +425,7 @@ getVaultOpenLimit(SLE::ConstRef vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultOpenLimit : valid Vault sle");
     XRPL_ASSERT(
-        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision,
         "xrpl::getVaultOpenLimit : FixedPrecision Vault");
     return Number{9, 15 + getVaultBaseScale(vault)};
 }
@@ -436,7 +441,7 @@ checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount)
     XRPL_ASSERT(!amount.negative(), "xrpl::checkOptionalVaultInflow : non-negative amount");
     if (amount.negative())
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vault->at(~sfLEVersion)) != VaultVersion::FixedPrecision)
         return tesSUCCESS;
 
     STAmount const rounded =
@@ -459,7 +464,7 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount)
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::vaultOpenZoneCapacity : valid Vault sle");
     XRPL_ASSERT(
-        getVaultVersion(vault) == VaultVersion::FixedPrecision,
+        decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision,
         "xrpl::vaultOpenZoneCapacity : FixedPrecision Vault");
     NumberRoundModeGuard const rg(Number::RoundingMode::TowardsZero);
     return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
@@ -496,7 +501,7 @@ checkDebitNotDust(
 }
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
+assetsToSharesDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -505,7 +510,7 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = getAssetsTotal(vault);
+    Number const assetTotal = getAssetsTotal(vault.rawSle());
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
     {
@@ -520,7 +525,7 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
+sharesToAssetsDeposit(VaultEntryR const& vault, SLE::ConstRef issuance, STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -529,7 +534,7 @@ sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = getAssetsTotal(vault);
+    Number const assetTotal = getAssetsTotal(vault.rawSle());
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
     {
@@ -558,7 +563,7 @@ clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
     }
 
     STAmount actualDelta;
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision)
     {
         // FixedPrecision only reaches this branch for credits (VaultDeposit);
         // outflows go through clampVaultOutflow -> clampToAvailableScale,
@@ -620,7 +625,7 @@ clampToAssetsTotalScale(SLE::ConstRef vault, STAmount const& delta)
 clampVaultOutflow(SLE::ConstRef vault, STAmount const& delta)
 {
     XRPL_ASSERT(delta.negative(), "xrpl::clampVaultOutflow : outflow delta is negative");
-    return getVaultVersion(vault) == VaultVersion::FixedPrecision
+    return decodeVaultVersion(vault->at(~sfLEVersion)) == VaultVersion::FixedPrecision
         ? clampToAvailableScale(vault, delta)
         : clampToAssetsTotalScale(vault, delta);
 }
@@ -651,9 +656,9 @@ checkAssetsMaximum(SLE::ConstRef vault, Number const& amount)
 }
 
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
+assetsTotalForWithdrawal(VaultEntryR const& vault, WaiveUnrealizedLoss waive)
 {
-    Number assetTotal = getAssetsTotal(vault);
+    Number assetTotal = getAssetsTotal(vault.rawSle());
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= vault->at(sfLossUnrealized);
     return assetTotal;
@@ -661,7 +666,7 @@ assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive)
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::ConstRef vault,
+    VaultEntryR const& vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate,
@@ -688,7 +693,7 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::ConstRef vault,
+    VaultEntryR const& vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
@@ -745,7 +750,7 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion)
 }
 
 [[nodiscard]] VaultVersion
-getVaultVersion(SLE::ConstRef vault)
+getVaultVersion(VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
     return decodeVaultVersion(vault->at(~sfLEVersion));
@@ -766,7 +771,7 @@ getVaultDefaultVersion(Rules const& rules)
 }
 
 [[nodiscard]] VaultKind
-getVaultKind(SLE::ConstRef vault)
+getVaultKind(VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
     return decodeVaultKind(vault->at(~sfVaultKind));
@@ -797,7 +802,7 @@ isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
 }
 
 [[nodiscard]] VaultPhase
-getVaultPhase(ReadView const& view, SLE::ConstRef vault)
+getVaultPhase(ReadView const& view, VaultEntryR const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultPhase : valid Vault sle");
     return getVaultPhase(

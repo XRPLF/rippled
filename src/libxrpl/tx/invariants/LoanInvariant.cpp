@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -75,7 +76,7 @@ ValidLoan::finalize(
                 auto const vault = view.read(keylet::vault(broker->at(sfVaultID)));
                 // We don't check for LendingProtocolV1_1 amendment because a ClosedEnded Vault will
                 // not exist without the amendment enabled
-                if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
+                if (vault && getVaultKind(VaultEntryR(vault, view)) == VaultKind::ClosedEnded)
                 {
                     std::uint32_t const startDate = after->at(sfStartDate);
                     std::uint32_t const interval = after->at(sfPaymentInterval);

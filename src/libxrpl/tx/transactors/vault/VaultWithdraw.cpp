@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -106,7 +107,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
 
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -303,7 +304,7 @@ TER
 VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntryW vault(ctx_.tx[sfVaultID], view());
     auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -443,7 +444,8 @@ VaultWithdraw::doApply()
 
         // A non-zero payout can be too small to change the stored balance at
         // STAmount's precision. Shares would still be burned, reject it instead.
-        if (auto const ter = checkDebitNotDust(vault, assetsWithdrawn, j_, "VaultWithdraw");
+        if (auto const ter =
+                checkDebitNotDust(vault.rawSle(), assetsWithdrawn, j_, "VaultWithdraw");
             !isTesSuccess(ter))
             return ter;
     }
@@ -489,7 +491,7 @@ VaultWithdraw::doApply()
             // Legacy/CashBasis -- so the payout never exceeds the value represented
             // by the redeemed shares. sharesRedeemed is intentionally not
             // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
+            auto const maybeClamped = clampVaultOutflow(vault.rawSle(), -assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeClamped;
@@ -567,11 +569,13 @@ VaultWithdraw::doApply()
         vault->at(sfAssetsTotal) = 0;
         vault->at(sfAssetsAvailable) = 0;
     }
-    else if (auto const ter = adjustVaultCash(vault, -assetsWithdrawn, j_); !isTesSuccess(ter))
+    else if (
+        auto const ter = adjustVaultCash(vault.mutableRawSle(), -assetsWithdrawn, j_);
+        !isTesSuccess(ter))
     {
         return ter;  // LCOV_EXCL_LINE
     }
-    view().update(vault);
+    vault.update();
 
     auto const& vaultAccount = vault->at(sfAccount);
 

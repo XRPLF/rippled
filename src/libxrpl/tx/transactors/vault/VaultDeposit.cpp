@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -85,7 +86,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
 
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -170,7 +171,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return ter;
 
     auto const roundedAmount = fix320Enabled
-        ? roundToPosteriorVaultScale(vault, amount, Number::RoundingMode::TowardsZero)
+        ? roundToPosteriorVaultScale(vault.rawSle(), amount, Number::RoundingMode::TowardsZero)
         : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
@@ -215,7 +216,7 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntryW vault(ctx_.tx[sfVaultID], view());
     auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -224,7 +225,8 @@ VaultDeposit::doApply()
     // Post-amendment IOU only: round toward zero to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
     auto const amount = fix320Enabled
-        ? roundToPosteriorVaultScale(vault, ctx_.tx[sfAmount], Number::RoundingMode::TowardsZero)
+        ? roundToPosteriorVaultScale(
+              vault.rawSle(), ctx_.tx[sfAmount], Number::RoundingMode::TowardsZero)
         : ctx_.tx[sfAmount];
 
     // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
@@ -335,7 +337,7 @@ VaultDeposit::doApply()
             // than the depositor paid. Keep the share count from the first round trip: the clamp
             // only drops a last digit of the new total. Converting the clamped amount back to
             // shares would mint fewer shares while still charging the N-share debit.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+            auto const maybeClamped = clampToAssetsTotalScale(vault.rawSle(), assetsDeposited);
             if (!maybeClamped)
                 return maybeClamped.error();
             assetsDeposited = *maybeClamped;
@@ -359,20 +361,22 @@ VaultDeposit::doApply()
         return tecPATH_DRY;
     }
 
-    if (auto const ter = checkOptionalVaultInflow(vault, assetsDeposited); !isTesSuccess(ter))
+    if (auto const ter = checkOptionalVaultInflow(vault.rawSle(), assetsDeposited);
+        !isTesSuccess(ter))
         return ter;
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    if (auto const ter = adjustVaultCash(vault, assetsDeposited, j_); !isTesSuccess(ter))
+    if (auto const ter = adjustVaultCash(vault.mutableRawSle(), assetsDeposited, j_);
+        !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
-    view().update(vault);
+    vault.update();
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && getAssetsTotal(vault) > maximum)
+    if (maximum != 0 && getAssetsTotal(vault.rawSle()) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.

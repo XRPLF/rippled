@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -66,7 +67,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -130,7 +131,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
         assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
     {
-        if (auto const ter = checkAssetsMaximum(vault, *assetMax); !isTesSuccess(ter))
+        if (auto const ter = checkAssetsMaximum(vault.rawSle(), *assetMax); !isTesSuccess(ter))
         {
             JLOG(ctx.j.debug()) << "VaultSet: AssetsMaximum " << *assetMax
                                 << " is not representable at the Vault scale.";
@@ -151,7 +152,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
+    VaultEntryW vault(tx[sfVaultID], view());
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -172,7 +173,7 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < getAssetsTotal(vault))
+        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < getAssetsTotal(vault.rawSle()))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
@@ -198,7 +199,7 @@ VaultSet::doApply()
     // Note, we must update Vault object even if only DomainID is being updated
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
-    view().update(vault);
+    vault.update();
 
     associateAsset(*vault, vaultAsset);
 

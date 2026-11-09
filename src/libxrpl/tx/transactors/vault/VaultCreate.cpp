@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -211,9 +212,10 @@ VaultCreate::doApply()
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    VaultEntryW vault(accountID_, sequence, view());
+    vault.newSLE();
 
-    if (auto ter = dirLink(view(), accountID_, vault))
+    if (auto ter = dirLink(view(), accountID_, vault.mutableRawSle()))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     increaseOwnerCount(view(), owner, {}, 2, j_);
@@ -321,7 +323,7 @@ VaultCreate::doApply()
             vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
         }
     }
-    view().insert(vault);
+    vault.insert();
 
     // Explicitly create MPToken for the vault owner
     if (auto const err = authorizeMPToken(
