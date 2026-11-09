@@ -13,6 +13,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
@@ -42,8 +43,9 @@ class ReducedOffer_test : public beast::unit_test::Suite
     {
         json::Value ledgerOffer = ledgerEntryOffer(env, acct, offerSeq);
         return !(
-            ledgerOffer.isMember(jss::error) &&
-            ledgerOffer[jss::error].asString() == "entryNotFound");
+            ledgerOffer[jss::error].asString() == "entryNotFound" &&
+            ledgerOffer[jss::error_code] == RpcEntryNotFound &&
+            ledgerOffer[jss::error_message] == "Entry not found.");
     }
 
     // Common code to clean up unneeded offers.

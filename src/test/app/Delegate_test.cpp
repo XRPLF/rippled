@@ -34,10 +34,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -159,6 +160,8 @@ class Delegate_test : public beast::unit_test::Suite
         env.close();
         auto const jle = delegate::entry(env, gw, alice);
         BEAST_EXPECT(jle[jss::result][jss::error] == "entryNotFound");
+        BEAST_EXPECT(jle[jss::result][jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jle[jss::result][jss::error_message] == "Entry not found.");
 
         // alice can delegate permissions to gw as well
         env(delegate::set(alice, gw, permissions));
@@ -167,6 +170,8 @@ class Delegate_test : public beast::unit_test::Suite
         auto const response = delegate::entry(env, gw, alice);
         // alice has not been granted any permissions by gw
         BEAST_EXPECT(response[jss::result][jss::error] == "entryNotFound");
+        BEAST_EXPECT(response[jss::result][jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(response[jss::result][jss::error_message] == "Entry not found.");
     }
 
     void
@@ -637,16 +642,14 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
             // Delegate object should appear in both alice's and bob's directories
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
 
             for (std::uint32_t i = 0; i < 256; ++i)
                 env.close();
@@ -664,8 +667,7 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
             BEAST_EXPECT(!env.closed()->exists(delegateKey));
             // bob's directory should no longer reference the Delegate object
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
             BEAST_EXPECT(env.balance(carol) == carolBalance + aliceBalance - deleteFee);
         }
 
@@ -686,15 +688,13 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
 
             // The Delegate entry counts against alice's ownerCount.
             auto const sleAlice = env.closed()->read(keylet::account(alice.id()));
@@ -719,8 +719,7 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
             BEAST_EXPECT(!env.closed()->exists(delegateKey));
             // alice's directory should no longer reference the Delegate object
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
             BEAST_EXPECT(env.balance(carol) == carolBalance + bobBalance - deleteFee);
 
             // alice's ownerCount is now 0; she can delete her own account.
@@ -755,7 +754,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -763,10 +762,8 @@ class Delegate_test : public beast::unit_test::Suite
             // Both Delegate objects exist and are in bob's directory
             BEAST_EXPECT(env.closed()->exists(aliceBobKey));
             BEAST_EXPECT(env.closed()->exists(carolBobKey));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), aliceBobKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), carolBobKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), aliceBobKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), carolBobKey.key));
 
             for (std::uint32_t i = 0; i < 256; ++i)
                 env.close();
@@ -787,10 +784,8 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(carolBobKey));
 
             // alice's and carol's directories no longer reference the objects
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), aliceBobKey.key));
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(carol.id())), carolBobKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), alice), aliceBobKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), carol), carolBobKey.key));
 
             BEAST_EXPECT(env.balance(dave) == daveBalance + bobBalance - deleteFee);
         }
@@ -2780,9 +2775,11 @@ class Delegate_test : public beast::unit_test::Suite
             jv[jss::secret] = bob.name();
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
-                jrr[jss::error_message].asString().contains(
-                    "A Signer may not be the transaction's Account"));
+                jrr[jss::error_message] ==
+                "A Signer may not be the transaction's Account (" + bob.human() + ").");
         }
     }
 
@@ -2837,20 +2834,6 @@ class Delegate_test : public beast::unit_test::Suite
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, UInt256> txRequiredFeatures{
             {"AMMClawback", featureAMMClawback},
-            {"AMMCreate", featureAMM},
-            {"AMMDeposit", featureAMM},
-            {"AMMWithdraw", featureAMM},
-            {"AMMVote", featureAMM},
-            {"AMMBid", featureAMM},
-            {"AMMDelete", featureAMM},
-            {"XChainCreateClaimID", featureXChainBridge},
-            {"XChainCommit", featureXChainBridge},
-            {"XChainClaim", featureXChainBridge},
-            {"XChainAccountCreateCommit", featureXChainBridge},
-            {"XChainAddClaimAttestation", featureXChainBridge},
-            {"XChainAddAccountCreateAttestation", featureXChainBridge},
-            {"XChainModifyBridge", featureXChainBridge},
-            {"XChainCreateBridge", featureXChainBridge},
             {"DIDSet", featureDID},
             {"DIDDelete", featureDID},
             {"OracleSet", featurePriceOracle},
@@ -3007,7 +2990,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 57;
+        std::size_t const expectedDelegableCount = 49;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

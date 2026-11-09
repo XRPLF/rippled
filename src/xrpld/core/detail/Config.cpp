@@ -12,6 +12,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -229,6 +230,15 @@ getSingleSection(
     {
         strValue = (*pmtEntries)[0];
         return true;
+    }
+
+    // A repeated section hides the value the operator intended. An empty
+    // section (for example, a header above a commented-out value) keeps the
+    // default.
+    if ((pmtEntries != nullptr) && pmtEntries->size() > 1)
+    {
+        Throw<std::runtime_error>(
+            std::format("[{}] requires exactly one value, not {}", strSection, pmtEntries->size()));
     }
 
     if (pmtEntries != nullptr)
@@ -1238,6 +1248,18 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
+    }
+    {
+        // Signed, so a negative value is refused rather than wrapping.
+        std::int64_t temp = 0;
+        if (set(temp, Keys::kGasLimit, section) && temp >= 0 && temp <= kMaxGasLimit)
+            setup.gasLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp >= 0 &&
+            temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice &&
+            temp <= std::numeric_limits<std::uint32_t>::max())
+            setup.gasPrice = static_cast<std::uint32_t>(temp);
     }
     return setup;
 }

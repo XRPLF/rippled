@@ -14,6 +14,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
@@ -186,32 +187,42 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
 
         // ledger_accept
         jr = env.rpc("ledger_accept")[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // ledger_current
         jr = env.rpc("ledger_current")[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // owner_info
         jr = env.rpc("owner_info", alice.human())[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
         jr = wsc->invoke("path_find", pfReq)[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit
         jr = env.rpc("submit", strHex(s.slice()))[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
@@ -221,7 +232,9 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         BEAST_EXPECT(jr[jss::status] == "success");
         msReq[jss::tx_json] = jr[jss::tx_json];
         jr = env.rpc("json", "submit_multisigned", to_string(msReq))[jss::result];
-        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr[jss::error_code] == RpcAmendmentBlocked);
+        BEAST_EXPECT(jr[jss::error_message] == "Amendment blocked, need upgrade.");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
     }
 
