@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -245,7 +246,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
-            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+            if (!DepositPreauthEntryR(dst, account, ctx.view))
                 return tecNO_PERMISSION;
         }
     }

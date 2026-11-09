@@ -8,6 +8,7 @@ on:
     branches:
       - "develop"
       - "release/*"
+      - "staging/*"
     paths:
       - "crates/**/Cargo.toml"
       - "crates/Cargo.lock"
@@ -34,7 +35,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-3d526d4
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-d3a71b2
     permissions:
       contents: read
       # Needed to open an issue on scheduled failures.

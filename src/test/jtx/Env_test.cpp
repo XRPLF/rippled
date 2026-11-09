@@ -786,7 +786,7 @@ public:
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
+            Env env{*this, FeatureBitset{featureDynamicMPT, featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](UInt256 const& f) {
                 bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
