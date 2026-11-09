@@ -21,9 +21,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
@@ -147,6 +150,60 @@ debitIsNonZeroDust(SLE::ConstRef vault, Number const& amount)
         : getAssetsTotal(vault);
     auto const asset = vault->at(sfAsset);
     return STAmount{asset, total - amount} == STAmount{asset, total};
+}
+
+enum class RoundUp : bool { No = false, Yes = true };
+
+// Returns n as an exact non-negative integer, or nullopt if n is negative or
+// has a fractional part.
+std::optional<std::uint64_t>
+toExactUInt(Number const& n)
+{
+    if (n.signum() < 0 || n.truncate() != n)
+        return std::nullopt;
+    return static_cast<std::uint64_t>(static_cast<std::int64_t>(n));
+}
+
+// Converts with VaultRounding::FavorVault for a vault holding an integral
+// asset: returns a * b / c in units of `to`, rounded up or down.
+//
+// Every total and amount of an integral asset is an integer, so the quotient
+// is computed exactly in 128 bits and rounded once. Number keeps only 19
+// digits, and a directed rounding mode applies to every Number step, so with
+// large totals the Number path can land a whole unit away from the exact
+// result: 1'000'000'000'000'007 * 123'456'789 / 1'000'000'000'000'007 is
+// exactly 123'456'789, but rounding every Number step up gives 123'456'790.
+//
+// Throws std::overflow_error if c is zero or the quotient does not fit in an
+// int64, as the Number path does; callers already handle that.
+STAmount
+favorVaultMulDiv(Asset const& to, Number const& a, Number const& b, Number const& c, RoundUp up)
+{
+    auto const ua = toExactUInt(a);
+    auto const ub = toExactUInt(b);
+    auto const uc = toExactUInt(c);
+    if (!ua || !ub || !uc)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::favorVaultMulDiv : integral operands");
+        // Still round in the vault's favor; the result is quantized to `to`
+        // while the guard is active.
+        NumberRoundModeGuard const rg(
+            up == RoundUp::Yes ? Number::RoundingMode::Upward : Number::RoundingMode::Downward);
+        return STAmount{to, (a * b) / c};
+        // LCOV_EXCL_STOP
+    }
+
+    using boost::multiprecision::uint128_t;
+    if (*uc == 0)
+        throw std::overflow_error("xrpl::favorVaultMulDiv : divide by zero");
+    uint128_t const num = uint128_t{*ua} * *ub;
+    uint128_t quotient = num / *uc;
+    if (up == RoundUp::Yes && quotient * *uc != num)
+        ++quotient;
+    if (quotient > std::numeric_limits<std::int64_t>::max())
+        throw std::overflow_error("xrpl::favorVaultMulDiv : overflow");
+    return STAmount{to, Number{static_cast<std::int64_t>(quotient)}};
 }
 }  // namespace
 
@@ -496,7 +553,11 @@ checkDebitNotDust(
 }
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& assets,
+    VaultRounding rounding)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -515,6 +576,8 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    if (rounding == VaultRounding::FavorVault && assets.integral())
+        return favorVaultMulDiv(shares.asset(), shareTotal, assets, assetTotal, RoundUp::No);
     shares = ((shareTotal * assets) / assetTotal).truncate();
     return shares;
 }
@@ -524,7 +587,7 @@ sharesToAssetsDeposit(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
-    Number::RoundingMode rounding)
+    VaultRounding rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -542,10 +605,10 @@ sharesToAssetsDeposit(
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    // Quantizing to the asset's precision honors the thread-local rounding mode
-    // for both integral (XRP/MPT) and IOU assets. Charging a depositor must
-    // round Upward so they pay at least the fair value of the minted shares.
-    NumberRoundModeGuard const rg(rounding);
+    // Charging a depositor rounds up so they pay at least the fair value of
+    // the minted shares.
+    if (rounding == VaultRounding::FavorVault && assets.integral())
+        return favorVaultMulDiv(assets.asset(), assetTotal, shares, shareTotal, RoundUp::Yes);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
@@ -673,7 +736,8 @@ assetsToSharesWithdraw(
     SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate,
-    WaiveUnrealizedLoss waive)
+    WaiveUnrealizedLoss waive,
+    VaultRounding rounding)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
@@ -687,6 +751,9 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    if (truncate == TruncateShares::Yes && rounding == VaultRounding::FavorVault &&
+        assets.integral())
+        return favorVaultMulDiv(shares.asset(), shareTotal, assets, assetTotal, RoundUp::No);
     Number result = (shareTotal * assets) / assetTotal;
     if (truncate == TruncateShares::Yes)
         result = result.truncate();
@@ -700,7 +767,7 @@ sharesToAssetsWithdraw(
     SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive,
-    Number::RoundingMode rounding)
+    VaultRounding rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
@@ -714,12 +781,11 @@ sharesToAssetsWithdraw(
     if (assetTotal == 0)
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    // Paying a withdrawing shareholder must round Downward so they receive at
-    // most the fair value of the shares they burn; otherwise the assets-per-
-    // share price would drop and dilute the remaining shareholders. Quantizing
-    // to the asset's precision honors the thread-local rounding mode for both
-    // integral (XRP/MPT) and IOU assets.
-    NumberRoundModeGuard const rg(rounding);
+    // Paying a withdrawing shareholder rounds down so they receive at most the
+    // fair value of the shares they burn; otherwise the assets-per-share price
+    // would drop and dilute the remaining shareholders.
+    if (rounding == VaultRounding::FavorVault && assets.integral())
+        return favorVaultMulDiv(assets.asset(), assetTotal, shares, shareTotal, RoundUp::No);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }

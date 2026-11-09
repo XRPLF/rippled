@@ -248,6 +248,29 @@ checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount);
 vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
 
 /**
+ * How the share<->asset conversions below round their result.
+ *
+ * Legacy: compute the exchange in Number arithmetic and quantize the result
+ * to nearest (share counts are then truncated where documented). This is the
+ * pre-fixCleanup3_6_0 behavior.
+ *
+ * FavorVault: for vaults holding an integral asset (XRP or MPT), compute
+ * a * b / c exactly in 128-bit integer arithmetic and round the quotient in
+ * the vault's favor, so no single depositor or withdrawer can dilute the other
+ * shareholders:
+ *   - share counts (minted on deposit, burned on withdraw) round down;
+ *   - the assets charged for minted shares round up;
+ *   - the assets paid for burned shares round down.
+ * Number keeps only 19 significant digits, so rounding each Number step in a
+ * fixed direction can move an otherwise exact result by a whole unit once the
+ * totals are large; the integer path avoids that. IOU conversions are left on
+ * the Legacy arithmetic: an IOU result cannot be represented exactly anyway,
+ * and the callers' scale clamps (clampToAssetsTotalScale, clampVaultOutflow)
+ * already round the IOU amount in the vault's favor.
+ */
+enum class VaultRounding : bool { Legacy = false, FavorVault = true };
+
+/**
  * From the perspective of a vault, return the number of shares to give
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
@@ -255,27 +278,32 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param assets The amount of assets to convert.
+ * @param rounding FavorVault computes the truncated share count exactly for
+ *                 integral assets; see VaultRounding.
  *
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& assets,
+    VaultRounding rounding = VaultRounding::Legacy);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
  * depositor when they receive a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
- * The result is quantized to the vault asset's precision using @p rounding.
- * Callers charging a depositor for freshly minted shares must round Upward, so
- * the depositor pays at least the fair value of those shares and existing
- * shareholders cannot be diluted. The ToNearest default preserves the
- * pre-amendment behavior.
+ * With FavorVault and an integral asset the charge is the exact fair value of
+ * the shares rounded up, so the depositor pays at least what the shares are
+ * worth and existing shareholders cannot be diluted. Legacy rounds to nearest,
+ * which can undercharge by up to half a unit.
  *
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
- * @param rounding How to round the resulting assets to the asset's precision.
+ * @param rounding How to round the resulting assets; see VaultRounding.
  *
  * @return The number of assets, or nullopt on error.
  */
@@ -284,7 +312,7 @@ sharesToAssetsDeposit(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
-    Number::RoundingMode rounding = Number::RoundingMode::ToNearest);
+    VaultRounding rounding = VaultRounding::Legacy);
 
 /**
  * Adjusts a requested asset change (delta) to match the decimal scale of the
@@ -432,6 +460,9 @@ checkDebitNotDust(
  * @param truncate Whether to truncate instead of rounding.
  * @param waive Whether to waive the unrealized-loss discount when computing
  *              the exchange rate.
+ * @param rounding FavorVault computes a truncated share count exactly for
+ *                 integral assets; see VaultRounding. It has no effect unless
+ *                 truncate is Yes.
  *
  * @return The number of shares, or nullopt on error.
  */
@@ -441,25 +472,25 @@ assetsToSharesWithdraw(
     SLE::ConstRef issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
-    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No,
+    VaultRounding rounding = VaultRounding::Legacy);
 
 /**
  * From the perspective of a vault, return the number of assets to give the
  * depositor when they redeem a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
- * The result is quantized to the vault asset's precision using @p rounding.
- * Callers paying a withdrawing shareholder must round Downward, so the
- * shareholder receives at most the fair value of the shares they burn and the
- * remaining shareholders cannot be diluted. The ToNearest default preserves the
- * pre-amendment behavior.
+ * With FavorVault and an integral asset the payout is the exact fair value of
+ * the shares rounded down, so the shareholder receives at most what the shares
+ * are worth and the remaining shareholders cannot be diluted. Legacy rounds to
+ * nearest, which can overpay by up to half a unit.
  *
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
  *              loss when computing the exchange rate.
- * @param rounding How to round the resulting assets to the asset's precision.
+ * @param rounding How to round the resulting assets; see VaultRounding.
  *
  * @return The number of assets, or nullopt on error.
  */
@@ -469,7 +500,7 @@ sharesToAssetsWithdraw(
     SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No,
-    Number::RoundingMode rounding = Number::RoundingMode::ToNearest);
+    VaultRounding rounding = VaultRounding::Legacy);
 
 /**
  * Returns true iff account holds all of the vault's outstanding shares,
