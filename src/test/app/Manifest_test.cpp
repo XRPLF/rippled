@@ -139,6 +139,9 @@ public:
             makeManifest(pk, invalidSig ? randomSecretKey() : sk, spk, ssk, seq));
         if (!manifest)
             Throw<std::runtime_error>("Could not create a manifest");
+        STObject const st(SerialIter{makeSlice(manifest->serialized)}, sfGeneric);
+        BEAST_EXPECT(verify(st, HashPrefix::Manifest, spk));
+        BEAST_EXPECT(invalidSig ^ verify(st, HashPrefix::Manifest, pk, sfMasterSignature));
         BEAST_EXPECT(invalidSig ^ manifest->verify());
         return std::move(*manifest);
     }
@@ -314,6 +317,169 @@ public:
 
         auto const masterSig = sign(KeyType::Ed25519, sk, ss.slice());
         BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));
+    }
+
+    void
+    testMakeManifestKeys()
+    {
+        testcase("makeManifest signs with the key its secret derives");
+
+        // One Ed25519 secret as both secrets: each signature is made with the
+        // key the secret derives, so the two signatures are identical.
+        auto const sk = randomSecretKey();
+        auto const masterKey = derivePublicKey(KeyType::Ed25519, sk);
+        auto const signingKey = randomKeyPair(KeyType::Ed25519).first;
+        {
+            auto const m = deserializeManifest(makeManifest(masterKey, sk, signingKey, sk, 1));
+            BEAST_EXPECT(m.has_value());
+            if (m)
+            {
+                auto const sig = m->getSignature();
+                BEAST_EXPECT(sig.has_value());
+                if (sig)
+                    BEAST_EXPECT(strHex(*sig) == strHex(m->getMasterSignature()));
+                BEAST_EXPECT(!m->verify());
+            }
+        }
+
+        // A signing secret that does not match the signing key fails verify().
+        {
+            auto const m =
+                deserializeManifest(makeManifest(masterKey, sk, signingKey, randomSecretKey(), 1));
+            BEAST_EXPECT(m.has_value());
+            if (m)
+                BEAST_EXPECT(!m->verify());
+        }
+
+        // makeRevocation signs with the key its secret derives, not the given key.
+        {
+            auto const otherKey = randomKeyPair(KeyType::Ed25519).first;
+            auto const m = deserializeManifest(makeRevocation(otherKey, sk));
+            BEAST_EXPECT(m.has_value());
+            if (m)
+            {
+                auto const expected = sign(
+                    KeyType::Ed25519,
+                    sk,
+                    makeSlice(manifestSigningData(makeRevocationFields(otherKey))));
+                BEAST_EXPECT(strHex(expected) == strHex(m->getMasterSignature()));
+                BEAST_EXPECT(!m->verify());
+            }
+        }
+    }
+
+    void
+    testMakeManifestRevokedSequenceRefused()
+    {
+        auto const sk = randomSecretKey();
+        auto const masterKey = derivePublicKey(KeyType::Ed25519, sk);
+        auto const signing = randomKeyPair(KeyType::Ed25519);
+        auto const seq = std::numeric_limits<std::uint32_t>::max();
+
+        expectInvalidArgument(
+            [&] { makeManifestFields(masterKey, signing.first, seq); },
+            "makeManifestFields revoked sequence");
+        expectInvalidArgument(
+            [&] { makeManifest(masterKey, sk, signing.first, signing.second, seq); },
+            "makeManifest revoked sequence");
+    }
+
+    void
+    testMakeManifestBadDomainRefused()
+    {
+        auto const sk = randomSecretKey();
+        auto const masterKey = derivePublicKey(KeyType::Ed25519, sk);
+        auto const signing = randomKeyPair(KeyType::Ed25519);
+        std::string const domain = "-bad.example";
+
+        expectInvalidArgument(
+            [&] { makeManifestFields(masterKey, signing.first, 1, domain); },
+            "makeManifestFields bad domain");
+        expectInvalidArgument(
+            [&] { makeManifest(masterKey, sk, signing.first, signing.second, 1, domain); },
+            "makeManifest bad domain");
+    }
+
+    void
+    testMakeManifestSameKeysRefused()
+    {
+        auto const sk = randomSecretKey();
+        auto const masterKey = derivePublicKey(KeyType::Ed25519, sk);
+
+        expectInvalidArgument(
+            [&] { makeManifestFields(masterKey, masterKey, 1); }, "makeManifestFields same keys");
+        expectInvalidArgument(
+            [&] { makeManifest(masterKey, sk, masterKey, sk, 1); }, "makeManifest same keys");
+    }
+
+    // Passes when f throws std::invalid_argument; fails with what otherwise.
+    template <class F>
+    void
+    expectInvalidArgument(F const& f, std::string const& what)
+    {
+        try
+        {
+            f();
+            fail(what + ": no exception", __FILE__, __LINE__);
+        }
+        catch (std::invalid_argument const&)
+        {
+            pass();
+        }
+        catch (std::exception const& e)
+        {
+            fail(what + ": " + e.what(), __FILE__, __LINE__);
+        }
+    }
+
+    void
+    testMakeManifestRefusals()
+    {
+        testcase("makeManifest refusals");
+
+        testMakeManifestRevokedSequenceRefused();
+        testMakeManifestBadDomainRefused();
+        testMakeManifestSameKeysRefused();
+    }
+
+    void
+    testMakeManifestDomain()
+    {
+        testcase("makeManifest domain");
+
+        // A domain is carried into the manifest and covered by both signatures.
+        {
+            auto const sk = randomSecretKey();
+            auto const masterKey = derivePublicKey(KeyType::Ed25519, sk);
+            auto const signing = randomKeyPair(KeyType::Ed25519);
+            auto const m = deserializeManifest(
+                makeManifest(masterKey, sk, signing.first, signing.second, 1, "example.com"));
+            BEAST_EXPECT(m.has_value());
+            if (m)
+            {
+                BEAST_EXPECT(m->domain == "example.com");
+                BEAST_EXPECT(m->verify());
+            }
+        }
+
+        // secp256k1 keys and a 128-character domain give the largest manifest.
+        {
+            auto const sk = generateSecretKey(KeyType::Secp256k1, randomSeed());
+            auto const masterKey = derivePublicKey(KeyType::Secp256k1, sk);
+            auto const signing = randomKeyPair(KeyType::Secp256k1);
+            std::string const domain = std::string(63, 'a') + "." + std::string(60, 'b') + ".com";
+            BEAST_EXPECT(domain.size() == 128);
+            auto const serialized =
+                makeManifest(masterKey, sk, signing.first, signing.second, 1, domain);
+            BEAST_EXPECT(serialized.size() <= kMaxManifestBytes);
+            auto const m = deserializeManifest(serialized);
+            BEAST_EXPECT(m.has_value());
+            if (m)
+            {
+                BEAST_EXPECT(m->domain == domain);
+                BEAST_EXPECT(m->verify());
+            }
+        }
     }
 
     void
@@ -912,6 +1078,9 @@ public:
 
         testLoadStore(cache);
         testGetSignature();
+        testMakeManifestKeys();
+        testMakeManifestRefusals();
+        testMakeManifestDomain();
         testGetKeys();
         testValidatorToken();
         testManifestDeserialization();

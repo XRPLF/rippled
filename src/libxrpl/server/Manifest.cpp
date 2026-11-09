@@ -1,6 +1,7 @@
 #include <xrpl/server/Manifest.h>
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -12,6 +13,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
@@ -269,6 +271,14 @@ makeManifestFields(
     std::uint32_t sequence,
     std::string const& domain)
 {
+    // Refuses what deserializeManifest would reject.
+    if (sequence == std::numeric_limits<std::uint32_t>::max())
+        Throw<std::invalid_argument>("Manifest sequence is the revocation sequence");
+    if (signingKey == masterKey)
+        Throw<std::invalid_argument>("Manifest signing key is the master key");
+    if (!domain.empty() && !isProperlyFormedTomlDomain(domain))
+        Throw<std::invalid_argument>("Manifest domain is not properly formed: " + domain);
+
     STObject st(sfGeneric);
     st[sfSequence] = sequence;
     st[sfPublicKey] = masterKey;
@@ -298,6 +308,14 @@ manifestSigningData(STObject const& fields)
 
 namespace {
 
+// Signs with the key the secret derives, of the type of key; every PublicKey
+// has a type, so value_or never falls back.
+Buffer
+signAsKeyType(PublicKey const& key, SecretKey const& secret, Slice const& data)
+{
+    return sign(publicKeyType(key).value_or(KeyType::Secp256k1), secret, data);
+}
+
 std::string
 serializeManifest(STObject const& st)
 {
@@ -319,8 +337,8 @@ makeManifest(
 {
     auto st = makeManifestFields(masterKey, signingKey, sequence, domain);
     auto const data = manifestSigningData(st);
-    set(st, sfSignature, sign(signingKey, signingSecret, makeSlice(data)));
-    set(st, sfMasterSignature, sign(masterKey, masterSecret, makeSlice(data)));
+    set(st, sfSignature, signAsKeyType(signingKey, signingSecret, makeSlice(data)));
+    set(st, sfMasterSignature, signAsKeyType(masterKey, masterSecret, makeSlice(data)));
     return serializeManifest(st);
 }
 
@@ -328,7 +346,9 @@ std::string
 makeRevocation(PublicKey const& masterKey, SecretKey const& masterSecret)
 {
     auto st = makeRevocationFields(masterKey);
-    set(st, sfMasterSignature, sign(masterKey, masterSecret, makeSlice(manifestSigningData(st))));
+    set(st,
+        sfMasterSignature,
+        signAsKeyType(masterKey, masterSecret, makeSlice(manifestSigningData(st))));
     return serializeManifest(st);
 }
 

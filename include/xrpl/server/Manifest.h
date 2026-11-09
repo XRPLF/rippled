@@ -310,6 +310,9 @@ deserializeManifest(
  * @param domain The domain to carry, or empty for none
  * @return sfPublicKey, sfSigningPubKey, sfSequence and, when not empty,
  *         sfDomain, without any signature
+ * @throws std::invalid_argument if @p sequence is the revocation sequence,
+ *         @p signingKey equals @p masterKey, or @p domain is not empty and
+ *         not a properly formed TOML domain
  */
 STObject
 makeManifestFields(
@@ -344,6 +347,10 @@ manifestSigningData(STObject const& fields);
 /**
  * A manifest signed by both keys.
  *
+ * Each signature is made with the key its secret derives, of the type of the
+ * public key it belongs to, so a secret that does not match its public key
+ * gives a manifest that fails verify().
+ *
  * @param masterKey The master public key
  * @param masterSecret The secret key of @p masterKey; signs sfMasterSignature
  * @param signingKey The ephemeral key the manifest delegates to
@@ -351,6 +358,7 @@ manifestSigningData(STObject const& fields);
  * @param sequence The manifest sequence; a newer manifest has a larger one
  * @param domain The domain to carry, or empty for none
  * @return The serialized manifest, as `Manifest::serialized` holds it
+ * @throws std::invalid_argument as @ref makeManifestFields throws it
  */
 std::string
 makeManifest(
@@ -363,6 +371,10 @@ makeManifest(
 
 /**
  * A revocation of @p masterKey signed by it.
+ *
+ * The signature is made with the key @p masterSecret derives, of the type of
+ * @p masterKey, so a secret that does not match it gives a revocation that
+ * fails verify().
  *
  * @param masterKey The master public key being revoked
  * @param masterSecret The secret key of @p masterKey
