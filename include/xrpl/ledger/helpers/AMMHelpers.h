@@ -733,18 +733,6 @@ checkAMMPrecisionLoss(
     beast::Journal const j);
 
 /**
- * Get the balance of LP tokens.
- */
-STAmount
-ammLPHolds(
-    ReadView const& view,
-    Asset const& asset1,
-    Asset const& asset2,
-    AccountID const& ammAccount,
-    AccountID const& lpAccount,
-    beast::Journal const j);
-
-/**
  * Get AMM trading fee for the given account. The fee is discounted
  * if the account is the auction slot owner or one of the slot's authorized
  * accounts.
