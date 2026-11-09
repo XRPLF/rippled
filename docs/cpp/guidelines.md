@@ -30,7 +30,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 ## General
 
-- Avoid out and in-out parameters. Use move semantics and return instead.
+- Avoid out and in-out parameters. Return by value instead, relying on RVO/NRVO and
+  move semantics.
 - Don't rely on empty value. Prefer `std::optional` instead.
 - Prefer `std::format` to string concatenation.
 
@@ -60,6 +61,29 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 - Write new tests with `gtest`. Use the legacy test framework only where
   `gtest` isn't possible.
+- Declare a gtest fixture as a `struct` with only public members, derived from
+  `::testing::Test` or from another fixture:
+
+  ```cpp
+  struct LedgerTest : ::testing::Test
+  {
+      // No private or protected sections.
+  };
+  ```
+
+- Put test helper classes, constants and functions inside the fixture or in an
+  anonymous namespace in the `.cpp` file. All gtest tests of a binary are
+  linked together, so two same-named helpers at namespace scope in different
+  test files are a silent ODR violation: the linker keeps one definition and
+  both files use it.
+- When several test cases repeat the same precondition setup, create a new
+  fixture that does that setup in its constructor.
+- Use
+  [value-parameterized tests](https://google.github.io/googletest/advanced.html#value-parameterized-tests)
+  when test cases differ only in their input and expected output values.
+- Do per-test setup and teardown in the fixture's constructor and destructor
+  rather than in `SetUp()` and `TearDown()`, unless that isn't possible (see
+  the [gtest FAQ](https://google.github.io/googletest/faq.html#CtorVsSetUp)).
 
 ## Contracts
 
