@@ -144,6 +144,8 @@ TEST_F(ListSigningTest, canonical_json)
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} {\"b\": 2}"); }), trailing);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": 1} ]"); }), trailing);
     EXPECT_EQ(errorOf([] { canonicalJson("{\"a\": [1]} 2"); }), trailing);
+    // A closing bracket with nothing open does not end the object
+    EXPECT_EQ(errorOf([] { canonicalJson("]{} 1"); }), trailing);
 }
 
 TEST_F(ListSigningTest, canonical_json_edges)
@@ -265,6 +267,19 @@ TEST_F(ListSigningTest, unsigned_list_edges)
         head + R"(, "validators": [{"validation_public_key": ")" + strHex(key) + "\"}]}");
     ASSERT_EQ(l.validators.size(), 1u);
     EXPECT_EQ(l.validators[0], key);
+
+    // A manifest of exactly the most base64 characters is read, one more is not
+    auto const entryWith = [&](std::string const& manifest) {
+        return head + R"(, "validators": [{"validation_public_key": ")" + strHex(key) +
+            R"(", "manifest": ")" + manifest + "\"}]}";
+    };
+    auto const& real = validators_[0].manifest;
+    ASSERT_LT(real.size(), kMaxManifestBase64);
+    EXPECT_EQ(
+        errorOfParse(entryWith(real + std::string(kMaxManifestBase64 - real.size(), '='))), "");
+    EXPECT_EQ(
+        errorOfParse(entryWith(real + std::string(kMaxManifestBase64 + 1 - real.size(), '='))),
+        "\"manifest\" does not verify for " + strHex(key));
 }
 
 TEST_F(ListSigningTest, files)
@@ -1434,6 +1449,11 @@ TEST_F(ListSigningTest, verify_reports_pending_and_order)
         reversed[jss::blobs_v2].append(entry);
         reversed[jss::blobs_v2].append(v2[jss::blobs_v2][0u]);
         expectError(reversed, "blob 1: \"sequence\" is not above blob 0's");
+
+        // The same sequence twice is not above either
+        auto repeated = v2;
+        repeated[jss::blobs_v2].append(v2[jss::blobs_v2][0u]);
+        expectError(repeated, "blob 1: \"sequence\" is not above blob 0's");
     }
 }
 

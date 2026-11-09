@@ -949,6 +949,13 @@ TEST_F(CommandsTest, sign_hex_without_manifest_prefix)
         EXPECT_EQ(result.out, loaded.signHex(hex) + "\n");
         EXPECT_EQ(result.err, "");
     }
+
+    // Exactly the manifest prefix and nothing after it is described as unparsable fields
+    auto const prefixOnly = run("sign_hex", {"4D414E00"}, options_);
+    EXPECT_EQ(prefixOnly.out, loaded.signHex("4D414E00") + "\n");
+    EXPECT_EQ(
+        prefixOnly.err,
+        "These bytes start with the manifest prefix and do not parse as manifest fields\n");
 }
 
 TEST_F(CommandsTest, sign_hex_refuses_undecodable_hex)
