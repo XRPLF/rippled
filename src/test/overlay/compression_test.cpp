@@ -17,7 +17,6 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -206,7 +205,6 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        transaction->set_receivetimestamp(randInt<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;

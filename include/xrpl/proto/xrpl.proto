@@ -98,7 +98,8 @@ enum TransactionStatus {
 message TMTransaction {
   required bytes rawTransaction = 1;
   required TransactionStatus status = 2;
-  optional uint64 receiveTimestamp = 3;
+  // No longer sent, and never read. Kept so it can be reserved in a later release.
+  optional uint64 receiveTimestamp = 3 [deprecated = true];
   optional bool deferred = 4;  // not applied to open ledger
 }
 
