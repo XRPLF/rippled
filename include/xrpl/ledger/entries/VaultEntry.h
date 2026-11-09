@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <expected>
 
@@ -126,6 +127,17 @@ public:
      */
     [[nodiscard]] Number
     assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const;
+
+    /**
+     * Minimum required broker cover, rounded up.
+     *
+     * DebtTotal is a broker-level aggregate, never rounded at an individual
+     * loan's scale. Legacy and CashBasis Vaults round at the live AssetsTotal
+     * exponent. FixedPrecision Vaults round at the Vault's base exponent
+     * (-Scale, or 0 for integral assets).
+     */
+    [[nodiscard]] Number
+    minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
