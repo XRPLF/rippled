@@ -78,16 +78,7 @@ isFrozen(
 bool
 isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth)
 {
-    XRPL_ASSERT(
-        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::isFrozen : MPToken or MPTokenIssuance SLE");
-
-    if (sle.getType() == ltMPTOKEN)
-    {
-        // The entry needs an owning pointer, so this copies the SLE. Callers
-        // that already hold an MPTokenEntry call its isFrozen() directly.
-        return MPTokenEntryR(std::make_shared<SLE const>(sle), view).isFrozen(account, depth);
-    }
+    XRPL_ASSERT(sle.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isFrozen : MPTokenIssuance SLE");
 
     MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
     return isGlobalFrozen(sle) || isIndividualFrozen(view, account, mptIssue) ||
