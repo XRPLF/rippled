@@ -4,6 +4,7 @@
 #include <xrpl/json/json_forwards.h>
 
 #include <concepts>
+#include <cstddef>
 #include <cstring>
 #include <iterator>
 #include <limits>
@@ -186,6 +187,7 @@ public:
     Value(double value);
     Value(char const* value);
     Value(xrpl::Number const& value);
+
     /**
      * @brief Constructs a value from a static string.
      *
@@ -199,16 +201,26 @@ public:
      * @endcode
      */
     Value(StaticString const& value);
+
+    /**
+     * @brief Constructs a value from a string.
+     *
+     * The characters are copied, so the string need not outlive the call.
+     *
+     * @param value The characters to copy.
+     */
     Value(std::string const& value);
+
     /**
      * @brief Constructs a value from a string view.
      *
      * The characters are copied, so the view need not outlive the call and need
-     * not be NUL-terminated.
+     * not end in a null character.
      *
      * @param value The characters to copy.
      */
     Value(std::string_view value);
+
     Value(bool value);
     Value(Value const& other);
     ~Value();
@@ -484,29 +496,32 @@ bool
 operator==(Value const&, Value const&);
 
 /**
- * Compares a value with a string view, reading the value's characters in place
- * rather than building a Value from the view.
+ * Compares a value with the characters of a string, in place.
  *
- * Constrained to the exact type: a string literal converts equally well to a
- * view and to a Value, so a plain overload makes `value == "literal"`
- * ambiguous.
+ * Any right-hand side that converts to a string view takes this path: a
+ * literal, a `char const*`, a `std::string` or a view. Deduction matches each
+ * exactly, ahead of its conversion to a Value. A `0` deduces as `int`, which no
+ * view accepts, and `nullptr` is excluded, so both compare through Value like
+ * every other type.
  *
- * @param x The value to compare.
- * @param y The characters to compare it against.
- * @return Whether `x` is a string whose characters up to its first NUL are
- *         exactly the characters of `y`.
+ * @tparam T A type that converts to `std::string_view`, except
+ *           `std::nullptr_t`.
+ * @param value The value to compare.
+ * @param text The characters to compare it against.
+ * @return Whether `value` is a string whose characters, up to its first null
+ *         character, are exactly `text`.
  */
 template <class T>
-    requires std::same_as<T, std::string_view>
+    requires std::convertible_to<T const&, std::string_view> && (!std::same_as<T, std::nullptr_t>)
 bool
-operator==(Value const& x, T y)
+operator==(Value const& value, T const& text)
 {
-    if (!x.isString())
+    if (!value.isString())
         return false;
 
-    // A string `Value` can hold a null pointer, which names no characters, so it equals no view.
-    char const* const s = x.asCString();
-    return s != nullptr && std::string_view{s} == y;
+    // A string value holding a null pointer equals no text, not even the empty one.
+    char const* const s = value.asCString();
+    return s != nullptr && std::string_view{s} == std::string_view{text};
 }
 
 bool

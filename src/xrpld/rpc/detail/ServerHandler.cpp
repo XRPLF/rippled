@@ -628,9 +628,7 @@ ServerHandler::processRequest(
 
     bool batch = false;
     unsigned size = 1;
-    // Spelled as a view so the name is compared in place. A bare literal would reach the
-    // Value-to-Value comparison instead, which builds a Value from it, allocating per request.
-    if (jsonOrig.isMember(jss::method) && jsonOrig[jss::method] == std::string_view{"batch"})
+    if (jsonOrig.isMember(jss::method) && jsonOrig[jss::method] == "batch")
     {
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
