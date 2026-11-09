@@ -17,6 +17,11 @@ target_link_libraries(
     PUBLIC Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl
 )
 
+# The tool's headers, each compiled on its own against the library's compile environment.
+if(verify_headers)
+    verify_target_headers(xrpl.validator-keys "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
 add_executable(validator-keys Main.cpp)
 target_link_libraries(validator-keys PRIVATE xrpl.validator-keys)
 patch_nix_binary(validator-keys)

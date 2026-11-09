@@ -27,4 +27,10 @@ target_compile_definitions(
 )
 add_dependencies(validator_keys_tests validator-keys)
 include(GoogleTest)
-gtest_discover_tests(validator_keys_tests)
+
+# The test fixtures' headers, checked against the test binary's own compile environment.
+if(verify_headers)
+    verify_target_headers(validator_keys_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+
+gtest_discover_tests(validator_keys_tests DISCOVERY_TIMEOUT 60)
