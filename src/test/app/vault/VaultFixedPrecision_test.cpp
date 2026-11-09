@@ -643,9 +643,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             legacyEnv(tx, Ter(tesSUCCESS));
             legacyEnv.close();
             if (auto const sle = legacyEnv.le(keylet); BEAST_EXPECT(sle))
+            {
                 BEAST_EXPECT(
                     getVaultVersion(VaultEntryR(sle, *legacyEnv.current())) ==
                     VaultVersion::Legacy);
+            }
         }
     }
 
