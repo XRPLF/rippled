@@ -936,6 +936,37 @@ TEST_F(CommandsTest, sign)
     EXPECT_NE(revocation.err.find("master key: " + masterKey), std::string::npos) << revocation.err;
 }
 
+TEST_F(CommandsTest, sign_hex_without_manifest_prefix)
+{
+    run("create_keys", {}, options_);
+    auto const loaded = keys(options_);
+
+    // Exactly the prefix's size and longer data that is not a manifest's are
+    // signed with nothing described
+    for (std::string const hex : {"01020304", "DEADBEEF00FF"})
+    {
+        auto const result = run("sign_hex", {hex}, options_);
+        EXPECT_EQ(result.out, loaded.signHex(hex) + "\n");
+        EXPECT_EQ(result.err, "");
+    }
+}
+
+TEST_F(CommandsTest, sign_hex_refuses_undecodable_hex)
+{
+    run("create_keys", {}, options_);
+    EXPECT_EQ(commandError("sign_hex", {"ZZ"}, options_), "Could not decode hex string: ZZ");
+    EXPECT_EQ(commandError("sign_hex", {" 0G "}, options_), "Could not decode hex string: 0G");
+}
+
+TEST_F(CommandsTest, sign_hex_warns_when_revoked)
+{
+    run("create_keys", {}, options_);
+    run("revoke_keys", {}, options_);
+    auto const result = run("sign_hex", {"00FF"}, options_);
+    EXPECT_EQ(result.err, "WARNING: Validator keys have been revoked!\n\n");
+    EXPECT_EQ(result.out, keys(options_).signHex("00FF") + "\n");
+}
+
 TEST_F(CommandsTest, list_commands)
 {
     // The publisher: a key file and a token carrying an ed25519 signing key

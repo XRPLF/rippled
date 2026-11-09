@@ -1410,6 +1410,20 @@ TEST_F(ListSigningTest, verify_reports_pending_and_order)
         EXPECT_TRUE(report["blobs"][1u]["pending"].asBool()) << to_string(report);
     }
 
+    // A blob whose "effective" is at or before now is reported not pending
+    {
+        auto const past =
+            parseUnsignedList(unsignedListText(validators_, 8, now_ + 300, now_ - 10));
+        auto const pastSig =
+            signList(past, publisher_.signingKey, publisher_.token.validationSecret);
+        auto const signedPast = makeSignedList(
+            publisher_.token.manifest, publisher_.manifest.masterKey, past, pastSig, 2, v2, now_);
+        auto const report = verifyList(signedPast, std::nullopt, std::nullopt, now_);
+        EXPECT_TRUE(report["ok"].asBool()) << to_string(report);
+        EXPECT_EQ(report["blobs"][1u][jss::effective].asUInt(), now_ - 10);
+        EXPECT_FALSE(report["blobs"][1u]["pending"].asBool()) << to_string(report);
+    }
+
     // Blob sequences 8 then 7 are out of order
     {
         json::Value entry(json::ValueType::Object);
