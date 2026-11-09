@@ -931,7 +931,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
 
 std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
-    Sandbox& sb,
+    Sandbox const& sb,
     STAmount const& lpTokens,
     AMMEntryW& ammSle,
     AccountID const& account)
