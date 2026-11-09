@@ -27,6 +27,8 @@
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 
@@ -43,6 +45,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -71,6 +74,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
@@ -2800,6 +2804,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
             expect(
                 jrr[jss::status] == "error" && jrr[jss::error] == "invalidTransaction" &&
+                    !jrr.isMember(jss::error_code) && jrr[jss::error_message].isNull() &&
                     jrr[jss::error_exception] ==
                         "fails local checks: Batch inner transactions are never "
                         "considered validly signed.",
@@ -4833,6 +4838,72 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testInnerTxnsNotInOpenLedger(FeatureBitset features)
+    {
+        testcase("inner txns not in open ledger");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const batchFee = batch::calcBatchFee(env, 1, 2);
+        auto const batchTxn = env.jt(
+            batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+            batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
+            batch::Sig(bob));
+        env(batchTxn, Ter(tesSUCCESS));
+
+        auto const batchID = batchTxn.stx->getTransactionID();
+        auto const innerIDs = batchTxn.stx->getBatchTransactionIDs();
+
+        // RCLConsensus::Adaptor::onClose builds the initial proposal set from this tx map.
+        auto const expectOnlyOuterInOpenLedger = [&] {
+            auto const view = env.app().getOpenLedger().current();
+            BEAST_EXPECT(std::distance(view->txs.begin(), view->txs.end()) == 1);
+            BEAST_EXPECT(view->txExists(batchID));
+            for (auto const& id : innerIDs)
+                BEAST_EXPECT(!view->txExists(id));
+            for (auto const& [tx, meta] : view->txs)
+                BEAST_EXPECT(!tx->isFlag(tfInnerBatchTxn));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+        };
+        expectOnlyOuterInOpenLedger();
+
+        // Rebuild the open ledger on the same parent, as when a consensus round leaves the Batch
+        // out and OpenLedger::accept carries it over.
+        {
+            OrderedTxs retries{uint256{}};
+            env.app().getOpenLedger().accept(
+                env.app(),
+                env.current()->rules(),
+                env.app().getLedgerMaster().getClosedLedger(),
+                OrderedTxs{uint256{}},
+                false,
+                retries,
+                TapNone,
+                "test");
+            BEAST_EXPECT(retries.empty());
+            expectOnlyOuterInOpenLedger();
+        }
+
+        // Inner txns enter only the ledger built from the agreed set.
+        env.close();
+        auto const closed = env.closed();
+        BEAST_EXPECT(closed->txExists(batchID));
+        for (auto const& id : innerIDs)
+            BEAST_EXPECT(closed->txExists(id));
+        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+    }
+
+    void
     testBatchTxQueue(FeatureBitset features)
     {
         testcase("batch tx queue");
@@ -5407,7 +5478,10 @@ class Batch_test : public beast::unit_test::Suite
 
             // The delegated payment never applied.
             BEAST_EXPECT(env.balance(mallory) == preMallory);
-            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
+            auto const txResult = env.rpc("tx", txIDs[1])[jss::result];
+            BEAST_EXPECT(txResult[jss::error] == "txnNotFound");
+            BEAST_EXPECT(txResult[jss::error_code] == RpcTxnNotFound);
+            BEAST_EXPECT(txResult[jss::error_message] == "Transaction not found.");
         }
     }
 
@@ -5818,7 +5892,10 @@ class Batch_test : public beast::unit_test::Suite
             validateClosedLedger(env, testCases);
 
             // verify jv2 is not present in the closed ledger.
-            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
+            auto const txResult = env.rpc("tx", txIDs[1])[jss::result];
+            BEAST_EXPECT(txResult[jss::error] == "txnNotFound");
+            BEAST_EXPECT(txResult[jss::error_code] == RpcTxnNotFound);
+            BEAST_EXPECT(txResult[jss::error_message] == "Transaction not found.");
         }
     }
 
@@ -6381,6 +6458,7 @@ class Batch_test : public beast::unit_test::Suite
         testObjectsOpenLedger(features);
         testPseudoTxn(features);
         testOpenLedger(features);
+        testInnerTxnsNotInOpenLedger(features);
         testBatchTxQueue(features);
         testBatchNetworkOps(features);
         testBatchDelegate(features);

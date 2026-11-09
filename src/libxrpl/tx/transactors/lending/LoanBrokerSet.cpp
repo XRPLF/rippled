@@ -232,7 +232,9 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         if (auto const value = tx[field]; value &&
             ((fix350Enabled && !isRepresentable(asset, *value)) ||
-             STAmount{asset, *value} != *value))
+             STAmount{asset, *value} != *value ||
+             (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
+              !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault)))))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";

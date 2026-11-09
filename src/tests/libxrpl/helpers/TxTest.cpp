@@ -7,7 +7,6 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
@@ -69,7 +68,13 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
     rules_.emplace(featureSet_);
 
     // Default fees for testing
-    Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
+    Fees const fees{
+        XRPAmount{10},
+        XRPAmount{10000000},
+        XRPAmount{2000000},
+        kDefaultGasLimit,
+        kDefaultBytecodeSizeLimit,
+        kDefaultGasPrice};
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
@@ -168,7 +173,7 @@ TxTest::getOpenLedger() const
     return *openLedger_;
 }
 
-ReadView const&
+Ledger const&
 TxTest::getClosedLedger() const
 {
     return *closedLedger_;
@@ -209,7 +214,10 @@ TxTest::close()
         accum.apply(*newLedger);
     }
 
-    newLedger->setAccepted(ledgerCloseTime, newLedger->header().closeTimeResolution, true);
+    if (!newLedger->setAccepted(ledgerCloseTime, newLedger->header().closeTimeResolution, true))
+    {
+        Throw<std::runtime_error>("TxTest::close: ledger has an invalid map");
+    }
 
     closedLedger_ = newLedger;
 

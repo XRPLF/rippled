@@ -23,6 +23,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -124,8 +125,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
         }
 
@@ -173,8 +175,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, issuer, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }
@@ -222,8 +225,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
 
             // resurrection
@@ -259,8 +263,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
 
             // resurrection
@@ -294,8 +299,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
 
             // resurrection
@@ -331,8 +337,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
 
             // resurrection
@@ -368,8 +375,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
         }
 
@@ -390,8 +398,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
         }
 
@@ -410,8 +419,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jle = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
-                    jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result][jss::error] == "entryNotFound");
+                    jle[jss::result][jss::error] == "entryNotFound" &&
+                    jle[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jle[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }
@@ -579,10 +589,17 @@ struct Credentials_test : public beast::unit_test::Suite
                 if (!BEAST_EXPECT(sleVault))
                     return;
                 Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
-                auto const expectedResult =
-                    features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
+                // Without the CredentialCreate guard, the ownership invariant
+                // is the backstop that rejects the pin.
+                auto const expectedResult = [&] -> TER {
+                    if (features[fixCleanup3_3_0])
+                        return tecPSEUDO_ACCOUNT;
+                    if (features[fixCleanup3_5_0])
+                        return tecINVARIANT_FAILED;
+                    return tesSUCCESS;
+                }();
 
-                env(credentials::create(vaultPseudo, issuer, credType), expectedResult);
+                env(credentials::create(vaultPseudo, issuer, credType), Ter(expectedResult));
                 env.close();
             }
         }
@@ -737,8 +754,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jDelCred = credentials::ledgerEntry(env, subject, issuer, credType2);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) &&
-                    jDelCred[jss::result][jss::error] == "entryNotFound");
+                    jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                    jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDelCred[jss::result][jss::error_message] == "Entry not found.");
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, subject) == 1);
@@ -774,8 +792,9 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const jDelCred = credentials::ledgerEntry(env, subject, issuer, credType);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) &&
-                    jDelCred[jss::result][jss::error] == "entryNotFound");
+                    jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                    jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDelCred[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }
@@ -1175,6 +1194,7 @@ struct Credentials_test : public beast::unit_test::Suite
         testCreateFailed(all);
         testCreateFailed(all - fixDirectoryLimit);
         testCreateFailed(all - fixCleanup3_3_0);
+        testCreateFailed(all - fixCleanup3_3_0 - fixCleanup3_5_0);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
