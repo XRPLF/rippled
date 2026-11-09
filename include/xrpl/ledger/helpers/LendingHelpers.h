@@ -753,7 +753,7 @@ enum class LoanPaymentType { Regular = 0, Late, Full, Overpayment };
 std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
-    ApplyView& view,
+    ApplyView const& view,
     LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,

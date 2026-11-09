@@ -785,8 +785,7 @@ LoanSet::doApply()
         return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
-    // dirLink takes a non-const SLE::pointer&, so pass it a copy of the handle.
-    SLE::pointer loanSle = loan.mutableRawSle();
+    SLE::pointer const loanSle = loan.mutableRawSle();
     // Put the loan into the pseudo-account's directory
     if (auto const ter = dirLink(view, brokerPseudo, loanSle, sfLoanBrokerNode))
         return ter;

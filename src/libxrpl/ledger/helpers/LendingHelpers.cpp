@@ -2419,7 +2419,7 @@ computeLoanProperties(
 std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
-    ApplyView& view,
+    ApplyView const& view,
     LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
