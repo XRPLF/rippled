@@ -1,347 +1,61 @@
-#include <test/unit_test/utils.h>
+#include <xrpl/protocol/SecretKey.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
+
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-namespace xrpl {
+using namespace xrpl;
 
-class SecretKey_test : public beast::unit_test::Suite
+namespace {
+
+// SecretKey::operator== is deliberately deleted; compare bytes directly.
+bool
+equal(SecretKey const& lhs, SecretKey const& rhs)
 {
-    struct TestKeyData
-    {
-        std::array<std::uint8_t, 16> seed;
-        std::array<std::uint8_t, 33> pubkey;
-        std::array<std::uint8_t, 32> seckey;
-        char const* addr;
-    };
-
-public:
-    using Blob = std::vector<std::uint8_t>;
-
-    // Ensure that verification does the right thing with
-    // respect to the matrix of canonicality variables.
-    void
-    testCanonicality()
-    {
-        testcase("secp256k1: canonicality");
-
-        std::array<std::uint8_t, 32> const digestData{
-            0x34, 0xC1, 0x90, 0x28, 0xC8, 0x0D, 0x21, 0xF3, 0xF4, 0x8C, 0x93,
-            0x54, 0x89, 0x5F, 0x8D, 0x5B, 0xF0, 0xD5, 0xEE, 0x7F, 0xF4, 0x57,
-            0x64, 0x7C, 0xF6, 0x55, 0xF5, 0x53, 0x0A, 0x30, 0x22, 0xA7,
-        };
-
-        std::array<std::uint8_t, 33> const pkData{
-            0x02, 0x50, 0x96, 0xEB, 0x12, 0xD3, 0xE9, 0x24, 0x23, 0x4E, 0x71,
-            0x62, 0x36, 0x9C, 0x11, 0xD8, 0xBF, 0x87, 0x7E, 0xDA, 0x23, 0x87,
-            0x78, 0xE7, 0xA3, 0x1F, 0xF0, 0xAA, 0xC5, 0xD0, 0xDB, 0xCF, 0x37,
-        };
-
-        std::array<std::uint8_t, 32> const skData{
-            0xAA, 0x92, 0x14, 0x17, 0xE7, 0xE5, 0xC2, 0x99, 0xDA, 0x4E, 0xEC,
-            0x16, 0xD1, 0xCA, 0xA9, 0x2F, 0x19, 0xB1, 0x9F, 0x2A, 0x68, 0x51,
-            0x1F, 0x68, 0xEC, 0x73, 0xBB, 0xB2, 0xF5, 0x23, 0x6F, 0x3D,
-        };
-
-        std::array<std::uint8_t, 71> const sig{
-            0x30, 0x45, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA,
-            0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8,
-            0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46,
-            0x60, 0x02, 0x20, 0x50, 0x87, 0x39, 0xDB, 0x0A, 0x2E, 0xF8, 0x16, 0x76,
-            0xE3, 0x9F, 0x45, 0x9C, 0x8B, 0xBB, 0x07, 0xA0, 0x9C, 0x3E, 0x9F, 0x9B,
-            0xEB, 0x69, 0x62, 0x94, 0xD5, 0x24, 0xD4, 0x79, 0xD6, 0x27, 0x40,
-        };
-
-        std::array<std::uint8_t, 72> const non{
-            0x30, 0x46, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA,
-            0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8,
-            0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46,
-            0x60, 0x02, 0x21, 0x00, 0xAF, 0x78, 0xC6, 0x24, 0xF5, 0xD1, 0x07, 0xE9,
-            0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
-            0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01,
-        };
-
-        auto const digest = UInt256::fromVoid(digestData.data());
-
-        PublicKey const pk{makeSlice(pkData)};
-        SecretKey const sk{makeSlice(skData)};
-
-        BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), false));
-        BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), true));
-        BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(non), false));
-        BEAST_EXPECT(!verifyDigest(pk, digest, makeSlice(non), true));
-    }
-
-    void
-    testDigestSigning()
-    {
-        testcase("secp256k1: digest signing & verification");
-
-        for (std::size_t i = 0; i < 32; i++)
-        {
-            auto const [pk, sk] = randomKeyPair(KeyType::Secp256k1);
-
-            BEAST_EXPECT(pk == derivePublicKey(KeyType::Secp256k1, sk));
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*publicKeyType(pk) == KeyType::Secp256k1);
-
-            for (std::size_t j = 0; j < 32; j++)
-            {
-                UInt256 digest;
-                beast::rngfill(digest.data(), digest.size(), cryptoPrng());
-
-                auto sig = signDigest(pk, sk, digest);
-
-                BEAST_EXPECT(!sig.empty());
-                BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
-
-                // Wrong digest:
-                BEAST_EXPECT(!verifyDigest(pk, ~digest, sig, true));
-
-                // Slightly change the signature:
-                if (auto ptr = sig.data())
-                    ptr[j % sig.size()]++;
-
-                // Wrong signature:
-                BEAST_EXPECT(!verifyDigest(pk, digest, sig, true));
-
-                // Wrong digest and signature:
-                BEAST_EXPECT(!verifyDigest(pk, ~digest, sig, true));
-            }
-        }
-    }
-
-    void
-    testSigning(KeyType type)
-    {
-        testcase << to_string(type) << ": signing & verification";
-
-        for (std::size_t i = 0; i < 32; i++)
-        {
-            auto const [pk, sk] = randomKeyPair(type);
-
-            BEAST_EXPECT(pk == derivePublicKey(type, sk));
-            BEAST_EXPECT(*publicKeyType(pk) == type);  // NOLINT(bugprone-unchecked-optional-access)
-
-            for (std::size_t j = 0; j < 32; j++)
-            {
-                std::vector<std::uint8_t> data(64 + (8 * i) + j);
-                beast::rngfill(data.data(), data.size(), cryptoPrng());
-
-                auto sig = sign(pk, sk, makeSlice(data));
-
-                BEAST_EXPECT(!sig.empty());
-                BEAST_EXPECT(verify(pk, makeSlice(data), sig));
-
-                // Construct wrong data:
-                auto badData = data;
-
-                // swaps the smallest and largest elements in buffer
-                std::iter_swap(
-                    std::ranges::min_element(badData), std::ranges::max_element(badData));
-
-                // Wrong data: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig));
-
-                // Slightly change the signature:
-                if (auto ptr = sig.data())
-                    ptr[j % sig.size()]++;
-
-                // Wrong signature: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(data), sig));
-
-                // Wrong data and signature: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig));
-            }
-        }
-    }
-
-    void
-    testBase58()
-    {
-        testcase("Base58");
-
-        // Ensure that parsing some well-known secret keys works
-        {
-            auto const sk1 =
-                generateSecretKey(KeyType::Secp256k1, generateSeed("masterpassphrase"));
-
-            auto const sk2 = parseBase58<SecretKey>(
-                TokenType::NodePrivate, "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
-            BEAST_EXPECT(sk2);
-
-            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
-        }
-
-        {
-            auto const sk1 = generateSecretKey(KeyType::Ed25519, generateSeed("masterpassphrase"));
-
-            auto const sk2 = parseBase58<SecretKey>(
-                TokenType::NodePrivate, "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
-            BEAST_EXPECT(sk2);
-
-            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
-        }
-
-        // Try converting short, long and malformed data
-        BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, ""));
-        BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, " "));
-        BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, "!35gty9mhju8nfjl"));
-
-        auto const good = toBase58(TokenType::NodePrivate, randomSecretKey());
-
-        // Short (non-empty) strings
-        {
-            auto s = good;
-
-            // Remove all characters from the string in random order:
-            std::hash<std::string> const r;
-
-            while (!s.empty())
-            {
-                s.erase(r(s) % s.size(), 1);
-                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
-            }
-        }
-
-        // Long strings
-        for (std::size_t i = 1; i != 16; i++)
-        {
-            auto s = good;
-            s.resize(s.size() + i, s[i % s.size()]);
-            BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
-        }
-
-        // Strings with invalid Base58 characters
-        for (auto const c : std::string("0IOl"))
-        {
-            for (std::size_t i = 0; i != good.size(); ++i)
-            {
-                auto s = good;
-                s[i % s.size()] = c;
-                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
-            }
-        }
-
-        // Strings with incorrect prefix
-        {
-            auto s = good;
-
-            for (auto const c : std::string("ansrJqtv7"))
-            {
-                s[0] = c;
-                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
-            }
-        }
-
-        // Try some random secret keys
-        std::vector<SecretKey> keys;
-        keys.reserve(32);
-
-        for (std::size_t i = 0; i != keys.capacity(); ++i)
-            keys.emplace_back(randomSecretKey());
-        BEAST_EXPECT(keys.size() == 32);
-
-        for (std::size_t i = 0; i != keys.size(); ++i)
-        {
-            auto const si = toBase58(TokenType::NodePrivate, keys[i]);
-            BEAST_EXPECT(!si.empty());
-
-            auto const ski = parseBase58<SecretKey>(TokenType::NodePrivate, si);
-            BEAST_EXPECT(ski && test::equal(keys[i], *ski));
-
-            for (std::size_t j = i; j != keys.size(); ++j)
-            {
-                BEAST_EXPECT(test::equal(keys[i], keys[j]) == (i == j));
-
-                auto const sj = toBase58(TokenType::NodePrivate, keys[j]);
-
-                BEAST_EXPECT((si == sj) == (i == j));
-
-                auto const skj = parseBase58<SecretKey>(TokenType::NodePrivate, sj);
-                BEAST_EXPECT(skj && test::equal(keys[j], *skj));
-
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                BEAST_EXPECT(test::equal(*ski, *skj) == (i == j));
-            }
-        }
-    }
-
-    void
-    testKeyDerivationSecp256k1()
-    {
-        testcase("secp256k1: key derivation");
-
-        for (auto const& test : kSecP256K1TestVectors)
-        {
-            auto const id = parseBase58<AccountID>(test.addr);
-            BEAST_EXPECT(id);
-
-            auto const kp = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
-
-            BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
-            BEAST_EXPECT(
-                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
-        }
-    }
-
-    void
-    testKeyDerivationEd25519()
-    {
-        testcase("ed25519: key derivation");
-
-        for (auto const& test : kED25519TestVectors)
-        {
-            auto const id = parseBase58<AccountID>(test.addr);
-            BEAST_EXPECT(id);
-
-            auto const kp = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
-
-            BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
-            BEAST_EXPECT(
-                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
-        }
-    }
-
-    void
-    run() override
-    {
-        testBase58();
-
-        // secp256k1
-        testKeyDerivationSecp256k1();
-        testSigning(KeyType::Secp256k1);
-        testDigestSigning();
-        testCanonicality();
-
-        // Ed25519
-        testKeyDerivationEd25519();
-        testSigning(KeyType::Ed25519);
-    }
-
-private:
-    // clang-format off
-inline static TestKeyData const kSecP256K1TestVectors[] = {
+    return lhs.size() == SecretKey::kSize && rhs.size() == SecretKey::kSize &&
+        std::memcmp(lhs.data(), rhs.data(), SecretKey::kSize) == 0;
+}
+
+// Node secret keys derived from "masterpassphrase".
+constexpr std::string_view kMasterNodePrivateSecp256k1 =
+    "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe";
+constexpr std::string_view kMasterNodePrivateEd25519 =
+    "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36";
+
+std::string_view
+masterNodePrivate(KeyType type)
+{
+    return type == KeyType::Secp256k1 ? kMasterNodePrivateSecp256k1 : kMasterNodePrivateEd25519;
+}
+
+struct TestKeyData
+{
+    std::array<std::uint8_t, 16> seed;
+    std::array<std::uint8_t, 33> pubkey;
+    std::array<std::uint8_t, 32> seckey;
+    char const* addr;
+};
+
+// clang-format off
+TestKeyData const kSecP256K1TestVectors[] = {
     {.seed={0xDE,0xDC,0xE9,0xCE,0x67,0xB4,0x51,0xD8,0x52,0xFD,0x4E,0x84,0x6F,0xCD,0xE3,0x1C},
      .pubkey={0x03,0x30,0xE7,0xFC,0x9D,0x56,0xBB,0x25,0xD6,0x89,0x3B,0xA3,0xF3,0x17,0xAE,0x5B,
       0xCF,0x33,0xB3,0x29,0x1B,0xD6,0x3D,0xB3,0x26,0x54,0xA3,0x13,0x22,0x2F,0x7F,0xD0,0x20,},
@@ -914,7 +628,7 @@ inline static TestKeyData const kSecP256K1TestVectors[] = {
      .addr="rsYryUWhbYRiQivh693pgjnseAwPHezNj1",},
 };
 
-inline static TestKeyData const kED25519TestVectors[] = {
+TestKeyData const kED25519TestVectors[] = {
     {.seed={0xAF,0x41,0xFF,0x66,0xF7,0x5E,0xBD,0x3A,0x6B,0x18,0xFB,0x7A,0x1D,0xF6,0x1C,0x97},
      .pubkey={0xED,0x48,0xCB,0xBB,0xE0,0xEE,0x7B,0x86,0x86,0xA7,0xDE,0x9F,0x0A,0x01,0x59,0x73,
       0x4E,0x65,0xF9,0xC3,0x69,0x94,0x7F,0x2E,0x26,0x96,0x23,0x2B,0x46,0x1E,0x55,0x32,0x13,},
@@ -1487,9 +1201,299 @@ inline static TestKeyData const kED25519TestVectors[] = {
      .addr="rNXHq25tNB23Ce6fbPw2wakxnmdzE3Fq6Q",},
 };
 
-    // clang-format on
+// clang-format on
+
+}  // namespace
+
+//------------------------------------------------------------------------------
+// Key derivation
+
+TEST(SecretKey, secp256k1_key_derivation_matches_the_test_vectors)
+{
+    for (auto const& test : kSecP256K1TestVectors)
+    {
+        SCOPED_TRACE(test.addr);
+
+        auto const id = parseBase58<AccountID>(test.addr);
+        ASSERT_TRUE(id);
+
+        auto const [pk, sk] = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
+
+        EXPECT_EQ(pk, PublicKey{makeSlice(test.pubkey)});
+        EXPECT_TRUE(equal(sk, SecretKey{makeSlice(test.seckey)}));
+        EXPECT_EQ(calcAccountID(pk), *id);
+    }
+}
+
+TEST(SecretKey, ed25519_key_derivation_matches_the_test_vectors)
+{
+    for (auto const& test : kED25519TestVectors)
+    {
+        SCOPED_TRACE(test.addr);
+
+        auto const id = parseBase58<AccountID>(test.addr);
+        ASSERT_TRUE(id);
+
+        auto const [pk, sk] = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
+
+        EXPECT_EQ(pk, PublicKey{makeSlice(test.pubkey)});
+        EXPECT_TRUE(equal(sk, SecretKey{makeSlice(test.seckey)}));
+        EXPECT_EQ(calcAccountID(pk), *id);
+    }
+}
+
+//------------------------------------------------------------------------------
+// Signing and verification, per key type
+
+class SecretKeySigningTest : public ::testing::TestWithParam<KeyType>
+{
 };
 
-BEAST_DEFINE_TESTSUITE(SecretKey, protocol, xrpl);
+TEST_P(SecretKeySigningTest, derived_public_key_has_the_expected_type)
+{
+    for (std::size_t i = 0; i < 32; i++)
+    {
+        auto const [pk, sk] = randomKeyPair(GetParam());
 
-}  // namespace xrpl
+        EXPECT_EQ(pk, derivePublicKey(GetParam(), sk));
+        EXPECT_EQ(publicKeyType(pk), GetParam());
+    }
+}
+
+TEST_P(SecretKeySigningTest, signs_and_verifies_random_messages)
+{
+    for (std::size_t i = 0; i < 32; i++)
+    {
+        auto const [pk, sk] = randomKeyPair(GetParam());
+
+        for (std::size_t j = 0; j < 32; j++)
+        {
+            std::vector<std::uint8_t> data(64 + (8 * i) + j);
+            beast::rngfill(data.data(), data.size(), cryptoPrng());
+
+            auto sig = sign(pk, sk, makeSlice(data));
+
+            ASSERT_FALSE(sig.empty());
+            EXPECT_TRUE(verify(pk, makeSlice(data), sig));
+
+            // Construct wrong data by swapping the smallest and largest bytes:
+            auto badData = data;
+            std::iter_swap(std::ranges::min_element(badData), std::ranges::max_element(badData));
+
+            EXPECT_FALSE(verify(pk, makeSlice(badData), sig));
+
+            // Slightly change the signature:
+            sig.data()[j % sig.size()]++;
+
+            EXPECT_FALSE(verify(pk, makeSlice(data), sig));
+            EXPECT_FALSE(verify(pk, makeSlice(badData), sig));
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SecretKey,
+    SecretKeySigningTest,
+    ::testing::Values(KeyType::Secp256k1, KeyType::Ed25519),
+    [](::testing::TestParamInfo<KeyType> const& info) {
+        return std::string{to_string(info.param)};
+    });
+
+//------------------------------------------------------------------------------
+// secp256k1 digest signing
+
+TEST(SecretKey, secp256k1_signs_and_verifies_random_digests)
+{
+    for (std::size_t i = 0; i < 32; i++)
+    {
+        auto const [pk, sk] = randomKeyPair(KeyType::Secp256k1);
+
+        for (std::size_t j = 0; j < 32; j++)
+        {
+            UInt256 digest;
+            beast::rngfill(digest.data(), digest.size(), cryptoPrng());
+
+            auto sig = signDigest(pk, sk, digest);
+
+            ASSERT_FALSE(sig.empty());
+
+            // Our signer always produces fully canonical signatures.
+            EXPECT_TRUE(verifyDigest(pk, digest, sig, true));
+            EXPECT_TRUE(verifyDigest(pk, digest, sig, false));
+
+            // Wrong digest:
+            EXPECT_FALSE(verifyDigest(pk, ~digest, sig, true));
+
+            // Slightly change the signature:
+            sig.data()[j % sig.size()]++;
+
+            EXPECT_FALSE(verifyDigest(pk, digest, sig, true));
+            EXPECT_FALSE(verifyDigest(pk, ~digest, sig, true));
+        }
+    }
+}
+
+// Ensure that verification does the right thing with respect to the matrix of
+// canonicality variables: a low-S signature is accepted either way, while its
+// high-S twin is accepted only when full canonicality is not required.
+TEST(SecretKey, secp256k1_canonicality)
+{
+    std::array<std::uint8_t, 32> const digestData{
+        0x34, 0xC1, 0x90, 0x28, 0xC8, 0x0D, 0x21, 0xF3, 0xF4, 0x8C, 0x93,
+        0x54, 0x89, 0x5F, 0x8D, 0x5B, 0xF0, 0xD5, 0xEE, 0x7F, 0xF4, 0x57,
+        0x64, 0x7C, 0xF6, 0x55, 0xF5, 0x53, 0x0A, 0x30, 0x22, 0xA7,
+    };
+
+    std::array<std::uint8_t, 33> const pkData{
+        0x02, 0x50, 0x96, 0xEB, 0x12, 0xD3, 0xE9, 0x24, 0x23, 0x4E, 0x71,
+        0x62, 0x36, 0x9C, 0x11, 0xD8, 0xBF, 0x87, 0x7E, 0xDA, 0x23, 0x87,
+        0x78, 0xE7, 0xA3, 0x1F, 0xF0, 0xAA, 0xC5, 0xD0, 0xDB, 0xCF, 0x37,
+    };
+
+    // Fully canonical (low-S):
+    std::array<std::uint8_t, 71> const sig{
+        0x30, 0x45, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA, 0x46, 0x8C, 0x0E,
+        0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8, 0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39,
+        0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46, 0x60, 0x02, 0x20, 0x50, 0x87, 0x39, 0xDB, 0x0A, 0x2E,
+        0xF8, 0x16, 0x76, 0xE3, 0x9F, 0x45, 0x9C, 0x8B, 0xBB, 0x07, 0xA0, 0x9C, 0x3E, 0x9F, 0x9B,
+        0xEB, 0x69, 0x62, 0x94, 0xD5, 0x24, 0xD4, 0x79, 0xD6, 0x27, 0x40,
+    };
+
+    // The same signature with S replaced by n - S (high-S):
+    std::array<std::uint8_t, 72> const non{
+        0x30, 0x46, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA, 0x46, 0x8C, 0x0E,
+        0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8, 0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39,
+        0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46, 0x60, 0x02, 0x21, 0x00, 0xAF, 0x78, 0xC6, 0x24, 0xF5,
+        0xD1, 0x07, 0xE9, 0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
+        0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01,
+    };
+
+    auto const digest = UInt256::fromVoid(digestData.data());
+    PublicKey const pk{makeSlice(pkData)};
+
+    EXPECT_TRUE(verifyDigest(pk, digest, makeSlice(sig), false));
+    EXPECT_TRUE(verifyDigest(pk, digest, makeSlice(sig), true));
+    EXPECT_TRUE(verifyDigest(pk, digest, makeSlice(non), false));
+    EXPECT_FALSE(verifyDigest(pk, digest, makeSlice(non), true));
+}
+
+//------------------------------------------------------------------------------
+// Base58
+
+class SecretKeyBase58Test : public ::testing::TestWithParam<KeyType>
+{
+};
+
+TEST_P(SecretKeyBase58Test, parses_the_well_known_master_key)
+{
+    auto const sk1 = generateSecretKey(GetParam(), generateSeed("masterpassphrase"));
+
+    auto const sk2 =
+        parseBase58<SecretKey>(TokenType::NodePrivate, std::string{masterNodePrivate(GetParam())});
+    ASSERT_TRUE(sk2);
+
+    EXPECT_TRUE(equal(sk1, *sk2));
+    EXPECT_EQ(toBase58(TokenType::NodePrivate, sk1), masterNodePrivate(GetParam()));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SecretKey,
+    SecretKeyBase58Test,
+    ::testing::Values(KeyType::Secp256k1, KeyType::Ed25519),
+    [](::testing::TestParamInfo<KeyType> const& info) {
+        return std::string{to_string(info.param)};
+    });
+
+// The remaining Base58 cases don't depend on the key type: a SecretKey is 32
+// opaque bytes regardless of what curve it is later used with.
+
+TEST(SecretKey, base58_rejects_garbage)
+{
+    EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, ""));
+    EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, " "));
+    EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, "!35gty9mhju8nfjl"));
+}
+
+TEST(SecretKey, base58_rejects_truncated_strings)
+{
+    auto s = toBase58(TokenType::NodePrivate, randomSecretKey());
+
+    // Remove all characters from the string in random order:
+    std::hash<std::string> const r;
+
+    while (!s.empty())
+    {
+        s.erase(r(s) % s.size(), 1);
+        EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, s)) << s;
+    }
+}
+
+TEST(SecretKey, base58_rejects_lengthened_strings)
+{
+    auto const good = toBase58(TokenType::NodePrivate, randomSecretKey());
+
+    for (std::size_t i = 1; i != 16; i++)
+    {
+        auto s = good;
+        s.resize(s.size() + i, s[i % s.size()]);
+        EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, s)) << s;
+    }
+}
+
+TEST(SecretKey, base58_rejects_invalid_base58_characters)
+{
+    auto const good = toBase58(TokenType::NodePrivate, randomSecretKey());
+
+    for (auto const c : std::string_view{"0IOl"})
+    {
+        for (std::size_t i = 0; i != good.size(); ++i)
+        {
+            auto s = good;
+            s[i] = c;
+            EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, s)) << s;
+        }
+    }
+}
+
+TEST(SecretKey, base58_rejects_incorrect_prefix)
+{
+    auto s = toBase58(TokenType::NodePrivate, randomSecretKey());
+
+    for (auto const c : std::string_view{"ansrJqtv7"})
+    {
+        s[0] = c;
+        EXPECT_FALSE(parseBase58<SecretKey>(TokenType::NodePrivate, s)) << s;
+    }
+}
+
+TEST(SecretKey, base58_round_trips_random_keys)
+{
+    std::vector<SecretKey> keys;
+    keys.reserve(32);
+
+    for (std::size_t i = 0; i != keys.capacity(); ++i)
+        keys.emplace_back(randomSecretKey());
+
+    for (std::size_t i = 0; i != keys.size(); ++i)
+    {
+        auto const si = toBase58(TokenType::NodePrivate, keys[i]);
+        EXPECT_FALSE(si.empty());
+
+        auto const ski = parseBase58<SecretKey>(TokenType::NodePrivate, si);
+        ASSERT_TRUE(ski);
+        EXPECT_TRUE(equal(keys[i], *ski));
+
+        for (std::size_t j = i; j != keys.size(); ++j)
+        {
+            EXPECT_EQ(equal(keys[i], keys[j]), i == j);
+
+            auto const sj = toBase58(TokenType::NodePrivate, keys[j]);
+            EXPECT_EQ(si == sj, i == j);
+
+            auto const skj = parseBase58<SecretKey>(TokenType::NodePrivate, sj);
+            ASSERT_TRUE(skj);
+            EXPECT_TRUE(equal(keys[j], *skj));
+            EXPECT_EQ(equal(*ski, *skj), i == j);
+        }
+    }
+}
