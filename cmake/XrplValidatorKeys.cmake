@@ -12,4 +12,13 @@ if(validator_keys)
         )
     endif()
     add_subdirectory(src/tools/validator-keys)
+    # The tool's suites in xrpld's unit tests; plain link signature as XrplCore uses for xrpld.
+    if(tests AND xrpld)
+        target_sources(
+            xrpld
+            PRIVATE
+                "${CMAKE_SOURCE_DIR}/src/test/tools/ValidatorKeysTool_test.cpp"
+        )
+        target_link_libraries(xrpld xrpl.validator-keys)
+    endif()
 endif()
