@@ -11,6 +11,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 /**
@@ -507,7 +508,8 @@ operator==(Value const&, Value const&);
  * @tparam T A type that converts to `std::string_view`, except
  *           `std::nullptr_t`.
  * @param value The value to compare.
- * @param text The characters to compare it against.
+ * @param text The characters to compare it against. A null pointer reads as
+ *             empty text.
  * @return Whether `value` is a string whose characters, up to its first null
  *         character, are exactly `text`.
  */
@@ -521,7 +523,16 @@ operator==(Value const& value, T const& text)
 
     // A string value holding a null pointer equals no text, not even the empty one.
     char const* const s = value.asCString();
-    return s != nullptr && std::string_view{s} == std::string_view{text};
+    if (s == nullptr)
+        return false;
+
+    // A null pointer names no characters, as it does when it builds a Value.
+    if constexpr (std::is_pointer_v<T>)
+    {
+        if (text == nullptr)
+            return std::string_view{s}.empty();
+    }
+    return std::string_view{s} == std::string_view{text};
 }
 
 bool

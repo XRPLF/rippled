@@ -665,6 +665,14 @@ TEST(JsonValue, compare_string_view)
     EXPECT_EQ(json::Value{"2.0"}, version);
     EXPECT_NE(json::Value{"2.1"}, version);
 
+    // A null `char const*` reads as empty text, as it does when it builds a Value.
+    char const* const none = nullptr;
+    EXPECT_EQ(json::Value{""}, none);
+    EXPECT_EQ(json::Value{""}, json::Value{none});
+    EXPECT_NE(json::Value{"2.0"}, none);
+    EXPECT_NE(json::Value{json::ValueType::String}, none);
+    EXPECT_NE(json::Value{}, none);
+
     EXPECT_EQ(json::Value{"2.0"}, std::string{"2.0"});
     EXPECT_NE(json::Value{"2.0"}, std::string{"2.1"});
     EXPECT_NE(json::Value{json::ValueType::Null}, std::string{"2.0"});
