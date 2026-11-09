@@ -19,7 +19,7 @@ The legacy unit tests under `src/test/` are a custom framework (derived from Bea
 
 ## Lint/Format
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup and [CONTRIBUTING.md](./CONTRIBUTING.md#clang-tidy) for `clang-tidy` (opt-in, needs local `clang-tidy` and generated headers).
+See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup and [docs/cpp/clang-tidy.md](./docs/cpp/clang-tidy.md) for `clang-tidy` (opt-in, needs local `clang-tidy` and generated headers).
 
 ## Code Style
 

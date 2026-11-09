@@ -219,8 +219,9 @@ at any time, so don't use it lightly.
 # Style guide
 
 C++ coding guidelines live in [`docs/cpp/guidelines.md`](./docs/cpp/guidelines.md),
-and C++ formatting in [`docs/cpp/formatting.md`](./docs/cpp/formatting.md).
-This section covers the tooling that enforces them.
+C++ formatting in [`docs/cpp/formatting.md`](./docs/cpp/formatting.md), and
+`clang-tidy` in [`docs/cpp/clang-tidy.md`](./docs/cpp/clang-tidy.md).
+This section covers the `pre-commit` hooks that enforce them.
 
 ## Pre-commit hooks
 
@@ -233,7 +234,7 @@ yourself. The version of each hook sourced from an external repository
 (`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
 locally uses exactly the same versions as CI. A few `local` hooks — most notably
 `clang-tidy` and `cargo fmt` — run tools from your own environment; see
-[Installing clang-tidy](#installing-clang-tidy) and
+[Installing clang-tidy](./docs/cpp/clang-tidy.md#installing-clang-tidy) and
 [Rust](./docs/build/environment.md#rust) for how to get those.
 
 To get started, install `pre-commit` and enable the git hook scripts:
@@ -260,7 +261,7 @@ pre-commit run clang-format --all-files
 The hooks configured in this repository include, among others:
 
 - `clang-format` — C++/proto formatting (see [C++ formatting](./docs/cpp/formatting.md))
-- `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
+- `clang-tidy` — C++ static analysis (see [Clang-tidy](./docs/cpp/clang-tidy.md)); opt in with `TIDY=1`
 - `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
 - `gersemi` — CMake formatting
 - `cargo fmt` — Rust formatting for the crates in `crates/`
@@ -269,65 +270,6 @@ The hooks configured in this repository include, among others:
 
 The same hooks run in CI on every pull request, so running them locally before
 you push helps you avoid CI failures.
-
-## Clang-tidy
-
-All code must pass `clang-tidy` checks according to the settings in [`.clang-tidy`](./.clang-tidy).
-
-There is a Continuous Integration job that runs clang-tidy on pull requests. The CI will check:
-
-- All changed C++ files (`.cpp`, `.h`, `.ipp`) when only code files are modified
-- **All files in the repository** when the `.clang-tidy` configuration file is changed
-
-This ensures that configuration changes don't introduce new warnings across the codebase.
-
-### Installing clang-tidy
-
-The [Nix development shell](./docs/build/nix.md) provides `clang-tidy` at the [tested version](./docs/build/environment.md#tested-compiler-versions).
-
-### Running clang-tidy locally
-
-Before running clang-tidy, you must generate the files it depends on (protobuf headers, and, when the project is configured with `-Drust=ON`, the cxxbridge headers from the Rust crates). Configure the project as described in [`BUILD.md`](./BUILD.md), then build the `tidy_prerequisites` target, which generates all of them:
-
-```bash
-cmake --build build --target tidy_prerequisites
-```
-
-#### Via pre-commit (recommended)
-
-If you have already installed the [`pre-commit`](#pre-commit-hooks) hooks, you can run clang-tidy on your staged files using:
-
-```
-TIDY=1 pre-commit run clang-tidy
-```
-
-This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
-
-You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
-
-```
-export TIDY=1
-```
-
-With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
-
-#### Manually
-
-Then run clang-tidy on your local changes:
-
-```
-run-clang-tidy -p build -allow-no-checks include src tests
-```
-
-This will check all source files in the `include`, `src` and `tests` directories using the compile commands from your `build` directory.
-Headers are checked on their own, which requires the `verify_headers` CMake option (ON by default).
-If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
-
-```
-run-clang-tidy -p build -quiet -fix -format -allow-no-checks include src tests
-```
-
-`-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
 
 ## Unit Tests
 

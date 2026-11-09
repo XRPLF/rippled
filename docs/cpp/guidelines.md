@@ -8,9 +8,10 @@ Existing code may violate these guidelines; such places are usually good
 candidates for refactoring.
 
 Formatting and static analysis are enforced by tooling: see
-[Formatting](./formatting.md), and
-[Pre-commit hooks](../../CONTRIBUTING.md#pre-commit-hooks) and
-[Clang-tidy](../../CONTRIBUTING.md#clang-tidy) in `CONTRIBUTING.md`.
+[Formatting](./formatting.md), [Clang-tidy](./clang-tidy.md), and
+[Pre-commit hooks](../../CONTRIBUTING.md#pre-commit-hooks) in `CONTRIBUTING.md`.
+Rules those tools enforce (e.g. `#pragma once`, include-what-you-use, identifier
+naming, gtest test names) are not repeated here.
 
 ## Source layout
 
@@ -21,8 +22,8 @@ New source files must be organized as follows:
 - All other non-test files go under `src/xrpld`.
 - Benchmark source files go under `src/benchmarks`.
 - Implementation details of a header (e.g. template definitions in an `.ipp`
-  file) go in a `detail/` subdirectory next to that header, and in the
-  `detail` namespace.
+  file) go in a `detail/` subdirectory next to that header.
+- Helpers that exist only to implement a header go in the `detail` namespace.
 - Tests go under `src/tests` (gtest) or `src/test` (legacy test framework).
 
 Header includes must be [levelized](../../.github/scripts/levelization).
@@ -32,11 +33,6 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Avoid out and in-out parameters. Use move semantics and return instead.
 - Don't rely on empty value. Prefer `std::optional` instead.
 - Prefer `std::format` to string concatenation.
-
-## Headers and includes
-
-- Use `#pragma once`; the `fix-pragma-once` pre-commit hook adds it if missing.
-- Include what you use; clang-tidy enforces this with `misc-include-cleaner`.
 
 ## Error handling
 
@@ -52,7 +48,6 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 ## Naming
 
-- Naming is mostly enforced by clang-tidy (`readability-identifier-naming`).
 - Name getters with a noun, or with a `get`, `is` or `are` prefix.
 - Name other methods with a verb or action.
 
@@ -65,8 +60,6 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 - Write new tests with `gtest`. Use the legacy test framework only where
   `gtest` isn't possible.
-- Use `snake_case` for gtest test names (the second argument of `TEST` and
-  `TEST_F`).
 
 ## Contracts
 

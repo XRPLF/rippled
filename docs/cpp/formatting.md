@@ -14,27 +14,20 @@ like this:
 // clang-format on
 ```
 
+Use this rarely, only where `clang-format`'s output is clearly harder to read
+than a manual layout (e.g. aligned tables of values).
+
 The easiest way to format your changes is to let the `pre-commit` hook run
-automatically on commit, or to run it manually:
+automatically on commit, or to run it manually on all files or on specific ones:
 
 ```bash
 pre-commit run clang-format --all-files
+pre-commit run clang-format --files src/libxrpl/foo.cpp include/xrpl/foo.h
 ```
 
-You can also format individual files in place by running `clang-format -i <file>...`
-from any directory within this project.
+[`prek`](https://github.com/j178/prek) can be used as a drop-in replacement for
+`pre-commit` in these commands.
 
-> [!NOTE]
-> This uses whatever `clang-format` version is installed locally, which may
-> differ from the pinned version used by `pre-commit` and CI, so the results
-> can vary.
-
-There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
-
-To download the patch file:
-
-1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
-2. Left menu -> click **Summary**
-3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
-4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
-5. Commit and push.
+CI runs all `pre-commit` hooks on pull requests. If a file does not conform, the
+job fails and prints the required diff in its log; run the hooks locally as
+above to fix it.
