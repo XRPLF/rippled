@@ -18,10 +18,19 @@
 
 #include <gtest/gtest.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <tools/validator-keys/OwnerOnlyFile.h>
 
 #include <Fixtures.h>
+#include <dirent.h>
 #include <unistd.h>
+
+#ifdef __linux__
+#include <sys/wait.h>
+
+#include <spawn.h>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -34,6 +43,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::tools::test {
 
@@ -384,7 +394,9 @@ TEST_F(SigningKeysTest, create_refuses_existing)
     std::size_t entries = 0;
     for ([[maybe_unused]] auto const& entry :
          std::filesystem::directory_iterator(keyFile_.parent_path()))
+    {
         ++entries;
+    }
     EXPECT_EQ(entries, 1u);
 }
 
@@ -415,7 +427,9 @@ TEST_F(SigningKeysTest, write_past_file_size_limit)
     std::size_t entries = 0;
     for ([[maybe_unused]] auto const& entry :
          std::filesystem::directory_iterator(keyFile_.parent_path()))
+    {
         ++entries;
+    }
     EXPECT_EQ(entries, 0u);
 }
 
@@ -442,6 +456,230 @@ TEST_F(SigningKeysTest, commit_in_unreadable_directory)
 
     EXPECT_EQ(error, "");
     EXPECT_EQ(text, "{}");
+}
+
+namespace {
+
+// Closes descriptor 0 for its lifetime and puts the original back, so mkstemp
+// returns 0; the restore runs when an assertion fails too.
+class StdinClosed
+{
+public:
+    StdinClosed() : saved_(::dup(0))
+    {
+        if (saved_ >= 0)
+            ::close(0);
+    }
+
+    ~StdinClosed()
+    {
+        if (saved_ >= 0)
+        {
+            ::dup2(saved_, 0);
+            ::close(saved_);
+        }
+    }
+
+    StdinClosed(StdinClosed const&) = delete;
+    StdinClosed&
+    operator=(StdinClosed const&) = delete;
+
+    [[nodiscard]] bool
+    ok() const
+    {
+        return saved_ >= 0;
+    }
+
+private:
+    int saved_;
+};
+
+// Lowers the soft limit on open descriptors to @p limit for its lifetime.
+class DescriptorLimit
+{
+public:
+    explicit DescriptorLimit(rlim_t limit)
+        : got_(::getrlimit(RLIMIT_NOFILE, &previous_) == 0), set_(got_ && lower(previous_, limit))
+    {
+    }
+
+    ~DescriptorLimit()
+    {
+        if (set_)
+            ::setrlimit(RLIMIT_NOFILE, &previous_);
+    }
+
+    DescriptorLimit(DescriptorLimit const&) = delete;
+    DescriptorLimit&
+    operator=(DescriptorLimit const&) = delete;
+
+    [[nodiscard]] bool
+    ok() const
+    {
+        return set_;
+    }
+
+private:
+    static bool
+    lower(struct rlimit const& previous, rlim_t limit)
+    {
+        struct rlimit lowered = previous;
+        lowered.rlim_cur = limit;
+        return ::setrlimit(RLIMIT_NOFILE, &lowered) == 0;
+    }
+
+    struct rlimit previous_ = {};
+    bool got_;
+    bool set_;
+};
+
+#ifdef __linux__
+// Runs `chattr @p flag @p file`; false when chattr is missing or fails.
+bool
+chattr(std::string flag, std::string file)
+{
+    std::string program = "chattr";
+    std::vector<char*> argv{program.data(), flag.data(), file.data(), nullptr};
+    pid_t pid = 0;
+    if (::posix_spawnp(&pid, program.c_str(), nullptr, nullptr, argv.data(), environ) != 0)
+        return false;
+    int status = 0;
+    return ::waitpid(pid, &status, 0) == pid && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+#endif
+
+// Sets or clears the immutable flag of @p file; false where the OS has none or
+// the call is refused. On Linux it runs chattr, which needs root and a
+// filesystem that has the flag.
+bool
+setImmutable(std::filesystem::path const& file, bool immutable)
+{
+#ifdef __APPLE__
+    return ::chflags(file.c_str(), immutable ? UF_IMMUTABLE : 0) == 0;
+#elifdef __linux__
+    return chattr(immutable ? "+i" : "-i", file.string());
+#else
+    return false;
+#endif
+}
+
+// Makes @p file immutable, which a hard link to it cannot be made of, and
+// clears the flag on destruction so the file can be removed.
+class ImmutableFile
+{
+public:
+    explicit ImmutableFile(std::filesystem::path file)
+        : file_(std::move(file)), set_(setImmutable(file_, true))
+    {
+    }
+
+    ~ImmutableFile()
+    {
+        if (set_)
+            setImmutable(file_, false);
+    }
+
+    ImmutableFile(ImmutableFile const&) = delete;
+    ImmutableFile&
+    operator=(ImmutableFile const&) = delete;
+
+    [[nodiscard]] bool
+    ok() const
+    {
+        return set_;
+    }
+
+private:
+    std::filesystem::path file_;
+    bool set_;
+};
+
+}  // namespace
+
+TEST_F(SigningKeysTest, commit_without_a_descriptor_for_the_directory)
+{
+    // With no descriptor left, opendir fails with EMFILE after the file is in
+    // place: the commit still succeeds, as for an unreadable directory.
+    std::string error;
+    {
+        OwnerOnlyFile file(keyFile_, "key file");
+        file.write("{}");
+        DescriptorLimit const limit(3);
+        ASSERT_TRUE(limit.ok());
+        // The directory open that commit makes after the link fails here
+        DIR* const probe = ::opendir(keyFile_.parent_path().c_str());
+        int const probeErrno = errno;
+        if (probe != nullptr)
+            ::closedir(probe);
+        ASSERT_EQ(probe, nullptr);
+        ASSERT_EQ(probeErrno, EMFILE);
+        error = errorOf([&] { file.commit(); });
+    }
+    EXPECT_EQ(error, "");
+    EXPECT_EQ(readFile(keyFile_), "{}");
+}
+
+TEST_F(SigningKeysTest, create_where_link_is_refused)
+{
+    OwnerOnlyFile file(keyFile_, "key file", OwnerOnlyFile::Existing::Refuse);
+    file.write("{}");
+    std::vector<std::filesystem::path> entries;
+    for (auto const& entry : std::filesystem::directory_iterator(keyFile_.parent_path()))
+        entries.push_back(entry.path());
+    ASSERT_EQ(entries.size(), 1u);
+    std::filesystem::path const temp = entries.front();
+
+    ImmutableFile const immutable(temp);
+    if (!immutable.ok())
+    {
+        GTEST_SKIP() << "cannot make a file immutable here (needs chattr, root and a filesystem "
+                        "with the flag on Linux)";
+    }
+
+    EXPECT_EQ(
+        errorOf([&] { file.commit(); }),
+        "Cannot create key file on a filesystem without hard links: " + keyFile_.string() +
+            "; create it on a local filesystem and copy it");
+    EXPECT_FALSE(std::filesystem::exists(keyFile_));
+}
+
+TEST_F(SigningKeysTest, commit_on_descriptor_zero)
+{
+    StdinClosed const closed;
+    if (!closed.ok())
+    {
+        GTEST_SKIP() << "descriptor 0 is already closed";
+    }
+
+    OwnerOnlyFile file(keyFile_, "key file");
+    file.write("{}");
+    EXPECT_EQ(errorOf([&] { file.commit(); }), "");
+    EXPECT_EQ(readFile(keyFile_), "{}");
+}
+
+TEST_F(SigningKeysTest, discard_on_descriptor_zero)
+{
+    StdinClosed const closed;
+    if (!closed.ok())
+    {
+        GTEST_SKIP() << "descriptor 0 is already closed";
+    }
+
+    {
+        OwnerOnlyFile file(keyFile_, "key file");
+        file.write("{}");
+    }
+    // The destructor closed descriptor 0 and removed the temporary
+    struct stat st = {};
+    EXPECT_TRUE(::fstat(0, &st) == -1 && errno == EBADF);
+    EXPECT_FALSE(std::filesystem::exists(keyFile_));
+    std::size_t entries = 0;
+    for ([[maybe_unused]] auto const& entry :
+         std::filesystem::directory_iterator(keyFile_.parent_path()))
+    {
+        ++entries;
+    }
+    EXPECT_EQ(entries, 0u);
 }
 
 TEST_F(SigningKeysTest, key_file_fields)

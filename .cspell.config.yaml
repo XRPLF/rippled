@@ -73,6 +73,7 @@ words:
   - cctools
   - CGNAT
   - changespq
+  - chattr
   - checkme
   - choco
   - chrono
