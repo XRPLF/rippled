@@ -135,6 +135,10 @@ public:
      * loan's scale. Legacy and CashBasis Vaults round at the live AssetsTotal
      * exponent. FixedPrecision Vaults round at the Vault's base exponent
      * (-Scale, or 0 for integral assets).
+     *
+     * @param debtTotal The broker's total outstanding debt.
+     * @param coverRateMinimum The minimum cover rate to apply to debtTotal.
+     * @return The minimum required broker cover, rounded up.
      */
     [[nodiscard]] Number
     minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const;
