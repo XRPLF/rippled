@@ -55,14 +55,14 @@ listed later.
 
 ## Test Modules
 
-| Level / Tier | Module(s)                                                                                                |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| 11           | test/jtx test/beast test/csf                                                                             |
-| 12           | test/unit_test                                                                                           |
-| 13           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay |
-| 14           | test                                                                                                     |
-| 15           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore                   |
-| 16           | test/rpc test/app                                                                                        |
+| Level / Tier | Module(s)                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| 11           | test/jtx test/beast test/csf                                                                   |
+| 12           | test/unit_test                                                                                 |
+| 13           | test/crypto test/conditions test/resource test/shamap test/peerfinder test/basics test/overlay |
+| 14           | test                                                                                           |
+| 15           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore         |
+| 16           | test/rpc test/app                                                                              |
 
 (Note that `test` levelization is _much_ less important and _much_ less
 strictly enforced than `xrpl`/`xrpld` levelization, other than the requirement
