@@ -455,7 +455,7 @@ FailedTransaction::finalize(
         result = false;
     }
 
-    auto const expectedOwnerChanges = -deletedObjects_.size() + expectedTicketChange;
+    int const expectedOwnerChanges = -deletedObjects_.size() + expectedTicketChange;
     if (expectedOwnerChanges != netOwnerCountChange_)
     {
         JLOG(j.fatal()) << "Invariant failed: total deletions (" << expectedOwnerChanges

@@ -1964,7 +1964,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -1989,7 +1989,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -3524,7 +3524,7 @@ class InvariantsVault_test : public InvariantsBase
         TxType txType = ttVAULT_SET;
         // Set sfVaultID on the mock tx.
         bool withVaultId = false;
-        TER secondTer = tecINVARIANT_FAILED;
+        TER secondTer = tefINVARIANT_FAILED;
     };
 
     void
