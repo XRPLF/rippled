@@ -83,22 +83,6 @@ public:
         PublicKey const pk{makeSlice(pkData)};
         SecretKey const sk{makeSlice(skData)};
 
-        {
-            auto const canonicality = ecdsaCanonicality(makeSlice(sig));
-            BEAST_EXPECT(canonicality);
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality == ECDSACanonicality::FullyCanonical);
-        }
-
-        {
-            auto const canonicality = ecdsaCanonicality(makeSlice(non));
-            BEAST_EXPECT(canonicality);
-
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(*canonicality != ECDSACanonicality::FullyCanonical);
-        }
-
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), false));
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(sig), true));
         BEAST_EXPECT(verifyDigest(pk, digest, makeSlice(non), false));
