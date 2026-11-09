@@ -49,6 +49,12 @@ TEST_F(StringUtilitiesTest, un_hex)
     testUnHexFailure("123X");
     testUnHexFailure("V");
     testUnHexFailure("XRP");
+
+    testUnHexFailure(std::string(2, static_cast<char>(0xFF)));
+    testUnHexFailure(std::string(2, static_cast<char>(0x80)));
+    testUnHexFailure(std::string(1, static_cast<char>(0xFE)));
+    testUnHexFailure(std::string(1, static_cast<char>(0x80)));
+    testUnHexFailure(std::string("4") + static_cast<char>(0x80));
 }
 
 // Everything a URL is expected to parse into. The components a case does not

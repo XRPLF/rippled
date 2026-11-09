@@ -59,3 +59,22 @@ For this reason:
 - Do not put contracts where they can be violated by an external condition
   (e.g. timing, or a data payload before mandatory validation), as this
   creates bogus bug reports (and crashes Debug builds).
+- Only use `UNREACHABLE` for paths that are truly impossible. Do not use it to
+  avoid writing a test for a path that is rare but reachable.
+- For a condition that is rare but possible (e.g. a value from a peer that must
+  be positive, but a peer can send a negative one), handle it at runtime and use
+  `SOMETIMES` to tell the fuzzer to try to make it happen:
+
+  ```cpp
+  bool isNegative = value.peek() < 0;
+  SOMETIMES(isNegative, "xrpl::Foo::bar : negative value");
+  if (isNegative)
+  {
+      JLOG(journal.debug()) << "...";
+      return false;
+  }
+  ```
+
+- See `include/xrpl/beast/utility/instrumentation.h` for the full list of
+  macros (`XRPL_ASSERT`, `XRPL_ASSERT_IF`, `ALWAYS`, `REACHABLE`, `SOMETIMES`,
+  `UNREACHABLE`) and when to use each.
