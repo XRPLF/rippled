@@ -121,7 +121,6 @@ private:
     peer_finder::StoreSqdb store_;
     std::unique_ptr<peer_finder::Manager> peerFinder_;
     TrafficCount traffic_;
-    HashMap<std::shared_ptr<peer_finder::Slot>, std::weak_ptr<PeerImp>> peers_;
     HashMap<Peer::ID, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
     std::atomic<Peer::ID> nextId_;
@@ -258,9 +257,6 @@ public:
 
     void
     addActive(std::shared_ptr<PeerImp> const& peer);
-
-    void
-    remove(std::shared_ptr<peer_finder::Slot> const& slot);
 
     /**
      * Called when a peer has connected successfully

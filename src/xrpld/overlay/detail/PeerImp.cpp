@@ -187,7 +187,6 @@ PeerImp::~PeerImp()
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().onClosed(slot_);
-    overlay_.remove(slot_);
 
     if (inCluster)
     {
