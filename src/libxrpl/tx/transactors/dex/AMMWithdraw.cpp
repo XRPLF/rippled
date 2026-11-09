@@ -44,9 +44,6 @@ namespace xrpl {
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
@@ -354,11 +351,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     // Due to rounding, the LPTokenBalance of the last LP
     // might not match the LP's trustline balance
-    if (sb.rules().enabled(fixAMMv1_1))
-    {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
-            return {res.error(), false};
-    }
+    if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
+        return {res.error(), false};  // LCOV_EXCL_LINE
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 
@@ -591,7 +585,7 @@ AMMWithdraw::withdraw(
 
     // Should not happen since the only LP on last withdraw
     // has the balance set to the lp token trustline balance.
-    if (view.rules().enabled(fixAMMv1_1) && lpTokensWithdrawActual > lpTokensAMMBalance)
+    if (lpTokensWithdrawActual > lpTokensAMMBalance)
     {
         // LCOV_EXCL_START
         JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw, unexpected LP tokens: "

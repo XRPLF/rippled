@@ -58,6 +58,14 @@ function install() {
                 rpm-build \
                 rpm-sign \
                 systemd-rpm-macros
+
+            # AlmaLinux's ca-certificates still trusts the root of the compromised
+            # eMudhra intermediates; see https://emudhra.we-have-a-problem.com/.
+            # TODO: drop once it ships a fix.
+            trust extract --format=pem-bundle \
+                --filter="pkcs11:object=emSign%20ECC%20Root%20CA%20-%20G3;type=cert" \
+                /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem
+            update-ca-trust
             ;;
     esac
 }

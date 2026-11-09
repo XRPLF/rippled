@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Concepts.h>
@@ -17,9 +18,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
-#include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
@@ -575,7 +574,6 @@ public:
  * @param sendMaxST If present, the maximum STAmount to send
  * @param j Journal to write journal messages to
  * @param ammContext counts iterations with AMM offers
- * @param flowDebugInfo If pointer is non-null, write flow debug info here
  * @return Actual amount in and out from the strands, errors, and payment
  * sandbox
  */
@@ -590,8 +588,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
-    AMMContext& ammContext,
-    path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
+    AMMContext& ammContext)
 {
     // Used to track the strand that offers the best quality (output/input
     // ratio)
@@ -690,8 +687,6 @@ flow(
 
         boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
-        if (flowDebugInfo)
-            flowDebugInfo->newLiquidityPass();
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -719,9 +714,6 @@ flow(
 
             if (!f.success || f.out == beast::kZero)
                 continue;
-
-            if (flowDebugInfo)
-                flowDebugInfo->pushLiquiditySrc(EitherAmount(f.in), EitherAmount(f.out));
 
             XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox && (!remainingIn || f.in <= *remainingIn),
@@ -769,12 +761,6 @@ flow(
                 remainingIn = *sendMax - *sumIn;
             }
 
-            if (flowDebugInfo)
-            {
-                flowDebugInfo->pushPass(
-                    EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
-            }
-
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
                             << " out: " << to_string(best->out)
                             << " remainingOut: " << to_string(remainingOut);
@@ -817,13 +803,10 @@ flow(
      *   TakerPays. We reverse pays and gets because during crossing
      *   we are taking, therefore the owner must deliver the full TakerPays and
      *   the entire TakerGets doesn't have to be spent.
-     *   Pre-fixFillOrKill amendment code fails if the entire TakerGets
-     *   is not spent. fixFillOrKill addresses this issue.
      * 2. If tfSell is also set then the owner must spend the entire TakerGets
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
      */
-    bool const fillOrKillEnabled = baseView.rules().enabled(fixFillOrKill);
 
     if (actualOut != outReq)
     {
@@ -839,13 +822,9 @@ flow(
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
-            // Pre-fixFillOrKill amendment:
-            //   That case is handled below; not here.
-            // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e, case 1.
-            if (offerCrossing == OfferCrossing::No ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            // If partialPayment is false, the caller requires full outReq (payments, or FillOrKill
+            // offers).
+            if (offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
@@ -855,16 +834,10 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing != OfferCrossing::No &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
+    if (!partialPayment && offerCrossing == OfferCrossing::Sell)
     {
         // If we're offer crossing and partialPayment is *not* true, then
-        // we're handling a FillOrKill offer.  In this case remainingIn must
-        // be zero (all funds must be consumed) or else we kill the offer.
-        // Pre-fixFillOrKill amendment:
-        //   Handles both cases 1. and 2.
-        // fixFillOrKill amendment:
-        //   Handles 2. 1. is handled above and falls through for tfSell.
+        // we're handling a FillOrKill offer.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};

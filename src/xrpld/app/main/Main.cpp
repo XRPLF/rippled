@@ -574,9 +574,17 @@ run(int argc, char* const* argv)
 
     auto const configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
-    // config file, quiet flag.
-    config->setup(
-        configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+    // Reading the config file throws for a value the server rejects.
+    try
+    {
+        config->setup(
+            configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+    }
+    catch (std::exception const& e)
+    {
+        std::cerr << "xrpld: startup failed: " << e.what() << std::endl;
+        return 1;
+    }
 
     if (vm.contains("vacuum"))
     {
@@ -804,11 +812,22 @@ run(int argc, char* const* argv)
         if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
-        auto app =
-            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        // Building the application and setting it up both throw for a
+        // config section they reject, and for a store they cannot open.
+        std::unique_ptr<Application> app;
+        try
+        {
+            app =
+                makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
-        if (!app->setup(vm))
-            return -1;
+            if (!app->setup(vm))
+                return -1;
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "xrpld: startup failed: " << e.what() << std::endl;
+            return 1;
+        }
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:

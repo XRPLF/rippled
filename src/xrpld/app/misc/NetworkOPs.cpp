@@ -32,6 +32,7 @@
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
@@ -1893,8 +1894,6 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     sttx.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
-                    tx.set_receivetimestamp(
-                        registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
                     registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
@@ -2652,15 +2651,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
-
-        if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
-
-        if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
-
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP && baseFeeXRP->native())
@@ -2673,6 +2663,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
+
+        if (auto const gasLimit = ~val->at(~sfGasLimit); gasLimit)
+            jvObj[jss::gas_limit] = *gasLimit;
+
+        if (auto const bytecodeSizeLimit = ~val->at(~sfBytecodeSizeLimit); bytecodeSizeLimit)
+            jvObj[jss::bytecode_size_limit] = *bytecodeSizeLimit;
+
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
 
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
@@ -3129,11 +3128,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = json::UInt(lpClosed->header().seq);
         l[jss::hash] = to_string(lpClosed->header().hash);
 
+        bool const smartEscrowEnabled = lpClosed->rules().enabled(featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
             l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
             l[jss::close_time] =
                 json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         }
@@ -3142,6 +3148,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
 
             if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
@@ -3372,11 +3384,15 @@ NetworkOPsImp::publishLedgerStreams(
 
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (!lpAccepted->rules().enabled(featureXRPFees))
-            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
+        if (lpAccepted->rules().enabled(featureSmartEscrow))
+        {
+            jvObj[jss::gas_limit] = lpAccepted->fees().gasLimit;
+            jvObj[jss::bytecode_size_limit] = lpAccepted->fees().bytecodeSizeLimit;
+            jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
+        }
 
         jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
 
@@ -3884,37 +3900,32 @@ NetworkOPsImp::pubProposedAccountTransaction(
     HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
 
-    std::vector<SubAccountHistoryInfo> accountHistoryNotify;
-
     {
         std::scoped_lock const sl(accountLock_);
 
         if (subRTAccount_.empty())
             return;
 
-        if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
+        for (auto const& affectedAccount : tx->getMentionedAccounts())
         {
-            for (auto const& affectedAccount : tx->getMentionedAccounts())
+            if (auto const simiIt = subRTAccount_.find(affectedAccount);
+                simiIt != subRTAccount_.end())
             {
-                if (auto const simiIt = subRTAccount_.find(affectedAccount);
-                    simiIt != subRTAccount_.end())
+                auto it = simiIt->second.begin();
+
+                while (it != simiIt->second.end())
                 {
-                    auto it = simiIt->second.begin();
+                    InfoSub::pointer const p = it->second.lock();
 
-                    while (it != simiIt->second.end())
+                    if (p)
                     {
-                        InfoSub::pointer const p = it->second.lock();
-
-                        if (p)
-                        {
-                            notify.insert(p);
-                            ++it;
-                            ++iProposed;
-                        }
-                        else
-                        {
-                            it = simiIt->second.erase(it);
-                        }
+                        notify.insert(p);
+                        ++it;
+                        ++iProposed;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
                     }
                 }
             }
@@ -3923,31 +3934,16 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     JLOG(journal_.trace()) << "pubProposedAccountTransaction: " << iProposed;
 
-    if (!notify.empty() || !accountHistoryNotify.empty())
+    if (!notify.empty())
     {
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
+        MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
                 [&](json::Value const& jv) { isrListener->send(jv, true); });
-        }
-
-        XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
-            "xrpl::NetworkOPs::pubProposedAccountTransaction : "
-            "account_history_tx_stream not set");
-        for (auto& info : accountHistoryNotify)
-        {
-            auto const& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
-                jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
-            jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -4696,12 +4692,16 @@ NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
-        if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
+        if (lpClosed->rules().enabled(featureSmartEscrow))
+        {
+            jvResult[jss::gas_limit] = lpClosed->fees().gasLimit;
+            jvResult[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
+        }
     }
 
     if ((mode_ >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
@@ -4934,6 +4934,19 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 
 #ifndef USE_NEW_BOOK_PAGE
 
+// Same as std::min(takerPays, multiply(funded, rate, asset)), but compares
+// before building the amount, so an unrepresentable product is never built.
+// multiply() uses this same Number product (the rate is a quality, never
+// native or MPT), so the result is unchanged.
+static STAmount
+takerPaysFunded(STAmount const& takerPays, STAmount const& takerGetsFunded, STAmount const& rate)
+{
+    Number const product = Number{takerGetsFunded} * Number{rate};
+    if (product >= Number{takerPays})
+        return takerPays;
+    return STAmount{takerPays.asset(), product};
+}
+
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
 //            work, but it demonstrated poor performance.
 //
@@ -5135,8 +5148,7 @@ NetworkOPsImp::getBookPage(
                     saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-                    std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
+                    takerPaysFunded(saTakerPays, saTakerGetsFunded, saDirRate)
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 

@@ -8,7 +8,6 @@
 #include <xrpl/ledger/entries/AMMEntry.h>  // IWYU pragma: keep
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>       // IWYU pragma: keep
-#include <xrpl/ledger/entries/BridgeEntry.h>           // IWYU pragma: keep
 #include <xrpl/ledger/entries/CheckEntry.h>            // IWYU pragma: keep
 #include <xrpl/ledger/entries/CredentialEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/DIDEntry.h>              // IWYU pragma: keep
@@ -33,10 +32,8 @@
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
-#include <xrpl/ledger/entries/TransactionProposalEntry.h>              // IWYU pragma: keep
-#include <xrpl/ledger/entries/VaultEntry.h>                            // IWYU pragma: keep
-#include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
-#include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/TransactionProposalEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/VaultEntry.h>                // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>

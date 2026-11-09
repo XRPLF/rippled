@@ -19,11 +19,13 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -36,6 +38,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>  // IWYU pragma: keep
@@ -44,6 +47,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -163,7 +167,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Proposals do not nest. This payload also isn't a valid instance of
         // TransactionProposalCreate's own template (it lacks Expiration and
         // ProposedTransaction), so it fails STTx construction before ever
-        // reaching our own isProposalTx check.
+        // reaching our own nesting check.
         {
             json::Value tx = payload();
             tx[jss::TransactionType] = "TransactionProposalCreate";
@@ -187,6 +191,49 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                     proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
                 });
             reject(tx, temINVALID);
+        }
+
+        // A Batch inner lacking TransactionType cannot be constructed as an
+        // STTx, so Create rejects the payload as temMALFORMED before the
+        // nesting walk runs at all. That inner would otherwise make the walk
+        // report temINVALID, so this pins the ordering.
+        {
+            json::Value missingType;
+            missingType[jss::Account] = target.human();
+            missingType[jss::Flags] = tfInnerBatchTxn;
+            missingType[jss::Sequence] = env.seq(target);
+            missingType[jss::Fee] = "10";
+            missingType[jss::SigningPubKey] = "";
+
+            reject(
+                proposal::unsignedBatch(
+                    env,
+                    target,
+                    targetTicketSeq,
+                    tfAllOrNothing,
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        missingType,
+                    }),
+                temMALFORMED);
+        }
+
+        // The walk rejects such an inner in its own right. Nothing submitted
+        // through Create can reach that guard — the case above shows STTx
+        // construction throwing first — so it is checked directly here, which
+        // also pins it for a caller that does not build an STTx beforehand.
+        {
+            STObject inner(sfRawTransaction);
+            inner.setAccountID(sfAccount, target.id());
+
+            STArray rawTxns(sfRawTransactions);
+            rawTxns.push_back(std::move(inner));
+
+            STObject batch(sfGeneric);
+            batch.setFieldU16(sfTransactionType, ttBATCH);
+            batch.setFieldArray(sfRawTransactions, rawTxns);
+
+            BEAST_EXPECT(!xrpl::proposal::isValidProposalTxnType(batch));
         }
 
         // The proposed transaction must be ticket-based: a missing
@@ -1310,6 +1357,51 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // A proposer may pay for the Create with one of its own Tickets. The
+    // Ticket's reserve goes as the proposal's arrives, so the proposer's owner
+    // count moves by the difference.
+    void
+    testTicketedCreate(FeatureBitset features)
+    {
+        testcase("create paid for with the proposer's own ticket");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        std::uint32_t const aliceTicketSeq = proposal::createTicket(env, alice);
+        std::uint32_t const aliceSeq = env.seq(alice);
+        std::uint32_t const targetOwnerCount = ownerCount(env, target);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // The proposal's reserve lands on alice less the Ticket she paid with,
+        // and her Sequence is untouched.
+        env(proposal::create(
+                alice,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
+                proposal::expiration(env, 100s)),
+            ticket::Use(aliceTicketSeq),
+            proposal::verify::create());
+        env.close();
+
+        BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq))));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+        // The target's Ticket, the one the proposal is keyed to, stays.
+        BEAST_EXPECT(ownerCount(env, target) == targetOwnerCount);
+    }
+
     // The proposal's reserve can instead be sponsored: the reserve is charged
     // to the sponsor's account, and the ledger object records the sponsor, the
     // same as any other reserve-sponsorable object (TransactionProposalCreate
@@ -1681,6 +1773,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testOtherTransactionTypes(all);
         testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
+        testTicketedCreate(all);
         testSponsoredReserve(all);
         testSponsorshipTransfer(all);
         testFeeSponsored(all);
