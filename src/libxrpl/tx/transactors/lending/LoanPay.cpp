@@ -481,8 +481,9 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "valid interest paid");
     XRPL_ASSERT_PARTS(
-        // It should not be possible to pay 0 total
-        paymentParts->principalPaid + paymentParts->interestPaid > 0,
+        // It should not be possible to pay 0 total. A fee-only instalment pays
+        // 0 principal and interest.
+        paymentParts->principalPaid + paymentParts->interestPaid + paymentParts->feePaid > 0,
         "xrpl::LoanPay::doApply",
         "valid total paid");
     XRPL_ASSERT_PARTS(paymentParts->feePaid >= 0, "xrpl::LoanPay::doApply", "valid fee paid");
@@ -627,6 +628,17 @@ LoanPay::doApply()
             {
                 return tesSUCCESS;
             }
+        }
+        else if (view.rules().enabled(featureLendingProtocolV1_2) && totalPaidToVaultRaw == 0)
+        {
+            // Fee-only instalment: the vault is owed nothing, so nothing is forgiven.
+            JLOG(j_.debug()) << "LoanPay: fee-only instalment, no credit to the Vault";
+
+            // When the fee goes to the broker owner who is also the borrower, the owner would pay
+            // itself and nothing moves. Return before the transfer and its conservation checks,
+            // since they assume some transfer happens.
+            if (brokerPayee == accountID_)
+                return tesSUCCESS;
         }
         else
         {
