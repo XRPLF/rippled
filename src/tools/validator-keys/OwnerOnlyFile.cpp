@@ -94,6 +94,8 @@ OwnerOnlyFile::write(std::string const& text)
     while (offset < text.size())
     {
         auto const n = ::write(fd_, text.data() + offset, text.size() - offset);
+        if (n < 0 && errno == EINTR)
+            continue;
         if (n <= 0)
         {
             failed_ = true;
