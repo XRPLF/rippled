@@ -96,13 +96,10 @@ public:
      * Equality, which the spaceship above does not provide.
      *
      * Only a *defaulted* operator<=> implicitly declares a defaulted
-     * operator==; the one above is user-provided, so == has to be written.
+     * operator==; the one above is user-provided, so == is declared here.
      */
     bool
-    operator==(SHAMapNodeID const& n) const
-    {
-        return (depth_ == n.depth_) && (id_ == n.id_);
-    }
+    operator==(SHAMapNodeID const& n) const = default;
 };
 
 inline std::string
