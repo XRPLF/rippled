@@ -180,3 +180,7 @@ endif()
 if(benchmark)
     add_subdirectory(src/benchmarks/libxrpl)
 endif()
+
+if(fuzzing)
+    include(XrplFuzzing)
+endif()
