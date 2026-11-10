@@ -2,11 +2,23 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
+#include <expected>
+
 namespace json {
 class Value;
 }  // namespace json
 
 namespace xrpl::rpc {
+
+/**
+ * Whether `TransactionType` names a Payment in a form `STParsedJSON` reads:
+ * the name, an integer, or a string of digits.
+ *
+ * @param txJson The `tx_json` object of a request.
+ * @return true when the transaction is a Payment.
+ */
+[[nodiscard]] bool
+isPayment(json::Value const& txJson);
 
 /**
  * Copy `Amount` field to `DeliverMax` field in transaction output JSON.
@@ -30,10 +42,10 @@ insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion);
  * Malformed `RawTransactions` entries are left for the JSON parser to report.
  *
  * @param txJson The `tx_json` object of a request.
- * @return An `invalidParams` error if a Payment specifies differing `Amount`
- *         and `DeliverMax`, otherwise a null value.
+ * @return The `invalidParams` error when a Payment specifies differing
+ *         `Amount` and `DeliverMax`.
  */
-json::Value
+[[nodiscard]] std::expected<void, json::Value>
 replaceDeliverMaxWithAmount(json::Value& txJson);
 
 }  // namespace xrpl::rpc

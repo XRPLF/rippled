@@ -1482,9 +1482,9 @@ class Simulate_test : public beast::unit_test::Suite
         testcase("DeliverMax");
 
         using namespace jtx;
-        Env env(*this);
-        Account const alice("alice");
-        Account const becky("becky");
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const becky{"becky"};
         env.fund(XRP(10000), alice);
         env.close();
         env(signers(alice, 1, {{becky, 1}}));
@@ -1505,20 +1505,24 @@ class Simulate_test : public beast::unit_test::Suite
 
         forAllApiVersions([&](unsigned apiVersion) {
             auto const jr = simulate(tx, apiVersion);
-            BEAST_EXPECT(jr[jss::engine_result] == "tesSUCCESS");
-            BEAST_EXPECT(jr[jss::tx_json][jss::DeliverMax] == "1000000");
-            BEAST_EXPECT(
-                apiVersion > 1 ? !jr[jss::tx_json].isMember(jss::Amount)
-                               : jr[jss::tx_json][jss::Amount] == "1000000");
+            auto const& txJson = jr[jss::tx_json];
+            BEAST_EXPECTS(
+                jr[jss::engine_result] == "tesSUCCESS", jr[jss::engine_result].asString());
+            BEAST_EXPECTS(txJson[jss::DeliverMax] == "1000000", txJson[jss::DeliverMax].asString());
+            if (apiVersion > 1)
+                BEAST_EXPECT(!txJson.isMember(jss::Amount));
+            else
+                BEAST_EXPECTS(txJson[jss::Amount] == "1000000", txJson[jss::Amount].asString());
         });
 
         {
             auto differing = tx;
             differing[jss::Amount] = "2000000";
             auto const jr = simulate(differing, 2);
-            BEAST_EXPECT(jr[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Cannot specify differing 'Amount' and 'DeliverMax'");
+            BEAST_EXPECTS(jr[jss::error] == "invalidParams", jr[jss::error].asString());
+            BEAST_EXPECTS(
+                jr[jss::error_message] == "Cannot specify differing 'Amount' and 'DeliverMax'",
+                jr[jss::error_message].asString());
         }
 
         // The autofilled fee of a multi-signed Payment counts its signer when
@@ -1529,10 +1533,10 @@ class Simulate_test : public beast::unit_test::Suite
         tx[sfSigners].append(json::Value{});
         tx[sfSigners][0u][sfSigner] = signer;
         auto const jr = simulate(tx, 2);
-        BEAST_EXPECT(jr[jss::engine_result] == "tesSUCCESS");
-        BEAST_EXPECT(
-            jr[jss::tx_json][jss::Fee] ==
-            (env.current()->fees().base * 2).jsonClipped().asString());
+        BEAST_EXPECTS(jr[jss::engine_result] == "tesSUCCESS", jr[jss::engine_result].asString());
+        BEAST_EXPECTS(
+            jr[jss::tx_json][jss::Fee] == (env.current()->fees().base * 2).jsonClipped().asString(),
+            jr[jss::tx_json][jss::Fee].asString());
     }
 
 public:

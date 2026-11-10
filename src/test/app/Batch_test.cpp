@@ -6436,9 +6436,9 @@ class Batch_test : public beast::unit_test::Suite
         testcase("DeliverMax in inner Payments wrapped in " + wrapper.getName());
 
         using namespace test::jtx;
-        Env env(*this, features);
-        Account const alice("alice");
-        Account const bob("bob");
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
         env.close();
 
@@ -6452,46 +6452,75 @@ class Batch_test : public beast::unit_test::Suite
             return inner;
         };
 
-        // Signs a Batch of the given inner Payment and a second one paying 2 XRP.
-        auto const signBatch = [&](json::Value const& first,
-                                   json::Value const& outerType = json::Value(jss::Batch)) {
-            json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
-            txJson[jss::TransactionType] = outerType;
-            txJson.removeMember(jss::Fee);
-            txJson[jss::RawTransactions][0u][wrapper.jsonName] = first;
-            txJson[jss::RawTransactions][1u][wrapper.jsonName] = innerPay(XRP(2), seq + 2);
+        // Signs txJson as alice at apiVersion.
+        auto const rpcSign = [&](json::Value const& txJson, unsigned apiVersion = 1) {
             json::Value params;
             params[jss::secret] = alice.name();
             params[jss::tx_json] = txJson;
+            params[jss::api_version] = apiVersion;
             return env.rpc("json", "sign", to_string(params))[jss::result];
+        };
+
+        // A Batch of alice's with no inner transactions and Fee left to autofill.
+        auto const emptyBatch = [&]() {
+            json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
+            txJson.removeMember(jss::Fee);
+            return txJson;
+        };
+
+        // Signs a Batch of the given inner Payment and a second one paying 2 XRP.
+        auto const signBatch = [&](json::Value const& first,
+                                   json::Value const& outerType = json::Value(jss::Batch),
+                                   unsigned apiVersion = 1) {
+            json::Value txJson = emptyBatch();
+            txJson[jss::TransactionType] = outerType;
+            txJson[jss::RawTransactions][0u][wrapper.jsonName] = first;
+            txJson[jss::RawTransactions][1u][wrapper.jsonName] = innerPay(XRP(2), seq + 2);
+            return rpcSign(txJson, apiVersion);
         };
 
         // Both inner Payments follow the DeliverMax rule for apiVersion.
         auto expectInner = [&](json::Value const& txJson, unsigned apiVersion) {
             auto const& raw = txJson[jss::RawTransactions];
-            if (!BEAST_EXPECT(raw.isArray() && raw.size() == 2))
+            if (!BEAST_EXPECTS(raw.isArray() && raw.size() == 2, to_string(raw)))
                 return;
             for (auto const& [index, drops] : {std::pair{0u, "1000000"}, {1u, "2000000"}})
             {
                 auto const& inner = raw[index][wrapper.jsonName];
-                BEAST_EXPECT(inner[jss::DeliverMax] == drops);
-                BEAST_EXPECT(
-                    apiVersion > 1 ? !inner.isMember(jss::Amount) : inner[jss::Amount] == drops);
+                BEAST_EXPECTS(inner[jss::DeliverMax] == drops, inner[jss::DeliverMax].asString());
+                if (apiVersion > 1)
+                    BEAST_EXPECT(!inner.isMember(jss::Amount));
+                else
+                    BEAST_EXPECTS(inner[jss::Amount] == drops, inner[jss::Amount].asString());
             }
+        };
+
+        auto expectInvalidParams = [&](json::Value const& jr, std::string const& message) {
+            BEAST_EXPECTS(jr[jss::error] == "invalidParams", jr[jss::error].asString());
+            BEAST_EXPECTS(jr[jss::error_message] == message, jr[jss::error_message].asString());
         };
 
         auto isBatch = [](json::Value const& txJson) {
             return txJson[jss::TransactionType].asString() == jss::Batch.cStr();
         };
 
+        std::string const differing = "Cannot specify differing 'Amount' and 'DeliverMax'";
+
         // An inner Payment with differing Amount and DeliverMax is rejected.
         {
             auto inner = innerPay(XRP(1), seq + 1);
             inner[jss::DeliverMax] = "3000000";
-            auto const jr = signBatch(inner);
-            BEAST_EXPECT(jr[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jr[jss::error_message] == "Cannot specify differing 'Amount' and 'DeliverMax'");
+            expectInvalidParams(signBatch(inner), differing);
+        }
+
+        // So is one in the second position.
+        {
+            json::Value txJson = emptyBatch();
+            txJson[jss::RawTransactions][0u][wrapper.jsonName] = innerPay(XRP(1), seq + 1);
+            auto second = innerPay(XRP(2), seq + 2);
+            second[jss::DeliverMax] = "3000000";
+            txJson[jss::RawTransactions][1u][wrapper.jsonName] = second;
+            expectInvalidParams(rpcSign(txJson), differing);
         }
 
         // An inner Payment with DeliverMax in place of Amount is signed, and the
@@ -6500,11 +6529,51 @@ class Batch_test : public beast::unit_test::Suite
         inner[jss::DeliverMax] = inner[jss::Amount];
         inner.removeMember(jss::Amount);
         auto const signedBatch = signBatch(inner);
-        if (!BEAST_EXPECT(signedBatch[jss::status] == jss::success))
+        if (!BEAST_EXPECTS(signedBatch[jss::status] == jss::success, to_string(signedBatch)))
             return;
-        BEAST_EXPECT(
-            signedBatch[jss::tx_json][jss::Fee] == to_string(batch::calcBatchFee(env, 0, 2)));
+        BEAST_EXPECTS(
+            signedBatch[jss::tx_json][jss::Fee] == to_string(batch::calcBatchFee(env, 0, 2)),
+            signedBatch[jss::tx_json][jss::Fee].asString());
         expectInner(signedBatch[jss::tx_json], 1);
+
+        // At API version 2 the signed Batch carries only DeliverMax.
+        {
+            auto const jr = signBatch(inner, jss::Batch, 2);
+            if (BEAST_EXPECTS(jr[jss::status] == jss::success, to_string(jr)))
+                expectInner(jr[jss::tx_json], 2);
+        }
+
+        // A malformed RawTransactions entry is left for STParsedJSON to report.
+        {
+            std::string const innerName = "tx_json.RawTransactions.[0]." + wrapper.getName();
+            auto const errorAt = [&](std::string const& message) {
+                return "Error at '" + innerName + "'. Field '" + innerName + "." + message;
+            };
+
+            auto notArray = emptyBatch();
+            notArray[jss::RawTransactions] = "x";
+            expectInvalidParams(
+                rpcSign(notArray), "Field 'tx_json.RawTransactions' is not a JSON array.");
+
+            auto notObject = emptyBatch();
+            notObject[jss::RawTransactions][0u] = 1;
+            expectInvalidParams(
+                rpcSign(notObject),
+                "Field 'tx_json.RawTransactions[0]' must be an object with a single "
+                "key/object value.");
+
+            auto boolType = emptyBatch();
+            boolType[jss::RawTransactions][0u][wrapper.jsonName] = innerPay(XRP(1), seq + 1);
+            boolType[jss::RawTransactions][0u][wrapper.jsonName][jss::TransactionType] = true;
+            expectInvalidParams(rpcSign(boolType), errorAt("TransactionType' has bad type."));
+
+            // An integer above the signed range is read as unsigned and is no Payment.
+            auto tooLarge = emptyBatch();
+            tooLarge[jss::RawTransactions][0u][wrapper.jsonName] = inner;
+            tooLarge[jss::RawTransactions][0u][wrapper.jsonName][jss::TransactionType] =
+                4294967295u;
+            expectInvalidParams(rpcSign(tooLarge), errorAt("DeliverMax' is unknown."));
+        }
 
         // TransactionType as a number or a numeric string, on the Batch and on the
         // inner Payment, is read as STParsedJSON reads it.
@@ -6522,16 +6591,22 @@ class Batch_test : public beast::unit_test::Suite
                 auto numeric = inner;
                 numeric[jss::TransactionType] = innerType;
                 auto const jr = signBatch(numeric, outerType);
-                if (BEAST_EXPECT(jr[jss::status] == jss::success))
+                if (BEAST_EXPECTS(jr[jss::status] == jss::success, to_string(jr)))
                     expectInner(jr[jss::tx_json], 1);
             }
 
-            // A numeric type that is not a Payment keeps DeliverMax unknown.
-            auto notPayment = inner;
-            notPayment[jss::TransactionType] = static_cast<json::UInt>(ttESCROW_CREATE);
-            auto const jr = signBatch(notPayment, batchType);
-            BEAST_EXPECT(jr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jr[jss::error_message].asString().ends_with(".DeliverMax' is unknown."));
+            // A numeric type that is not a Payment, or is outside the range of a
+            // TransactionType, keeps DeliverMax unknown.
+            for (json::UInt const innerType : {static_cast<json::UInt>(ttESCROW_CREATE), 65536u})
+            {
+                auto notPayment = inner;
+                notPayment[jss::TransactionType] = innerType;
+                auto const jr = signBatch(notPayment, batchType);
+                BEAST_EXPECTS(jr[jss::error] == "invalidParams", jr[jss::error].asString());
+                BEAST_EXPECTS(
+                    jr[jss::error_message].asString().ends_with(".DeliverMax' is unknown."),
+                    jr[jss::error_message].asString());
+            }
         }
 
         auto const preBob = env.balance(bob);
@@ -6540,11 +6615,12 @@ class Batch_test : public beast::unit_test::Suite
             params[jss::tx_blob] = signedBatch[jss::tx_blob];
             params[jss::api_version] = 2;
             auto const jr = env.rpc("json", "submit", to_string(params))[jss::result];
-            BEAST_EXPECT(jr[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECTS(
+                jr[jss::engine_result] == "tesSUCCESS", jr[jss::engine_result].asString());
             expectInner(jr[jss::tx_json], 2);
         }
         env.close();
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        env.require(Balance(bob, preBob + XRP(3)));
 
         auto const hash = signedBatch[jss::tx_json][jss::hash].asString();
         forAllApiVersions([&](unsigned apiVersion) {
@@ -6581,7 +6657,7 @@ class Batch_test : public beast::unit_test::Suite
                         expectInner(txJson, apiVersion);
                     }
                 }
-                BEAST_EXPECT(batches == 1);
+                BEAST_EXPECTS(batches == 1, std::to_string(batches));
             }
             {
                 json::Value params;
@@ -6598,7 +6674,7 @@ class Batch_test : public beast::unit_test::Suite
                         expectInner(txJson, apiVersion);
                     }
                 }
-                BEAST_EXPECT(batches == 1);
+                BEAST_EXPECTS(batches == 1, std::to_string(batches));
             }
         });
     }

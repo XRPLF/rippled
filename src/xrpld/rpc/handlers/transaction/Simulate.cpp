@@ -344,8 +344,8 @@ doSimulate(rpc::JsonContext& context)
         return txJson;
 
     // Fee autofill parses tx_json, so the alias is resolved first.
-    if (auto err = rpc::replaceDeliverMaxWithAmount(txJson); err.isMember(jss::error))
-        return err;
+    if (auto replaced = rpc::replaceDeliverMaxWithAmount(txJson); !replaced)
+        return std::move(replaced).error();
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
     if (auto error = autofillTx(txJson, context))

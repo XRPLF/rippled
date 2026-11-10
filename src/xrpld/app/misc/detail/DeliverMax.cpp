@@ -8,6 +8,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <expected>
 
 namespace xrpl::rpc {
 
@@ -15,7 +16,7 @@ namespace {
 
 // Whether TransactionType is `type` in a form STParsedJSON accepts: its name,
 // its number, or its number as a string.
-bool
+[[nodiscard]] bool
 isTxnType(json::Value const& txJson, TxType type)
 {
     if (!txJson.isObject())
@@ -29,24 +30,19 @@ isTxnType(json::Value const& txJson, TxType type)
     if (!value.isString())
         return false;
 
-    auto const& str = value.asString();
-    if (str.empty() || str[0] < '0' || str[0] > '9')
+    auto const& text = value.asString();
+    if (text.empty() || text[0] < '0' || text[0] > '9')
     {
         auto const* const format = TxFormats::getInstance().findByType(type);
-        return format != nullptr && format->getName() == str;
+        return format != nullptr && format->getName() == text;
     }
 
     std::uint16_t number = 0;
-    return beast::lexicalCastChecked(number, str) && number == type;
+    return beast::lexicalCastChecked(number, text) && number == type;
 }
 
-bool
-isPayment(json::Value const& txJson)
-{
-    return isTxnType(txJson, ttPAYMENT);
-}
-
-// Calls f on each inner transaction object of a Batch, whichever field wraps it.
+// Calls f on each inner transaction object of a Batch, whichever field wraps
+// it, until f returns false.
 template <class F>
 void
 forEachInnerTxn(json::Value& txJson, F&& f)
@@ -61,8 +57,8 @@ forEachInnerTxn(json::Value& txJson, F&& f)
 
         for (auto& wrapped : raw)
         {
-            if (wrapped.isObject())
-                f(wrapped);
+            if (wrapped.isObject() && !f(wrapped))
+                return;
         }
     }
 }
@@ -78,7 +74,7 @@ copyAmountToDeliverMax(json::Value& txJson, unsigned int apiVersion)
         txJson.removeMember(jss::Amount);
 }
 
-json::Value
+[[nodiscard]] std::expected<void, json::Value>
 replaceDeliverMaxInPayment(json::Value& txJson)
 {
     if (!txJson.isMember(jss::DeliverMax))
@@ -88,8 +84,8 @@ replaceDeliverMaxInPayment(json::Value& txJson)
     {
         if (txJson[jss::DeliverMax] != txJson[jss::Amount])
         {
-            return makeError(
-                RpcInvalidParams, "Cannot specify differing 'Amount' and 'DeliverMax'");
+            return std::unexpected(
+                makeError(RpcInvalidParams, "Cannot specify differing 'Amount' and 'DeliverMax'"));
         }
     }
     else
@@ -103,6 +99,12 @@ replaceDeliverMaxInPayment(json::Value& txJson)
 
 }  // namespace
 
+bool
+isPayment(json::Value const& txJson)
+{
+    return isTxnType(txJson, ttPAYMENT);
+}
+
 void
 insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 {
@@ -115,25 +117,27 @@ insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
         forEachInnerTxn(txJson, [apiVersion](json::Value& inner) {
             if (isPayment(inner))
                 copyAmountToDeliverMax(inner, apiVersion);
+            return true;
         });
     }
 }
 
-json::Value
+std::expected<void, json::Value>
 replaceDeliverMaxWithAmount(json::Value& txJson)
 {
     if (isPayment(txJson))
         return replaceDeliverMaxInPayment(txJson);
 
-    json::Value error;
+    std::expected<void, json::Value> result;
     if (!isTxnType(txJson, ttBATCH))
-        return error;
+        return result;
 
-    forEachInnerTxn(txJson, [&error](json::Value& inner) {
-        if (error.isNull() && isPayment(inner))
-            error = replaceDeliverMaxInPayment(inner);
+    forEachInnerTxn(txJson, [&result](json::Value& inner) {
+        if (isPayment(inner))
+            result = replaceDeliverMaxInPayment(inner);
+        return result.has_value();
     });
-    return error;
+    return result;
 }
 
 }  // namespace xrpl::rpc

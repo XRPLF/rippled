@@ -208,7 +208,7 @@ checkPayment(
     bool doPath)
 {
     // Only path find for Payments.
-    if (txJson[jss::TransactionType].asString() != jss::Payment)
+    if (!rpc::isPayment(txJson))
         return json::Value();
 
     if (!txJson.isMember(jss::Amount))
@@ -498,8 +498,8 @@ transactionPreProcessImpl(
         return std::move(txJsonResult);
 
     // Fee autofill parses tx_json, so the alias is resolved first.
-    if (auto err = rpc::replaceDeliverMaxWithAmount(txJson); rpc::containsError(err))
-        return err;
+    if (auto replaced = rpc::replaceDeliverMaxWithAmount(txJson); !replaced)
+        return std::move(replaced).error();
 
     // This test covers the case where we're offline so the sequence number
     // cannot be determined locally.  If we're offline then the caller must
@@ -1311,8 +1311,8 @@ transactionSubmitMultiSigned(
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
 
-    if (auto err = rpc::replaceDeliverMaxWithAmount(txJson); rpc::containsError(err))
-        return err;
+    if (auto replaced = rpc::replaceDeliverMaxWithAmount(txJson); !replaced)
+        return std::move(replaced).error();
 
     SLE::const_pointer const sle = ledger->read(keylet::account(srcAddressID));
 

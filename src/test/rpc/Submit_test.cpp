@@ -95,7 +95,7 @@ public:
     {
         testcase("DeliverMax in tx_blob response");
         using namespace jtx;
-        Env env(*this);
+        Env env{*this};
         Account const alice{"alice"};
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
@@ -108,11 +108,14 @@ public:
             params[jss::tx_blob] = strHex(jt.stx->getSerializer().slice());
             params[jss::api_version] = apiVersion;
             auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
-            BEAST_EXPECT(jrr[jss::engine_result] == "tesSUCCESS");
-            BEAST_EXPECT(jrr[jss::tx_json][jss::DeliverMax] == "1000000");
-            BEAST_EXPECT(
-                apiVersion > 1 ? !jrr[jss::tx_json].isMember(jss::Amount)
-                               : jrr[jss::tx_json][jss::Amount] == "1000000");
+            auto const& txJson = jrr[jss::tx_json];
+            BEAST_EXPECTS(
+                jrr[jss::engine_result] == "tesSUCCESS", jrr[jss::engine_result].asString());
+            BEAST_EXPECTS(txJson[jss::DeliverMax] == "1000000", txJson[jss::DeliverMax].asString());
+            if (apiVersion > 1)
+                BEAST_EXPECT(!txJson.isMember(jss::Amount));
+            else
+                BEAST_EXPECTS(txJson[jss::Amount] == "1000000", txJson[jss::Amount].asString());
         });
     }
 
