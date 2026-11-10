@@ -28,6 +28,7 @@ Version 3.6.0 is not yet released.
 
 ### Bugfixes in 3.6.0
 
+- `fetch_info`: The `clear` parameter now returns `invalidParams` unless it is a Boolean. Previously, non-Boolean values could be coerced to `true` and unexpectedly clear fetch state. ([#7606](https://github.com/XRPLF/rippled/pull/7606))
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
 
 ## XRP Ledger server version 3.5.0
