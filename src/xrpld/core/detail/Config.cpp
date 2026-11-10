@@ -232,6 +232,15 @@ getSingleSection(
         return true;
     }
 
+    // A repeated section hides the value the operator intended. An empty
+    // section (for example, a header above a commented-out value) keeps the
+    // default.
+    if ((pmtEntries != nullptr) && pmtEntries->size() > 1)
+    {
+        Throw<std::runtime_error>(
+            std::format("[{}] requires exactly one value, not {}", strSection, pmtEntries->size()));
+    }
+
     if (pmtEntries != nullptr)
     {
         JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "

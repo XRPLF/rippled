@@ -1467,7 +1467,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // This function is called by several different parts of the codebase
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
-    auto const sttx = *transaction->getSTransaction();
+    auto const& sttx = *transaction->getSTransaction();
     if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
@@ -1881,7 +1881,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *e.transaction->getSTransaction(); toSkip &&
+                if (auto const& sttx = *e.transaction->getSTransaction(); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
@@ -1894,11 +1894,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     sttx.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
-                    tx.set_receivetimestamp(
-                        registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
+                    registry_.get().getOverlay().relay(sttx, tx, *toSkip);
                     e.transaction->setBroadcast();
                 }
             }
@@ -3902,37 +3900,32 @@ NetworkOPsImp::pubProposedAccountTransaction(
     HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
 
-    std::vector<SubAccountHistoryInfo> accountHistoryNotify;
-
     {
         std::scoped_lock const sl(accountLock_);
 
         if (subRTAccount_.empty())
             return;
 
-        if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
+        for (auto const& affectedAccount : tx->getMentionedAccounts())
         {
-            for (auto const& affectedAccount : tx->getMentionedAccounts())
+            if (auto const simiIt = subRTAccount_.find(affectedAccount);
+                simiIt != subRTAccount_.end())
             {
-                if (auto const simiIt = subRTAccount_.find(affectedAccount);
-                    simiIt != subRTAccount_.end())
+                auto it = simiIt->second.begin();
+
+                while (it != simiIt->second.end())
                 {
-                    auto it = simiIt->second.begin();
+                    InfoSub::pointer const p = it->second.lock();
 
-                    while (it != simiIt->second.end())
+                    if (p)
                     {
-                        InfoSub::pointer const p = it->second.lock();
-
-                        if (p)
-                        {
-                            notify.insert(p);
-                            ++it;
-                            ++iProposed;
-                        }
-                        else
-                        {
-                            it = simiIt->second.erase(it);
-                        }
+                        notify.insert(p);
+                        ++it;
+                        ++iProposed;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
                     }
                 }
             }
@@ -3941,31 +3934,16 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     JLOG(journal_.trace()) << "pubProposedAccountTransaction: " << iProposed;
 
-    if (!notify.empty() || !accountHistoryNotify.empty())
+    if (!notify.empty())
     {
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
+        MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
                 [&](json::Value const& jv) { isrListener->send(jv, true); });
-        }
-
-        XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
-            "xrpl::NetworkOPs::pubProposedAccountTransaction : "
-            "account_history_tx_stream not set");
-        for (auto& info : accountHistoryNotify)
-        {
-            auto const& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
-                jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
-            jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }

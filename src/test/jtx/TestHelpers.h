@@ -15,6 +15,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -575,6 +577,12 @@ expectOffers(
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
+
+/**
+ * Return the ledger entries in an account's owner directory.
+ */
+std::vector<SLE::const_pointer>
+ownerDirEntries(ReadView const& view, AccountID const& account);
 
 json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
