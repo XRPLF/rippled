@@ -10,8 +10,8 @@ namespace xrpl::fuzz {
 namespace {
 
 constexpr std::array kTargets{
-    FuzzTarget{.name = "serial_iter", .run = &fuzzSerialIter},
-    FuzzTarget{.name = "st_validation", .run = &fuzzSTValidation},
+    FuzzTarget{.name = "serial_iter", .run = &fuzzSerialIter, .seeds = &serialIterSeeds},
+    FuzzTarget{.name = "st_validation", .run = &fuzzSTValidation, .seeds = &stValidationSeeds},
 };
 
 }  // namespace

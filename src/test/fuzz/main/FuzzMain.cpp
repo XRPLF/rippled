@@ -7,13 +7,37 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <ios>
 #include <iostream>
-#include <string_view>
+#include <string>
 
 namespace {
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 xrpl::fuzz::FuzzTarget const* gTarget = nullptr;
+
+// Write the target's seeds into dir, so libFuzzer loads them when it reads that corpus.
+void
+writeSeeds(xrpl::fuzz::FuzzTarget const& target, std::filesystem::path const& dir)
+{
+    std::filesystem::create_directories(dir);
+    auto const seeds = target.seeds();
+    for (std::size_t i = 0; i < seeds.size(); ++i)
+    {
+        auto const path = dir / ("seed-" + std::to_string(i));
+        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+        out.write(
+            reinterpret_cast<char const*>(seeds[i].data()),
+            static_cast<std::streamsize>(seeds[i].size()));
+        if (!out)
+        {
+            std::cerr << "cannot write seed " << path << '\n';
+            std::exit(EXIT_FAILURE);  // NOLINT(concurrency-mt-unsafe)
+        }
+    }
+}
 
 }  // namespace
 
@@ -31,6 +55,10 @@ LLVMFuzzerInitialize(int* /*argc*/, char*** /*argv*/)
             std::cerr << "  " << t.name << '\n';
         std::exit(EXIT_FAILURE);  // NOLINT(concurrency-mt-unsafe)
     }
+
+    // libFuzzer reads its corpus directories after this function returns.
+    if (char const* const dir = std::getenv("XRPL_FUZZ_SEED_DIR"))  // NOLINT(concurrency-mt-unsafe)
+        writeSeeds(*gTarget, dir);
     return 0;
 }
 

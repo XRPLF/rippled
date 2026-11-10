@@ -4,15 +4,13 @@ In-process, coverage-guided fuzz targets for libxrpl, driven by libFuzzer.
 
 ## Layout
 
-- `FuzzTargets.h`, `FuzzTargets.cpp`: the target registry. A target's name is also the
-  name of its corpus directory.
+- `FuzzTargets.h`, `FuzzTargets.cpp`: the target registry. Each target has a name, a
+  function that consumes one input, and a function that builds its seed inputs in code.
 - `FuzzCheck.h`: shared oracle helpers (`check`, `tryOrEmpty`, `checkSerializationFixedPoint`).
 - `targets/`: one file per target.
 - `main/FuzzMain.cpp`: the libFuzzer entry point. Built only into `xrpl_fuzz`.
-- `corpus/<target>/`: seed inputs (`seed-*`) and minimized inputs from past findings.
-- `Fuzz_test.cpp`: the `FuzzCorpus` unit test, which replays the whole corpus through
-  every target in a normal `xrpld --unittest` run, on any compiler.
-- `FuzzSeeds_test.cpp`: manual suite that regenerates the `seed-*` files.
+- `Fuzz_test.cpp`: the `FuzzReplay` unit test, which runs every target's seeds in a
+  normal `xrpld --unittest` run, on any compiler.
 
 A target returns 0 for every input, including ones the parser rejects. It reports a bug
 by crashing (sanitizer, `XRPL_ASSERT`) or by throwing `OracleFailure`.
@@ -45,12 +43,13 @@ export UBSAN_OPTIONS="include=sanitizers/suppressions/runtime-ubsan-options.txt:
 
 ## Running
 
-`XRPL_FUZZ_TARGET` selects the target. Copy the seeds to a scratch corpus so libFuzzer's
-new inputs do not land in the source tree:
+`XRPL_FUZZ_TARGET` selects the target. With `XRPL_FUZZ_SEED_DIR` set, the binary first
+writes the target's seeds into that directory; pass the same directory as the corpus so
+libFuzzer starts from them:
 
 ```
-mkdir -p /tmp/corpus-st_validation && cp src/test/fuzz/corpus/st_validation/* /tmp/corpus-st_validation/
-XRPL_FUZZ_TARGET=st_validation .build-fuzz/xrpl_fuzz -timeout=5 -rss_limit_mb=2048 /tmp/corpus-st_validation
+XRPL_FUZZ_TARGET=st_validation XRPL_FUZZ_SEED_DIR=/tmp/corpus-st_validation \
+    .build-fuzz/xrpl_fuzz -timeout=5 -rss_limit_mb=2048 /tmp/corpus-st_validation
 ```
 
 To reproduce a crash, pass the crash file instead of a directory:
@@ -61,13 +60,6 @@ XRPL_FUZZ_TARGET=st_validation .build-fuzz/xrpl_fuzz crash-<hash>
 
 ## After a finding
 
-Minimize the input (`-minimize_crash=1 -runs=100000`), fix the bug, and check the
-minimized file into `corpus/<target>/` so `FuzzCorpus` replays it from then on.
-
-## Regenerating seeds
-
-After changing a serialized format the seeds cover:
-
-```
-xrpld --unittest=FuzzSeeds
-```
+Minimize the input (`-minimize_crash=1 -runs=100000`), fix the bug, and add a unit test
+that passes the minimized bytes, written as a hex literal, to the target's function, so
+the input is replayed on every run from then on.

@@ -1,10 +1,16 @@
 #include <test/fuzz/FuzzCheck.h>
 #include <test/fuzz/FuzzTargets.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace xrpl::fuzz {
 
@@ -83,6 +89,29 @@ fuzzSerialIter(std::uint8_t const* data, std::size_t size)
     }
     check(sit.getBytesLeft() <= total, kName, "iterator reports more bytes than it was given");
     return 0;
+}
+
+/**
+ * @brief A Payment with every optional field present, serialized twice in a row.
+ *
+ * Any bytes are valid input, but a real transaction in both halves gives the opcode half
+ * and the data half realistic field IDs and length prefixes.
+ */
+std::vector<Blob>
+serialIterSeeds()
+{
+    STTx const tx(ttPAYMENT, [](STObject& obj) {
+        for (auto const& e : TxFormats::getInstance().findByType(ttPAYMENT)->getSOTemplate())
+        {
+            // Default-style fields are left out: serializing one at its default is an error.
+            if (e.style() == SoeOptional)
+                obj.makeFieldPresent(e.sField());
+        }
+    });
+    Serializer s;
+    s.addRaw(tx.getSerializer().slice());
+    s.addRaw(tx.getSerializer().slice());
+    return {s.getData()};
 }
 
 }  // namespace xrpl::fuzz

@@ -4,63 +4,36 @@
 #include <xrpl/beast/unit_test/suite.h>
 
 #include <cstddef>
-#include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <ios>
-#include <iterator>
 #include <string>
-#include <vector>
-
-#ifndef XRPL_FUZZ_CORPUS_DIR
-#error "XRPL_FUZZ_CORPUS_DIR must name the src/test/fuzz/corpus directory"
-#endif
 
 namespace xrpl::fuzz {
 
 /**
- * @brief Replay the checked-in fuzz corpus through every fuzz target.
+ * @brief Run every fuzz target's seeds through the target.
  *
- * Each target's corpus directory holds seed inputs and minimized inputs from past
- * findings. Replaying them in the normal unit-test run keeps fixed bugs fixed on every
- * compiler and platform, without libFuzzer.
+ * This keeps the targets building and their seeds passing in the normal unit-test run,
+ * on every compiler and platform, without libFuzzer.
  */
-class FuzzCorpus_test : public beast::unit_test::Suite
+class FuzzReplay_test : public beast::unit_test::Suite
 {
-    static std::vector<std::uint8_t>
-    readFile(std::filesystem::path const& path)
-    {
-        std::ifstream in(path, std::ios::binary);
-        return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
-    }
-
     void
     replay(FuzzTarget const& target)
     {
         testcase(std::string(target.name));
 
-        auto const dir = std::filesystem::path(XRPL_FUZZ_CORPUS_DIR) / target.name;
-        if (!BEAST_EXPECTS(std::filesystem::is_directory(dir), "missing corpus " + dir.string()))
-            return;
-
-        std::size_t replayed = 0;
-        for (auto const& entry : std::filesystem::directory_iterator(dir))
+        auto const seeds = target.seeds();
+        BEAST_EXPECT(!seeds.empty());
+        for (std::size_t i = 0; i < seeds.size(); ++i)
         {
-            if (!entry.is_regular_file())
-                continue;
-
-            auto const input = readFile(entry.path());
             try
             {
-                BEAST_EXPECT(target.run(input.data(), input.size()) == 0);
+                BEAST_EXPECT(target.run(seeds[i].data(), seeds[i].size()) == 0);
             }
             catch (OracleFailure const& f)
             {
-                fail(entry.path().filename().string() + ": " + f.what);
+                fail("seed " + std::to_string(i) + ": " + f.what);
             }
-            ++replayed;
         }
-        BEAST_EXPECTS(replayed > 0, "empty corpus " + dir.string());
     }
 
 public:
@@ -72,6 +45,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FuzzCorpus, fuzz, xrpl);
+BEAST_DEFINE_TESTSUITE(FuzzReplay, fuzz, xrpl);
 
 }  // namespace xrpl::fuzz
