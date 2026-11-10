@@ -230,7 +230,7 @@ published alongside the one it will replace. The appended list's `sequence`
 must be above every blob's in the document, as a server ignores the rest.
 Blobs whose `expiration` is not after the time of appending are dropped, as
 a server ignores an expired blob and `verify_list` refuses a document holding
-one; their sequences still count.
+one; their sequences still count, and only the blobs kept count toward the five.
 A server verifies every blob under the newest manifest it has seen, so a
 document holding a blob under an older manifest is refused; after a key
 rotation, sign its lists again with the new token, without `--append`.

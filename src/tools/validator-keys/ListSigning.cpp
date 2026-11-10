@@ -390,11 +390,6 @@ makeSignedList(
         if (!existing.isMember(jss::public_key) || !existing[jss::public_key].isString() ||
             !boost::iequals(existing[jss::public_key].asString(), strHex(masterKey)))
             throw std::runtime_error("The list to append to belongs to another master key");
-        if (existing[jss::blobs_v2].size() >= kMaxBlobs)
-        {
-            throw std::runtime_error(
-                "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
-        }
 
         // Whether a manifest in the document is the token's. A server that
         // applied a manifest rejects an older or equal one, and with it every
@@ -462,6 +457,11 @@ makeSignedList(
             highest = std::max(highest, published.sequence);
             if (published.expiration > now)
                 kept.append(entry);
+        }
+        if (kept.size() >= kMaxBlobs)
+        {
+            throw std::runtime_error(
+                "The list to append to already holds " + std::to_string(kMaxBlobs) + " blobs");
         }
         // A server ignores a blob whose sequence is not above the one it holds.
         if (list.sequence <= highest)

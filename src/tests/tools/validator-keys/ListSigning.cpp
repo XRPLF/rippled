@@ -715,6 +715,56 @@ TEST_F(ListSigningTest, append_drops_expired_blobs)
         "The list to append has sequence 7; the document already holds sequence 7");
 }
 
+TEST_F(ListSigningTest, append_counts_only_unexpired_blobs)
+{
+    // The expired blobs are dropped before the append, so only the blobs a
+    // server still reads count toward the limit of five.
+    auto const old = signed2();
+    auto const fresh = parseUnsignedList(unsignedListText(validators_, 8, now_ + 500));
+    auto const current = makeSignedList(
+        publisher_.token.manifest,
+        publisher_.manifest.masterKey,
+        fresh,
+        signList(fresh, publisher_.signingKey, publisher_.token.validationSecret),
+        2,
+        old,
+        now_);
+    auto const& expired = current[jss::blobs_v2][0u];
+    auto const& unexpired = current[jss::blobs_v2][1u];
+    auto const at = list_.expiration;
+    auto const next = parseUnsignedList(unsignedListText(validators_, 9, now_ + 600));
+    auto const nextSig = signList(next, publisher_.signingKey, publisher_.token.validationSecret);
+
+    // A document holding the given numbers of expired and unexpired blobs
+    auto const documentOf = [&](unsigned expiredCount, unsigned unexpiredCount) {
+        auto doc = old;
+        doc[jss::blobs_v2] = json::Value(json::ValueType::Array);
+        for (unsigned i = 0; i < expiredCount; ++i)
+            doc[jss::blobs_v2].append(expired);
+        for (unsigned i = 0; i < unexpiredCount; ++i)
+            doc[jss::blobs_v2].append(unexpired);
+        return doc;
+    };
+    auto const append = [&](json::Value const& doc) {
+        return makeSignedList(
+            publisher_.token.manifest, publisher_.manifest.masterKey, next, nextSig, 2, doc, at);
+    };
+
+    // Five expired blobs leave room for the appended one
+    auto const fromExpired = append(documentOf(5, 0));
+    EXPECT_EQ(fromExpired[jss::blobs_v2].size(), 1u);
+    EXPECT_EQ(fromExpired[jss::blobs_v2][0u][jss::blob].asString(), base64Encode(next.canonical));
+
+    // Four blobs kept and the appended one fill the document
+    auto const filled = append(documentOf(1, 4));
+    EXPECT_EQ(filled[jss::blobs_v2].size(), 5u);
+    EXPECT_EQ(filled[jss::blobs_v2][4u][jss::blob].asString(), base64Encode(next.canonical));
+
+    // Five blobs kept leave no room
+    EXPECT_EQ(
+        errorOf([&] { append(documentOf(0, 5)); }), "The list to append to already holds 5 blobs");
+}
+
 TEST_F(ListSigningTest, append_refuses_malformed_documents)
 {
     std::string const invalidToken = "The token holds an invalid manifest";

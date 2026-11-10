@@ -135,14 +135,14 @@ signList(UnsignedList const& list, PublicKey const& signingKey, SecretKey const&
  * @throws std::runtime_error if @p manifestBase64 does not deserialize and
  *         verify, names no signing key or belongs to another master key than
  *         @p masterKey; or if @p append is not a version 2 document for
- *         @p masterKey, already holds the maximum number of blobs, holds a
- *         malformed entry, holds a manifest that does not deserialize and
- *         verify or has no signing key, holds a manifest for another master
- *         key, holds a manifest whose sequence is not below the token's,
- *         holds a blob under an older manifest, holds a blob whose signature
- *         does not verify under the token's signing key, or holds a blob
- *         whose `sequence` is not below @p list's; or if @p list's
- *         `expiration` is not after @p now
+ *         @p masterKey, already holds the maximum number of blobs that have
+ *         not expired, holds a malformed entry, holds a manifest that does
+ *         not deserialize and verify or has no signing key, holds a manifest
+ *         for another master key, holds a manifest whose sequence is not
+ *         below the token's, holds a blob under an older manifest, holds a
+ *         blob whose signature does not verify under the token's signing key,
+ *         or holds a blob whose `sequence` is not below @p list's; or if
+ *         @p list's `expiration` is not after @p now
  */
 json::Value
 makeSignedList(
