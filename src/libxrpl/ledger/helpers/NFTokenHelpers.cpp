@@ -373,7 +373,7 @@ removeToken(
     if (!remaining)
         return tecNO_ENTRY;
 
-    auto& arr = *remaining;
+    auto const& arr = *remaining;
 
     // Page management:
     auto const loadPage = [&view](NFTokenPageEntryW const& page1, SF_UINT256 const& field) {
