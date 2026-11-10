@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## XRP Ledger server version 3.6.0
+
+Version 3.6.0 is not yet released.
+
+### Bugfixes in 3.6.0
+
+- `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+
 ## XRP Ledger server version 3.5.0
 
 Version 3.5.0 is not yet released.
