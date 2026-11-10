@@ -39,6 +39,16 @@ auto const kTxTypeJsonCases = std::to_array<TxTypeJsonCase>({
         .value = "65535",
         .expected = safeCast<TxType>(std::uint16_t{65'535}),
     },
+    {
+        .name = "max_type_int",
+        .value = 65'535,
+        .expected = safeCast<TxType>(std::uint16_t{65'535}),
+    },
+    {
+        .name = "max_type_uint",
+        .value = 65'535u,
+        .expected = safeCast<TxType>(std::uint16_t{65'535}),
+    },
     {.name = "unknown_name", .value = "Bogus", .expected = kInvalidData},
     {.name = "lowercase_name", .value = "payment", .expected = kInvalidData},
     {.name = "plus_sign_string", .value = "+1", .expected = kInvalidData},
@@ -83,7 +93,7 @@ TEST_P(TxTypeFromJsonTest, reads_transaction_type)
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    transaction_type,
+    TransactionType,
     TxTypeFromJsonTest,
     ::testing::ValuesIn(kTxTypeJsonCases),
     [](::testing::TestParamInfo<TxTypeJsonCase> const& info) {

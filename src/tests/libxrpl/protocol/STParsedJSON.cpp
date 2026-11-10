@@ -45,6 +45,16 @@ auto const kTransactionTypeCases = std::to_array<TransactionTypeCase>({
         .value = "65535",
         .expected = safeCast<TxType>(std::uint16_t{65'535}),
     },
+    {
+        .name = "max_type_int",
+        .value = 65'535,
+        .expected = safeCast<TxType>(std::uint16_t{65'535}),
+    },
+    {
+        .name = "max_type_uint",
+        .value = 65'535u,
+        .expected = safeCast<TxType>(std::uint16_t{65'535}),
+    },
     {.name = "unknown_name", .value = "Bogus", .expected = std::unexpected(kInvalidData)},
     {.name = "lowercase_name", .value = "payment", .expected = std::unexpected(kInvalidData)},
     {.name = "plus_sign_string", .value = "+1", .expected = std::unexpected(kInvalidData)},
@@ -85,7 +95,7 @@ TEST_P(STParsedJSONTest, reads_transaction_type)
     auto const& testCase = GetParam();
 
     json::Value j{json::ValueType::Object};
-    j[jss::TransactionType] = testCase.value;
+    j[sfTransactionType] = testCase.value;
     STParsedJSONObject const parsed("tx_json", j);
 
     auto const type = parsed.object.transform(
@@ -103,7 +113,7 @@ TEST_P(STParsedJSONTest, reads_transaction_type)
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    transaction_type,
+    TransactionType,
     STParsedJSONTest,
     ::testing::ValuesIn(kTransactionTypeCases),
     [](::testing::TestParamInfo<TransactionTypeCase> const& info) {
