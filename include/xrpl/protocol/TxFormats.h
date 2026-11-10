@@ -1,9 +1,11 @@
 #pragma once
 
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/KnownFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
 
 #include <cstdint>
+#include <expected>
 #include <vector>
 
 namespace xrpl {
@@ -143,5 +145,26 @@ public:
     static std::vector<SOElement> const&
     getCommonFields();
 };
+
+/**
+ * Why a JSON value does not read as a transaction type.
+ */
+enum class TxTypeJsonError {
+    BadType,      ///< The value is not a string, an Int or a UInt.
+    InvalidData,  ///< The string names no transaction type, or the number is not in 0 to 65535.
+};
+
+/**
+ * Read a transaction type from the JSON value of a TransactionType field.
+ *
+ * A string whose first character is not a digit is the name of a transaction
+ * type. Any other string, an Int or a UInt is the type's number, which is
+ * accepted in 0 to 65535 without a lookup of the known types.
+ *
+ * @param value The JSON value.
+ * @return The type, or the reason the value does not read as one.
+ */
+[[nodiscard]] std::expected<TxType, TxTypeJsonError>
+txTypeFromJson(json::Value const& value);
 
 }  // namespace xrpl

@@ -1,44 +1,26 @@
 #include <xrpld/app/misc/DeliverMax.h>
 
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
 #include <expected>
 
 namespace xrpl::rpc {
 
 namespace {
 
-// Whether TransactionType is `type` in a form STParsedJSON accepts: its name,
-// its number, or its number as a string.
+// Whether TransactionType reads as `type` through txTypeFromJson.
 [[nodiscard]] bool
 isTxnType(json::Value const& txJson, TxType type)
 {
     if (!txJson.isObject())
         return false;
 
-    auto const& value = txJson[jss::TransactionType];
-    if (value.isInt())
-        return value.asInt() == type;
-    if (value.isUInt())
-        return value.asUInt() == static_cast<json::UInt>(type);
-    if (!value.isString())
-        return false;
-
-    auto const& text = value.asString();
-    if (text.empty() || text[0] < '0' || text[0] > '9')
-    {
-        auto const* const format = TxFormats::getInstance().findByType(type);
-        return format != nullptr && format->getName() == text;
-    }
-
-    std::uint16_t number = 0;
-    return beast::lexicalCastChecked(number, text) && number == type;
+    auto const read = txTypeFromJson(txJson[jss::TransactionType]);
+    return read && *read == type;
 }
 
 // Calls f on each inner transaction object of a Batch, whichever field wraps
