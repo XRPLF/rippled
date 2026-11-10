@@ -6462,7 +6462,7 @@ class Batch_test : public beast::unit_test::Suite
         };
 
         // A Batch of alice's with no inner transactions and Fee left to autofill.
-        auto const emptyBatch = [&]() {
+        auto const emptyBatch = [&] {
             json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
             txJson.removeMember(jss::Fee);
             return txJson;
@@ -6489,13 +6489,17 @@ class Batch_test : public beast::unit_test::Suite
                 auto const& inner = raw[index][wrapper.jsonName];
                 BEAST_EXPECTS(inner[jss::DeliverMax] == drops, inner[jss::DeliverMax].asString());
                 if (apiVersion > 1)
+                {
                     BEAST_EXPECT(!inner.isMember(jss::Amount));
+                }
                 else
+                {
                     BEAST_EXPECTS(inner[jss::Amount] == drops, inner[jss::Amount].asString());
+                }
             }
         };
 
-        auto expectInvalidParams = [&](json::Value const& jr, std::string const& message) {
+        auto const expectInvalidParams = [&](json::Value const& jr, std::string const& message) {
             BEAST_EXPECTS(jr[jss::error] == "invalidParams", jr[jss::error].asString());
             BEAST_EXPECTS(jr[jss::error_message] == message, jr[jss::error_message].asString());
         };

@@ -1510,9 +1510,13 @@ class Simulate_test : public beast::unit_test::Suite
                 jr[jss::engine_result] == "tesSUCCESS", jr[jss::engine_result].asString());
             BEAST_EXPECTS(txJson[jss::DeliverMax] == "1000000", txJson[jss::DeliverMax].asString());
             if (apiVersion > 1)
+            {
                 BEAST_EXPECT(!txJson.isMember(jss::Amount));
+            }
             else
+            {
                 BEAST_EXPECTS(txJson[jss::Amount] == "1000000", txJson[jss::Amount].asString());
+            }
         });
 
         {
