@@ -34,9 +34,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
@@ -642,16 +642,14 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
             // Delegate object should appear in both alice's and bob's directories
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
 
             for (std::uint32_t i = 0; i < 256; ++i)
                 env.close();
@@ -669,8 +667,7 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
             BEAST_EXPECT(!env.closed()->exists(delegateKey));
             // bob's directory should no longer reference the Delegate object
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
             BEAST_EXPECT(env.balance(carol) == carolBalance + aliceBalance - deleteFee);
         }
 
@@ -691,15 +688,13 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), delegateKey.key));
 
             // The Delegate entry counts against alice's ownerCount.
             auto const sleAlice = env.closed()->read(keylet::account(alice.id()));
@@ -724,8 +719,7 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
             BEAST_EXPECT(!env.closed()->exists(delegateKey));
             // alice's directory should no longer reference the Delegate object
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), alice), delegateKey.key));
             BEAST_EXPECT(env.balance(carol) == carolBalance + bobBalance - deleteFee);
 
             // alice's ownerCount is now 0; she can delete her own account.
@@ -760,7 +754,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
-            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](std::vector<SLE::const_pointer> const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -768,10 +762,8 @@ class Delegate_test : public beast::unit_test::Suite
             // Both Delegate objects exist and are in bob's directory
             BEAST_EXPECT(env.closed()->exists(aliceBobKey));
             BEAST_EXPECT(env.closed()->exists(carolBobKey));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), aliceBobKey.key));
-            BEAST_EXPECT(
-                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), carolBobKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), aliceBobKey.key));
+            BEAST_EXPECT(hasKey(ownerDirEntries(*env.closed(), bob), carolBobKey.key));
 
             for (std::uint32_t i = 0; i < 256; ++i)
                 env.close();
@@ -792,10 +784,8 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.closed()->exists(carolBobKey));
 
             // alice's and carol's directories no longer reference the objects
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), aliceBobKey.key));
-            BEAST_EXPECT(
-                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(carol.id())), carolBobKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), alice), aliceBobKey.key));
+            BEAST_EXPECT(!hasKey(ownerDirEntries(*env.closed(), carol), carolBobKey.key));
 
             BEAST_EXPECT(env.balance(dave) == daveBalance + bobBalance - deleteFee);
         }
