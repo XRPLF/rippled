@@ -8,9 +8,13 @@
 
 #include <cstddef>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl {
+
+// STVar moves an inline STBlob with this constructor, and its move is noexcept.
+static_assert(std::is_nothrow_move_constructible_v<STBlob>);
 
 STBlob::STBlob(SerialIter& st, SField const& name) : STBase(name), value_(st.getVLBuffer())
 {
