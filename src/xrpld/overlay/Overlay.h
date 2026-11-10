@@ -194,9 +194,11 @@ public:
      * not parsed again. Otherwise the same as the overload above, with the
      * hash taken from `tx`.
      * @param tx the parsed form of `m`
+     * @param m transaction's protocol message to relay
+     * @param toSkip peers which have already seen this transaction
      */
     virtual void
-    relay(protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip, STTx const& tx) = 0;
+    relay(STTx const& tx, protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip) = 0;
 
     /**
      * Visit every active peer.

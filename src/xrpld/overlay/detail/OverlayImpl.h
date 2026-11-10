@@ -249,7 +249,7 @@ public:
         std::set<Peer::ID> const& skip) override;
 
     void
-    relay(protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip, STTx const& tx)
+    relay(STTx const& tx, protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip)
         override;
 
     std::shared_ptr<Message>

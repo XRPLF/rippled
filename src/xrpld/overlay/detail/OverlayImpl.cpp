@@ -1341,9 +1341,9 @@ OverlayImpl::relay(
 
 void
 OverlayImpl::relay(
+    STTx const& tx,
     protocol::TMTransaction const& m,
-    std::set<Peer::ID> const& toSkip,
-    STTx const& tx)
+    std::set<Peer::ID> const& toSkip)
 {
     if (isPseudoTx(tx))
     {
