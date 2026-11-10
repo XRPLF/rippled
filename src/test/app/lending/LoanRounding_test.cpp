@@ -1807,6 +1807,105 @@ private:
         }
     }
 
+    // An MPT loan whose PeriodicPayment is below one unit and whose management
+    // fee is one unit, so one instalment is all management fee. Without
+    // LendingProtocolV1_2 that instalment (the ninth) is rejected and the loan
+    // can only default. With it the first instalment is fee-only: the borrower
+    // pays the fee, and the vault, owed nothing, receives nothing.
+    void
+    testFeeOnlyInstalment()
+    {
+        LoanRow const row{
+            .name = "fee-only instalment",
+            .assetType = AssetType::MPT,
+            .principal = Number{2},
+            .interestRate = TenthBips32{45'500},
+            .paymentTotal = 12,
+            .paymentInterval = 365 * 24 * 60 * 60,
+            .managementFeeRate = TenthBips16{10'000},
+            .mptAssetScale = 1,
+            .vaultDeposit = Number{1'000},
+            .borrowerFunds = Number{1'000},
+        };
+
+        struct Instalment
+        {
+            TER ter;
+            Number value;
+            Number managementFee;
+            Number vaultCredit;
+            Number debtTotalDrop;
+        };
+
+        for (auto const& version : versionCases())
+        {
+            if (version.features[featureLendingProtocolV1_2])
+                continue;
+            for (bool const enableV12 : {false, true})
+            {
+                testcase << "Fee-only instalment: " << version.name
+                         << (enableV12 ? ", with" : ", without") << " LendingProtocolV1_2";
+                withLoan(
+                    version.features, enableV12, row, 0, [&](jtx::Env& env, LoanContext const& c) {
+                        auto const assetsAvailable = [&] {
+                            return Number{env.le(c.broker.vaultKeylet())->at(sfAssetsAvailable)};
+                        };
+                        auto const debtTotal = [&] {
+                            return Number{env.le(c.broker.brokerKeylet())->at(sfDebtTotal)};
+                        };
+                        auto const payNext = [&] {
+                            auto const before = env.le(c.loanKeylet);
+                            Number const availableBefore = assetsAvailable();
+                            Number const debtTotalBefore = debtTotal();
+                            TER const ter = payInstalment(env, c);
+                            auto const after = env.le(c.loanKeylet);
+                            return Instalment{
+                                .ter = ter,
+                                .value = before->at(sfTotalValueOutstanding) -
+                                    after->at(sfTotalValueOutstanding),
+                                .managementFee = before->at(sfManagementFeeOutstanding) -
+                                    after->at(sfManagementFeeOutstanding),
+                                .vaultCredit = assetsAvailable() - availableBefore,
+                                .debtTotalDrop = debtTotalBefore - debtTotal(),
+                            };
+                        };
+                        // An instalment that credits the vault nothing leaves DebtTotal alone.
+                        auto const expectInstalment = [&](Instalment const& paid,
+                                                          TER ter,
+                                                          int value,
+                                                          int managementFee,
+                                                          int vaultCredit) {
+                            BEAST_EXPECT(paid.ter == ter);
+                            BEAST_EXPECT(paid.value == value);
+                            BEAST_EXPECT(paid.managementFee == managementFee);
+                            BEAST_EXPECT(paid.vaultCredit == vaultCredit);
+                            if (vaultCredit == 0)
+                                BEAST_EXPECT(paid.debtTotalDrop == 0);
+                        };
+
+                        auto const loan = env.le(c.loanKeylet);
+                        BEAST_EXPECT(loan->at(sfLoanScale) == 0);
+                        BEAST_EXPECT(loan->at(sfTotalValueOutstanding) == 12);
+                        BEAST_EXPECT(loan->at(sfManagementFeeOutstanding) == 1);
+
+                        if (!enableV12)
+                        {
+                            for (int n = 1; n <= 8; ++n)
+                                expectInstalment(payNext(), tesSUCCESS, 1, 0, 1);
+                            expectInstalment(payNext(), tecPRECISION_LOSS, 0, 0, 0);
+                            BEAST_EXPECT(env.le(c.loanKeylet)->at(sfPaymentRemaining) == 4);
+                            return;
+                        }
+
+                        expectInstalment(payNext(), tesSUCCESS, 1, 1, 0);
+                        for (int n = 2; n <= 12; ++n)
+                            expectInstalment(payNext(), tesSUCCESS, 1, 0, 1);
+                        expectPaidOff(env, c.loanKeylet);
+                    });
+            }
+        }
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -1827,6 +1926,7 @@ private:
         testOverpaymentRealignsValue();
         testWithoutAmendment();
         testUpgrade();
+        testFeeOnlyInstalment();
     }
 
     // Tests run under each entry in amendmentCombinations().

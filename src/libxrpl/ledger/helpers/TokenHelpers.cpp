@@ -1558,6 +1558,11 @@ accountSendMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
+    XRPL_ASSERT_PARTS(
+        std::ranges::all_of(receivers, [](auto const& r) { return r.second >= 0; }),
+        "xrpl::accountSendMultiMPT",
+        "non-negative amounts");
+
     STAmount actual;
 
     return directSendNoLimitMultiMPT(view, senderID, mptIssue, receivers, actual, j, waiveFee);
@@ -1620,6 +1625,10 @@ accountSendMulti(
 {
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
+    XRPL_ASSERT_PARTS(
+        std::ranges::all_of(receivers, [](auto const& r) { return r.second >= 0; }),
+        "xrpl::accountSendMulti",
+        "non-negative amounts");
     return asset.visit(
         [&](Issue const& issue) {
             return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
