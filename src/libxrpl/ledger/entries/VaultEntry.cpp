@@ -8,6 +8,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 
+#include <utility>
+
 namespace xrpl {
 
 template <typename ViewT>
