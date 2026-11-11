@@ -1,4 +1,4 @@
-#include <xrpl/basics/Once.hpp>
+#include <xrpl/basics/Once.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

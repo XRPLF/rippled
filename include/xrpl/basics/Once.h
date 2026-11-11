@@ -41,8 +41,7 @@ public:
     getOrInit(F&& init)
     {
         std::call_once(flag_, [&] { data_.emplace(std::invoke(std::forward<F>(init))); });
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) call_once returns only after emplace
-        return *data_;
+        return *data_;  // NOLINT(bugprone-unchecked-optional-access) set by call_once
     }
 };
 
