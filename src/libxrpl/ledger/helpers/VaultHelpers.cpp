@@ -557,7 +557,7 @@ assetsToSharesDeposit(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
-    VaultRounding rounding)
+    VaultRounding const rounding)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -587,7 +587,7 @@ sharesToAssetsDeposit(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
-    VaultRounding rounding)
+    VaultRounding const rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -737,7 +737,7 @@ assetsToSharesWithdraw(
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive,
-    VaultRounding rounding)
+    VaultRounding const rounding)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
@@ -767,7 +767,7 @@ sharesToAssetsWithdraw(
     SLE::ConstRef issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive,
-    VaultRounding rounding)
+    VaultRounding const rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(

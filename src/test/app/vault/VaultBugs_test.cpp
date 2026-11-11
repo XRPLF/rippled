@@ -1288,10 +1288,16 @@ private:
         };
 
         {
+            // fixCleanup3_6_0 also truncates the share count, independently of fixCleanup3_4_0,
+            // so it must be disabled too to reproduce the bug.
             testcase(
                 "bug: VaultClawback round-trip overshoot lets issuer recover "
                 "more than requested (pre-fixCleanup3_4_0)");
-            runScenario(cashBasisAll_ - fixCleanup3_4_0, false);
+            runScenario(cashBasisAll_ - fixCleanup3_4_0 - fixCleanup3_6_0, false);
+        }
+        {
+            testcase("bug: VaultClawback round-trip overshoot is clamped by fixCleanup3_6_0 alone");
+            runScenario(cashBasisAll_ - fixCleanup3_4_0, true);
         }
         {
             testcase(

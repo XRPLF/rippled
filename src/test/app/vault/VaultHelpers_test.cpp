@@ -593,14 +593,15 @@ private:
         Asset const& asset,
         MPTID const& shareMPT,
         Number const& assetsTotal,
-        std::uint64_t sharesTotal)
+        std::uint64_t sharesTotal,
+        Number const& lossUnrealized = Number(0))
     {
         auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
         vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
         vault->at(sfShareMPTID) = shareMPT;
         vault->at(sfScale) = std::uint8_t(0);
         vault->at(sfAssetsTotal) = assetsTotal;
-        vault->at(sfLossUnrealized) = Number(0);
+        vault->at(sfLossUnrealized) = lossUnrealized;
         associateAsset(*vault, asset);
 
         auto issuance = std::make_shared<SLE>(keylet::mptokenIssuance(shareMPT));
@@ -820,6 +821,79 @@ private:
         BEAST_EXPECT(payoutPlusOne && *payoutPlusOne == STAmount(asset, Number(offered + 1)));
     }
 
+    // An impaired loan leaves LossUnrealized on the vault. Unless it is
+    // waived, both withdraw conversions value the vault at AssetsTotal -
+    // LossUnrealized, and FavorVault feeds that difference to the exact
+    // integer path. These cases check it picks the right total for each
+    // WaiveUnrealizedLoss value, and still rounds in the vault's favor.
+    void
+    testWithdrawWithUnrealizedLoss(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Withdraw with unrealized loss (" + to_string(asset) + ")");
+
+        // AssetsTotal 100 with 9 unrealized: 91 if the loss counts, 100 if
+        // it is waived. 3 shares outstanding.
+        auto const [vault, issuance] =
+            makeVaultAndIssuance(asset, shareMPT, Number(100), 3, Number(9));
+
+        auto const payout = [&](std::uint64_t shares,
+                                WaiveUnrealizedLoss waive,
+                                VaultRounding rounding) -> std::uint64_t {
+            STAmount const amount{MPTIssue{shareMPT}, Number(shares)};
+            auto const assets = sharesToAssetsWithdraw(vault, issuance, amount, waive, rounding);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+        auto const burned = [&](std::int64_t assets,
+                                WaiveUnrealizedLoss waive,
+                                VaultRounding rounding) -> std::uint64_t {
+            STAmount const amount{asset, Number(assets)};
+            auto const shares = assetsToSharesWithdraw(
+                vault, issuance, amount, TruncateShares::Yes, waive, rounding);
+            BEAST_EXPECT(shares.has_value());
+            return shares ? shares->mantissa() : 0;
+        };
+
+        // Loss counts: 2 shares are worth 91 * 2 / 3 = 60.67.
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::No, VaultRounding::Legacy) == 61);
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::No, VaultRounding::FavorVault) == 60);
+
+        // Loss waived: 2 shares are worth 100 * 2 / 3 = 66.67.
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::Yes, VaultRounding::Legacy) == 67);
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::Yes, VaultRounding::FavorVault) == 66);
+
+        // Withdrawing 64 assets: 3 * 64 / 91 = 2.11 shares if the loss
+        // counts, 3 * 64 / 100 = 1.92 if it is waived. Both truncate.
+        BEAST_EXPECT(burned(64, WaiveUnrealizedLoss::No, VaultRounding::FavorVault) == 2);
+        BEAST_EXPECT(burned(64, WaiveUnrealizedLoss::Yes, VaultRounding::FavorVault) == 1);
+
+        // Large totals stay exact with a loss: 1'000'000'000'000'016 - 9 =
+        // 1'000'000'000'000'007 = SharesTotal, so the price is exactly 1 and
+        // 123'456'789 shares pay exactly 123'456'789. Waiving the loss values
+        // them at 123'456'789.0000000011, which still floors to 123'456'789.
+        {
+            std::int64_t const offered = 123'456'789;
+            auto const [bigVault, bigIssuance] = makeVaultAndIssuance(
+                asset, shareMPT, Number(1'000'000'000'000'016), 1'000'000'000'000'007, Number(9));
+            STAmount const shares{MPTIssue{shareMPT}, Number(offered)};
+            STAmount const exact{asset, Number(offered)};
+            for (auto const waive : {WaiveUnrealizedLoss::No, WaiveUnrealizedLoss::Yes})
+            {
+                auto const paid = sharesToAssetsWithdraw(
+                    bigVault, bigIssuance, shares, waive, VaultRounding::FavorVault);
+                BEAST_EXPECT(paid && *paid == exact);
+            }
+            auto const burnedShares = assetsToSharesWithdraw(
+                bigVault,
+                bigIssuance,
+                exact,
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::No,
+                VaultRounding::FavorVault);
+            BEAST_EXPECT(burnedShares && *burnedShares == shares);
+        }
+    }
+
     // IOU conversions are deliberately left on the Legacy arithmetic: an IOU
     // result is not exact anyway, and the callers' scale clamps already round
     // IOU amounts in the vault's favor.
@@ -868,6 +942,7 @@ public:
             testDepositRoundingFavorsVault(asset, shareMPT);
             testWithdrawRoundingFavorsVault(asset, shareMPT);
             testLargeTotalsAreExact(asset, shareMPT);
+            testWithdrawWithUnrealizedLoss(asset, shareMPT);
         }
         testIouConversionsUnchanged(iou, shareMPT);
     }

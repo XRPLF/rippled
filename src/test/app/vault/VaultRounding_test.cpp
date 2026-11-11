@@ -26,18 +26,19 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 
 namespace xrpl {
 
 /**
- * Share<->asset rounding in VaultDeposit and VaultWithdraw for vaults that
- * hold an integral asset (MPT here; XRP takes the same code path).
+ * Share<->asset rounding in VaultDeposit, VaultWithdraw and VaultClawback for
+ * vaults that hold an integral asset (MPT here; XRP takes the same code path).
  *
  * Pre-fixCleanup3_6_0 the conversions round to nearest, so a depositor can be
  * charged less than the fair value of the shares they receive, and a
- * withdrawer can be paid more than the fair value of the shares they burn.
- * Either way the other shareholders cover the difference. Post-fixCleanup3_6_0
+ * withdrawer, or a clawing-back issuer, can recover more than the fair value of
+ * the shares burned. Either way the other shareholders cover the difference. Post-fixCleanup3_6_0
  * the conversions are exact and round in the vault's favor.
  *
  * Every scenario runs on a CashBasis vault (LendingProtocolV1_2 off) and a
@@ -78,7 +79,7 @@ class VaultRounding_test : public VaultTestBase
         env.close();
 
         MPTTester mpt{env, f.issuer, kMptInitNoFund};
-        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanClawback});
         f.assetID = mpt.issuanceID();
         PrettyAsset const asset{f.assetID};
         for (auto const& account : {f.owner, f.alice, f.bob})
@@ -368,6 +369,129 @@ class VaultRounding_test : public VaultTestBase
         }
     }
 
+    // Price 100/3 with alice holding 2 shares and bob 1. Clawing back from
+    // alice burns 2 shares worth 66.67, whether the issuer names all of her
+    // shares (no amount) or 67 assets (which truncates to 2 shares).
+    // Round-to-nearest recovers 67 and leaves bob's share backed by 33.
+    // Post-amendment the recovery is 66 and bob's share keeps 34.
+    void
+    testClawbackRecoveryFavorsVault()
+    {
+        using namespace test::jtx;
+
+        forEachVersion([&](FeatureBitset features, bool fixed, std::string const& name) {
+            for (bool const allShares : {true, false})
+            {
+                testcase(
+                    std::string{"Clawback recovery rounds down, "} +
+                    (allShares ? "all shares: " : "by amount: ") + name);
+                withVault(features, 2, 1, 2, [&](Env& env, Vault& vault, Fixture const& f) {
+                    PrettyAsset const asset{f.assetID};
+                    env(vault.deposit(
+                        {.depositor = f.bob, .id = f.keylet.key, .amount = asset(1)}));
+                    env.close();
+                    shiftVaultAssets(env, f, 97);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 100);
+
+                    std::optional<STAmount> amount;
+                    if (!allShares)
+                        amount = asset(67);
+                    env(vault.clawback(
+                            {.issuer = f.issuer,
+                             .id = f.keylet.key,
+                             .holder = f.alice,
+                             .amount = amount}),
+                        Ter(tesSUCCESS));
+
+                    std::uint64_t const recovered = fixed ? 66 : 67;
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 0);
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.bob) == 1);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 100 - recovered);
+                    // Post-amendment bob's share is still backed by at least 100 / 3.
+                    BEAST_EXPECT((vaultTotal(env, f.keylet) * 3 >= 100) == fixed);
+                });
+            }
+        });
+    }
+
+    // Price 7/30 with alice holding 26 shares and bob 4. Clawing back all of
+    // bob's shares, or 1 asset from alice (which truncates to 4 shares), is
+    // worth 0.93. Pre-amendment that rounds to 1. Post-amendment it rounds
+    // down to 0, and burning shares without debiting the vault would break
+    // the clawback invariant, so the transaction fails with tecPRECISION_LOSS.
+    void
+    testClawbackZeroRecoveryRejected()
+    {
+        using namespace test::jtx;
+
+        forEachVersion([&](FeatureBitset features, bool fixed, std::string const& name) {
+            for (bool const allShares : {true, false})
+            {
+                testcase(
+                    std::string{"Clawback zero recovery rejected, "} +
+                    (allShares ? "all shares: " : "by amount: ") + name);
+                withVault(features, 26, 4, 26, [&](Env& env, Vault& vault, Fixture const& f) {
+                    PrettyAsset const asset{f.assetID};
+                    env(vault.deposit(
+                        {.depositor = f.bob, .id = f.keylet.key, .amount = asset(4)}));
+                    env.close();
+                    shiftVaultAssets(env, f, -23);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 7);
+
+                    auto const& holder = allShares ? f.bob : f.alice;
+                    std::uint64_t const sharesBefore = allShares ? 4 : 26;
+                    std::optional<STAmount> amount;
+                    if (!allShares)
+                        amount = asset(1);
+                    env(vault.clawback(
+                            {.issuer = f.issuer,
+                             .id = f.keylet.key,
+                             .holder = holder,
+                             .amount = amount}),
+                        Ter(fixed ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
+
+                    BEAST_EXPECT(
+                        mptBalance(env, f.shareID, holder) ==
+                        (fixed ? sharesBefore : sharesBefore - 4));
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == (fixed ? 7 : 6));
+                });
+            }
+        });
+    }
+
+    // Without fixCleanup3_4_0 a clawback by amount rounds the share count to
+    // nearest: at price 100/3, clawing back 50 burns round(1.5) = 2 shares
+    // and recovers 67, more than requested. fixCleanup3_6_0 truncates the
+    // share count on its own: 1 share, recovering 33.
+    void
+    testClawbackSharesTruncatedWithoutFix340()
+    {
+        using namespace test::jtx;
+
+        FeatureBitset const base = all_ - featureLendingProtocolV1_2 - fixCleanup3_4_0;
+        for (bool const fixed : {false, true})
+        {
+            testcase(
+                std::string{"Clawback share count truncated without fixCleanup3_4_0, "} +
+                (fixed ? "post" : "pre") + "-fixCleanup3_6_0");
+            withVault(
+                fixed ? base : base - fixCleanup3_6_0,
+                3,
+                0,
+                3,
+                [&](Env& env, Vault& vault, Fixture const& f) {
+                    shiftVaultAssets(env, f, 97);
+                    env(vault.clawback(
+                        {.issuer = f.issuer,
+                         .id = f.keylet.key,
+                         .holder = f.alice,
+                         .amount = PrettyAsset{f.assetID}(50)}));
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == (fixed ? 2 : 1));
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == (fixed ? 67 : 33));
+                });
+        }
+    }
+
 public:
     void
     run() override
@@ -377,6 +501,9 @@ public:
         testLargeTotalsDepositAndWithdraw();
         testZeroPayoutRejected();
         testWithdrawSharesTruncatedWithoutFix340();
+        testClawbackRecoveryFavorsVault();
+        testClawbackZeroRecoveryRejected();
+        testClawbackSharesTruncatedWithoutFix340();
     }
 };
 
