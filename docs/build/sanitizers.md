@@ -101,11 +101,10 @@ More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCpp
 
 > [!IMPORTANT]
 > The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
-> `workflow_dispatch` events, so TSan runs nightly, on a manual run of the
-> Trigger workflow and on a pull request labeled "Full CI build", not in the
-> merge queue or a tag build. The
-> job cannot fail yet: `halt_on_error=false` continues past a finding, and the
-> workflow adds `exitcode=0` to `TSAN_OPTIONS`, so read the job log for
+> `workflow_dispatch` events, so TSan runs nightly and on a manual run of the
+> Trigger workflow, not on a pull request, in the merge queue or in a tag build.
+> The job cannot fail yet: `halt_on_error=false` continues past a finding, and
+> the workflow adds `exitcode=0` to `TSAN_OPTIONS`, so read the job log for
 > findings. Once the findings are known and stable, drop `exitcode=0` so a new
 > one fails the job, and suppress the rest.
 
