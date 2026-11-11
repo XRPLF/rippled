@@ -492,6 +492,44 @@ class VaultRounding_test : public VaultTestBase
         }
     }
 
+    // Without fixCleanup3_1_3 a clawback of all shares takes a separate,
+    // unclamped path. fixCleanup3_6_0 must still round its recovery down: at
+    // price 100/3, alice's 2 shares are worth 66.67, so the issuer recovers
+    // 66 rather than 67 and bob's share stays backed by at least 100 / 3.
+    void
+    testClawbackAllSharesRoundsDownWithoutFix313()
+    {
+        using namespace test::jtx;
+
+        FeatureBitset const base = all_ - featureLendingProtocolV1_2 - fixCleanup3_1_3;
+        for (bool const fixed : {false, true})
+        {
+            testcase(
+                std::string{"Clawback all shares rounds down without fixCleanup3_1_3, "} +
+                (fixed ? "post" : "pre") + "-fixCleanup3_6_0");
+            withVault(
+                fixed ? base : base - fixCleanup3_6_0,
+                2,
+                1,
+                2,
+                [&](Env& env, Vault& vault, Fixture const& f) {
+                    PrettyAsset const asset{f.assetID};
+                    env(vault.deposit(
+                        {.depositor = f.bob, .id = f.keylet.key, .amount = asset(1)}));
+                    env.close();
+                    shiftVaultAssets(env, f, 97);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 100);
+
+                    env(vault.clawback({.issuer = f.issuer, .id = f.keylet.key, .holder = f.alice}),
+                        Ter(tesSUCCESS));
+
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 0);
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.bob) == 1);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == (fixed ? 34 : 33));
+                });
+        }
+    }
+
 public:
     void
     run() override
@@ -504,6 +542,7 @@ public:
         testClawbackRecoveryFavorsVault();
         testClawbackZeroRecoveryRejected();
         testClawbackSharesTruncatedWithoutFix340();
+        testClawbackAllSharesRoundsDownWithoutFix313();
     }
 };
 

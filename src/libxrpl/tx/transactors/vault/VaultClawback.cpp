@@ -268,12 +268,14 @@ VaultClawback::assetsToClawback(
     // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
-    // ledger replay compatibility.
+    // ledger replay compatibility. fixCleanup3_6_0 rounding still applies
+    // here, since the amendments can be enabled in either order.
     if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+        auto const maybeAssets = sharesToAssetsWithdraw(
+            vault, sleShareIssuance, sharesDestroyed, WaiveUnrealizedLoss::No, rounding);
         if (!maybeAssets)
             return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
