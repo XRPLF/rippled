@@ -12,7 +12,6 @@
           "merge_group",
           "push",
           "schedule",
-          "tag",
           "workflow_dispatch"
         ],
         "suffix": "coverage",
@@ -21,14 +20,13 @@
       {
         "compiler": ["clang"],
         "build_type": ["Release"],
-        "arch": ["amd64"],
+        "arch": ["arm64"],
         "events": [
           "pull_request",
           "ready_to_merge",
           "merge_group",
           "push",
           "schedule",
-          "tag",
           "workflow_dispatch"
         ],
         "benchmark": true
@@ -36,19 +34,6 @@
 
       {
         "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "events": [
-          "ready_to_merge",
-          "merge_group",
-          "push",
-          "schedule",
-          "tag",
-          "workflow_dispatch"
-        ]
-      },
-      {
-        "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
         "arch": ["arm64"],
         "events": [
@@ -56,31 +41,28 @@
           "merge_group",
           "push",
           "schedule",
-          "tag",
+          "workflow_dispatch"
+        ]
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Debug"],
+        "arch": ["arm64"],
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
           "workflow_dispatch"
         ]
       },
 
       {
         "compiler": ["gcc", "clang"],
-        "build_type": ["Debug", "Release"],
-        "arch": ["amd64"],
-        "events": [
-          "ready_to_merge",
-          "merge_group",
-          "push",
-          "schedule",
-          "tag",
-          "workflow_dispatch"
-        ],
-        "sanitizers": ["address", "undefinedbehavior"]
-      },
-      {
-        "compiler": ["clang"],
         "build_type": ["Debug"],
         "arch": ["amd64"],
         "events": ["schedule", "workflow_dispatch"],
-        "sanitizers": ["thread"]
+        "sanitizers": ["address", "undefinedbehavior"]
       },
 
       {
@@ -101,13 +83,12 @@
       {
         "compiler": ["clang"],
         "build_type": ["Release"],
-        "arch": ["amd64"],
+        "arch": ["arm64"],
         "events": [
           "ready_to_merge",
           "merge_group",
           "push",
           "schedule",
-          "tag",
           "workflow_dispatch"
         ],
         "suffix": "reffee",
@@ -116,13 +97,12 @@
       {
         "compiler": ["gcc"],
         "build_type": ["Debug"],
-        "arch": ["amd64"],
+        "arch": ["arm64"],
         "events": [
           "ready_to_merge",
           "merge_group",
           "push",
           "schedule",
-          "tag",
           "workflow_dispatch"
         ],
         "suffix": "unity",
@@ -167,6 +147,59 @@
           "type": "deb",
           "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
           "variant": "assert"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
+        "sanitizers": ["address"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "asan"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
+        "sanitizers": ["undefinedbehavior"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "ubsan"
+        }
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "events": ["schedule", "tag", "workflow_dispatch"],
+        "sanitizers": ["thread"],
+        "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
+        "package": {
+          "type": "deb",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "variant": "tsan"
         }
       }
     ],

@@ -73,9 +73,22 @@ apt-get install xrpld-assert # apt removes the plain package itself
 dnf swap xrpld xrpld-VARIANT # 'dnf install' alone stops at the conflict
 ```
 
-Only the DEB packages carry a variant today — `xrpld-assert` comes from the
-`debian` config alone, there being no call for an assert build on RHEL-based
-distributions — but the RPM side works the same way if one is added.
+Only the DEB packages carry a variant today, each from a `debian` config:
+`xrpld-assert` from the `-Dassert=ON` build, and `xrpld-asan`, `xrpld-ubsan` and
+`xrpld-tsan` from the clang Release builds with one sanitizer each and asserts
+on. There is no call for them on RHEL-based distributions, but the RPM side
+works the same way if one is added. `xrpld-asan` and `xrpld-ubsan` are built
+wherever the plain packages are: in the merge queue, on a push, for a pull
+request labeled "Ready to merge" or "Merge CI", nightly, on a manual run of the
+Trigger workflow and on a tag.
+`xrpld-tsan`, the slowest CI job by far, is built only nightly, on a manual run
+of the Trigger workflow and on a tag.
+`docs/build/sanitizers.md` describes what the binaries report and how to read
+it. `xrpld-tsan` re-executes itself with ASLR disabled when the kernel's address
+layout does not suit TSan, so a sandbox that blocks `personality()`, such as
+Docker's default seccomp profile, stops it with `FATAL: ThreadSanitizer:
+encountered an incompatible memory layout`. Run such a container with
+`--security-opt seccomp=unconfined`.
 
 A switch is a removal plus an installation rather than an upgrade, so unlike a
 version upgrade it stops the service: Debian's scriptlets start it again, while
@@ -198,8 +211,12 @@ The package version is not a CMake input on this path: `build_pkg.py` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
 release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
-`-Dassert=ON` passes `--variant assert`, so such a build packages as
-`xrpld-assert` without anything else being asked for.
+A build with one sanitizer passes `--variant asan`, `ubsan` or `tsan`, and
+otherwise `-Dassert=ON` passes `--variant assert`, so such a build packages
+under its own name without anything else being asked for. A build with two
+sanitizers has no variant, so it gets no `package` target. A sanitizer variant
+drops the build metadata its binary reports, since its name already carries the
+sanitizer; the stable channel would reject the metadata.
 
 ## Publishing packages
 

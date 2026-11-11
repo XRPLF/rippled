@@ -8,6 +8,7 @@ or under pytest:
     pytest .github/scripts/strategy-matrix/test_generate.py
 """
 
+import re
 import sys
 from typing import Any
 
@@ -19,6 +20,8 @@ EVENTS = tuple(g.Event)
 CONFIGS = [c for cfgs in LINUX.configs.values() for c in cfgs] + [
     c for pf in PLATFORMS for c in pf.configs
 ]
+PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
+STAGE_TWO = (g.Event.READY_TO_MERGE, g.Event.MERGE_GROUP, g.Event.PUSH)
 
 
 def build_names(event: g.Event) -> list[str]:
@@ -139,6 +142,14 @@ def test_disabled_config_is_named_by_its_entries() -> None:
     assert g.entry_names("macos/arm64", platform) == ["macos-arm64-release-nix"]
 
 
+def test_packaged_config_has_one_sanitizer_at_most() -> None:
+    package = {"type": "deb", "image": "debian:trixie"}
+    assert not rejected(package=package, events=[g.Event.TAG], sanitizers=["address"])
+    assert rejected(
+        package=package, events=[g.Event.TAG], sanitizers=["address", "thread"]
+    )
+
+
 # --- invariants over the JSON files -------------------------------------------
 
 
@@ -154,10 +165,36 @@ def test_schedule_and_dispatch_build_every_config() -> None:
         assert g.Event.WORKFLOW_DISPATCH in cfg.events, cfg
 
 
-def test_merge_queue_builds_what_ready_to_merge_builds() -> None:
-    assert set(build_names(g.Event.READY_TO_MERGE)) <= set(
+def test_pull_request_builds_part_of_stage_two() -> None:
+    assert set(build_names(g.Event.PULL_REQUEST)) <= set(
         build_names(g.Event.MERGE_GROUP)
     )
+
+
+def test_stage_two_events_build_the_same_matrix() -> None:
+    for event in STAGE_TWO:
+        assert set(build_names(event)) == set(build_names(g.Event.MERGE_GROUP)), event
+        assert g.expand_linux_packaging(LINUX, event) == g.expand_linux_packaging(
+            LINUX, g.Event.MERGE_GROUP
+        ), event
+
+
+def test_tag_builds_only_what_it_publishes() -> None:
+    # Besides each packaged config's own artifacts, the packaging workflow
+    # downloads some by a literal name, such as the voidstar binary.
+    literal = set(
+        re.findall(
+            r"^\s*name: xrpld-([a-z0-9-]+)\s*$",
+            PACKAGE_WORKFLOW.read_text(),
+            re.MULTILINE,
+        )
+    )
+    assert literal
+    packaged = {
+        e.xrpld_artifact_name.removeprefix("xrpld-")
+        for e in g.expand_linux_packaging(LINUX, g.Event.TAG)
+    }
+    assert set(build_names(g.Event.TAG)) == packaged | literal
 
 
 def test_packaging_consumes_what_the_same_event_builds() -> None:

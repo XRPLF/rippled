@@ -54,7 +54,10 @@ include(default)
     {% endif %}
 {% endif %}
 
-{# Frame pointer required for meaningful stack traces; -O1 for reasonable performance #}
+{# Frame pointer required for meaningful stack traces; -O1 for reasonable performance. #}
+{# tools.build:cxxflags puts -O1 ahead of the build type's own flags, so a Release build #}
+{# keeps its -O3 and a clang Debug build gets -O1 (xrpld adds -O0 to a gcc Debug build). #}
+{# It is left out of SANITIZERS_COMPILER_FLAGS, which would override Release with -O1. #}
 {% set sanitizer_compiler_flags = ["-fno-omit-frame-pointer", "-O1"] %}
 
 {% if compiler == "gcc" %}
@@ -98,7 +101,7 @@ tools.build:exelinkflags+={{ sanitizer_linker_flags }}
 tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
 
 # &: means "apply only to the consumer/root package"
-&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{ sanitizers }}", "SANITIZERS_COMPILER_FLAGS": "{{ sanitizer_compiler_flags | join(' ') }}", "SANITIZERS_LINKER_FLAGS": "{{ sanitizer_linker_flags | join(' ') }}"}
+&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{ sanitizers }}", "SANITIZERS_COMPILER_FLAGS": "{{ sanitizer_compiler_flags | reject('eq', '-O1') | join(' ') }}", "SANITIZERS_LINKER_FLAGS": "{{ sanitizer_linker_flags | join(' ') }}"}
 
 [options]
 {% if enable_asan %}

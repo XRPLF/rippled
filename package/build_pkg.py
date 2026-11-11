@@ -36,7 +36,11 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-VARIANTS = ("", "assert")
+VARIANTS = ("", "assert", "asan", "ubsan", "tsan")
+
+# The variants whose binary reports its sanitizer as build metadata, which the
+# stable channel rejects and the variant name already carries.
+SANITIZER_VARIANTS = ("asan", "ubsan", "tsan")
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -320,8 +324,8 @@ def main() -> None:
         "--variant",
         default="",
         choices=VARIANTS,
-        help="the flavour of the package to build: 'assert' produces "
-        "xrpld-assert, which ships the same paths as xrpld and replaces it "
+        help="the flavour of the package to build: a variant V produces "
+        "xrpld-V, which ships the same paths as xrpld and replaces it "
         "(default: the plain xrpld package)",
     )
     parser.add_argument(
@@ -345,6 +349,8 @@ def main() -> None:
 
     check_binaries(build_dir)
     reported = read_version(build_dir / "xrpld")
+    if variant in SANITIZER_VARIANTS:
+        reported = reported.partition("+")[0]
     version = package_version(reported, channel)
     epoch = source_date_epoch()
 

@@ -42,6 +42,12 @@ Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with
    > [!NOTE]
    > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
 
+   > [!NOTE]
+   > The profile adds `-O1` ahead of the build type's own flags, so a Release
+   > build keeps its `-O3` and a clang Debug build compiles at `-O1`. A gcc Debug
+   > build compiles at `-O0`, which `cmake/XrplCompiler.cmake` adds after the
+   > profile's flags.
+
 4. Set `ASAN_OPTIONS`, `LSAN_OPTIONS`, `UBSAN_OPTIONS` and `TSAN_OPTIONS` environment variables to configure sanitizer behavior when running executables. [More details below](#running-tests-with-sanitizers).
 
 ---
@@ -100,9 +106,10 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
 > [!IMPORTANT]
-> The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
-> `workflow_dispatch` events, so TSan runs nightly and on a manual run of the
-> Trigger workflow, not on a pull request, in the merge queue or in a tag build.
+> The `debian-clang-release-amd64-tsan` CI config lists only the `schedule`,
+> `tag` and `workflow_dispatch` events, so TSan runs nightly, on a manual run of
+> the Trigger workflow and in a tag build, not on a pull request or in the merge
+> queue.
 > The job cannot fail yet: `halt_on_error=false` continues past a finding, and
 > the workflow adds `exitcode=0` to `TSAN_OPTIONS`, so read the job log for
 > findings. Once the findings are known and stable, drop `exitcode=0` so a new
