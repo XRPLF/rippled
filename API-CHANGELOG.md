@@ -22,6 +22,15 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Bugfixes
+
+- `account_tx`, `ledger`, `sign`, `sign_for`, `submit`, `submit_multisigned`, `subscribe` (transaction streams), `transaction_entry`, `tx`, `tx_history`: A Payment inside the `RawTransactions` of a Batch now follows the same `DeliverMax` rule as any other Payment: `Amount` and `DeliverMax` in API version 1, and only `DeliverMax` in API version 2 and later. Previously an inner Payment showed only `Amount` in every API version. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `sign`, `sign_for`, `submit`, `submit_multisigned`: An inner Payment of a Batch now accepts `DeliverMax` in place of `Amount`, as a top-level Payment already did; differing `Amount` and `DeliverMax` return `invalidParams`. Previously `DeliverMax` in an inner Payment was rejected as an unknown field. A request whose Payment has differing `Amount` and `DeliverMax` now reports that error before `srcActNotFound` or a fee error, and in `sign` and `submit` also before a missing `Sequence`. A Payment whose `TransactionType` is a number or a string of digits now accepts `DeliverMax` and gets the same checks as one named `Payment`, so a missing `Destination` returns "Missing field 'tx_json.Destination'.". A Payment sent with `DeliverMax` gets its autofilled `Fee` from the open ledger's base fee for that transaction instead of the configured reference fee. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `simulate`: A Payment now accepts `DeliverMax` in place of `Amount`, and the returned `tx_json` follows the `DeliverMax` rule. Previously `DeliverMax` was rejected as an unknown field and the returned `tx_json` showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+- `submit`: With `tx_blob`, the returned `tx_json` now follows the `DeliverMax` rule. Previously it showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
+
 ## XRP Ledger server version 3.6.0
 
 Version 3.6.0 is not yet released.
@@ -29,10 +38,6 @@ Version 3.6.0 is not yet released.
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
-- `account_tx`, `ledger`, `sign`, `sign_for`, `submit`, `submit_multisigned`, `subscribe` (transaction streams), `transaction_entry`, `tx`, `tx_history`: A Payment inside the `RawTransactions` of a Batch now follows the same `DeliverMax` rule as any other Payment: `Amount` and `DeliverMax` in API version 1, and only `DeliverMax` in API version 2 and later. Previously an inner Payment showed only `Amount` in every API version. [#8558](https://github.com/XRPLF/rippled/pull/8558)
-- `sign`, `sign_for`, `submit`, `submit_multisigned`: An inner Payment of a Batch now accepts `DeliverMax` in place of `Amount`, as a top-level Payment already did; differing `Amount` and `DeliverMax` return `invalidParams`. Previously `DeliverMax` in an inner Payment was rejected as an unknown field. A request whose Payment has differing `Amount` and `DeliverMax` now reports that error before `srcActNotFound` or a fee error, and in `sign` and `submit` also before a missing `Sequence`. A Payment whose `TransactionType` is a number or a string of digits now accepts `DeliverMax` and gets the same checks as one named `Payment`, so a missing `Destination` returns "Missing field 'tx_json.Destination'.". A Payment sent with `DeliverMax` gets its autofilled `Fee` from the open ledger's base fee for that transaction instead of the configured reference fee. [#8558](https://github.com/XRPLF/rippled/pull/8558)
-- `simulate`: A Payment now accepts `DeliverMax` in place of `Amount`, and the returned `tx_json` follows the `DeliverMax` rule. Previously `DeliverMax` was rejected as an unknown field and the returned `tx_json` showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
-- `submit`: With `tx_blob`, the returned `tx_json` now follows the `DeliverMax` rule. Previously it showed only `Amount`. [#8558](https://github.com/XRPLF/rippled/pull/8558)
 
 ## XRP Ledger server version 3.5.0
 
