@@ -135,7 +135,7 @@ verifyDigest(
     bool mustBeFullyCanonical) noexcept
 {
     if (publicKeyType(publicKey) != KeyType::Secp256k1)
-        logicError("verifyDigest: secp256k1 required for digest signing");
+        logicError("verifyDigest: secp256k1 required for digest verification");
 
     // FIXME: The check against data() is purely defensive and should be
     //        removed after Slice handles nullptr better.
