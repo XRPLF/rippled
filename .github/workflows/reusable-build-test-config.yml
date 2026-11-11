@@ -234,8 +234,8 @@ jobs:
               ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          # exitcode=0 stays out of runtime-tsan-options.txt so that a local run
-          # still fails on a finding.
+          # The exitcode=0 option stays out of runtime-tsan-options.txt, so that
+          # a local run still fails on a finding.
           TSAN_OPTS="include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp"
           echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
@@ -371,8 +371,8 @@ jobs:
           }
 
           if [ "${SANITIZERS_ENABLED}" = 'true' ]; then
-              # grep stops at the first match and find then dies of SIGPIPE, which
-              # pipefail must not turn into a failure.
+              # The grep stops at the first match and find then dies of SIGPIPE,
+              # which pipefail must not turn into a failure.
               instrumented() {
                   if { find . -name '*.cpp.o' -exec nm -u {} + 2>/dev/null || true; } | grep -qE "${2}"; then
                       echo "${1}: the objects reference the runtime, matching '${2}'."
@@ -416,7 +416,7 @@ jobs:
 
           # Under TSan memory, not core count, is the ceiling: more than 4 jobs
           # reach the OOM killer (exit 137) or lose contact with the runner.
-          [ "$TSAN_ENABLED" = "true" ] && BUILD_NPROC=4
+          [ "${TSAN_ENABLED}" = "true" ] && BUILD_NPROC=4
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must
