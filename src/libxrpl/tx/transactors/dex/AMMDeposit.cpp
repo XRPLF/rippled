@@ -715,37 +715,27 @@ AMMDeposit::equalDepositTokens(
     std::optional<STAmount> const& deposit2Min,
     std::uint16_t tfee)
 {
-    try
-    {
-        auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
-        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        auto const frac = divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
-        // amounts factor in the adjusted tokens
-        auto const amountDeposit =
-            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
-        auto const amount2Deposit =
-            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
-        return deposit(
-            view,
-            ammAccount,
-            amountBalance,
-            amountDeposit,
-            amount2Deposit,
-            lptAMMBalance,
-            tokensAdj,
-            depositMin,
-            deposit2Min,
-            std::nullopt,
-            tfee);
-    }
-    catch (std::exception const& e)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "AMMDeposit::equalDepositTokens exception " << e.what();
-        return {tecINTERNAL, STAmount{}};
-        // LCOV_EXCL_STOP
-    }
+    auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
+    auto const frac = divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
+    // amounts factor in the adjusted tokens
+    auto const amountDeposit =
+        getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
+    auto const amount2Deposit =
+        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
+    return deposit(
+        view,
+        ammAccount,
+        amountBalance,
+        amountDeposit,
+        amount2Deposit,
+        lptAMMBalance,
+        tokensAdj,
+        depositMin,
+        deposit2Min,
+        std::nullopt,
+        tfee);
 }
 
 /**
