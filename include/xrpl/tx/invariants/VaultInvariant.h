@@ -55,6 +55,12 @@ namespace xrpl {
  *   Downward to the asset's precision
  * - FixedPrecision only: YieldUnrealized is non-negative; YieldUnrealized
  *   changes only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE
+ * - from fixCleanup3_6_0 onwards, any transaction that modifies an existing
+ *   vault changes assets available by the same amount as the vault
+ *   pseudo-account holding: exactly for FixedPrecision, within one unit at
+ *   the coarser of the posterior AssetsTotal scale and the holding's own
+ *   scale for IOU on Legacy/CashBasis. Before that amendment only deposit,
+ *   withdrawal and clawback are checked this way.
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -228,6 +234,64 @@ private:
      */
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
+
+    /**
+     * @brief Check that a transaction changed an existing vault's
+     *        AssetsAvailable by the same amount as its pseudo-account holding.
+     *
+     * Runs for every successful transaction that modifies an existing vault.
+     * A transaction that does not touch the pseudo-account's holding (for
+     * example an impair, an unimpair, or a default with no first-loss capital
+     * to return) has a zero holding delta, so AssetsAvailable must not change
+     * either, beyond the one-unit IOU tolerance on Legacy/CashBasis vaults.
+     * See @c assetsAvailableAddsUp for the comparison. The IOU tolerance is
+     * one unit at the coarser of the posterior AssetsTotal scale and the
+     * holding's own scale, so an existing difference between the holding and
+     * AssetsAvailable does not reject a correct transfer.
+     *
+     * @param rules Active ledger rules.
+     * @param j Journal for logging.
+     * @return false if AssetsAvailable and the holding moved by different
+     *         amounts.
+     */
+    [[nodiscard]] bool
+    checkAssetsAvailableFollowsBalance(Rules const& rules, beast::Journal const& j) const;
+
+    /**
+     * @brief Compare a vault's AssetsAvailable delta with the real transfer
+     *        into or out of its pseudo-account.
+     *
+     * FixedPrecision compares the exact deltas. Legacy/CashBasis compare the
+     * deltas rounded to @p scale and, when @p tolerateOneUnit is set, accept
+     * one unit of difference for IOU (XRP and MPT stay exact).
+     *
+     * This is the one place that defines how AssetsAvailable relates to the
+     * pseudo-account holding. If a vault field that also holds cash is added
+     * (such as AssetsReserved), its delta belongs on the AssetsAvailable side
+     * here.
+     *
+     * @param afterVault Snapshot of the vault after the transaction.
+     * @param beforeVault Snapshot of the vault before the transaction.
+     * @param vaultAsset The vault's underlying asset.
+     * @param tolerateOneUnit Whether to accept one unit of IOU rounding noise.
+     * @param scale The scale both deltas are rounded to. For
+     *        deposit/withdraw/clawback this is the posterior AssetsTotal scale
+     *        from computeVaultMinScale; the lending check passes the coarser
+     *        tolerance scale (the holding's own trust-line scale when that is
+     *        coarser than the AssetsTotal scale).
+     * @param roundedVaultDelta The real transfer's delta, rounded to @p scale.
+     * @param exactVaultDelta The real transfer's exact (unrounded) delta.
+     * @return true if the two deltas agree.
+     */
+    [[nodiscard]] static bool
+    assetsAvailableAddsUp(
+        Vault const& afterVault,
+        Vault const& beforeVault,
+        Asset const& vaultAsset,
+        bool tolerateOneUnit,
+        std::int32_t scale,
+        Number const& roundedVaultDelta,
+        Number const& exactVaultDelta);
 
     /**
      * @brief Check that a vault's AssetsTotal and AssetsAvailable deltas add
