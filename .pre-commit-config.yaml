@@ -97,14 +97,28 @@ repos:
       - id: prettier
         args: [--end-of-line=auto]
 
-  # Scoped to package/ and the strategy matrix: the rest of the repo's Python
-  # has pre-existing findings, so widening these is its own change.
+  # Every Python file is checked except those listed, which have pre-existing
+  # findings or, for mypy, share a module name with another file. Fixing them
+  # is its own change.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
     hooks:
       - id: ruff-check
         args: [--fix]
-        files: ^(package|\.github/scripts/strategy-matrix)/.*\.py$
+        exclude: |
+          (?x)^(
+            \.github/scripts/check-pr-description\.py|
+            \.github/scripts/format-inline-bash\.py|
+            \.github/scripts/levelization/generate\.py|
+            bin/pre-commit/check_doxygen_style\.py|
+            bin/pre-commit/clang_tidy_check\.py|
+            bin/pre-commit/test_fix_gtest_names\.py|
+            cmake/scripts/codegen/generate_ledger_classes\.py|
+            cmake/scripts/codegen/generate_tx_classes\.py|
+            cmake/scripts/codegen/macro_parser_common\.py|
+            conanfile\.py|
+            tests/conan/conanfile\.py
+          )$
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: a5439e9af2ff9371297bb1a76a01b8ad17989b88 # frozen: 26.10.1
@@ -116,7 +130,19 @@ repos:
     hooks:
       - id: mypy
         args: [--strict]
-        files: ^(package|\.github/scripts/strategy-matrix)/.*\.py$
+        exclude: |
+          (?x)^(
+            \.github/scripts/format-inline-bash\.py|
+            \.github/scripts/levelization/generate\.py|
+            bin/pre-commit/clang_tidy_check\.py|
+            bin/pre-commit/fix_gtest_names\.py|
+            bin/pre-commit/test_fix_gtest_names\.py|
+            cmake/scripts/codegen/generate_ledger_classes\.py|
+            cmake/scripts/codegen/generate_tx_classes\.py|
+            cmake/scripts/codegen/macro_parser_common\.py|
+            conanfile\.py|
+            tests/conan/conanfile\.py
+          )$
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1
