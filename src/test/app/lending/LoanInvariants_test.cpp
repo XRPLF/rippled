@@ -8,14 +8,20 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1099,6 +1105,96 @@ private:
         }
     }
 
+    // fixCleanup3_6_0 is enabled on a ledger whose Legacy IOU vault already
+    // holds a different amount than AssetsAvailable says. Here AssetsAvailable
+    // and AssetsTotal are 1e-16 while the vault pseudo-account holds 1.1e-15,
+    // so the holding cannot represent a 4e-31 principal: the borrower
+    // receives it, AssetsAvailable drops by it and the holding does not move.
+    // The vault's books are right, so the LoanSet must still succeed.
+    void
+    testVaultAssetsAvailableAfterActivationWithExistingDifference()
+    {
+        testcase("Vault AssetsAvailable check after activation with an existing difference");
+
+        using namespace jtx;
+        using namespace jtx::loan;
+
+        // all_ leaves featureLendingProtocolV1_1 out, so the vault is Legacy.
+        Env env(*this, all_ - fixCleanup3_6_0);
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+        PrettyAsset const iou = issuer["USD"];
+        env(trust(lender, iou(1'000)));
+        env(trust(borrower, iou(1'000)));
+        env(pay(issuer, lender, iou(1)));
+        env.close();
+
+        BrokerParameters params;
+        params.vaultDeposit = Number{1, -2};
+        params.debtMax = 0;
+        params.coverDeposit = 0;
+        params.coverRateMin = TenthBips32{0};
+        params.coverRateLiquidation = TenthBips32{0};
+        BrokerInfo const broker = createVaultAndBroker(env, iou, lender, params);
+
+        env.enableFeature(fixCleanup3_6_0);
+        env.close();
+        if (!BEAST_EXPECT(env.current()->rules().enabled(fixCleanup3_6_0)))
+            return;
+
+        Number const seededTotal{1, -16};
+        Number const holding{11, -16};
+        Number const principal{4, -31};
+        Issue const issue = Asset{iou}.get<Issue>();
+        AccountID pseudo;
+        // The seeded state lives in the open ledger only, so nothing below
+        // closes the ledger before reading it back.
+        bool const seeded = env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            Sandbox sb(&view, TapNone);
+            auto const sleVault = sb.peek(broker.vaultKeylet());
+            if (!sleVault)
+                return false;
+            sleVault->at(sfAssetsAvailable) = seededTotal;
+            sleVault->at(sfAssetsTotal) = seededTotal;
+            sb.update(sleVault);
+            pseudo = sleVault->at(sfAccount);
+            auto const line = sb.peek(keylet::trustLine(pseudo, issue));
+            if (!line)
+                return false;
+            auto const balance = line->getFieldAmount(sfBalance);
+            line->setFieldAmount(
+                sfBalance,
+                STAmount{balance.asset(), pseudo > issue.getIssuer() ? -holding : holding});
+            sb.update(line);
+            sb.apply(view);
+            return true;
+        });
+        if (!BEAST_EXPECT(seeded))
+            return;
+
+        env(set(lender, broker.brokerID, STAmount{iou.raw(), principal}),
+            kCounterparty(borrower.id()),
+            kPaymentTotal(1),
+            kPaymentInterval(86400),
+            kGracePeriod(86400),
+            Sig(sfCounterpartySignature, borrower),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+
+        if (auto const sleVault = env.le(broker.vaultKeylet()); BEAST_EXPECT(sleVault))
+            BEAST_EXPECT(sleVault->at(sfAssetsAvailable) == seededTotal - principal);
+        if (auto const line = env.le(keylet::trustLine(pseudo, issue)); BEAST_EXPECT(line))
+        {
+            Number const balance = line->getFieldAmount(sfBalance);
+            BEAST_EXPECT((pseudo > issue.getIssuer() ? -balance : balance) == holding);
+        }
+        BEAST_EXPECT(env.balance(borrower, iou).value() == STAmount(iou.raw(), principal));
+    }
+
     // Tests run under each entry in amendmentCombinations().
     void
     runAmendmentSensitive(FeatureBitset features)
@@ -1116,6 +1212,7 @@ public:
     {
         testLoanSetRecipientScaleInvariant();
         testLoanPayInterestDueNonNegativeInvariant();
+        testVaultAssetsAvailableAfterActivationWithExistingDifference();
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
