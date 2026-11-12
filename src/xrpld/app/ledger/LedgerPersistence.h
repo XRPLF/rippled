@@ -17,12 +17,20 @@ struct Fees;
 /**
  * Save, or arrange to save, a fully-validated ledger.
  *
+ * An asynchronous call is deduplicated: when the ledger was saved recently, or
+ * a save is scheduled or in progress, nothing more is done. A synchronous call
+ * always writes the ledger itself, after waiting for any save of the same
+ * sequence that is in progress, so the database holds the ledger when the call
+ * returns.
+ *
  * @param registry The service registry providing access to required services.
  * @param ledger The fully-validated ledger to save.
- * @param isSynchronous If true, wait for the save to complete.
+ * @param isSynchronous If true, write the ledger before returning.
  * @param isCurrent If true, the ledger is the current validated ledger.
  *
- * @return false on error.
+ * @return false when the database reported the save as not done. The sequence
+ *         is then not in the complete range and its SAVED flag is cleared, so a
+ *         later save of the ledger runs.
  */
 bool
 pendSaveValidated(
