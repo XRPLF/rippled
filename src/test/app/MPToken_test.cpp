@@ -2688,9 +2688,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 auto const badAmount = badMPTAmount(issue, bad);
                 auto tx = withNonCanonicalMPTAmount(
-                    env.jt(
-                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    env.jt(AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0)),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2706,9 +2704,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 auto const badAmount = badMPTAmount(issue, bad);
                 auto tx = withNonCanonicalMPTAmount(
-                    env.jt(
-                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    env.jt(AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0)),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2724,9 +2720,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 auto const badAmount = badMPTAmount(issue, bad);
                 auto tx = withNonCanonicalMPTAmount(
-                    env.jt(
-                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    env.jt(AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0)),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2748,8 +2742,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1In = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2770,8 +2763,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1In = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2792,8 +2784,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1In = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2815,8 +2806,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1Out = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2837,8 +2827,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1Out = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2859,8 +2848,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .account = alice,
                             .asset1Out = STAmount{issue, std::uint64_t{1}},
                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()}),
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2883,8 +2871,7 @@ class MPToken_test : public beast::unit_test::Suite
                             alice,
                             Asset{issue},
                             Asset{xrpIssue()},
-                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                            std::make_optional(STAmount{issue, std::uint64_t{1}}))),
                     sfAmount,
                     badAmount,
                     gw);
@@ -2906,8 +2893,7 @@ class MPToken_test : public beast::unit_test::Suite
                             alice,
                             Asset{issue},
                             Asset{xrpIssue()},
-                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                            std::make_optional(STAmount{issue, std::uint64_t{1}}))),
                     sfAmount,
                     badAmount,
                     gw);
@@ -2929,8 +2915,7 @@ class MPToken_test : public beast::unit_test::Suite
                             alice,
                             Asset{issue},
                             Asset{xrpIssue()},
-                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                            std::make_optional(STAmount{issue, std::uint64_t{1}}))),
                     sfAmount,
                     badAmount,
                     gw);
@@ -2954,8 +2939,7 @@ class MPToken_test : public beast::unit_test::Suite
                             .id = fakeVaultId,
                             .holder = alice,
                             .amount = STAmount{issue, std::uint64_t{1}},
-                        }),
-                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                        })),
                     sfAmount,
                     badAmount,
                     gw);
@@ -7327,7 +7311,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto const createFail =
                     [&](auto const& asset, Account const& account, auto const& err) {
                         auto const createJv = AMM::createJv(account, asset(1'000), eur(1'000), 0);
-                        env(createJv, txfee, Ter(err));
+                        env(createJv, Ter(err));
                         env.close();
                     };
 
