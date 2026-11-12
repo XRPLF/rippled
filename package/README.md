@@ -420,8 +420,8 @@ service restart.
 
    It also rewrites the `libc6` bound to `LIBC_MIN` in `debian/rules`, the glibc
    the Nix toolchain builds against. `dpkg-shlibdeps` would otherwise derive it
-   from the build host's symbols file — on trixie that yields `libc6 (>= 2.34)`
-   because of `sysconf`, locking out distros the binaries run on. A check fails
+   from the build host's symbols file, which can be newer than what the
+   binaries need and lock out distros they run on. A check fails
    the build if either binary outgrows `LIBC_MIN`.
 
 7. Output: `debbuild/*.deb`, the binary package and the `-dbgsym` package.

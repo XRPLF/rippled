@@ -10,7 +10,7 @@
 #
 # Supported base images:
 #   debian:bookworm
-#   ubuntu:20.04
+#   ubuntu:22.04
 #   rhel:9
 #   nixos/nix        — tests are skipped; this script is not called
 
