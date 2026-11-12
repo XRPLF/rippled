@@ -31,10 +31,12 @@ jobs:
     with:
       os: ${{ inputs.os }}
 
-  # Build and test the binary for each configuration.
+  # Build and test the binary for each configuration. A platform whose configs
+  # for this event are all disabled has an empty matrix, which no job can run.
   build-test-config:
     needs:
       - generate-matrix
+    if: ${{ needs.generate-matrix.outputs.count != '0' }}
     uses: ./.github/workflows/reusable-build-test-config.yml
     strategy:
       fail-fast: ${{ github.event_name == 'merge_group' }}
