@@ -154,7 +154,6 @@ class TxQApplyImpl
     using TxMapIter = TxMap::iterator;
     using TxRange = std::pair<TxMapIter, TxMapIter>;
     using AccMapIter = TxQ::AccountMap::iterator;
-    using TxMapNode = TxMap::node_type;
 
     TxQ& txq_;
     std::optional<std::reference_wrapper<std::scoped_lock<std::mutex> const>> txqLock_;
@@ -199,10 +198,6 @@ class TxQApplyImpl
 
     // Parent Batch tx, if this is an inner tx.
     std::shared_ptr<STTx const> const parentTx_;
-
-    // Transactions evicted / replaced by this tx. Kept so they can be restored if the admission is
-    // rolled back, e.g. when a later inner Batch tx fails.
-    std::vector<TxMapNode> savedTxs_;
 
     ///////////////////////////////////////////////////////////////////////////////
 
@@ -254,14 +249,13 @@ public:
     static auto
     findMember(AccountMap& byAccount, STTx const& member, UInt256 const& unitId);
 
-    // Unlink every queued member of the unit from byFee_ and byAccount_, and pass the extracted
-    // nodes to "save". Takes the unit by value, as its queued entries own it.
+    // Remove every queued member of the unit from byFee_ and byAccount_. Takes the unit by value,
+    // as its queued entries own it.
     static void
-    extractUnit(
+    removeUnit(
         TxQ::AccountMap& byAccount,
         TxQ::FeeMultiSet& byFee,
-        std::shared_ptr<STTx const> const unit,
-        std::function<void(TxMapNode&&)> save = {});
+        std::shared_ptr<STTx const> const unit);
 
     // Check whether a queued candidate is ready to apply with respect to account ordering: every
     // sequence-based member of its unit that is queued is preceded on its account only by members
@@ -270,16 +264,13 @@ public:
     static bool
     isSeqReady(TxQ::AccountMap const& byAccount, TxQ::MaybeTx const& candidate);
 
-    // Check whether evicting a queued tx would leave a sequence gap.
-    // Removing dropTx also removes the inner txs of a Batch, which can live on other accounts.
-    // A later sequence-based entry on any of those accounts that is not part of dropTx's unit
-    // would then wait behind a missing sequence. The incoming tx, not queued yet, is checked
-    // the same way when given.
+    // Whether a queued entry can be evicted or replaced: a regular tx can, a Batch and its inner
+    // txs can't.
     static bool
-    evictionLeavesGap(
-        TxQ::AccountMap const& byAccount,
-        TxQ::MaybeTx const& dropTx,
-        std::optional<std::pair<AccountID, SeqProxy>> const& incoming = std::nullopt);
+    isRegular(TxQ::MaybeTx const& mtx)
+    {
+        return !mtx.parentTx && mtx.txn->getTxnType() != ttBATCH;
+    }
 
 private:
     std::optional<ApplyResult>
@@ -353,17 +344,6 @@ private:
     std::expected<std::vector<TxQApplyImpl>, ApplyResult>
     applyImplPrelockInner();
 
-    // Remove a queued tx (and its inner txs, if it is a Batch), but keep it in savedTxs_ so it
-    // can be restored.
-    void
-    moveUnit(TxQ::MaybeTx const& mtx);
-
-    // Re-add every transaction in savedTxs_ back into byAccount_ (and byFee_
-    // for non-inner txs), undoing an eviction or replacement. The saved txs are not
-    // reprocessed, just re-inserted.
-    void
-    restoreSavedTxs();
-
     // Whether the just queued Batch makes queued txs wait for each other forever. A queued unit (a
     // regular tx, or a Batch with its inner txs) waits for another unit if one of its
     // sequence-based members is directly preceded on its account by a member of the other unit.
@@ -372,15 +352,17 @@ private:
     //
     // Plain appends can't form a cycle: a new sequence-based member goes to the end of its
     // account's chain, so it only waits for units queued before it. A cycle needs the new Batch to
-    // land before already queued entries, which happens on a replacement or when it fills a
-    // sequence gap (e.g. left by an evicted or removed Batch's inner txs).
+    // land before already queued entries, which happens when it fills a sequence gap (e.g. left by
+    // a removed tx).
     //
-    // Example of a dead cycle created by a replacement:
-    //   1. Bob queues regular tx R (seq 1).
-    //   2. Alice queues Batch X: outer tx from Alice (seq 1), inner tx from Bob (seq 2).
-    //   3. Bob queues Batch Y, replacing R: outer tx from Bob (seq 1), inner tx from Alice (seq 2).
+    // Example of a dead cycle created by filling a gap:
+    //   1. Bob queues regular txs R1, R2, R3 (seq 1, 2, 3).
+    //   2. Alice queues Batch X: outer tx from Alice (seq 1), inner tx from Bob (seq 4).
+    //   3. R2 is removed from the queue, leaving a gap at Bob's seq 2.
+    //   4. Carol queues Batch Y: outer tx from Carol (seq 1), inner txs from Bob (seq 2) and
+    //      Alice (seq 2).
     // Alice's queue is [X(1), Y.inner(2)], so Y waits for X.
-    // Bob's queue is [Y(1), X.inner(2)], so X waits for Y.
+    // Bob's queue is [R1(1), Y.inner(2), R3(3), X.inner(4)], so R3 waits for Y and X waits for R3.
     // Neither Batch can ever be applied first.
     [[nodiscard]] bool
     findCycle() const;
@@ -420,16 +402,13 @@ TxQApplyImpl::findMember(AccountMap& byAccount, STTx const& member, UInt256 cons
     return res;
 }
 
-// Unlink every queued member of the unit from byFee_ and byAccount_, and pass the extracted
-// nodes to sink. Takes the unit by value, as its queued entries own it.
 void
-TxQApplyImpl::extractUnit(
+TxQApplyImpl::removeUnit(
     TxQ::AccountMap& byAccount,
     TxQ::FeeMultiSet& byFee,
-    std::shared_ptr<STTx const> const unit,
-    std::function<void(TxMapNode&&)> save)
+    std::shared_ptr<STTx const> const unit)
 {
-    XRPL_ASSERT(unit, "xrpl::TxQApplyImpl::extractUnit : transaction exists");
+    XRPL_ASSERT(unit, "xrpl::TxQApplyImpl::removeUnit : transaction exists");
     auto const unitId = unit->getTransactionID();
     auto pred = [&](STTx const& member) {
         if (auto const found = findMember(byAccount, member, unitId))
@@ -437,9 +416,7 @@ TxQApplyImpl::extractUnit(
             auto const& [txs, it] = *found;
             if (!it->second.parentTx)
                 byFee.erase(byFee.iterator_to(it->second));
-            auto node = txs.get().extract(it);
-            if (save)
-                save(std::move(node));
+            txs.get().erase(it);
         }
         return false;
     };
@@ -592,12 +569,9 @@ TxQApplyImpl::retrieveTxToReplace()
     auto const& txQAcct = byAccountIter_->second.transactions;
     if (auto const existingIter = txQAcct.find(txSeq_); existingIter != txQAcct.end())
     {
-        // A regular tx or a Batch can replace a queued regular tx or Batch. When a Batch replaces,
-        // the replaced entry (with its inner txs, if it is a Batch) is saved in savedTxs_ and
-        // restored if the Batch is rolled back because one of its inner txs fails.
-        // 1) can't replace inner tx
-        // 2) can't be replaced by inner tx
-        if (parentTx_ || existingIter->second.parentTx)
+        // Only a regular tx can replace a queued regular tx. A Batch or an inner tx can't replace,
+        // and can't be replaced.
+        if (parentTx_ || tx_->getTxnType() == ttBATCH || !isRegular(existingIter->second))
             return ApplyResult{telCAN_NOT_QUEUE, false};
 
         txToReplaceIter_ = existingIter;
@@ -652,7 +626,7 @@ TxQApplyImpl::checkBlockerInAccQue() const
     //
     // A blocker is alone in the account's queue, except that a blocker Batch inner tx shares it
     // with members of its own Batch. So a blocker may be any entry. It doesn't block members of its
-    // own Batch, nor a tx replacing it or its Batch (which removes the blocker).
+    // own Batch, nor a tx replacing it (which removes the blocker).
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) accTxCount_ > 0 implies prevTxs_ is set
     auto const isBlocking = [&](auto const& txIter) {
@@ -1004,6 +978,13 @@ TxQApplyImpl::processQueueIsFull()
 {
     if (!txToReplaceIter_ && txq_.isFull())
     {
+        // A Batch can't evict other txs.
+        if (tx_->getTxnType() == ttBATCH)
+        {
+            JLOG(j_.info()) << "Queue is full, and Batch " << txID_ << " can't evict transactions.";
+            return ApplyResult{telCAN_NOT_QUEUE_FULL, false};
+        }
+
         auto lastRIter = txq_.byFee_.rbegin();
         while (lastRIter != txq_.byFee_.rend() && lastRIter->account == accID_)
         {
@@ -1061,38 +1042,25 @@ TxQApplyImpl::processQueueIsFull()
         {
             // The queue is full, and this transaction is more
             // valuable, so kick out the cheapest transaction.
-            auto dropRIter = endAccount.transactions.rbegin();
-
-            // Batch inner txs are not in byFee_, skip.
-            while (dropRIter != endAccount.transactions.rend() && dropRIter->second.parentTx)
-                ++dropRIter;
-            // Every tx is a batch inner tx, can't can be evicted via byFee_.
-            if (dropRIter == endAccount.transactions.rend())
-                return ApplyResult{telCAN_NOT_QUEUE_FULL, false};
-
+            auto const dropRIter = endAccount.transactions.rbegin();
             XRPL_ASSERT(
                 dropRIter->second.account == lastRIter->account,
                 "xrpl::TxQApplyImpl::processQueueIsFull : cheapest transaction found");
 
-            // Can't evict a tx whose removal leaves a later queued tx, or this tx, behind a
-            // sequence gap: they were validated with it in place.
-            auto const& dropTx = dropRIter->second;
-            std::optional<std::pair<AccountID, SeqProxy>> incoming;
-            if (txSeq_.isSeq())
-                incoming.emplace(accID_, txSeq_);
-            if (evictionLeavesGap(txq_.byAccount_, dropTx, incoming))
+            // A Batch and its inner txs can't be evicted. Evicting an earlier entry instead would
+            // leave the last one behind a sequence gap.
+            if (!isRegular(dropRIter->second))
             {
-                JLOG(j_.info()) << "Queue is full, and transaction " << txID_ << " would kick out "
-                                << dropTx.txID << " leaving a sequence gap in the queue.";
+                JLOG(j_.info()) << "Queue is full, and transaction " << txID_
+                                << " can't evict the last item of account " << lastRIter->account
+                                << ", which is part of a Batch.";
                 return ApplyResult{telCAN_NOT_QUEUE_FULL, false};
             }
 
             JLOG(j_.info()) << "Removing last item of account " << lastRIter->account
                             << " from queue with average fee of " << endEffectiveFeeLevel
                             << " in favor of " << txID_ << " with fee of " << feeLevelPaid_;
-
-            // Preserve the evicted tx so it can be restored if the admission is rolled back.
-            moveUnit(dropTx);
+            txq_.erase(txq_.byFee_.iterator_to(dropRIter->second));
         }
         else
         {
@@ -1182,84 +1150,6 @@ TxQApplyImpl::applyImplPrelockInner()
         return std::unexpected(ApplyResult{temINVALID_INNER_BATCH, false});
 
     return vec;
-}
-
-bool
-TxQApplyImpl::evictionLeavesGap(
-    TxQ::AccountMap const& byAccount,
-    TxQ::MaybeTx const& dropTx,
-    std::optional<std::pair<AccountID, SeqProxy>> const& incoming)
-{
-    auto pred = [&](STTx const& member) {
-        // Tickets apply in any order, removing one can't leave a gap.
-        SeqProxy const seq = member.getSeqProxy();
-        if (!seq.isSeq())
-            return false;
-
-        AccountID const acc = member.at(sfAccount);
-        if (incoming && incoming->first == acc && seq < incoming->second)
-            return true;
-
-        auto const accIter = byAccount.find(acc);
-        if (accIter == byAccount.end())
-            return false;
-
-        // Tickets sort after sequences, so only the sequence-based entries are checked.
-        auto const& txs = accIter->second.transactions;
-        for (auto it = txs.upper_bound(seq); it != txs.end() && it->first.isSeq(); ++it)
-        {
-            if (unitID(it->second) != dropTx.txID)
-                return true;
-        }
-        return false;
-    };
-
-    // dropTx is in byFee_, so it is the outer tx of its unit.
-    return anyMember(*dropTx.txn, pred);
-}
-
-void
-TxQApplyImpl::moveUnit(TxQ::MaybeTx const& mtx)
-{
-    XRPL_ASSERT(!mtx.parentTx, "xrpl::TxQApplyImpl::saveUnit : outer tx");
-    auto const unit = mtx.txn;
-    std::size_t const innerSize =
-        unit->getTxnType() == ttBATCH ? unit->getBatchTransactions().size() : 0;
-
-    // Reserve up front so that saving a node never allocates after it was extracted.
-    savedTxs_.reserve(savedTxs_.size() + 1 + innerSize);
-    extractUnit(txq_.byAccount_, txq_.byFee_, unit, [this](TxMapNode&& node) {
-        savedTxs_.push_back(std::move(node));
-    });
-}
-
-void
-TxQApplyImpl::restoreSavedTxs()
-{
-    // Re-link the saved nodes. Doesn't allocate, so it is safe to call during a rollback.
-    for (auto& node : savedTxs_)
-    {
-        auto const& mt = node.mapped();
-        // Inner txs live only in byAccount_; the parent (and regular txs) also
-        // go into byFee_.
-        bool const isInner = static_cast<bool>(mt.parentTx);
-
-        // Account entries are not erased while a tx is being applied.
-        auto const accIter = txq_.byAccount_.find(mt.account);
-        if (accIter == txq_.byAccount_.end())
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::TxQApplyImpl::restoreSavedTxs : account not found");
-            continue;
-            // LCOV_EXCL_STOP
-        }
-
-        auto const res = accIter->second.transactions.insert(std::move(node));
-        XRPL_ASSERT(res.inserted, "xrpl::TxQApplyImpl::restoreSavedTxs : slot is free");
-        if (res.inserted && !isInner)
-            txq_.byFee_.insert(res.position->second);
-    }
-    savedTxs_.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1667,7 +1557,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::
     XRPL_ASSERT(found, "xrpl::TxQ::erase : account removed");
 
     // Remove the inner txs of a Batch.
-    TxQApplyImpl::extractUnit(byAccount_, byFee_, unit);
+    TxQApplyImpl::removeUnit(byAccount_, byFee_, unit);
 
     return newCandidateIter;
 }
@@ -1804,7 +1694,7 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     auto const unit = candidateIter->txn;
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
-    TxQApplyImpl::extractUnit(byAccount_, byFee_, unit);
+    TxQApplyImpl::removeUnit(byAccount_, byFee_, unit);
 
     // The seq guard is evaluated after the erase so that isSeqReady sees
     // the queue without the just-applied candidate.
@@ -1835,7 +1725,7 @@ TxQ::erase(
     txQAccount.transactions.erase(begin, end);
 
     for (auto const& batch : batches)
-        TxQApplyImpl::extractUnit(byAccount_, byFee_, batch);
+        TxQApplyImpl::removeUnit(byAccount_, byFee_, batch);
 
     return endSeq ? txQAccount.transactions.lower_bound(*endSeq) : txQAccount.transactions.end();
 }
@@ -2064,7 +1954,8 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    // Any queue changes are rolled back by TxQApplyImpl::apply before the exception gets here.
+    // TxQApplyImpl::apply removes the partly queued tx (and its inner txs) before the exception
+    // gets here.
     try
     {
         TxQApplyImpl impl(*this, app, view, tx, flags, j);
@@ -2106,12 +1997,9 @@ TxQApplyImpl::apply()
     std::scoped_lock const lock(txq_.mutex_);
     txqLock_ = lock;
 
-    // Roll back the admission: remove the tx (with its inner txs) and restore any tx evicted or
-    // replaced by it. Runs on an inner tx failure, or on an exception (must not throw).
-    auto const rollback = [this] {
-        extractUnit(txq_.byAccount_, txq_.byFee_, tx_);
-        restoreSavedTxs();
-    };
+    // Roll back the admission: remove the tx with its inner txs. A Batch doesn't evict or replace
+    // other txs, so there is nothing to restore. Runs on an inner tx failure, or on an exception.
+    auto const rollback = [this] { removeUnit(txq_.byAccount_, txq_.byFee_, tx_); };
     ScopeFail const onThrow{rollback};
 
     auto res = applyImpl();
@@ -2128,8 +2016,8 @@ TxQApplyImpl::apply()
         }
     }
 
-    // A replacement or a filled sequence gap can make this Batch and other queued txs wait
-    // for each other, so none of them could ever apply.
+    // A filled sequence gap can make this Batch and other queued txs wait for each other, so none
+    // of them could ever apply.
     if (!inners.empty() && findCycle())
     {
         JLOG(j_.trace()) << "Rejecting Batch " << txID_
@@ -2302,9 +2190,10 @@ TxQApplyImpl::applyImpl()
     // Remove existing tx (will be replaced by new in addTxToQueue).
     if (txToReplaceIter_)
     {
-        XRPL_ASSERT(!parentTx_, "TxQApplyImpl::applyImpl Inner tx replacing another tx");
-        // Preserve the replaced tx so it can be restored if the admission is rolled back.
-        moveUnit((*txToReplaceIter_)->second);
+        XRPL_ASSERT(
+            isRegular((*txToReplaceIter_)->second) && tx_->getTxnType() != ttBATCH && !parentTx_,
+            "xrpl::TxQApplyImpl::applyImpl : regular tx replacing regular tx");
+        txq_.removeFromByFee(txToReplaceIter_, tx_);
         txToReplaceIter_.reset();
     }
 
@@ -2538,30 +2427,22 @@ TxQ::accept(Application& app, OpenView& view)
                         // chance, chances are it won't recover. To avoid
                         // making things worse, drop the _last_ transaction for
                         // this account.
-                        auto dropRIter = account.transactions.rbegin();
-
-                        // Batch inner txs are not in byFee_, skip.
-                        while (dropRIter != account.transactions.rend() &&
-                               dropRIter->second.parentTx)
-                            ++dropRIter;
-                        if (dropRIter == account.transactions.rend())
-                        {
-                            ++candidateIter;
-                            continue;
-                        }
-
+                        auto const dropRIter = account.transactions.rbegin();
                         XRPL_ASSERT(
                             dropRIter->second.account == candidateIter->account,
                             "xrpl::TxQ::accept : account check");
 
-                        JLOG(j_.info())
-                            << "Queue is nearly full, and transaction " << candidateIter->txID
-                            << " failed with " << transToken(txnResult)
-                            << ". Removing last item from account " << account.account;
-                        auto const endIter = byFee_.iterator_to(dropRIter->second);
-                        if (endIter != candidateIter &&
-                            !TxQApplyImpl::evictionLeavesGap(byAccount_, dropRIter->second))
-                            erase(endIter);
+                        // A Batch and its inner txs can't be evicted.
+                        if (TxQApplyImpl::isRegular(dropRIter->second))
+                        {
+                            JLOG(j_.info())
+                                << "Queue is nearly full, and transaction " << candidateIter->txID
+                                << " failed with " << transToken(txnResult)
+                                << ". Removing last item from account " << account.account;
+                            auto const endIter = byFee_.iterator_to(dropRIter->second);
+                            if (endIter != candidateIter)
+                                erase(endIter);
+                        }
                         ++candidateIter;
                     }
                 }
@@ -2798,7 +2679,7 @@ TxQ::removeFromByFee(
         // parent Batch from the queue.
         if (auto const& parentTx = (*txToReplaceIter)->second.parentTx)
         {
-            TxQApplyImpl::extractUnit(byAccount_, byFee_, parentTx);
+            TxQApplyImpl::removeUnit(byAccount_, byFee_, parentTx);
             return;
         }
 
