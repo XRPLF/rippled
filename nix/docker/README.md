@@ -85,8 +85,9 @@ The build then verifies all of this end to end, and the C++ and Rust programs
 go through the same pipeline: each is compiled in `final`, has its `PT_INTERP`
 patched to the target loader, and is then run in the clean `tester` stage to
 confirm it emits the expected diagnostic on a stock base image. The C++ programs
-are in `test_files/cpp/sources/` (a regular binary plus ASan/TSan/UBSan
-variants); the Rust programs are in `test_files/rust/sources/` (a hello binary
+are in `test_files/cpp/sources/` (a regular binary, a check that an exception
+thrown from a `std::call_once` callable propagates and lets a later call run,
+plus ASan/TSan/UBSan variants); the Rust programs are in `test_files/rust/sources/` (a hello binary
 plus panic and overflow-check variants), plus the `test_files/rust/proc_macro/`
 workspace — a crate whose compilation additionally loads a proc-macro dylib, and
 whose resulting binary is patched and run like the others.
