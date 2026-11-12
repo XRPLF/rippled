@@ -24,6 +24,18 @@ PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
 STAGE_TWO = (g.Event.READY_TO_MERGE, g.Event.MERGE_GROUP, g.Event.PUSH)
 
 
+def downloaded_by_name() -> set[str]:
+    """Name the configs whose build artifact the packaging workflow downloads by
+    a literal name, such as the voidstar binary for its Docker image.
+
+    @return The config names, without the "xrpld-" artifact prefix.
+    """
+    pattern = r"^\s*name: xrpld-([a-z0-9-]+)\s*$"
+    names = set(re.findall(pattern, PACKAGE_WORKFLOW.read_text(), re.MULTILINE))
+    assert names
+    return names
+
+
 def build_names(event: g.Event) -> list[str]:
     entries = g.expand_linux_matrix(LINUX, event)
     for pf in PLATFORMS:
@@ -180,21 +192,13 @@ def test_stage_two_events_build_the_same_matrix() -> None:
 
 
 def test_tag_builds_only_what_it_publishes() -> None:
-    # Besides each packaged config's own artifacts, the packaging workflow
-    # downloads some by a literal name, such as the voidstar binary.
-    literal = set(
-        re.findall(
-            r"^\s*name: xrpld-([a-z0-9-]+)\s*$",
-            PACKAGE_WORKFLOW.read_text(),
-            re.MULTILINE,
-        )
-    )
-    assert literal
+    # Besides each packaged config's own artifacts, the tag builds the ones the
+    # packaging workflow downloads by a literal name, and nothing else.
     packaged = {
         e.xrpld_artifact_name.removeprefix("xrpld-")
         for e in g.expand_linux_packaging(LINUX, g.Event.TAG)
     }
-    assert set(build_names(g.Event.TAG)) == packaged | literal
+    assert set(build_names(g.Event.TAG)) == packaged | downloaded_by_name()
 
 
 def test_packaging_consumes_what_the_same_event_builds() -> None:
@@ -207,6 +211,15 @@ def test_packaging_consumes_what_the_same_event_builds() -> None:
                 in built
             ), event
             assert entry.package_type in g.PACKAGE_TYPES
+
+
+def test_packaging_events_build_what_the_workflow_downloads() -> None:
+    # The packaging workflow runs on every event that packages something, and
+    # its Docker job downloads these artifacts whether or not their config is
+    # disabled, so disabling one of them needs a workflow change as well.
+    for event in EVENTS:
+        if g.expand_linux_packaging(LINUX, event):
+            assert downloaded_by_name() <= set(build_names(event)), event
 
 
 def test_tag_packages_every_packaged_config() -> None:

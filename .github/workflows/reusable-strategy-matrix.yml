@@ -11,6 +11,9 @@ on:
       matrix:
         description: "The generated strategy matrix."
         value: ${{ jobs.generate-matrix.outputs.matrix }}
+      count:
+        description: "The number of entries in the matrix."
+        value: ${{ jobs.generate-matrix.outputs.count }}
 
 defaults:
   run:
@@ -21,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      count: ${{ steps.generate.outputs.count }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

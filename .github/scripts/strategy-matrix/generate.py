@@ -559,3 +559,5 @@ if __name__ == "__main__":
                 )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in entries]})}")
+    # A job skips an empty matrix by this count, since a strategy needs an entry.
+    print(f"count={len(entries)}")
