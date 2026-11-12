@@ -8,6 +8,7 @@ or under pytest:
     pytest .github/scripts/strategy-matrix/test_generate.py
 """
 
+import re
 import sys
 from typing import Any
 
@@ -19,6 +20,19 @@ EVENTS = tuple(g.Event)
 CONFIGS = [c for cfgs in LINUX.configs.values() for c in cfgs] + [
     c for pf in PLATFORMS for c in pf.configs
 ]
+PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
+
+
+def downloaded_by_name() -> set[str]:
+    """Name the configs whose build artifact the packaging workflow downloads by
+    a literal name, such as the voidstar binary for its Docker image.
+
+    @return The config names, without the "xrpld-" artifact prefix.
+    """
+    pattern = r"^\s*name: xrpld-([a-z0-9-]+)\s*$"
+    names = set(re.findall(pattern, PACKAGE_WORKFLOW.read_text(), re.MULTILINE))
+    assert names
+    return names
 
 
 def build_names(event: g.Event) -> list[str]:
@@ -170,6 +184,15 @@ def test_packaging_consumes_what_the_same_event_builds() -> None:
                 in built
             ), event
             assert entry.package_type in g.PACKAGE_TYPES
+
+
+def test_packaging_events_build_what_the_workflow_downloads() -> None:
+    # The packaging workflow runs on every event that packages something, and
+    # its Docker job downloads these artifacts whether or not their config is
+    # disabled, so disabling one of them needs a workflow change as well.
+    for event in EVENTS:
+        if g.expand_linux_packaging(LINUX, event):
+            assert downloaded_by_name() <= set(build_names(event)), event
 
 
 def test_tag_packages_every_packaged_config() -> None:

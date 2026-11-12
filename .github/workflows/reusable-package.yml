@@ -66,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      count: ${{ steps.generate.outputs.count }}
       deb_package_names: ${{ steps.generate.outputs.deb_package_names }}
       rpm_package_names: ${{ steps.generate.outputs.rpm_package_names }}
     steps:
@@ -88,7 +89,8 @@ jobs:
 
   package:
     needs: [generate-matrix]
-    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
+    # An empty matrix, with every packaged config disabled, cannot run a job.
+    if: ${{ needs.generate-matrix.outputs.count != '0' && (github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/')) }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
