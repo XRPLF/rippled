@@ -182,6 +182,16 @@ JobQueue::isOverloaded()
     return std::ranges::any_of(jobData_, [](auto& entry) { return entry.second.load().isOver(); });
 }
 
+bool
+JobQueue::isOverloadedWithBacklog()
+{
+    std::lock_guard lock(mutex_);
+    return std::ranges::any_of(jobData_, [](auto& entry) {
+        return entry.second.load().isOver() &&
+               (entry.second.waiting + entry.second.running) > 0;
+    });
+}
+
 json::Value
 JobQueue::getJson(int c)
 {
