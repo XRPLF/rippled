@@ -719,6 +719,28 @@ operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 LoanState
 operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 
+/**
+ * @brief Scheduled total value of a loan with @p paymentsRemaining payments left.
+ *
+ * Computes periodicPayment x paymentsRemaining, rounded the same way LoanSet
+ * rounds TotalValueOutstanding: upward for loans with interest, to nearest
+ * for zero-interest loans.
+ *
+ * @param asset The loan asset
+ * @param periodicPayment The unrounded periodic payment
+ * @param periodicRate The periodic interest rate; 0 selects to-nearest rounding
+ * @param paymentsRemaining The number of payments left
+ * @param loanScale The loan scale
+ * @return The scheduled value, rounded to the loan scale
+ */
+Number
+scheduledValue(
+    Asset const& asset,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    std::int32_t loanScale);
+
 LoanProperties
 computeLoanProperties(
     Rules const& rules,

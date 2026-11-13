@@ -942,18 +942,52 @@ tryOverpayment(
             Number::RoundingMode::Upward),
         kNumZero,
         roundedOldState.principalOutstanding);
-    auto const totalValueOutstanding = std::clamp(
-        roundToAsset(
-            asset,
-            principalOutstanding + newTheoreticalState.interestOutstanding(),
-            loanScale,
-            Number::RoundingMode::Upward),
-        kNumZero,
-        roundedOldState.valueOutstanding);
-    auto const managementFeeOutstanding = std::clamp(
-        roundToAsset(asset, newTheoreticalState.managementFeeDue, loanScale),
-        kNumZero,
-        roundedOldState.managementFeeDue);
+    bool const scheduledValueEnabled = rules.enabled(featureLendingProtocolV1_2);
+    auto const [totalValueOutstanding, managementFeeOutstanding] = [&] {
+        if (!scheduledValueEnabled)
+        {
+            auto const value = std::clamp(
+                roundToAsset(
+                    asset,
+                    principalOutstanding + newTheoreticalState.interestOutstanding(),
+                    loanScale,
+                    Number::RoundingMode::Upward),
+                kNumZero,
+                roundedOldState.valueOutstanding);
+            auto const managementFee = std::clamp(
+                roundToAsset(asset, newTheoreticalState.managementFeeDue, loanScale),
+                kNumZero,
+                roundedOldState.managementFeeDue);
+            return std::make_pair(value, managementFee);
+        }
+
+        // A zero-interest loan is worth exactly its principal.
+        if (periodicRate == 0)
+            return std::make_pair(principalOutstanding, kNumZero);
+
+        // Re-align the value to the new schedule instead of carrying the old
+        // rounding errors. Never raise it, and never let it drop below the
+        // principal, so interest and management fee stay non-negative.
+        auto const value = std::max(
+            std::min(
+                scheduledValue(
+                    asset,
+                    newLoanProperties.periodicPayment,
+                    periodicRate,
+                    paymentRemaining,
+                    loanScale),
+                roundedOldState.valueOutstanding),
+            principalOutstanding);
+        auto const managementFee = std::clamp(
+            computeManagementFee(asset, value - principalOutstanding, managementFeeRate, loanScale),
+            kNumZero,
+            roundedOldState.managementFeeDue);
+        XRPL_ASSERT_PARTS(
+            value >= principalOutstanding + managementFee,
+            "xrpl::detail::tryOverpayment",
+            "value covers principal and fee");
+        return std::make_pair(value, managementFee);
+    }();
 
     auto const roundedNewState =
         constructLoanState(totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
@@ -979,8 +1013,9 @@ tryOverpayment(
             newLoanProperties,
             j))
     {
-        JLOG(j.warn()) << "Principal overpayment would cause the loan to be in "
-                          "an invalid state. Ignore the overpayment";
+        JLOG((scheduledValueEnabled ? j.debug() : j.warn()))
+            << "Principal overpayment would cause the loan to be in "
+               "an invalid state. Ignore the overpayment";
 
         return std::unexpected(tesSUCCESS);
     }
@@ -1022,8 +1057,9 @@ tryOverpayment(
     auto const valueChange = -deltas.interest;
     if (valueChange > 0)
     {
-        JLOG(j.warn()) << "Principal overpayment would increase the value of "
-                          "the loan. Ignore the overpayment";
+        JLOG((scheduledValueEnabled ? j.debug() : j.warn()))
+            << "Principal overpayment would increase the value of "
+               "the loan. Ignore the overpayment";
         return std::unexpected(tesSUCCESS);
     }
 
@@ -1137,7 +1173,9 @@ doOverpayment(
     // (oldPrincipal - trackedPrincipalDelta). Before the amendment, the lossy
     // (P * factor) / factor round-trip can leave the new principal one
     // scale-unit high, so these equalities do not hold on the pre-amendment
-    // code path and must be gated to match the fix they verify.
+    // code path and must be gated to match the fix they verify. They hold for
+    // any new TotalValueOutstanding, including the scheduled value that
+    // tryOverpayment sets under LendingProtocolV1_2.
     //
     // The valueChange returned by tryOverpayment satisfies
     //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
@@ -1408,6 +1446,89 @@ PaymentComponents::trackedInterestPart() const
     return trackedValueDelta - (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
+namespace {
+
+/* Splits a regular, non-final payment under LendingProtocolV1_2.
+ *
+ * The value part brings TotalValueOutstanding down to the scheduled value with
+ * one payment fewer, but never by more than the rounded periodic payment. The
+ * principal part comes from the theoretical state rounded up, the management
+ * fee part from the theoretical state rounded down, and interest is the rest.
+ * The principal part is bounded so that neither the interest part nor the
+ * interest outstanding after the payment is negative.
+ */
+PaymentComponents
+computeScheduledPaymentComponents(
+    Rules const& rules,
+    Asset const& asset,
+    std::int32_t scale,
+    LoanState const& current,
+    Number const& periodicPayment,
+    Number const& roundedPeriodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining,
+    TenthBips16 managementFeeRate)
+{
+    XRPL_ASSERT_PARTS(
+        paymentRemaining > 1,
+        "xrpl::detail::computeScheduledPaymentComponents",
+        "not the final payment");
+
+    Number const valueAfter =
+        scheduledValue(asset, periodicPayment, periodicRate, paymentRemaining - 1, scale);
+    Number const value = std::min(current.valueOutstanding - valueAfter, roundedPeriodicPayment);
+    XRPL_ASSERT_PARTS(
+        value > beast::kZero,
+        "xrpl::detail::computeScheduledPaymentComponents",
+        "positive value part");
+
+    // Guard 4 of LoanSet, carried to the state after this payment. A loan
+    // created before the amendment may carry value above the upper bound; the
+    // payment never increases that excess.
+    XRPL_ASSERT_PARTS(
+        (current.valueOutstanding - value > roundedPeriodicPayment * (paymentRemaining - 2) &&
+         current.valueOutstanding - value - roundedPeriodicPayment * (paymentRemaining - 1) <=
+             std::max(
+                 kNumZero, current.valueOutstanding - roundedPeriodicPayment * paymentRemaining)),
+        "xrpl::detail::computeScheduledPaymentComponents",
+        "value within payment bounds");
+
+    LoanState const target = computeTheoreticalLoanState(
+        rules, periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
+    Number const targetPrincipal =
+        roundToAsset(asset, target.principalOutstanding, scale, Number::RoundingMode::Upward);
+    Number const targetManagementFee =
+        roundToAsset(asset, target.managementFeeDue, scale, Number::RoundingMode::Downward);
+
+    Number const managementFee = std::max(
+        kNumZero,
+        std::min(
+            {current.managementFeeDue - targetManagementFee, current.managementFeeDue, value}));
+    // The principal part is at least what keeps the interest outstanding after
+    // the payment non-negative, and at most the value part minus the fee part,
+    // so the interest part is non-negative. The cap wins if they cross.
+    Number const principalFloor = current.principalOutstanding +
+        (current.managementFeeDue - managementFee) - (current.valueOutstanding - value);
+    Number const principal = std::min({
+        std::max({kNumZero, principalFloor, current.principalOutstanding - targetPrincipal}),
+        current.principalOutstanding,
+        value - managementFee,
+    });
+
+    XRPL_ASSERT_PARTS(
+        value - principal - managementFee <= current.interestDue,
+        "xrpl::detail::computeScheduledPaymentComponents",
+        "interest part not greater than outstanding");
+
+    return PaymentComponents{
+        .trackedValueDelta = value,
+        .trackedPrincipalDelta = principal,
+        .trackedManagementFeeDelta = managementFee,
+    };
+}
+
+}  // namespace
+
 /* Computes the breakdown of a regular periodic payment into principal,
  * interest, and management fee components.
  *
@@ -1462,6 +1583,21 @@ computePaymentComponents(
             .trackedManagementFeeDelta = managementFeeOutstanding,
             .specialCase = PaymentSpecialCase::Final,
         };
+    }
+
+    if (rules.enabled(featureLendingProtocolV1_2))
+    {
+        return computeScheduledPaymentComponents(
+            rules,
+            asset,
+            scale,
+            constructLoanState(
+                totalValueOutstanding, principalOutstanding, managementFeeOutstanding),
+            periodicPayment,
+            roundedPeriodicPayment,
+            periodicRate,
+            paymentRemaining,
+            managementFeeRate);
     }
 
     // Calculate what the loan state SHOULD be after this payment (the target).
@@ -2292,6 +2428,47 @@ computeManagementFee(
         asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::RoundingMode::Downward);
 }
 
+namespace {
+
+// Only round up if there should be interest.
+Number::RoundingMode
+scheduledValueRounding(Number const& periodicRate)
+{
+    return periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward;
+}
+
+// The scheduled value before rounding to the loan scale. Converting to
+// STAmount already rounds an IOU to 16 significant digits and an XRP or MPT
+// amount to a whole unit.
+STAmount
+unroundedScheduledValue(
+    Asset const& asset,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
+{
+    NumberRoundModeGuard const mg(scheduledValueRounding(periodicRate));
+    // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
+    return STAmount{asset, periodicPayment * paymentsRemaining};
+}
+
+}  // namespace
+
+Number
+scheduledValue(
+    Asset const& asset,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    std::int32_t loanScale)
+{
+    return roundToAsset(
+        asset,
+        unroundedScheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining),
+        loanScale,
+        scheduledValueRounding(periodicRate));
+}
+
 /*
  * Given the loan parameters, compute the derived properties of the loan.
  *
@@ -2344,16 +2521,12 @@ computeLoanProperties(
     auto const periodicPayment =
         detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
-    auto const [totalValueOutstanding, loanScale] = [&] {
-        // only round up if there should be interest
-        NumberRoundModeGuard const mg(
-            periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward);
+    auto const loanScale = [&] {
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
-
-        // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
-        STAmount amount{asset, periodicPayment * paymentsRemaining};
+        STAmount const amount =
+            unroundedScheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining);
 
         // Base the loan scale on the total value, since that's going to be
         // the biggest number involved (barring unusual parameters for late,
@@ -2364,13 +2537,12 @@ computeLoanProperties(
                 (!amount.integral() && loanScale >= static_cast<Number>(amount).exponent()),
             "xrpl::computeLoanProperties",
             "loanScale value fits expectations");
-
-        // We may need to truncate the total value because of the minimum
-        // scale
-        amount = roundToAsset(asset, amount, loanScale);
-
-        return std::make_pair(amount, loanScale);
+        return loanScale;
     }();
+
+    // We may need to truncate the total value because of the minimum scale
+    auto const totalValueOutstanding =
+        scheduledValue(asset, periodicPayment, periodicRate, paymentsRemaining, loanScale);
 
     // Since we just figured out the loan scale, we haven't been able to
     // validate that the principal fits in it, so to allow this function to

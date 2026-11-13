@@ -31,13 +31,16 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -357,6 +360,10 @@ private:
         auto const initialVaultAssets = *maybeInitialVaultAssets;
 
         // 5. Execution Loop
+        // LendingProtocolV1_2 re-aligns the value after an overpayment, so the
+        // second overpayment is no longer ignored.
+        int const firstAppliedOverpayment =
+            env.current()->rules().enabled(featureLendingProtocolV1_2) ? 1 : 2;
         int yieldTheftCount = 0;
         auto previousAssetsTotal = initialVaultAssets;
 
@@ -377,7 +384,8 @@ private:
                  roundedPayment));
             BEAST_EXPECT(
                 (updatedPayment == periodicPayment) ||
-                (flags == tfLoanOverpayment && i >= 2 && updatedPayment < periodicPayment));
+                (flags == tfLoanOverpayment && i >= firstAppliedOverpayment &&
+                 updatedPayment < periodicPayment));
 
             auto const currentVaultSle = env.le(vaultKeylet);
             if (!BEAST_EXPECT(currentVaultSle))
@@ -802,8 +810,12 @@ private:
             .vaultScale = std::nullopt,
         };
 
-        Result const feeFixed = runScenario(all_, feeCase);
-        Result const feeLegacy = runScenario(all_ - fixCleanup3_2_0, feeCase);
+        // LendingProtocolV1_2 sets the new value to the scheduled value, which
+        // moves the legacy management fee by one unit; leave it out to isolate
+        // fixCleanup3_2_0.
+        Result const feeFixed = runScenario(all_ - featureLendingProtocolV1_2, feeCase);
+        Result const feeLegacy =
+            runScenario(all_ - fixCleanup3_2_0 - featureLendingProtocolV1_2, feeCase);
 
         // With the fix the principal is the exact reduction; without it the lossy
         // (P * factor) / factor round-trip leaves it one scale-unit high.
@@ -1227,6 +1239,574 @@ private:
         env.close();
     }
 
+    // ---- LendingProtocolV1_2 schedule: on-time payments and overpayments ----
+
+    static constexpr std::uint32_t kThirtyDays = 30 * 24 * 60 * 60;
+
+    struct VersionCase
+    {
+        char const* name;
+        FeatureBitset features;
+    };
+
+    // The vault version is fixed when the vault is created; the vault keeps it
+    // after LendingProtocolV1_2 is enabled.
+    [[nodiscard]] std::vector<VersionCase>
+    versionCases() const
+    {
+        return {
+            {.name = "Legacy", .features = all_ - featureLendingProtocolV1_2},
+            {
+                .name = "CashBasis",
+                .features = (all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2,
+            },
+            {
+                .name = "FixedPrecision",
+                .features = all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2,
+            },
+        };
+    }
+
+    struct LoanRow
+    {
+        char const* name;
+        AssetType assetType = AssetType::IOU;
+        Number principal;
+        TenthBips32 interestRate{0};
+        std::uint32_t paymentTotal = 0;
+        std::uint32_t paymentInterval = kThirtyDays;
+        std::optional<std::uint8_t> vaultScale = std::nullopt;
+        TenthBips16 managementFeeRate{0};
+        std::uint32_t mptAssetScale = 10'000;
+        // Default to twice the principal in the vault and ten times the
+        // principal for the borrower.
+        std::optional<Number> vaultDeposit = std::nullopt;
+        std::optional<Number> borrowerFunds = std::nullopt;
+    };
+
+    struct LoanContext
+    {
+        BrokerInfo broker;
+        LoanParameters loanParams;
+        Keylet loanKeylet;
+        jtx::Account issuer;
+        jtx::Account lender;
+        jtx::Account borrower;
+        jtx::Account pseudoAccount;
+    };
+
+    // Creates a vault under features, enables LendingProtocolV1_2 if
+    // enableV12 is set, creates the loan, funds the borrower, and runs test.
+    void
+    withLoan(
+        FeatureBitset features,
+        bool enableV12,
+        LoanRow const& row,
+        std::uint32_t loanFlags,
+        std::function<void(jtx::Env&, LoanContext const&)> const& test)
+    {
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        BrokerParameters brokerParams;
+        brokerParams.vaultDeposit = row.vaultDeposit.value_or(row.principal * 2);
+        brokerParams.mptAssetScale = row.mptAssetScale;
+        brokerParams.debtMax = 0;
+        brokerParams.coverRateMin = TenthBips32{0};
+        brokerParams.coverDeposit = 0;
+        brokerParams.coverRateLiquidation = TenthBips32{0};
+        brokerParams.managementFeeRate = row.managementFeeRate;
+        brokerParams.vaultScale = row.vaultScale;
+        brokerParams.redemptionOffset = row.paymentInterval * (row.paymentTotal + 2);
+
+        LoanParameters const loanParams{
+            .account = lender,
+            .counter = borrower,
+            .principalRequest = row.principal,
+            .serviceFee = 1,
+            .interest = row.interestRate,
+            .payTotal = row.paymentTotal,
+            .payInterval = row.paymentInterval,
+            .gracePd = 60,
+            .flags = loanFlags,
+        };
+
+        auto const loan = createLoan(
+            env, row.assetType, brokerParams, loanParams, issuer, lender, borrower, [&](Env& e) {
+                if (enableV12 && !e.current()->rules().enabled(featureLendingProtocolV1_2))
+                {
+                    e.enableFeature(featureLendingProtocolV1_2);
+                    e.close();
+                }
+            });
+        if (BEAST_EXPECT(loan); !loan.has_value())
+            return;
+        auto const& [broker, loanKeylet, pseudo] = *loan;
+        env(pay(issuer, borrower, broker.asset(row.borrowerFunds.value_or(row.principal * 10))));
+        env.close();
+        test(
+            env,
+            {
+                .broker = broker,
+                .loanParams = loanParams,
+                .loanKeylet = loanKeylet,
+                .issuer = issuer,
+                .lender = lender,
+                .borrower = borrower,
+                .pseudoAccount = pseudo,
+            });
+    }
+
+    // Pays one instalment before its due date: the rounded PeriodicPayment plus
+    // LoanServiceFee plus extra, in the smallest units of the asset.
+    TER
+    payInstalment(
+        jtx::Env& env,
+        LoanContext const& c,
+        Number const& extra = Number{},
+        std::uint32_t flags = 0)
+    {
+        using namespace jtx;
+
+        auto const loan = env.le(c.loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return tefINTERNAL;
+        Number const amount =
+            roundPeriodicPayment(
+                c.broker.asset.raw(), loan->at(sfPeriodicPayment), loan->at(sfLoanScale)) +
+            loan->at(sfLoanServiceFee) + extra;
+        env(loan::pay(c.borrower, c.loanKeylet.key, STAmount{c.broker.asset, amount}, flags),
+            Ter(std::ignore));
+        TER const ter = env.ter();
+        env.close();
+        return ter;
+    }
+
+    void
+    expectPaidOff(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        auto const loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loan->at(sfTotalValueOutstanding) == beast::kZero);
+        BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == beast::kZero);
+        BEAST_EXPECT(loan->at(sfManagementFeeOutstanding) == beast::kZero);
+    }
+
+    // The rows that exposed a last payment one unit above the rounded
+    // PeriodicPayment, and the edge cases around it.
+    static std::vector<LoanRow>
+    scheduleRows()
+    {
+        return {
+            {
+                .name = "A: scale 8, last payment needs a unit",
+                .principal = Number{190'623, -3},
+                .interestRate = TenthBips32{12'000},
+                .paymentTotal = 36,
+                .vaultScale = 8,
+                .managementFeeRate = TenthBips16{100},
+            },
+            {
+                .name = "B: default scale",
+                .principal = Number{100'000},
+                .interestRate = TenthBips32{10'000},
+                .paymentTotal = 24,
+                .managementFeeRate = TenthBips16{100},
+            },
+            {
+                .name = "PeriodicPayment below one unit",
+                .principal = Number{6},
+                .interestRate = TenthBips32{14'500},
+                .paymentTotal = 16,
+                .paymentInterval = 365 * 24 * 60 * 60,
+                .vaultScale = 0,
+            },
+            {
+                .name = "PeriodicPayment of 1.6 units",
+                .principal = Number{4},
+                .interestRate = TenthBips32{32'000},
+                .paymentTotal = 3,
+                .paymentInterval = 120 * 24 * 60 * 60,
+                .vaultScale = 0,
+            },
+            {
+                .name = "small loan at 100%",
+                .principal = Number{1'000},
+                .interestRate = TenthBips32{100'000},
+                .paymentTotal = 36,
+                .vaultScale = 0,
+            },
+            {
+                .name = "16 digits",
+                .principal = Number{1'234'567'890'123, -2},
+                .interestRate = TenthBips32{7'500},
+                .paymentTotal = 60,
+                .vaultScale = 2,
+                .managementFeeRate = TenthBips16{1'000},
+            },
+            {
+                .name = "MPT",
+                .assetType = AssetType::MPT,
+                .principal = Number{1'000'003, -4},
+                .interestRate = TenthBips32{9'000},
+                .paymentTotal = 12,
+                .managementFeeRate = TenthBips16{2'500},
+            },
+            {
+                .name = "zero interest rounds to nearest",
+                .principal = Number{1'001},
+                .paymentTotal = 6,
+                .vaultScale = 0,
+            },
+        };
+    }
+
+    // With LendingProtocolV1_2 every on-time payment brings
+    // TotalValueOutstanding down to the scheduled value with one payment
+    // fewer. makeLoanPayments checks each payment against the rounded
+    // PeriodicPayment, the last one included.
+    void
+    testScheduleGuarantees()
+    {
+        for (auto const& version : versionCases())
+        {
+            for (auto const& row : scheduleRows())
+            {
+                testcase << "Schedule guarantees: " << version.name << " " << row.name;
+                withLoan(version.features, true, row, 0, [&](jtx::Env& env, LoanContext const& c) {
+                    VerifyLoanStatus const verify(env, c.broker, c.pseudoAccount, c.loanKeylet);
+                    makeLoanPayments(
+                        env,
+                        c.broker,
+                        c.loanParams,
+                        c.loanKeylet,
+                        verify,
+                        c.issuer,
+                        c.lender,
+                        c.borrower);
+                });
+            }
+        }
+    }
+
+    // An MPT loan whose TotalValueOutstanding is close to the MPT maximum:
+    // PeriodicPayment x k has 19 digits. A FixedPrecision vault does not accept
+    // a deposit this large, so only Legacy and CashBasis are checked.
+    void
+    testMptNearMaximum()
+    {
+        LoanRow const row{
+            .name = "MPT near maximum",
+            .assetType = AssetType::MPT,
+            .principal = Number{3'000'000'000'000'000'003},
+            .interestRate = TenthBips32{10'000},
+            .paymentTotal = 12,
+            .managementFeeRate = TenthBips16{1'000},
+            .mptAssetScale = 1,
+            .vaultDeposit = Number{3'000'000'000'000'000'003},
+            .borrowerFunds = Number{3'300'000'000'000'000'000},
+        };
+        for (auto const& version : versionCases())
+        {
+            if (version.features[featureLendingProtocolV1_2])
+                continue;
+            testcase << "Schedule guarantees: " << version.name << " " << row.name;
+            withLoan(version.features, true, row, 0, [&](jtx::Env& env, LoanContext const& c) {
+                VerifyLoanStatus const verify(env, c.broker, c.pseudoAccount, c.loanKeylet);
+                makeLoanPayments(
+                    env,
+                    c.broker,
+                    c.loanParams,
+                    c.loanKeylet,
+                    verify,
+                    c.issuer,
+                    c.lender,
+                    c.borrower);
+            });
+        }
+    }
+
+    // Overpayments re-align TotalValueOutstanding to the scheduled value of the
+    // new PeriodicPayment, and the rest of the loan is paid with the new
+    // rounded PeriodicPayment.
+    void
+    testOverpaymentRealignsValue()
+    {
+        struct OverpaymentRow
+        {
+            LoanRow row;
+            Number extra;
+            std::vector<std::uint32_t> overpayAt;
+        };
+        std::vector<OverpaymentRow> const rows{
+            {
+                .row =
+                    {
+                        .name = "IOU with fee",
+                        .principal = Number{100'000},
+                        .interestRate = TenthBips32{10'000},
+                        .paymentTotal = 24,
+                        .managementFeeRate = TenthBips16{1'000},
+                    },
+                .extra = Number{1'234'567, -2},
+                .overpayAt = {3, 9, 15, 21},
+            },
+            {
+                .row =
+                    {
+                        .name = "16 digits",
+                        .principal = Number{1'234'567'890'123, -2},
+                        .interestRate = TenthBips32{7'500},
+                        .paymentTotal = 12,
+                        .vaultScale = 2,
+                        .managementFeeRate = TenthBips16{1'000},
+                    },
+                .extra = Number{987'654'321, -2},
+                .overpayAt = {2, 5, 10},
+            },
+            {
+                .row =
+                    {
+                        .name = "MPT",
+                        .assetType = AssetType::MPT,
+                        .principal = Number{1'000'003, -4},
+                        .interestRate = TenthBips32{9'000},
+                        .paymentTotal = 12,
+                        .managementFeeRate = TenthBips16{2'500},
+                    },
+                .extra = Number{12'345},
+                .overpayAt = {1, 4, 7, 10},
+            },
+            // Zero interest with an even number of payments: the half-even tie.
+            {
+                .row =
+                    {
+                        .name = "zero interest",
+                        .principal = Number{1'001},
+                        .paymentTotal = 10,
+                        .vaultScale = 0,
+                    },
+                .extra = Number{3},
+                .overpayAt = {1, 4},
+            },
+        };
+
+        for (auto const& version : versionCases())
+        {
+            for (auto const& [row, extra, overpayAt] : rows)
+            {
+                testcase << "Overpayment re-aligns the value: " << version.name << " " << row.name;
+                withLoan(
+                    version.features,
+                    true,
+                    row,
+                    tfLoanOverpayment,
+                    [&](jtx::Env& env, LoanContext const& c) {
+                        Number const periodicRate =
+                            loanPeriodicRate(row.interestRate, row.paymentInterval);
+                        std::uint32_t paymentsMade = 0;
+                        for (std::uint32_t n = 1; n <= row.paymentTotal; ++n)
+                        {
+                            bool const overpay = std::ranges::find(overpayAt, n) != overpayAt.end();
+                            auto const before = env.le(c.loanKeylet);
+                            if (!BEAST_EXPECT(before) || before->at(sfPaymentRemaining) == 0)
+                                break;
+                            TER const ter = payInstalment(
+                                env,
+                                c,
+                                overpay ? extra : Number{},
+                                overpay ? tfLoanOverpayment : 0);
+                            BEAST_EXPECTS(ter == tesSUCCESS, transToken(ter));
+                            auto const after = env.le(c.loanKeylet);
+                            if (!BEAST_EXPECT(after))
+                                return;
+                            paymentsMade +=
+                                before->at(sfPaymentRemaining) - after->at(sfPaymentRemaining);
+                            if (!overpay || after->at(sfPaymentRemaining) == 0)
+                                continue;
+
+                            BEAST_EXPECTS(
+                                after->at(sfPeriodicPayment) < before->at(sfPeriodicPayment),
+                                "overpayment ignored at payment " + std::to_string(n));
+                            Number const value = after->at(sfTotalValueOutstanding);
+                            Number const expected = row.interestRate == TenthBips32{0}
+                                ? Number{after->at(sfPrincipalOutstanding)}
+                                : scheduledValue(
+                                      c.broker.asset.raw(),
+                                      after->at(sfPeriodicPayment),
+                                      periodicRate,
+                                      after->at(sfPaymentRemaining),
+                                      after->at(sfLoanScale));
+                            BEAST_EXPECTS(
+                                value == expected,
+                                "payment " + std::to_string(n) + ": value " + to_string(value) +
+                                    ", scheduled " + to_string(expected));
+                        }
+                        BEAST_EXPECT(paymentsMade == row.paymentTotal);
+                        expectPaidOff(env, c.loanKeylet);
+                    });
+            }
+        }
+    }
+
+    // Without LendingProtocolV1_2 the parts are rounded separately: the second
+    // payment of the 16-digit loan is one unit below floor(PeriodicPayment),
+    // and a fifth overpayment leaves the value one unit off the schedule.
+    void
+    testWithoutAmendment()
+    {
+        LoanRow const schedule{
+            .name = "16 digits",
+            .principal = Number{1'234'567'890'123, -2},
+            .interestRate = TenthBips32{7'500},
+            .paymentTotal = 60,
+            .vaultScale = 2,
+            .managementFeeRate = TenthBips16{1'000},
+        };
+        LoanRow const overpayment{
+            .name = "16 digits",
+            .principal = Number{1'234'567'890'123, -2},
+            .interestRate = TenthBips32{7'500},
+            .paymentTotal = 12,
+            .managementFeeRate = TenthBips16{1'000},
+        };
+
+        for (auto const& version : versionCases())
+        {
+            if (version.features[featureLendingProtocolV1_2])
+                continue;
+
+            testcase << "Without LendingProtocolV1_2: " << version.name;
+            withLoan(
+                version.features, false, schedule, 0, [&](jtx::Env& env, LoanContext const& c) {
+                    auto const loan = env.le(c.loanKeylet);
+                    std::int32_t const scale = loan->at(sfLoanScale);
+                    Number const floorPayment = roundToAsset(
+                        c.broker.asset.raw(),
+                        loan->at(sfPeriodicPayment),
+                        scale,
+                        Number::RoundingMode::Downward);
+                    BEAST_EXPECT(scale == -5);
+                    BEAST_EXPECT((floorPayment == Number{24'677'978'511'038, -5}));
+
+                    auto const valueDrop = [&] {
+                        Number const before = env.le(c.loanKeylet)->at(sfTotalValueOutstanding);
+                        BEAST_EXPECT(payInstalment(env, c) == tesSUCCESS);
+                        return before - Number{env.le(c.loanKeylet)->at(sfTotalValueOutstanding)};
+                    };
+                    valueDrop();
+                    BEAST_EXPECT((valueDrop() == Number{24'677'978'511'037, -5}));
+                });
+
+            withLoan(
+                version.features,
+                false,
+                overpayment,
+                tfLoanOverpayment,
+                [&](jtx::Env& env, LoanContext const& c) {
+                    Number const periodicRate =
+                        loanPeriodicRate(overpayment.interestRate, overpayment.paymentInterval);
+                    for (int n = 0; n < 6; ++n)
+                    {
+                        BEAST_EXPECT(
+                            payInstalment(env, c, Number{987'654'321, -2}, tfLoanOverpayment) ==
+                            tesSUCCESS);
+                        auto const after = env.le(c.loanKeylet);
+                        Number const scheduled = scheduledValue(
+                            c.broker.asset.raw(),
+                            after->at(sfPeriodicPayment),
+                            periodicRate,
+                            after->at(sfPaymentRemaining),
+                            after->at(sfLoanScale));
+                        Number const value = after->at(sfTotalValueOutstanding);
+                        if (n == 4)
+                        {
+                            BEAST_EXPECT((value == Number{745'286'042'818'614, -5}));
+                            BEAST_EXPECT((scheduled == Number{745'286'042'818'615, -5}));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(value == scheduled);
+                        }
+                    }
+                });
+        }
+    }
+
+    // A loan created without LendingProtocolV1_2 that carries one unit above
+    // its rounded schedule after payment 10. The amendment is then enabled and
+    // the rest of the loan is paid with and without an overpayment.
+    void
+    testUpgrade()
+    {
+        LoanRow const row{
+            .name = "carried unit",
+            .principal = Number{1'234'567'890'123, -2},
+            .interestRate = TenthBips32{100'000},
+            .paymentTotal = 12,
+            .managementFeeRate = TenthBips16{1'000},
+        };
+        for (auto const& version : versionCases())
+        {
+            if (version.features[featureLendingProtocolV1_2])
+                continue;
+            for (bool const overpay : {false, true})
+            {
+                testcase << "Loan created before LendingProtocolV1_2: " << version.name
+                         << (overpay ? ", with an overpayment" : "");
+                withLoan(
+                    version.features,
+                    false,
+                    row,
+                    tfLoanOverpayment,
+                    [&](jtx::Env& env, LoanContext const& c) {
+                        auto const excess = [&] {
+                            auto const loan = env.le(c.loanKeylet);
+                            return Number{loan->at(sfTotalValueOutstanding)} -
+                                roundPeriodicPayment(
+                                    c.broker.asset.raw(),
+                                    loan->at(sfPeriodicPayment),
+                                    loan->at(sfLoanScale)) *
+                                loan->at(sfPaymentRemaining);
+                        };
+                        for (int n = 1; n <= 10; ++n)
+                            BEAST_EXPECT(payInstalment(env, c) == tesSUCCESS);
+                        Number const unit{1, -5};
+                        BEAST_EXPECT(excess() == unit);
+
+                        env.enableFeature(featureLendingProtocolV1_2);
+                        env.close();
+
+                        if (!overpay)
+                        {
+                            // There is no room to absorb the unit: the last
+                            // payment needs one unit more, as before.
+                            BEAST_EXPECT(payInstalment(env, c) == tesSUCCESS);
+                            BEAST_EXPECT(excess() == unit);
+                            BEAST_EXPECT(payInstalment(env, c) == tecINSUFFICIENT_PAYMENT);
+                            BEAST_EXPECT(payInstalment(env, c, unit) == tesSUCCESS);
+                        }
+                        else
+                        {
+                            // The first accepted overpayment removes the unit.
+                            BEAST_EXPECT(
+                                payInstalment(env, c, Number{1'234'567, -2}, tfLoanOverpayment) ==
+                                tesSUCCESS);
+                            BEAST_EXPECT(excess() == beast::kZero);
+                            BEAST_EXPECT(payInstalment(env, c) == tesSUCCESS);
+                        }
+                        expectPaidOff(env, c.loanKeylet);
+                    });
+            }
+        }
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -1242,6 +1822,11 @@ private:
         // all_ excludes V1.1; amendmentCombinations never pairs it with the
         // sticking schedule. Run that combination explicitly.
         testIntegerScalePrincipalSticks(all_ | featureLendingProtocolV1_1);
+        testScheduleGuarantees();
+        testMptNearMaximum();
+        testOverpaymentRealignsValue();
+        testWithoutAmendment();
+        testUpgrade();
     }
 
     // Tests run under each entry in amendmentCombinations().
