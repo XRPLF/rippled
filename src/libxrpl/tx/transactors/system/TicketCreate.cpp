@@ -4,10 +4,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/TicketEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -17,7 +17,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
@@ -99,24 +98,24 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::ticket(accountID_, SeqProxy::rawTicket(curTicketSeq));
-        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
+        TicketEntryW ticket(accountID_, SeqProxy::rawTicket(curTicketSeq), view());
+        ticket.newSLE();
 
-        sleTicket->setAccountID(sfAccount, accountID_);
-        sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
+        ticket->setAccountID(sfAccount, accountID_);
+        ticket->setFieldU32(sfTicketSequence, curTicketSeq);
 
-        view().insert(sleTicket);
+        ticket.insert();
 
         auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
+            keylet::ownerDir(accountID_), ticket.keylet(), describeOwnerDir(accountID_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticket.key()) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        sleTicket->setFieldU64(sfOwnerNode, *page);
+        ticket->setFieldU64(sfOwnerNode, *page);
     }
 
     // Update the record of the number of Tickets this account owns.
