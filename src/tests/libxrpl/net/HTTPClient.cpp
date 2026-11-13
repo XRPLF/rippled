@@ -7,6 +7,7 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>  // IWYU pragma: keep
 #include <boost/asio/detached.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/socket_base.hpp>
@@ -19,8 +20,10 @@
 #include <helpers/TestSink.h>
 
 #include <chrono>
+#include <deque>
 #include <exception>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,6 +35,15 @@ namespace {
 // Simple HTTP server using Beast for testing
 class TestHTTPServer
 {
+public:
+    /**
+     * What the server does with a connection once it has read the request:
+     * Reply serves the configured status, headers and body; Stall holds the
+     * connection open and never replies; CloseAfterRead hangs up without
+     * replying.
+     */
+    enum class Behaviour { Reply, Stall, CloseAfterRead };
+
 private:
     boost::asio::io_context ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -45,13 +57,28 @@ private:
     std::string responseBody_;
     unsigned int statusCode_{200};
 
+    /**
+     * How a connection is handled once its request is read. Anything other
+     * than Reply leaves the client to finish through its own error handling.
+     */
+    Behaviour behaviour_{Behaviour::Reply};
+
+    /**
+     * The socket of the most recent stalled connection. Holding it open sends
+     * no EOF to the client, so the client's read stays pending until the
+     * client's own deadline fires and closes the client side.
+     */
+    std::optional<boost::asio::ip::tcp::socket> stalledSocket_;
+
     beast::Journal j_;
 
 public:
     TestHTTPServer() : acceptor_(ioc_), j_(TestSink::instance())
     {
-        // Bind to any available port
-        endpoint_ = {boost::asio::ip::tcp::v4(), 0};
+        // Bind to a fixed loopback address (rather than 0.0.0.0) so that a
+        // sibling loopback address such as 127.0.0.2 has no listener, which
+        // the fallback test relies on.
+        endpoint_ = {boost::asio::ip::make_address("127.0.0.1"), 0};
         acceptor_.open(endpoint_.protocol());
         acceptor_.set_option(boost::asio::socket_base::reuse_address(true));
         acceptor_.bind(endpoint_);
@@ -101,6 +128,18 @@ public:
     setStatusCode(unsigned int code)
     {
         statusCode_ = code;
+    }
+
+    /**
+     * Choose what happens to each connection after its request is read.
+     *
+     * @param behaviour Reply to serve the configured response, Stall to hold
+     * the connection open with no reply, CloseAfterRead to hang up instead.
+     */
+    void
+    setBehaviour(Behaviour behaviour)
+    {
+        behaviour_ = behaviour;
     }
 
     void
@@ -154,6 +193,24 @@ private:
             // Read the HTTP request asynchronously
             co_await boost::beast::http::async_read(
                 socket, buffer, req, boost::asio::use_awaitable);
+
+            if (behaviour_ == Behaviour::Stall)
+            {
+                // Hold the connection open and never reply. Moving the socket
+                // into a member keeps it alive after this coroutine returns,
+                // so the client's read stays pending until its own deadline
+                // fires. The accept loop continues and stop() can still end it.
+                stalledSocket_.emplace(std::move(socket));
+                co_return;
+            }
+
+            if (behaviour_ == Behaviour::CloseAfterRead)
+            {
+                // Hang up without replying, so the client's header read ends
+                // with EOF and no bytes.
+                socket.close();
+                co_return;
+            }
 
             // Create response
             boost::beast::http::response<boost::beast::http::string_body> res;
@@ -365,4 +422,144 @@ TEST_F(HTTPClientTest, different_status_codes)
         EXPECT_FALSE(resultError);
         EXPECT_EQ(resultStatus, static_cast<int>(status));
     }
+}
+
+TEST_F(HTTPClientTest, request_times_out_on_stalled_peer)
+{
+    // A peer that reads the request but never replies must not leave the
+    // client waiting: the request deadline fires and completes the handler
+    // exactly once with timed_out. This depends on the deadline wait being
+    // armed on the normal, non-throwing expires_after path.
+    TestHTTPServer server;
+    server.setBehaviour(TestHTTPServer::Behaviour::Stall);
+
+    int completions{0};
+    int resultStatus{-1};
+    boost::system::error_code resultError;
+
+    HTTPClient::get(
+        false,  // no SSL
+        server.ioc(),
+        "127.0.0.1",
+        server.port(),
+        "/stall",
+        1024,  // max response size
+        std::chrono::seconds(1),
+        [&](boost::system::error_code const& ec, int status, std::string const&) -> bool {
+            resultError = ec;
+            resultStatus = status;
+            ++completions;
+            // Close the acceptor so the accept loop ends and run_for drains.
+            server.stop();
+            return false;  // don't retry
+        },
+        j_);
+
+    // Bounded wall-clock drive; the 1s deadline must fire well within this.
+    server.ioc().run_for(std::chrono::seconds(4));
+    // Stop unconditionally so the accept loop ends and the fixture's
+    // finished() check holds even when the client never completes; a
+    // regression then fails an EXPECT instead of aborting the binary.
+    server.stop();
+    server.ioc().poll();
+
+    EXPECT_EQ(completions, 1);
+    EXPECT_EQ(resultError, boost::asio::error::timed_out);
+    EXPECT_EQ(resultStatus, 0);
+    EXPECT_TRUE(server.finished());
+}
+
+TEST_F(HTTPClientTest, falls_back_to_next_site_after_connect_failure)
+{
+    // When the first site cannot be reached, the client must fall back to the
+    // next site and report that site's result, not the first site's connect
+    // error. This depends on shutdown_ being cleared at the start of each
+    // attempt in httpsNext().
+    TestHTTPServer server;
+    std::string const testBody = "fallback body";
+    server.setResponseBody(testBody);
+    server.setHeader("Content-Length", std::to_string(testBody.size()));
+
+    // First site: a loopback address the server does not listen on. Where the
+    // whole 127/8 block is local (Linux) the connect is refused at once; where
+    // 127.0.0.2 is not a configured loopback address (macOS) it is unreachable
+    // and the 1 s deadline ends the attempt instead. Either way the client
+    // must move on to the second site, which is the server.
+    std::deque<std::string> const sites{"127.0.0.2", "127.0.0.1"};
+
+    int completions{0};
+    int resultStatus{-1};
+    std::string resultData;
+    boost::system::error_code resultError;
+
+    HTTPClient::get(
+        false,  // no SSL
+        server.ioc(),
+        sites,
+        server.port(),
+        "/fallback",
+        1024,  // max response size
+        std::chrono::seconds(1),
+        [&](boost::system::error_code const& ec, int status, std::string const& data) -> bool {
+            resultError = ec;
+            resultStatus = status;
+            resultData = data;
+            ++completions;
+            server.stop();
+            return false;  // don't retry
+        },
+        j_);
+
+    // Bounded wall-clock drive: worst case is one 1 s deadline on the first
+    // site followed by the real exchange on the second.
+    server.ioc().run_for(std::chrono::seconds(6));
+    server.stop();
+    server.ioc().poll();
+
+    EXPECT_EQ(completions, 1);
+    EXPECT_FALSE(resultError);
+    EXPECT_EQ(resultStatus, 200);
+    EXPECT_EQ(resultData, testBody);
+    EXPECT_TRUE(server.finished());
+}
+
+TEST_F(HTTPClientTest, reports_read_error_when_peer_closes_without_reply)
+{
+    // A peer that reads the request and hangs up must surface the read error
+    // itself, not a parse failure of the empty header buffer. This depends on
+    // handleHeader() recording its own error code before it looks at the
+    // buffer. The client timeout is longer than the drive window so that a
+    // timeout cannot stand in for the read error.
+    TestHTTPServer server;
+    server.setBehaviour(TestHTTPServer::Behaviour::CloseAfterRead);
+
+    int completions{0};
+    int resultStatus{-1};
+    boost::system::error_code resultError;
+
+    HTTPClient::get(
+        false,  // no SSL
+        server.ioc(),
+        "127.0.0.1",
+        server.port(),
+        "/hangup",
+        1024,  // max response size
+        std::chrono::seconds(10),
+        [&](boost::system::error_code const& ec, int status, std::string const&) -> bool {
+            resultError = ec;
+            resultStatus = status;
+            ++completions;
+            server.stop();
+            return false;  // don't retry
+        },
+        j_);
+
+    server.ioc().run_for(std::chrono::seconds(4));
+    server.stop();
+    server.ioc().poll();
+
+    EXPECT_EQ(completions, 1);
+    EXPECT_EQ(resultError, boost::asio::error::eof);
+    EXPECT_EQ(resultStatus, 0);
+    EXPECT_TRUE(server.finished());
 }
