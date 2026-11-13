@@ -515,8 +515,11 @@ escrowUnlockApplyHelper<MPTIssue>(
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
+    {
+        if (ctx.view.rules().enabled(fixCleanup3_5_0))
+            return tecNO_ENTRY;
         return tecNO_PERMISSION;
-
+    }
     auto const xferRate = transferRate(ctx.view, amount);
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
