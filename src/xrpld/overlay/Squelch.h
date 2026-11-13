@@ -89,7 +89,7 @@ template <typename ClockType>
 bool
 Squelch<ClockType>::expireSquelch(PublicKey const& validator)
 {
-    auto now = ClockType::now();
+    auto const now = ClockType::now();
 
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())

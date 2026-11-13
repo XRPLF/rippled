@@ -17,7 +17,7 @@
 namespace xrpl {
 
 template <typename Key>
-static std::size_t
+std::size_t
 extract(Key const& key)
 {
     return key;
@@ -365,7 +365,7 @@ public:
     size() const
     {
         std::size_t ret = 0;
-        for (auto& p : map_)
+        for (auto const& p : map_)
             ret += p.size();
         return ret;
     }

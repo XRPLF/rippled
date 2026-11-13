@@ -248,6 +248,10 @@ public:
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
         std::set<Peer::ID> const& skip) override;
 
+    void
+    relay(STTx const& tx, protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip)
+        override;
+
     std::shared_ptr<Message>
     getManifestsMessage();
 
@@ -294,8 +298,9 @@ public:
                 wp.push_back(x.second);
         }
 
-        for (auto& w : wp)
+        for (auto const& w : wp)
         {
+            // NOLINTNEXTLINE(misc-const-correctness) moved into f
             if (auto p = w.lock())
                 f(std::move(p));
         }
@@ -450,6 +455,16 @@ public:
     }
 
 private:
+    /**
+     * Relay `tx` if present, else only queue its hash for peers that have
+     * tx reduce-relay enabled. The caller has already excluded pseudo-txs.
+     */
+    void
+    relayChecked(
+        UInt256 const& hash,
+        std::optional<std::reference_wrapper<protocol::TMTransaction const>> tx,
+        std::set<Peer::ID> const& toSkip);
+
     void
     squelch(PublicKey const& validator, Peer::ID const id, std::uint32_t squelchDuration)
         const override;
@@ -618,7 +633,7 @@ private:
     void
     collectMetrics()
     {
-        auto counts = traffic_.getCounts();
+        auto const counts = traffic_.getCounts();
         std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(
             counts.size() == stats_.trafficGauges.size(),
@@ -626,11 +641,11 @@ private:
 
         for (auto const& [key, value] : counts)
         {
-            auto it = stats_.trafficGauges.find(key);
+            auto const it = stats_.trafficGauges.find(key);
             if (it == stats_.trafficGauges.end())
                 continue;
 
-            auto& gauge = it->second;
+            auto const& gauge = it->second;
 
             XRPL_ASSERT(
                 gauge.name == value.name,

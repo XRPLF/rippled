@@ -1,6 +1,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/escrow.h>
@@ -17,15 +18,12 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -46,52 +44,6 @@ namespace xrpl::test {
 
 struct EscrowToken_test : public beast::unit_test::Suite
 {
-    static uint64_t
-    mptEscrowed(jtx::Env const& env, jtx::Account const& account, jtx::MPT const& mpt)
-    {
-        auto const sle = env.le(keylet::mptoken(mpt.mpt(), account));
-        if (sle && sle->isFieldPresent(sfLockedAmount))
-            return (*sle)[sfLockedAmount];
-        return 0;
-    }
-
-    static uint64_t
-    issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
-    {
-        auto const sle = env.le(keylet::mptokenIssuance(mpt.mpt()));
-        if (sle && sle->isFieldPresent(sfLockedAmount))
-            return (*sle)[sfLockedAmount];
-        return 0;
-    }
-
-    static jtx::PrettyAmount
-    issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
-    {
-        json::Value params;
-        params[jss::account] = account.human();
-        auto jrr = env.rpc("json", "gateway_balances", to_string(params));
-        auto const result = jrr[jss::result];
-        auto const obligations = result[jss::obligations][to_string(issue.currency)];
-        if (obligations.isNull())
-            return {STAmount(issue, 0), account.name()};
-        STAmount const amount = amountFromString(issue, obligations.asString());
-        return {amount, account.name()};
-    }
-
-    static jtx::PrettyAmount
-    issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
-    {
-        json::Value params;
-        params[jss::account] = account.human();
-        auto jrr = env.rpc("json", "gateway_balances", to_string(params));
-        auto const result = jrr[jss::result];
-        auto const locked = result[jss::locked][to_string(issue.currency)];
-        if (locked.isNull())
-            return {STAmount(issue, 0), account.name()};
-        STAmount const amount = amountFromString(issue, locked.asString());
-        return {amount, account.name()};
-    }
-
     void
     testIOUEnablement(FeatureBitset features)
     {
@@ -1169,7 +1121,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(aa);
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1177,7 +1129,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             }
 
             {
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1194,7 +1146,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1202,7 +1154,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             }
 
             {
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1216,19 +1168,19 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bb) != bod.end());
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1242,13 +1194,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bb) == bod.end());
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1289,13 +1241,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1304,13 +1256,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(cod.begin(), cod.end(), bc) != cod.end());
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1326,13 +1278,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1341,10 +1293,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1360,13 +1312,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1375,10 +1327,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1418,16 +1370,16 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(ag);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ag) != aod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1439,16 +1391,16 @@ struct EscrowToken_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ag) == aod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1473,56 +1425,74 @@ struct EscrowToken_test : public beast::unit_test::Suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> const tests = {{
-            // src > dst && src > issuer && dst no trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // src < dst && src < issuer && dst no trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // dst > src && dst > issuer && dst no trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // dst < src && dst < issuer && dst no trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-        }};
+        std::array<TestAccountData, 8> const tests = {
+            {
+                // src > dst && src > issuer && dst no trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst no trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst no trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst no trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // src > dst && src > issuer && dst has trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst has trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst has trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst has trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
@@ -1611,16 +1581,18 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close();
         }
 
-        std::array<TestAccountData, 4> const gwDstTests = {{
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
-        }};
+        std::array<TestAccountData, 4> const gwDstTests = {
+            {
+                // src > dst && src > issuer && dst has trustline
+                {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // src < dst && src < issuer && dst has trustline
+                {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
+                // dst > src && dst > issuer && dst has trustline
+                {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // dst < src && dst < issuer && dst has trustline
+                {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
+            },
+        };
 
         // issuer is destination
         for (auto const& t : gwDstTests)
@@ -1754,7 +1726,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate higher
@@ -1796,7 +1768,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -1838,7 +1810,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kCancelTime(env.now() + 3s),
                 Fee(baseFee));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -2543,10 +2515,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             auto const mpt = mptGw["MPT"];
@@ -2573,10 +2546,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -2606,10 +2580,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -2637,10 +2612,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -2752,10 +2728,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -2796,7 +2773,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -2824,10 +2801,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -2985,10 +2963,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -3024,7 +3003,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -3066,7 +3045,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         env(pay(gw, carol, mpt(10'000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, mpt);
+        auto const outstandingMPT = env.balance(gw, mpt);
 
         // Create & Finish Escrow
         auto const seq1 = env.seq(alice);
@@ -3379,7 +3358,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(aa);
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3387,7 +3366,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             }
 
             {
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3404,7 +3383,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3418,13 +3397,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3438,7 +3417,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3482,13 +3461,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3497,7 +3476,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3510,13 +3489,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3525,7 +3504,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
             }
 
@@ -3535,13 +3514,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3550,7 +3529,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
         }
@@ -3633,11 +3612,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3688,11 +3668,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3734,11 +3715,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3855,11 +3837,17 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const gw = Account("gw");
 
-        for (auto const testFeatures :
-             {features - featureMPTokensV2 - fixCleanup3_4_0,
-              features - featureMPTokensV2,
-              (features | featureMPTokensV2) - fixCleanup3_4_0,
-              features | featureMPTokensV2})
+        for (auto const testFeatures : {
+                 features - featureMPTokensV2 - fixCleanup3_4_0 - fixCleanup3_5_0,
+                 features - featureMPTokensV2 - fixCleanup3_4_0,
+                 features - featureMPTokensV2 - fixCleanup3_5_0,
+                 features - featureMPTokensV2,
+                 (features | featureMPTokensV2) - fixCleanup3_4_0 - fixCleanup3_5_0,
+                 (features | featureMPTokensV2) - fixCleanup3_4_0,
+                 (features | featureMPTokensV2) - fixCleanup3_5_0,
+                 features | featureMPTokensV2,
+                 features | fixCleanup3_5_0,
+             })
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
@@ -3867,10 +3855,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             // legacy divideRound(amount, lockedRate, ...) path, which runs when
             // fixCleanup3_4_0 is disabled. With fixCleanup3_4_0 the split uses
             // mulRatio (128-bit intermediate), which cannot overflow. Without
-            // it, this large amount overflows unless the MPTokensV2 Number path
-            // is active. So the finish succeeds when either amendment is enabled.
+            // it, this large amount overflows unless divideRound takes the
+            // Number path, which MPTokensV2 or fixCleanup3_5_0 enables. So the
+            // finish succeeds when any of these amendments is enabled.
             bool const cleanup340 = testFeatures[fixCleanup3_4_0];
-            bool const noOverflow = cleanup340 || mptV2;
+            bool const noOverflow = cleanup340 || mptV2 || testFeatures[fixCleanup3_5_0];
             auto const expectedErr = noOverflow ? Ter(tesSUCCESS) : Ter(tefEXCEPTION);
 
             // Finish with a large MPT amount and non-zero transfer fee. When the
@@ -3882,12 +3871,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(escrowAmount)));
                 env.close();
 
@@ -3940,12 +3930,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(noOverflowEscrowAmount)));
                 env.close();
 
@@ -3987,12 +3978,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(escrowAmount)));
                 env.close();
 
@@ -4036,10 +4028,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = gw, .holder = alice});
         mptGw.authorize({.account = bob});
@@ -4079,10 +4072,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
         auto const mpt = mptGw["MPT"];

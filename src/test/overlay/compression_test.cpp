@@ -17,7 +17,6 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -92,11 +91,11 @@ public:
         boost::beast::multi_buffer buffers;
 
         // simulate multi-buffer
-        auto sz = buffer.size() / nbuffers;
+        auto const sz = buffer.size() / nbuffers;
         for (int i = 0; i < nbuffers; i++)
         {
-            auto start = buffer.begin() + sz * i;
-            auto end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
+            auto const start = buffer.begin() + sz * i;
+            auto const end = i < nbuffers - 1 ? (buffer.begin() + sz * (i + 1)) : buffer.end();
             std::vector<std::uint8_t> slice(start, end);
             buffers.commit(
                 boost::asio::buffer_copy(
@@ -119,7 +118,7 @@ public:
         ZeroCopyInputStream stream(buffers.data());
         stream.Skip(header->headerSize);
 
-        auto decompressedSize = xrpl::compression::decompress(
+        auto const decompressedSize = xrpl::compression::decompress(
             stream, header->payloadWireSize, decompressed.data(), header->uncompressedSize);
         BEAST_EXPECT(decompressedSize == header->uncompressedSize);
         auto const proto1 = std::make_shared<T>();
@@ -186,7 +185,7 @@ public:
         env.trust(bob["USD"](fund), alice);
         env.close();
 
-        auto toBinary = [this](std::string const& text) {
+        auto const toBinary = [this](std::string const& text) {
             auto blob = strUnHex(text);
             BEAST_EXPECT(blob);
             return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
@@ -206,7 +205,6 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        transaction->set_receivetimestamp(randInt<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;
@@ -277,15 +275,11 @@ public:
         getObject->set_query(true);
         UInt256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
-        getObject->set_fat(true);
         for (int i = 0; i < 100; i++)
         {
             UInt256 hash(xrpl::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
-            xrpl::SHAMapNodeID const sha(64, hash);
-            object->set_nodeid(sha.getRawString());
-            object->set_index("");
             object->set_data("");
             object->set_ledgerseq(i);
         }
@@ -323,7 +317,7 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::Severity::Info;
+        auto const thresh = beast::Severity::Info;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;
@@ -382,7 +376,7 @@ public:
             env->app().config().vpReduceRelayBaseSquelchEnable = c.vpReduceRelayBaseSquelchEnable;
             return env;
         };
-        auto handshake = [&](int outboundEnable, int inboundEnable) {
+        auto const handshake = [&](int outboundEnable, int inboundEnable) {
             beast::ip::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
@@ -406,7 +400,7 @@ public:
 
             env.reset();
             env = getEnv(inboundEnable);
-            auto httpResp = xrpl::makeResponse(
+            auto const httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, UInt256{1}, 1, {1, 0}, env->app());
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled

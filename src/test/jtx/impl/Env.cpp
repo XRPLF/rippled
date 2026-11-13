@@ -99,7 +99,7 @@ Env::AppBundle::AppBundle(
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
-    thread = std::thread([&]() { app->run(); });
+    thread = std::thread([&] { app->run(); });
 
     client = makeJSONRPCClient(app->config());
 }
@@ -372,7 +372,7 @@ Env::trust(STAmount const& amount, Account const& account)
 Env::ParsedResult
 Env::parseResult(json::Value const& jr)
 {
-    auto error = [](ParsedResult& parsed, json::Value const& object) {
+    auto const error = [](ParsedResult& parsed, json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
         // engine to distinguish this case.
         parsed.ter = telENV_RPC_FAILED;
@@ -414,7 +414,7 @@ void
 Env::submit(JTx const& jt, std::source_location const& loc)
 {
     ParsedResult parsedResult;
-    auto const jr = [&]() {
+    auto const jr = [&] {
         if (jt.stx)
         {
             txid_ = jt.stx->getTransactionID();
@@ -567,7 +567,7 @@ Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    ScopeSuccess const success([&]() {
+    ScopeSuccess const success([&] {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);

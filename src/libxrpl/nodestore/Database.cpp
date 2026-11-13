@@ -96,7 +96,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
+                        auto const obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -140,18 +140,35 @@ Database::isStopping() const
     return readStopping_.load(std::memory_order_relaxed);
 }
 
+/**
+ * Close the read queue and wait for the read threads to exit.
+ *
+ * The call that closes the queue completes every read still queued with no
+ * object before it returns, so every caller gets exactly one callback. The
+ * callbacks run on the calling thread with readLock_ released, since a
+ * callback may post or wait on other reads. A concurrent second call waits
+ * only for the read threads, so it may return while the first call is still
+ * delivering those callbacks.
+ */
 void
 Database::stop()
 {
+    decltype(read_) pending;
     {
         std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
             JLOG(j_.debug()) << "Clearing read queue because of stop request";
-            read_.clear();
+            pending.swap(read_);
             readCondVar_.notify_all();
         }
+    }
+
+    for (auto const& [hash, requests] : pending)
+    {
+        for (auto const& request : requests)
+            request.second(nullptr);
     }
 
     JLOG(j_.debug()) << "Waiting for stop request to complete...";
@@ -174,19 +191,34 @@ Database::stop()
         << " milliseconds";
 }
 
+/**
+ * Queue a read for the read threads, or complete it at once with no object
+ * when the queue is closed, so the caller always gets exactly one callback.
+ *
+ * @param hash The key of the object to read.
+ * @param ledgerSeq The sequence of the ledger the object belongs to.
+ * @param cb The callback that receives the object, or nullptr if the object
+ *        is not present or the database is stopping.
+ */
 void
 Database::asyncFetch(
     UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::scoped_lock const lock(readLock_);
-
-    if (!isStopping())
     {
-        read_[hash].emplace_back(ledgerSeq, std::move(cb));
-        readCondVar_.notify_one();
+        std::scoped_lock const lock(readLock_);
+
+        if (!isStopping())
+        {
+            read_[hash].emplace_back(ledgerSeq, std::move(cb));
+            readCondVar_.notify_one();
+            return;
+        }
     }
+
+    // The queue is closed. Complete the read here, with the lock released.
+    cb(nullptr);
 }
 
 void
@@ -194,7 +226,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
     batch.reserve(kBatchWritePreallocationSize);
-    auto storeBatch = [&, fname = __func__]() {
+    auto storeBatch = [&, fname = __func__] {
         try
         {
             dstBackend.storeBatch(batch);
@@ -240,7 +272,7 @@ Database::fetchNodeObject(
     auto const begin{steady_clock::now()};
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
-    auto dur = steady_clock::now() - begin;
+    auto const dur = steady_clock::now() - begin;
     fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {

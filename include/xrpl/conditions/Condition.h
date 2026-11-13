@@ -18,7 +18,7 @@ enum class Type : std::uint8_t {
     PrefixSha256 = 1,
     ThresholdSha256 = 2,
     RsaSha256 = 3,
-    Ed25519Sha256 = 4
+    Ed25519Sha256 = 4,
 };
 
 class Condition

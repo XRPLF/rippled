@@ -1604,7 +1604,7 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
     beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
     requires(!IsBoostReverseIterator<Iterator>::value)
 {
-    unlinkAndDeleteElement(&*((pos++).iterator()));
+    unlinkAndDeleteElement(&*(pos++).iterator());
     return beast::detail::AgedContainerIterator<false, Iterator>(pos.iterator());
 }
 
@@ -1617,7 +1617,7 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::erase(
     requires(!IsBoostReverseIterator<Iterator>::value)
 {
     for (; first != last;)
-        unlinkAndDeleteElement(&*((first++).iterator()));
+        unlinkAndDeleteElement(&*(first++).iterator());
 
     return beast::detail::AgedContainerIterator<false, Iterator>(first.iterator());
 }

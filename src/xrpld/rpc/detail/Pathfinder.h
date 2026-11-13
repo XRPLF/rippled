@@ -58,13 +58,13 @@ public:
     initPathTable();
 
     bool
-    findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
+    findPaths(int searchLevel, std::function<bool()> const& continueCallback = {});
 
     /**
      * Compute the rankings of the paths.
      */
     void
-    computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
+    computePathRanks(int maxPaths, std::function<bool()> const& continueCallback = {});
 
     /* Get the best paths, up to maxPaths in number, from completePaths_.
 
@@ -77,15 +77,15 @@ public:
         STPath& fullLiquidityPath,
         STPathSet const& extraPaths,
         AccountID const& srcIssuer,
-        std::function<bool(void)> const& continueCallback = {});
+        std::function<bool()> const& continueCallback = {});
 
     enum class NodeType {
-        Source,      // The source account: with an issuer account, if needed.
-        Accounts,    // Accounts that connect from this source/currency.
-        Books,       // Order books that connect to this currency.
-        XrpBook,     // The order book from this currency to XRP.
-        DestBook,    // The order book to the destination currency/issuer.
-        Destination  // The destination account only.
+        Source,       // The source account: with an issuer account, if needed.
+        Accounts,     // Accounts that connect from this source/currency.
+        Books,        // Order books that connect to this currency.
+        XrpBook,      // The order book from this currency to XRP.
+        DestBook,     // The order book to the destination currency/issuer.
+        Destination,  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
@@ -97,8 +97,8 @@ public:
         XrpToXrp,
         XrpToNonXrp,
         NonXrpToXrp,
-        NonXrpToSame,   // Destination currency is the same as source.
-        NonXrpToNonXrp  // Destination currency is NOT the same as source.
+        NonXrpToSame,    // Destination currency is the same as source.
+        NonXrpToNonXrp,  // Destination currency is NOT the same as source.
     };
 
     struct PathRank
@@ -132,7 +132,7 @@ private:
 
     // Add all paths of one type to completePaths_.
     STPathSet&
-    addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
+    addPathsForType(PathType const& type, std::function<bool()> const& continueCallback);
 
     bool
     issueMatchesOrigin(Asset const&);
@@ -144,14 +144,14 @@ private:
         LineDirection direction,
         bool isDestPathAsset,
         AccountID const& dest,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     void
     addLink(
         STPath const& currentPath,
         STPathSet& incompletePaths,
         int addFlags,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     // Call addLink() for each path in currentPaths.
     void
@@ -159,7 +159,7 @@ private:
         STPathSet const& currentPaths,
         STPathSet& incompletePaths,
         int addFlags,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     // Compute the liquidity for a path.  Return tesSUCCESS if it has enough
     // liquidity to be worth keeping, otherwise an error.
@@ -185,7 +185,7 @@ private:
         int maxPaths,
         STPathSet const& paths,
         std::vector<PathRank>& rankedPaths,
-        std::function<bool(void)> const& continueCallback);
+        std::function<bool()> const& continueCallback);
 
     AccountID srcAccount_;
     AccountID dstAccount_;

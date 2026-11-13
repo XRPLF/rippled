@@ -1,20 +1,59 @@
-{ pkgs }:
+{
+  pkgs,
+  # With the custom glibc, the clang tools (clang-tidy, ...) parse code with the
+  # Linux custom toolchain's headers, i.e. the same glibc and libstdc++ as the
+  # build. Without it, they use the nixpkgs default compiler's.
+  customGlibc ? null,
+}:
 let
   # Compiler versions used across the dev shell and the CI environment.
+  # Docs link here and scripts read the version off the tools;
+  # only the clang-format rev in .pre-commit-config.yaml
+  # has to be bumped alongside llvmVersion.
   gccVersion = 15;
-  llvmVersion = 22;
+  llvmVersion = 23;
 
   gccPackage = pkgs."gcc${toString gccVersion}";
   llvmPackages = pkgs."llvmPackages_${toString llvmVersion}";
 
   # Bound explicitly so it tracks llvmPackages above, not the `with pkgs` default.
-  clangTools = llvmPackages.clang-tools;
+  # isLinux first: darwin must not evaluate the custom glibc.
+  clangTools = llvmPackages.clang-tools.override (
+    pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && customGlibc != null) {
+      inherit (import ./linux.nix { inherit pkgs customGlibc; }) clang;
+    }
+  );
 
   # In LLVM 22, run-clang-tidy.py moved from share/clang/ to bin/, so nixpkgs
   # clang-tools no longer links it. Wrap it manually.
   runClangTidy = pkgs.writeShellScriptBin "run-clang-tidy" ''
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
+
+  # Distrusts the roots of the compromised eMudhra intermediates;
+  # see https://emudhra.we-have-a-problem.com/.
+  # TODO: revert to plain pkgs.cacert once nixpkgs ships cacert >= 3.131.1.
+  cacert = pkgs.cacert.override {
+    blacklist = [
+      "Comodo AAA Services root"
+      "emSign ECC Root CA - G3"
+    ];
+  };
+
+  # Conan 2.33 is the first release whose settings.yml accepts clang 23.
+  # TODO: drop once nixpkgs ships it.
+  conan = pkgs.conan.overridePythonAttrs (old: {
+    version = "2.33.0";
+    src = pkgs.fetchFromGitHub {
+      owner = "conan-io";
+      repo = "conan";
+      tag = "2.33.0";
+      hash = "sha256-FDJjesqvPiAUAEjeqQt088Vnet/KXHbUyEPytP9MyG4=";
+    };
+    dependencies = old.dependencies ++ [ pkgs.python3Packages.truststore ];
+    # The upstream test suite takes long and needs network access.
+    doCheck = false;
+  });
 
   rust = import ./rust.nix { inherit pkgs; };
 
@@ -23,12 +62,13 @@ let
   # version-suffixed name first and fall back to a system binary on the PATH
   # when Nix doesn't provide it:
   #   - Conan's Boost recipe looks up `g++-<major>` before plain `g++`.
-  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>` and
-  #     `clang-apply-replacements-<v>` before the unsuffixed names.
-  # On a host that also has the matching system binary (e.g. Ubuntu's
-  # `/usr/bin/g++-15` or `clang-tidy-22`) the probe escapes Nix and mixes a
-  # system tool into the Nix environment. Generate version-suffixed symlinks
-  # next to a package's tools so those probes resolve to the Nix ones.
+  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>`
+  #     before the unsuffixed name.
+  # On a host that also has the matching system binary
+  # (e.g. Ubuntu's `/usr/bin/g++-<v>` or `clang-tidy-<v>`),
+  # the probe escapes Nix and mixes a system tool into the Nix environment.
+  # Generate version-suffixed symlinks next to a package's tools
+  # so those probes resolve to the Nix ones.
   #
   # Compiler links must point at whichever compiler is active in a given
   # environment (the plain stdenv compiler in the dev shell, the custom-glibc
@@ -84,6 +124,7 @@ let
 in
 {
   inherit
+    cacert
     gccVersion
     llvmVersion
     gccPackage
@@ -112,6 +153,7 @@ in
       gnumake
       gnupg # needed for signing commits & codecov/codecov-action
       graphviz
+      jq
       less # needed for git diff
       mold
       nettools # provides netstat, used to debug failures in CI

@@ -530,7 +530,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     std::scoped_lock lock(mutex_);
 
     // Find out if the FeatureVotes table exists in WalletDB
-    bool const featureVotesExist = [this]() {
+    bool const featureVotesExist = [this] {
         auto db = db_.checkoutDb();
         return createFeatureVotes(*db);
     }();
@@ -668,7 +668,7 @@ AmendmentState const*
 AmendmentTableImpl::get(UInt256 const& amendmentHash, std::scoped_lock<std::mutex> const&) const
 {
     // call with the mutex held
-    auto ret = amendmentMap_.find(amendmentHash);
+    auto const ret = amendmentMap_.find(amendmentHash);
 
     if (ret == amendmentMap_.end())
         return nullptr;
@@ -851,7 +851,7 @@ AmendmentTableImpl::doVoting(
 
         bool const hasValMajority = vote->passes(entry.first);
 
-        auto const majorityTime = [&]() -> std::optional<NetClock::time_point> {
+        auto const majorityTime = [&] -> std::optional<NetClock::time_point> {
             auto const it = majorityAmendments.find(entry.first);
             if (it != majorityAmendments.end())
                 return it->second;
@@ -860,7 +860,7 @@ AmendmentTableImpl::doVoting(
 
         bool const hasLedgerMajority = majorityTime.has_value();
 
-        auto const logStr = [&entry, &vote]() {
+        auto const logStr = [&entry, &vote] {
             std::stringstream ss;
             ss << entry.first << " (" << entry.second.name << ") has " << vote->votes(entry.first)
                << " votes";

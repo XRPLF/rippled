@@ -392,7 +392,7 @@ public:
     void
     run() override
     {
-        auto testAll = [this](FeatureBitset features) {
+        auto const testAll = [this](FeatureBitset features) {
             testStepLimit(features);
             testCrossingLimit(features);
             testStepAndCrossingLimit(features);

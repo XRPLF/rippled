@@ -6,12 +6,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
@@ -74,9 +76,20 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
         "xrpl::buildLedgerImpl : valid ledger fees");
-    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    // The invariant: a ledger this function returns has both maps immutable, which is what
+    // setAccepted() reports on (see Ledger::setImmutable()). Nothing downstream re-checks it.
+    //
+    // logicError() rather than UNREACHABLE(): the consensus caller acts on this ledger straight
+    // away, so the stop has to name this site in every build rather than only where assertions
+    // are on. See RCLConsensus::Adaptor::buildLCL().
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 
     return built;
 }

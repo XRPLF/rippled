@@ -36,7 +36,7 @@ template <typename T>
 concept SomeChar = std::same_as<std::remove_cvref_t<T>, int8_t> ||
     std::same_as<std::remove_cvref_t<T>, char> || std::same_as<std::remove_cvref_t<T>, uint8_t>;
 
-inline constexpr std::array<std::optional<int>, 256> const kDigitLookupTable = []() {
+inline constexpr std::array<std::optional<int>, 256> const kDigitLookupTable = [] {
     std::array<std::optional<int>, 256> t{};
 
     for (int i = 0; i < 10; ++i)

@@ -33,7 +33,7 @@ enum class Validity {
     /**
      * Signature and local checks are good / passed.
      */
-    Valid
+    Valid,
 };
 
 /**
@@ -133,7 +133,7 @@ enum class ApplyTransactionResult {
     /**
      * Should be retried in this ledger
      */
-    Retry
+    Retry,
 };
 
 /**

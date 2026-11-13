@@ -92,7 +92,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto const found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -132,7 +132,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto const found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -209,7 +209,7 @@ public:
         while (network.size() != 8)
             network.push_back(randomNode());
 
-        auto format = [](PublicKey const& publicKey, char const* comment = nullptr) {
+        auto const format = [](PublicKey const& publicKey, char const* comment = nullptr) {
             auto ret = toBase58(TokenType::NodePublic, publicKey);
 
             if (comment)

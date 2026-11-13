@@ -59,10 +59,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             auto const before = read(env, f);
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(amount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -108,7 +109,13 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             (fixEnabled ? " (fixCleanup3_4_0)" : " (pre-fix)"));
 
         std::array<std::uint64_t, 6> const kShareCounts{
-            99'999u, 100'001u, 333'333u, 1'234'567u, 142'857'142u, 333'333'333u};
+            99'999u,
+            100'001u,
+            333'333u,
+            1'234'567u,
+            142'857'142u,
+            333'333'333u,
+        };
 
         // Fill the vault with enough shares that every count below is
         // available to the depositor.
@@ -123,10 +130,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
 
         Vault const v{env};
         // Deposit a large amount so we can afford every withdrawal below.
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(1'000'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(1'000'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
@@ -197,10 +205,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
 
         // Give the depositor a stake so that the issuer has something to
         // claw back.
-        env(v.deposit(
-                {.depositor = f.depositor,
-                 .id = f.vaultKeylet.key,
-                 .amount = asset(2'000).value()}),
+        env(v.deposit({
+                .depositor = f.depositor,
+                .id = f.vaultKeylet.key,
+                .amount = asset(2'000).value(),
+            }),
             Ter(std::ignore));
         env.close();
 
@@ -210,11 +219,12 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             if (before.sharesTotal == 0)
                 continue;
 
-            env(v.clawback(
-                    {.issuer = f.issuer,
-                     .id = f.vaultKeylet.key,
-                     .holder = f.depositor,
-                     .amount = asset(amount).value()}),
+            env(v.clawback({
+                    .issuer = f.issuer,
+                    .id = f.vaultKeylet.key,
+                    .holder = f.depositor,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -267,10 +277,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             auto const& asset = *f.asset;
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(amount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -327,7 +338,8 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             500'000,
             1'000'000,
             5'000'000,
-            10'000'000};
+            10'000'000,
+        };
         std::array<int, 3> const kPreFixFailures{1, 7, 10'000'000};
 
         for (auto const amount : kAmounts)
@@ -342,10 +354,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             auto const& asset = *f.asset;
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(amount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 
@@ -390,7 +403,16 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             (fixEnabled ? " (fixCleanup3_4_0)" : " (pre-fix)"));
 
         std::array<int, 9> const kAmounts{
-            1, 7, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 99'999};
+            1,
+            7,
+            100,
+            1'000,
+            10'000,
+            100'000,
+            1'000'000,
+            10'000'000,
+            99'999,
+        };
 
         std::array<int, 4> const kPreFixFailures{1, 7, 10'000, 10'000'000};
 
@@ -406,10 +428,11 @@ class VaultInvariantPrecision_test : public VaultPrecisionFixture
             auto const& asset = *f.asset;
 
             Vault const v{env};
-            env(v.deposit(
-                    {.depositor = f.depositor,
-                     .id = f.vaultKeylet.key,
-                     .amount = asset(amount).value()}),
+            env(v.deposit({
+                    .depositor = f.depositor,
+                    .id = f.vaultKeylet.key,
+                    .amount = asset(amount).value(),
+                }),
                 Ter(std::ignore));
             env.close();
 

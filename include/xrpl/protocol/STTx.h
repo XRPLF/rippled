@@ -36,7 +36,7 @@ enum class TxnSql : char {
     Held = 'H',
     Validated = 'V',
     Included = 'I',
-    Unknown = 'U'
+    Unknown = 'U',
 };
 
 class STTx final : public STObject, public CountedObject<STTx>

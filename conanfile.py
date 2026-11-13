@@ -36,11 +36,10 @@ class Xrpl(ConanFile):
         "ed25519/2015.03",
         "fast_float/8.2.10",
         "grpc/1.81.1",
-        "libarchive/3.8.7",
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
-        "xrpl-rpc-spec/0.1.19",
+        "xrpl-rpc-spec/0.1.29",
         "zlib/1.3.2",
     ]
 
@@ -49,7 +48,8 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        "protobuf/6.33.5",
+        "grpc/<host_version>",
+        "protobuf/<host_version>",
     ]
 
     default_options = {
@@ -82,21 +82,6 @@ class Xrpl(ConanFile):
         "grpc/*:python_plugin": False,
         "grpc/*:ruby_plugin": False,
         "grpc/*:otel_plugin": False,
-        "libarchive/*:shared": False,
-        "libarchive/*:with_acl": False,
-        "libarchive/*:with_bzip2": False,
-        "libarchive/*:with_cng": False,
-        "libarchive/*:with_expat": False,
-        "libarchive/*:with_iconv": False,
-        "libarchive/*:with_libxml2": False,
-        "libarchive/*:with_lz4": True,
-        "libarchive/*:with_lzma": False,
-        "libarchive/*:with_lzo": False,
-        "libarchive/*:with_nettle": False,
-        "libarchive/*:with_openssl": False,
-        "libarchive/*:with_pcreposix": False,
-        "libarchive/*:with_xattr": False,
-        "libarchive/*:with_zlib": False,
         "lz4/*:shared": False,
         "openssl/*:no_dtls": True,
         "openssl/*:no_ssl": True,
@@ -122,6 +107,10 @@ class Xrpl(ConanFile):
         "xrpl-rpc-spec/*:server": "xrpld",
         "xxhash/*:shared": False,
     }
+
+    # default_options only reach the host context;
+    # give tool_requires (and their dependencies) the same dependency options.
+    default_build_options = {k: v for k, v in default_options.items() if "/" in k}
 
     def set_version(self):
         self.version = self.version or DEV_VERSION
@@ -149,7 +138,7 @@ class Xrpl(ConanFile):
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
-        "bin/default-loader-path.sh",
+        "bin/nix/default-loader-path.sh",
         "CMakeLists.txt",
         "cfg/*",
         "cmake/*",
@@ -227,7 +216,6 @@ class Xrpl(ConanFile):
             "ed25519::ed25519",
             "fast_float::fast_float",
             "grpc::grpc++",
-            "libarchive::libarchive",
             "lz4::lz4",
             "mpt-crypto::mpt-crypto",
             "nudb::nudb",
