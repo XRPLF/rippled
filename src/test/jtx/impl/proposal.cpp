@@ -58,6 +58,16 @@ cancel(Account const& account, uint256 const& proposalID)
 }
 
 json::Value
+execute(Account const& executor, uint256 const& proposalID)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::TransactionProposalExecute;
+    jv[jss::Account] = executor.human();
+    jv[sfProposalID.jsonName] = to_string(proposalID);
+    return jv;
+}
+
+json::Value
 unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq)
 {
     // Unsigned canonical form: an empty SigningPubKey and no signature fields
