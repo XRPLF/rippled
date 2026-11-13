@@ -90,6 +90,31 @@ SHAMapNodeID::getRawString() const
     return s.getString();
 }
 
+[[nodiscard]] UInt256
+childNodeID(UInt256 const& parentID, unsigned int parentDepth, unsigned int branch)
+{
+    XRPL_ASSERT(branch < SHAMap::kBranchFactor, "xrpl::childNodeID : valid branch input");
+    XRPL_ASSERT(parentDepth < SHAMap::kLeafDepth, "xrpl::childNodeID : parent above leaf depth");
+
+    // Only a depth below kLeafDepth names a child nibble, so clamp to the last one that does.
+    auto const clamped = std::min(parentDepth, SHAMap::kLeafDepth - 1u);
+
+    // The nibble is cleared before the branch is written, so an id already carrying one there is
+    // overwritten rather than merged. The byte index and both nibble choices read `clamped`, so
+    // they cannot disagree.
+    UInt256 id = parentID;
+    auto& byte = *(id.begin() + (clamped / 2));
+    if ((clamped & 1) != 0u)
+    {
+        byte = static_cast<unsigned char>((byte & 0xF0u) | branch);
+    }
+    else
+    {
+        byte = static_cast<unsigned char>((byte & 0x0Fu) | (branch << 4));
+    }
+    return id;
+}
+
 SHAMapNodeID
 SHAMapNodeID::getChildNodeID(unsigned int branch) const
 {
@@ -113,9 +138,7 @@ SHAMapNodeID::getChildNodeID(unsigned int branch) const
     if (!isPrefixOf(id_))
         Throw<std::logic_error>(std::format("Incorrect mask for {}", to_string(*this)));
 
-    SHAMapNodeID node{depth_ + 1, id_};
-    node.id_.begin()[depth_ / 2] |= ((depth_ & 1) != 0u) ? branch : (branch << 4);
-    return node;
+    return SHAMapNodeID{depth_ + 1, childNodeID(id_, depth_, branch)};
 }
 
 bool
