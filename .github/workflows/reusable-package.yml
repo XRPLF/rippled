@@ -89,7 +89,8 @@ jobs:
 
   package:
     needs: [generate-matrix]
-    # An empty matrix, with every packaged config disabled, cannot run a job.
+    # An unlabeled pull request packages nothing, and GitHub Actions fails a job
+    # whose strategy matrix has no entries.
     if: ${{ needs.generate-matrix.outputs.count != '0' && (github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/')) }}
     strategy:
       fail-fast: false

@@ -226,10 +226,7 @@ jobs:
 
   package:
     needs: [should-run, build-test]
-    # Packaging consumes the debian/rhel release binaries, which no unlabeled
-    # pull request builds, so skip it until the PR is labeled "Ready to merge"
-    # or "Merge CI".
-    if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Merge CI')) }}
+    if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-package.yml
     with:
       # A pull request builds packages to prove they still build, and publishes

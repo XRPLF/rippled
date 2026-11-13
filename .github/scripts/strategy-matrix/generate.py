@@ -22,11 +22,7 @@ ARM64 = "arm64"
 
 
 def config_file(platform: str) -> Path:
-    """Locate the JSON file a platform's configs are read from.
-
-    @param platform One of PLATFORMS.
-    @return The path of that platform's JSON file.
-    """
+    """Locate the JSON file a platform's configs are read from."""
     return THIS_DIR / f"{platform}.json"
 
 
@@ -40,7 +36,9 @@ _BASE_CMAKE_ARGS = [
 
 # The package formats a config can be packaged as, each with its own
 # install-test job in reusable-package.yml.
-PACKAGE_TYPES = ("deb", "rpm")
+PACKAGE_DEB = "deb"
+PACKAGE_RPM = "rpm"
+PACKAGE_TYPES = (PACKAGE_DEB, PACKAGE_RPM)
 
 # The package name a variant suffixes, as build_pkg.py's BASE_NAME spells it:
 # the two have to agree, or the artifact globs miss what was built.
@@ -114,8 +112,7 @@ def matrix_event(event: Event, labels: list[str], ref_type: RefType) -> Event:
     """Resolve a GitHub event, the pull request's labels and the ref type to a
     matrix event.
 
-    If a pull request has both labels, "Merge CI" wins. It selects the merge
-    queue's matrix, which includes every config that "Ready to merge" builds.
+    If a pull request has both labels, "Merge CI" wins.
     """
     if event == Event.PULL_REQUEST:
         if MERGE_GROUP_LABEL in labels:
@@ -136,11 +133,7 @@ def _read_events(events: Sequence[str]) -> list[Event]:
 
 
 def _check_disabled(disabled: object) -> None:
-    """Check that a config's 'disabled' field, when present, is a reason.
-
-    @param disabled The field's value as read from the JSON file, or None if the
-        config has no such field.
-    """
+    """Check that a config's 'disabled' field, when present, is a reason."""
     assert disabled is None or (
         isinstance(disabled, str) and disabled.strip()
     ), f"'disabled' takes the reason the config is disabled, not {disabled!r}."
@@ -199,6 +192,12 @@ class LinuxConfig:
     extra_cmake_args: str = ""
     package: PackageConfig | None = None  # Set to also package this config.
     disabled: str | None = None  # Reason why no event builds this config.
+
+    def sanitizer_entries(self) -> list[str]:
+        """The sanitizer of each entry the config expands into: one per listed
+        sanitizer, or a single entry without one, which the empty string marks.
+        """
+        return self.sanitizers or [""]
 
     def __post_init__(self) -> None:
         _check_disabled(self.disabled)
@@ -309,7 +308,7 @@ class PackagingEntry:
     xrpld_artifact_name: str
     validator_keys_artifact_name: str
     image: str
-    package_type: str  # "deb" or "rpm"; drives the format-specific steps.
+    package_type: str  # One of PACKAGE_TYPES; drives the format-specific steps.
     package_variant: str  # Passed to build_pkg.py --variant; empty for xrpld.
     package_name: str  # The name it builds under, which the artifact globs use.
 
@@ -342,14 +341,12 @@ def expand_linux_matrix(linux: LinuxFile, event: Event) -> list[MatrixEntry]:
         for cfg in configs:
             if cfg.disabled or event not in cfg.events:
                 continue
-            # An empty sanitizers list means "one entry with no sanitizer".
-            effective_sanitizers = cfg.sanitizers or [""]
             effective_archs = {arch: _ARCHS[arch] for arch in cfg.arch}
 
             for compiler, build_type, sanitizer, (arch, arch_info) in itertools.product(
                 cfg.compiler,
                 cfg.build_type,
-                effective_sanitizers,
+                cfg.sanitizer_entries(),
                 effective_archs.items(),
             ):
                 name = config_name(
@@ -464,11 +461,9 @@ def expand_platform_matrix(pf: PlatformFile, event: Event) -> list[MatrixEntry]:
 
 def entry_names(where: str, cfg: LinuxConfig | PlatformConfig) -> list[str]:
     """Name the matrix entries a config expands into, whether or not it is
-    disabled, so a disabled one is reported under the job names CI shows.
-
-    @param where The distro of a Linux config, or the platform of another one.
-    @param cfg The config to name.
-    @return The config names of its entries.
+    disabled, so a disabled one is reported under the job names CI shows. The
+    config is found under 'where': the distro of a Linux config, or the platform
+    of another one.
     """
     enabled = dataclasses.replace(cfg, disabled=None)
     entries: list[MatrixEntry]
@@ -535,6 +530,10 @@ if __name__ == "__main__":
         # own format produced.
         for package_type, names in package_names_by_type(entries).items():
             print(f"{package_type}_package_names={json.dumps(names)}")
+        # An unlabeled pull request packages nothing, and GitHub Actions fails a
+        # job whose strategy matrix has no entries, so the package job reads this
+        # count and skips on zero.
+        print(f"count={len(entries)}")
     else:
         matrix: list[MatrixEntry] = []
         configs: list[tuple[str, LinuxConfig | PlatformConfig]] = []
@@ -547,6 +546,10 @@ if __name__ == "__main__":
                 pf = PlatformFile.load(config_file(platform))
                 matrix += expand_platform_matrix(pf, event)
                 configs += [(pf.platform, c) for c in pf.configs]
+        # Every event builds something, and GitHub Actions fails a job whose
+        # strategy matrix has no entries.
+        where = f"{args.config} config" if args.config else "config"
+        assert matrix, f"no {where} builds on '{event}'."
         entries = matrix
         # Standard output goes to ${GITHUB_OUTPUT}, so the annotations go to
         # standard error, where the runner reads workflow commands as well.
@@ -559,5 +562,3 @@ if __name__ == "__main__":
                 )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in entries]})}")
-    # A job skips an empty matrix by this count, since a strategy needs an entry.
-    print(f"count={len(entries)}")
