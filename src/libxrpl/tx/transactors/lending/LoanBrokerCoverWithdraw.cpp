@@ -81,7 +81,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view, ctx.j);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -109,7 +109,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
     {
         // FixedPrecision outflows are rounded at the posterior exponent here
-        // instead of going through canApplyToBrokerCover: the live
+        // instead of going through canApplyToCover: the live
         // CoverAvailable scale it uses would reject a re-fining withdrawal as
         // sub-ULP.
         roundedAmount = debitToPosteriorBrokerCoverScale(
@@ -123,8 +123,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (auto const ret = canApplyToBrokerCover(
-                ctx.view, sleBroker, vaultAsset, roundedAmount, ctx.j, "LoanBrokerCoverWithdraw"))
+        if (auto const ret =
+                sleBroker.canApplyToCover(vaultAsset, roundedAmount, "LoanBrokerCoverWithdraw"))
             return ret;
     }
 
