@@ -596,23 +596,16 @@ operator<=>(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
     // note that the underlying data is stored in big endian, even if the
     // platform is little endian. This makes the comparison correct.
     //
-    // FIXME: use std::lexicographical_compare_three_way once support is
-    //        added to MacOS.
-
-    auto const ret = std::mismatch(lhs.cbegin(), lhs.cend(), rhs.cbegin());
-
-    // a == b
-    if (ret.first == lhs.cend())
-        return std::strong_ordering::equivalent;
-
-    return (*ret.first > *ret.second) ? std::strong_ordering::greater : std::strong_ordering::less;
+    // memcmp compares unsigned bytes in order, and is much faster than a
+    // byte-at-a-time loop.
+    return std::memcmp(lhs.data(), rhs.data(), lhs.size()) <=> 0;
 }
 
 template <std::size_t Bits, typename Tag>
 [[nodiscard]] constexpr bool
 operator==(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
-    return (lhs <=> rhs) == 0;  // NOLINT(modernize-use-nullptr)
+    return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
 //------------------------------------------------------------------------------
