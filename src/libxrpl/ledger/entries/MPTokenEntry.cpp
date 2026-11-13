@@ -138,6 +138,45 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
     return tesSUCCESS;
 }
 
+template <typename ViewT>
+TER
+MPTokenEntry<ViewT>::unlockEscrow(STAmount const& grossAmount)
+    requires Base::kIsWritable
+{
+    auto const j = this->journal();
+    auto const& mptIssue = grossAmount.get<MPTIssue>();
+    auto const holder = (*this)->getAccountID(sfAccount);
+
+    if (!(*this)->isFieldPresent(sfLockedAmount))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "unlockEscrowMPT: no locked amount in MPToken for " << to_string(holder);
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const locked = (*this)->getFieldU64(sfLockedAmount);
+    auto const delta = grossAmount.mpt().value();
+
+    // Underflow check for subtraction
+    if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for " << to_string(holder)
+                        << ": " << locked << " < " << delta;
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const newLocked = locked - delta;
+    if (newLocked == 0)
+    {
+        (*this)->makeFieldAbsent(sfLockedAmount);
+    }
+    else
+    {
+        (*this)->setFieldU64(sfLockedAmount, newLocked);
+    }
+    this->update();
+    return tesSUCCESS;
+}
+
 template class MPTokenEntry<ReadView>;
 template class MPTokenEntry<ApplyView>;
 
