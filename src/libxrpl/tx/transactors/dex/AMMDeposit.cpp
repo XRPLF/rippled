@@ -715,27 +715,56 @@ AMMDeposit::equalDepositTokens(
     std::optional<STAmount> const& deposit2Min,
     std::uint16_t tfee)
 {
-    auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
-    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
-    auto const frac = divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
-    // amounts factor in the adjusted tokens
-    auto const amountDeposit =
-        getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
-    auto const amount2Deposit =
-        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
-    return deposit(
-        view,
-        ammAccount,
-        amountBalance,
-        amountDeposit,
-        amount2Deposit,
-        lptAMMBalance,
-        tokensAdj,
-        depositMin,
-        deposit2Min,
-        std::nullopt,
-        tfee);
+    try
+    {
+        auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+        auto const frac = divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
+        // amounts factor in the adjusted tokens
+        auto const amountDeposit =
+            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
+        auto const amount2Deposit =
+            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
+        return deposit(
+            view,
+            ammAccount,
+            amountBalance,
+            amountDeposit,
+            amount2Deposit,
+            lptAMMBalance,
+            tokensAdj,
+            depositMin,
+            deposit2Min,
+            std::nullopt,
+            tfee);
+    }
+    catch (std::runtime_error const& e)
+    {
+        // fixCleanup3_4_0 is already active on Mainnet, so gating this path's
+        // new behavior on it would make the change take effect immediately
+        // for everyone with no amendment-voting transition of its own. Gate
+        // on fixCleanup3_6_0 instead, the amendment that is not yet enabled,
+        // so this fix goes through the same activation process as any other
+        // consensus-affecting change. Once fixCleanup3_6_0 is enabled, the
+        // exception is left to propagate into applyGuts' centralized
+        // handler, which still checks fixCleanup3_4_0 (already true) and
+        // returns tecAMM_FAILED.
+        if (view.rules().enabled(fixCleanup3_6_0))
+            throw;
+        JLOG(j_.error()) << "AMMDeposit::equalDepositTokens exception " << e.what();
+        return {tecINTERNAL, STAmount{}};
+    }
+    catch (std::exception const& e)
+    {
+        // Any exception type the range conversion doesn't actually throw.
+        // Kept as a defensive fallback matching the pre-fix scope; not
+        // expected to be hit.
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "AMMDeposit::equalDepositTokens exception " << e.what();
+        return {tecINTERNAL, STAmount{}};
+        // LCOV_EXCL_STOP
+    }
 }
 
 /**

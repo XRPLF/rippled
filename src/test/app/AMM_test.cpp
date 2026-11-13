@@ -6710,9 +6710,13 @@ private:
         // Sibling of testDepositIntegralOverflow for the tfLPToken deposit
         // mode (equalDepositTokens). A huge requested LPTokenOut against a
         // tiny pool makes frac enormous, so the computed asset deposit
-        // exceeds the integral asset's range the same way, but
-        // equalDepositTokens catches the exception locally and always
-        // returns tecINTERNAL, regardless of fixCleanup3_4_0.
+        // exceeds the integral asset's range the same way it does for the
+        // other deposit modes. fixCleanup3_4_0 is already enabled on
+        // Mainnet, so this path's own catch is gated on fixCleanup3_6_0
+        // instead: without it, the legacy local tecINTERNAL is preserved;
+        // with it, the exception reaches applyGuts' centralized handler
+        // (which checks fixCleanup3_4_0, already true) and returns
+        // tecAMM_FAILED, same as every other deposit mode.
         auto const test = [this](FeatureBitset features, TER expected) {
             Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
             env.fund(XRP(30'000), gw_, alice_);
@@ -6729,7 +6733,7 @@ private:
                 });
         };
 
-        test(all - fixCleanup3_4_0, tefEXCEPTION);
+        test(all - fixCleanup3_6_0, tecINTERNAL);
         test(all, tecAMM_FAILED);
     }
 
