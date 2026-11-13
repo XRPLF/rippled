@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -722,7 +721,7 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
         // Create a new ripple line.
-        terResult = trustCreate(
+        terResult = RippleStateEntryW::create(
             view(),
             bHigh,
             accountID_,
