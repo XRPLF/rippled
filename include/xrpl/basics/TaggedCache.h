@@ -116,6 +116,8 @@ public:
      * The lookup counts toward the hit rate that getHitRate() and rate()
      * report.
      *
+     * @tparam KeyComparable The type of the key to look up. The cache must be
+     *         able to compare it with `key_type`.
      * @param key The key to look up.
      * @return `true` If the key was found.
      */
@@ -255,6 +257,8 @@ public:
      * A key already present has its last access time refreshed instead, and
      * is not counted again in getCacheSize().
      *
+     * @tparam ReturnType The return type. It must be constructible from
+     *         `bool`.
      * @param key The key to insert.
      * @return `true` if the key is new and is now tracked.
      */
