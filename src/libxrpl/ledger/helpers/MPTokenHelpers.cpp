@@ -78,25 +78,7 @@ isFrozen(
 bool
 isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth)
 {
-    XRPL_ASSERT(
-        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::isFrozen : MPToken or MPTokenIssuance SLE");
-
-    if (sle.getType() == ltMPTOKEN)
-    {
-        XRPL_ASSERT(sle[sfAccount] == account, "xrpl::isFrozen : valid MPToken holder");
-
-        MPTID const mptID = sle[sfMPTokenIssuanceID];
-        auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
-
-        if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || sle.isFlag(lsfMPTLocked))
-            return true;
-
-        if (issuanceSle)
-            return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
-
-        return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
-    }
+    XRPL_ASSERT(sle.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isFrozen : MPTokenIssuance SLE");
 
     MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
     return isGlobalFrozen(sle) || isIndividualFrozen(view, account, mptIssue) ||
