@@ -52,6 +52,10 @@ def linux_config(**overrides: Any) -> g.LinuxConfig:
     return g.LinuxConfig(**{**fields, **overrides})
 
 
+# What every packaged fixture passes besides its 'package' map.
+PACKAGED = {"extra_cmake_args": g.VALIDATOR_KEYS_ARG}
+
+
 def rejected(**overrides: Any) -> bool:
     try:
         linux_config(**overrides)
@@ -111,11 +115,31 @@ def test_events_list_is_checked() -> None:
     assert not rejected(events=list(g.Event))
 
 
-def test_packaged_config_must_list_tag() -> None:
+def test_package_map_is_checked() -> None:
     package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
-    assert rejected(package=package, events=[g.Event.PUSH])
-    assert not rejected(package=package, events=[g.Event.PUSH, g.Event.TAG])
-    assert rejected(package={**package, "type": "msi"}, events=[g.Event.TAG])
+    assert not rejected(package=package, events=[g.Event.SCHEDULE], **PACKAGED)
+    assert rejected(
+        package={**package, "type": "msi"}, events=[g.Event.TAG], **PACKAGED
+    )
+
+
+def test_packaged_config_builds_validator_keys() -> None:
+    # Packaging downloads the validator-keys artifact, which the build job
+    # uploads only for a config that passes the argument.
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
+    assert rejected(package=package, events=[g.Event.TAG])
+    assert rejected(
+        package=package, events=[g.Event.TAG], extra_cmake_args="-Dassert=ON"
+    )
+    assert not rejected(package=package, events=[g.Event.TAG], **PACKAGED)
+
+
+def test_packaged_sanitizer_build_is_its_variant() -> None:
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
+    sanitized = {"events": [g.Event.TAG], "sanitizers": ["address"], **PACKAGED}
+    assert not rejected(package=package, **sanitized)
+    assert rejected(package=package, **{**sanitized, "sanitizers": ["thread"]})
+    assert rejected(package={**package, "variant": ""}, **sanitized)
 
 
 def test_disabled_config_is_built_by_no_event() -> None:
@@ -154,10 +178,15 @@ def test_disabled_config_is_named_by_its_entries() -> None:
 
 
 def test_packaged_config_has_one_sanitizer_at_most() -> None:
-    package = {"type": "deb", "image": "debian:trixie"}
-    assert not rejected(package=package, events=[g.Event.TAG], sanitizers=["address"])
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
+    assert not rejected(
+        package=package, events=[g.Event.TAG], sanitizers=["address"], **PACKAGED
+    )
     assert rejected(
-        package=package, events=[g.Event.TAG], sanitizers=["address", "thread"]
+        package=package,
+        events=[g.Event.TAG],
+        sanitizers=["address", "thread"],
+        **PACKAGED,
     )
 
 
@@ -237,12 +266,14 @@ def test_packaging_events_build_a_plain_deb_and_every_format() -> None:
             assert any(e.package_type == package_type for e in entries), event
 
 
-def test_tag_packages_every_packaged_config() -> None:
-    tagged = g.expand_linux_packaging(LINUX, g.Event.TAG)
-    assert tagged
-    assert len(tagged) == len(
-        g.expand_linux_packaging(LINUX, g.Event.WORKFLOW_DISPATCH)
-    )
+def test_tag_packages_only_what_push_packages() -> None:
+    # No package is built for the first time on a tag: every one of them went
+    # through a push before.
+    def names(event: g.Event) -> set[str]:
+        return {e.package_name for e in g.expand_linux_packaging(LINUX, event)}
+
+    assert names(g.Event.TAG)
+    assert names(g.Event.TAG) <= names(g.Event.PUSH)
 
 
 def main() -> int:

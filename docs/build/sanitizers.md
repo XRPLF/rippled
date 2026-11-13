@@ -106,10 +106,10 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
 > [!IMPORTANT]
-> The `debian-clang-release-amd64-tsan` CI config lists only the `schedule`,
-> `tag` and `workflow_dispatch` events, so TSan runs on the Trigger workflow's
-> weekday schedule, on a manual run of it and in a tag build, not on a pull
-> request or in the merge queue. A finding cannot fail the job yet:
+> The `debian-clang-release-amd64-tsan` CI config lists only the `schedule`
+> and `workflow_dispatch` events, so TSan runs on the Trigger workflow's weekday
+> schedule and on a manual run of it, not on a pull request, in the merge queue
+> or in a tag build. A finding cannot fail the job yet:
 > `halt_on_error=false` continues past it, and the workflow adds `exitcode=0`
 > to `TSAN_OPTIONS`. The job counts the findings into a warning annotation and
 > uploads the test logs as the `tsan-logs-<config>` artifact. A crash under TSan

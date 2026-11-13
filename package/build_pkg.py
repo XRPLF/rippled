@@ -349,9 +349,13 @@ def main() -> None:
 
     check_binaries(build_dir)
     reported = read_version(build_dir / "xrpld")
-    if variant in SANITIZER_VARIANTS:
-        reported = reported.partition("+")[0]
-    version = package_version(reported, channel)
+    # A sanitizer build appends its name as build metadata, which a release
+    # channel rejects, so only the package version drops it: the changelog
+    # still records the version the binary reports.
+    version = package_version(
+        reported.partition("+")[0] if variant in SANITIZER_VARIANTS else reported,
+        channel,
+    )
     epoch = source_date_epoch()
 
     # rpmbuild and dpkg-buildpackage both honour this for file timestamps.

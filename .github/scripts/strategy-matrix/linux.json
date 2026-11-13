@@ -193,7 +193,7 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "events": ["schedule", "tag", "workflow_dispatch"],
+        "events": ["schedule", "workflow_dispatch"],
         "sanitizers": ["thread"],
         "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
         "package": {

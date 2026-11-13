@@ -81,8 +81,9 @@ works the same way if one is added. `xrpld-asan` and `xrpld-ubsan` are built
 wherever the plain packages are: in the merge queue, on a push, for a pull
 request labeled "Ready to merge" or "Merge CI", nightly, on a manual run of the
 Trigger workflow and on a tag.
-`xrpld-tsan`, the slowest CI job by far, is built only nightly, on a manual run
-of the Trigger workflow and on a tag.
+`xrpld-tsan`, the slowest CI job by far, is built only on the Trigger
+workflow's weekday schedule and on a manual run of it, so it is never
+published: a tag releases only what a push builds.
 `docs/build/sanitizers.md` describes what the binaries report and how to read
 it. `xrpld-tsan` re-executes itself with ASLR disabled when the kernel's address
 layout does not suit TSan, so a sandbox that blocks `personality()`, such as

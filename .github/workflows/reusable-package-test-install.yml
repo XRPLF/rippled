@@ -41,7 +41,7 @@ jobs:
       image: ${{ matrix.image }}
       # TSan re-executes itself with ASLR disabled when the kernel's address
       # layout does not suit it, which Docker's default seccomp profile blocks.
-      options: --security-opt seccomp=unconfined
+      options: ${{ matrix.package_name == 'xrpld-tsan' && '--security-opt seccomp=unconfined' || '' }}
     timeout-minutes: 5
     env:
       # An ASan build reports leaks at exit and then exits nonzero, which would
