@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -50,7 +51,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::ConstRef sleBroker,
+    LoanBrokerEntryR const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -754,7 +755,7 @@ loanMakePayment(
     Asset const& asset,
     ApplyView& view,
     SLE::Ref loan,
-    SLE::ConstRef brokerSle,
+    LoanBrokerEntryR const& brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -159,7 +160,7 @@ determineAsset(
 
 std::expected<STAmount, TER>
 determineClawAmount(
-    SLE::ConstRef sleBroker,
+    LoanBrokerEntryR const& sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
     SLE::ConstRef vaultSle,
@@ -203,7 +204,7 @@ determineClawAmount(
         return requested;
 
     STAmount rounded = debitToPosteriorBrokerCoverScale(
-        vaultSle, sleBroker, requested, Number::RoundingMode::TowardsZero);
+        vaultSle, sleBroker.rawSle(), requested, Number::RoundingMode::TowardsZero);
     if (rounded == beast::kZero)
         return std::unexpected(tecPRECISION_LOSS);
     return rounded;
@@ -259,7 +260,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -366,7 +367,7 @@ LoanBrokerCoverClawback::doApply()
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto const sleBroker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW sleBroker(brokerID, view());
     if (!sleBroker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -389,7 +390,7 @@ LoanBrokerCoverClawback::doApply()
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     sleBroker->at(sfCoverAvailable) -= clawAmount;
-    view().update(sleBroker);
+    sleBroker.update();
 
     associateAsset(*sleBroker, vaultAsset);
 
