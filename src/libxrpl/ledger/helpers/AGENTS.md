@@ -1,0 +1,3 @@
+# AGENTS.md — ledger/helpers
+
+When a helper that takes an `SLE`/`std::shared_ptr<SLE const>` requires it to be non-null and of a specific ledger-entry type, it should `XRPL_ASSERT` that at entry, and keep a real runtime check/error-return alongside the assert (asserts compile out in release builds) — the established idiom in this directory is `std::expected<..., TER>`, returning `std::unexpected(tec*)` on failure. Don't invent a new error-handling idiom for this. Don't add these asserts to helpers whose contract accepts null or other entry types (e.g. `isPseudoAccount` returns `false` for them).
