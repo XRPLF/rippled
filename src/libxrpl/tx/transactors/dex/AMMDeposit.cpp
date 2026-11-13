@@ -309,6 +309,23 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
             return ter;
     }
+    else if (ctx.view.rules().enabled(fixCleanup3_5_0))
+    {
+        auto const checkAsset = [&](Asset const& asset) -> TER {
+            if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
+                return ter;
+            }
+            return tesSUCCESS;
+        };
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+            return ter;
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+            return ter;
+    }
 
     auto const checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)

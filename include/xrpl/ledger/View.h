@@ -113,6 +113,18 @@ canTransferLPToken(
     AccountID const& to,
     AccountID const& lpTokenIssuer);
 
+/**
+ * Check whether @p account may hold an AMM's LPToken: it must pass requireAuth
+ * for both pool assets, as AMMDeposit demands. A non-AMM issuer passes (not an
+ * LPToken); a missing IOU pool-asset issuer fails closed with tecNO_ISSUER.
+ * @return tesSUCCESS, tecNO_ISSUER, or the first failing requireAuth code.
+ */
+[[nodiscard]] TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& lpTokenIssuer);
+
 // Return the list of enabled amendments
 [[nodiscard]] std::set<UInt256>
 getEnabledAmendments(ReadView const& view);

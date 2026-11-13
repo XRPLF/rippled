@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -391,7 +392,19 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 std::pair<IOUAmount, DebtDirection>
 DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
-    return maxPaymentFlow(sb);
+    auto const flow = maxPaymentFlow(sb);
+
+    // check() runs once per strand and admits a redeeming step to an unauthorized
+    // dst_; when that balance reaches zero this step would issue to the line.
+    // A pseudo-account is implicitly authorized, as in requireAuth.
+    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
+        !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
+        !isPseudoAccount(sb, dst_))
+    {
+        return {IOUAmount(beast::kZero), DebtDirection::Issues};
+    }
+
+    return flow;
 }
 
 std::pair<IOUAmount, DebtDirection>
@@ -430,12 +443,41 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            (*sleLine)[sfBalance] == beast::kZero)
+        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
-                             << " src: " << src_;
-            return terNO_AUTH;
+            // Returning dst_ its own IOU needs no authorization.
+            int const balanceSign = (*sleLine)[sfBalance].signum();
+            bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
+
+            // Only an empty unauthorized line used to be refused, so a funded one could
+            // keep growing (XRPLF/rippled issue #5450).
+            if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
+            {
+                JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
+                                 << " src: " << src_;
+                return tecNO_AUTH;
+            }
+
+            // Reached with a zero balance only pre-amendment.
+            if ((*sleLine)[sfBalance] == beast::kZero)
+            {
+                JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
+                                 << " src: " << src_;
+                return terNO_AUTH;
+            }
+        }
+
+        // Only delivery from the AMM is gated, so an unauthorized holder can still divest.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
+        {
+            if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot deliver an LPToken to an account not "
+                                    "authorized for the AMM's assets. dst: "
+                                 << dst_;
+                return ter;
+            }
         }
 
         if (ctx.prevStep != nullptr)
