@@ -1,6 +1,7 @@
 #include <xrpl/ledger/entries/AMMEntry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -230,6 +231,33 @@ AMMEntry<ViewT>::initializeFeeAuctionVote(
     // Clear stale auth accounts from any previous auction slot holder.
     if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
+}
+
+template <typename ViewT>
+std::expected<bool, TER>
+AMMEntry<ViewT>::verifyAndAdjustLPTokenBalance(STAmount const& lpTokens, AccountID const& account)
+    requires Base::kIsWritable
+{
+    auto const res = isOnlyLiquidityProvider(this->applyView(), lpTokens.get<Issue>(), account);
+    if (!res.has_value())
+    {
+        return std::unexpected<TER>(res.error());
+    }
+
+    if (res.value())
+    {
+        if (withinRelativeDistance(
+                lpTokens, Base::operator->()->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
+        {
+            Base::operator->()->setFieldAmount(sfLPTokenBalance, lpTokens);
+            this->update();
+        }
+        else
+        {
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);  // LCOV_EXCL_LINE
+        }
+    }
+    return true;
 }
 
 template class AMMEntry<ReadView>;
