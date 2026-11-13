@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
@@ -18,9 +19,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -53,6 +56,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -3845,6 +3849,654 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A1);
     }
 
+    // Moves holder's balance of asset by delta, as a transfer would. Trust
+    // line balances are stored from the low account's point of view. The
+    // tests never drive an MPToken amount negative.
+    static bool
+    adjustHolding(ApplyView& view, AccountID const& holder, Asset const& asset, Number const& delta)
+    {
+        STAmount const amount{asset, delta};
+        return asset.visit(
+            [&](Issue const& issue) {
+                if (isXRP(issue))
+                {
+                    auto const sle = view.peek(keylet::account(holder));
+                    if (!sle)
+                        return false;
+                    sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) + amount);
+                    view.update(sle);
+                    return true;
+                }
+                auto const sle = view.peek(keylet::trustLine(holder, issue));
+                if (!sle)
+                    return false;
+                auto const balance = sle->getFieldAmount(sfBalance);
+                STAmount const lowDelta{
+                    balance.asset(), holder < issue.getIssuer() ? delta : -delta};
+                sle->setFieldAmount(sfBalance, balance + lowDelta);
+                view.update(sle);
+                return true;
+            },
+            [&](MPTIssue const& issue) {
+                auto const sle = view.peek(keylet::mptoken(issue.getMptID(), holder));
+                if (!sle)
+                    return false;
+                std::int64_t const before = sle->getFieldU64(sfMPTAmount);
+                sle->setFieldU64(
+                    sfMPTAmount, static_cast<std::uint64_t>(before + amount.mpt().value()));
+                view.update(sle);
+                return true;
+            });
+    }
+
+    // Returns the first test account, by name, whose ID starts with the given
+    // byte. An issuer starting with 0x00 puts a vault pseudo-account on the
+    // high side of its trust line, and one starting with 0xFF on the low side.
+    // A given byte turns up about once in 256 names. The fallback is never
+    // reached in practice; if it were, the trust-line side assertion in
+    // checkLoanAssetsAvailableCase would fail.
+    static test::jtx::Account
+    accountWithLeadingByte(std::uint8_t byte)
+    {
+        for (int i = 0; i < 10'000; ++i)
+        {
+            test::jtx::Account account{"issuer" + std::to_string(i)};
+            if (*account.id().begin() == byte)
+                return account;
+        }
+        return test::jtx::Account{"issuer"};
+    }
+
+    enum class LoanTestAsset : std::uint8_t { XRP, MPT, IOU };
+
+    // Change applied by checkLoanAssetsAvailableCase.
+    struct LoanVaultChange
+    {
+        // Added to both AssetsAvailable and AssetsTotal, so the FixedPrecision
+        // AssetsTotal sync check stays quiet.
+        Number available = 0;
+        // Moved from the counterparty into the vault pseudo-account.
+        Number balance = 0;
+        // The lending transactors always update the vault entry. Clear this
+        // to move the holding without touching the vault.
+        bool touchVault = true;
+    };
+
+    // Creates a vault of the given asset with two deposits, applies change
+    // under txType, and checks the outcome. An empty expectLogs means the
+    // change must pass. For IOU, pseudoHigh says which side of the trust line
+    // the vault pseudo-account must be on.
+    void
+    checkLoanAssetsAvailableCase(
+        FeatureBitset features,
+        LoanTestAsset assetKind,
+        test::jtx::Account const& issuer,
+        bool pseudoHigh,
+        TxType txType,
+        LoanVaultChange const& change,
+        std::vector<std::string> const& expectLogs,
+        std::source_location const& loc = std::source_location::current())
+    {
+        using namespace test::jtx;
+
+        std::optional<Keylet> vaultKeylet;
+        Asset asset = xrpIssue();
+
+        auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), issuer);
+            env.close();
+            if (assetKind == LoanTestAsset::IOU)
+            {
+                PrettyAsset const iou = issuer["IOU"];
+                env.trust(iou(1000), a1, a2);
+                env(pay(issuer, a1, iou(1000)));
+                env(pay(issuer, a2, iou(1000)));
+                asset = iou;
+            }
+            else if (assetKind == LoanTestAsset::MPT)
+            {
+                MPTTester const mpt(
+                    {.env = env, .issuer = issuer, .holders = {a1, a2}, .pay = 1000});
+                asset = mpt;
+            }
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+            env(tx);
+            for (auto const* depositor : {&a1, &a2})
+            {
+                env(vault.deposit({
+                    .depositor = *depositor,
+                    .id = keylet.key,
+                    .amount = STAmount{asset, Number(100)},
+                }));
+            }
+            vaultKeylet = keylet;
+            auto const sleVault = env.le(keylet);
+            if (!BEAST_EXPECT(sleVault))
+                return false;
+            if (assetKind == LoanTestAsset::IOU)
+                BEAST_EXPECT((sleVault->at(sfAccount) > issuer.id()) == pseudoHigh);
+            return true;
+        };
+
+        // ValidVault skips its checks when the incoming result is already a
+        // tec, so on the harness's second pass the new check is silent and the
+        // result stays tec. When an MPToken balance moved, ValidMPTTransfer
+        // ("MPToken balance changed on failure", fixCleanup3_4_0) fires on that
+        // pass instead, because the harness reuses the corrupted view, and
+        // escalates to tef. Production discards the view between the passes.
+        // testLoanAssetsAvailableMptSecondPass checks the messages of each pass.
+        bool const pass = expectLogs.empty();
+        TER const firstTer = pass ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED};
+        TER const secondTer = [&] {
+            if (pass)
+                return TER{tesSUCCESS};
+            if (assetKind == LoanTestAsset::MPT && change.balance != beast::kZero)
+                return TER{tefINVARIANT_FAILED};
+            return TER{tecINVARIANT_FAILED};
+        }();
+
+        doInvariantCheck(
+            makeEnv(features),
+            expectLogs,
+            [&](Account const&, Account const& a2, ApplyContext& ac) -> bool {
+                if (!vaultKeylet)
+                    return false;
+                auto const sleVault = ac.view().peek(*vaultKeylet);
+                if (!sleVault)
+                    return false;
+                if (change.touchVault)
+                {
+                    addToVaultField(sleVault, sfAssetsAvailable, change.available);
+                    addToVaultField(sleVault, sfAssetsTotal, change.available);
+                    ac.view().update(sleVault);
+                }
+                if (change.balance != beast::kZero)
+                {
+                    return adjustHolding(
+                               ac.view(), sleVault->at(sfAccount), asset, change.balance) &&
+                        adjustHolding(ac.view(), a2.id(), asset, -change.balance);
+                }
+                return true;
+            },
+            XRPAmount{},
+            STTx{txType, [](STObject&) {}},
+            {firstTer, secondTer},
+            preclose,
+            TxAccount::None,
+            loc);
+    }
+
+    // From fixCleanup3_6_0, every transaction that modifies a vault must change
+    // AssetsAvailable by the same amount as the vault pseudo-account's holding.
+    // Deposit, withdrawal and clawback already had this check; these cases
+    // cover the lending transactions: a loan set moves principal out, a loan
+    // pay moves principal and interest in, and a loan default moves first-loss
+    // capital in. Integral assets compare exactly on every vault version.
+    void
+    testLoanAssetsAvailable()
+    {
+        using namespace test::jtx;
+
+        std::string const failure = "vault balance and assets available must add up";
+        FeatureBitset const testable = testableAmendments();
+
+        struct VersionCase
+        {
+            char const* name;
+            FeatureBitset features;
+            bool exact;
+        };
+        // The vault version is fixed by the amendments enabled at VaultCreate.
+        auto const versions = std::to_array<VersionCase>({
+            {
+                .name = "Legacy",
+                .features = testable - featureLendingProtocolV1_1 - featureLendingProtocolV1_2,
+                .exact = false,
+            },
+            {
+                .name = "CashBasis",
+                .features = testable - featureLendingProtocolV1_2,
+                .exact = false,
+            },
+            {.name = "FixedPrecision", .features = all_, .exact = true},
+        });
+
+        struct TxCase
+        {
+            TxType type;
+            char const* name;
+            // Direction of the funds through the vault pseudo-account.
+            Number direction;
+        };
+        auto const txs = std::to_array<TxCase>({
+            {.type = ttLOAN_SET, .name = "loan set", .direction = Number{-1}},
+            {.type = ttLOAN_PAY, .name = "loan pay", .direction = Number{1}},
+            {.type = ttLOAN_MANAGE, .name = "loan manage", .direction = Number{1}},
+        });
+
+        // IOU runs twice, with the vault pseudo-account on each side of its
+        // trust line, which flips the sign of the stored balance.
+        Account const xrpIssuer{"issuer"};
+        Account const lowIssuer = accountWithLeadingByte(0x00);
+        Account const highIssuer = accountWithLeadingByte(0xFF);
+        struct AssetCase
+        {
+            char const* name;
+            LoanTestAsset kind;
+            Account issuer;
+            bool pseudoHigh;
+        };
+        auto const assets = std::to_array<AssetCase>({
+            {.name = "XRP", .kind = LoanTestAsset::XRP, .issuer = xrpIssuer, .pseudoHigh = false},
+            {.name = "MPT", .kind = LoanTestAsset::MPT, .issuer = xrpIssuer, .pseudoHigh = false},
+            {
+                .name = "IOU (vault high)",
+                .kind = LoanTestAsset::IOU,
+                .issuer = lowIssuer,
+                .pseudoHigh = true,
+            },
+            {
+                .name = "IOU (vault low)",
+                .kind = LoanTestAsset::IOU,
+                .issuer = highIssuer,
+                .pseudoHigh = false,
+            },
+        });
+
+        for (auto const& version : versions)
+        {
+            for (auto const& a : assets)
+            {
+                testcase << "Loan assets available: " << version.name << " " << a.name;
+                for (auto const& tx : txs)
+                {
+                    Number const amount = Number{10} * tx.direction;
+                    auto const check = [&](FeatureBitset features,
+                                           LoanVaultChange const& change,
+                                           std::vector<std::string> const& logs,
+                                           std::source_location const& loc =
+                                               std::source_location::current()) {
+                        checkLoanAssetsAvailableCase(
+                            features, a.kind, a.issuer, a.pseudoHigh, tx.type, change, logs, loc);
+                    };
+
+                    // Assets available follow the real transfer
+                    check(version.features, {.available = amount, .balance = amount}, {});
+
+                    // The three corruptions are rejected with the amendment and
+                    // accepted without it. The trust-line side does not matter
+                    // without the amendment, so one IOU side is enough there.
+                    auto const corruptions = std::to_array<LoanVaultChange>({
+                        // Assets available change without a transfer
+                        {.available = amount},
+                        // A transfer without a change to assets available
+                        {.balance = amount},
+                        // One whole unit apart
+                        {.available = amount + tx.direction, .balance = amount},
+                    });
+                    // The amendment-off behaviour depends on the asset and the
+                    // corruption, not the transaction type, so one transaction
+                    // type per asset covers it and keeps the suite's runtime
+                    // down.
+                    bool const checkDisabled = (a.kind != LoanTestAsset::IOU || a.pseudoHigh) &&
+                        tx.type == ttLOAN_SET;
+                    for (auto const& corruption : corruptions)
+                    {
+                        check(version.features, corruption, {failure});
+                        if (checkDisabled)
+                            check(version.features - fixCleanup3_6_0, corruption, {});
+                    }
+                }
+
+                // Impair, unimpair and a default with no first-loss capital
+                // move nothing
+                LoanVaultChange const noMovement;
+                checkLoanAssetsAvailableCase(
+                    version.features,
+                    a.kind,
+                    a.issuer,
+                    a.pseudoHigh,
+                    ttLOAN_MANAGE,
+                    noMovement,
+                    {});
+            }
+        }
+
+        // IOU on Legacy/CashBasis: the stored fields and the trust line quantize
+        // independently, so one unit at the posterior AssetsTotal scale (here
+        // also the holding's) is tolerated and two are not. FixedPrecision is
+        // exact. The vault holds 200 before and 190 or 210 after, so that scale
+        // is 1e-13.
+        Number const unit{1, -13};
+        for (auto const& version : versions)
+        {
+            testcase << "Loan assets available: " << version.name << " IOU rounding";
+            for (auto const& a : assets)
+            {
+                if (a.kind != LoanTestAsset::IOU)
+                    continue;
+                for (auto const& tx : txs)
+                {
+                    Number const amount = Number{10} * tx.direction;
+                    checkLoanAssetsAvailableCase(
+                        version.features,
+                        a.kind,
+                        a.issuer,
+                        a.pseudoHigh,
+                        tx.type,
+                        {.available = amount, .balance = amount + unit * tx.direction},
+                        version.exact ? std::vector<std::string>{failure}
+                                      : std::vector<std::string>{});
+                    checkLoanAssetsAvailableCase(
+                        version.features,
+                        a.kind,
+                        a.issuer,
+                        a.pseudoHigh,
+                        tx.type,
+                        {.available = amount, .balance = amount + unit * tx.direction * 2},
+                        {failure});
+                }
+            }
+        }
+
+        // Scope limitation: the check needs a modified vault. LoanSet and
+        // LoanPay must modify one, so moving the holding without touching the
+        // vault fails another check, but LoanManage may leave the vault alone,
+        // so the same change passes.
+        testcase << "Loan assets available: holding moved without touching the vault";
+        for (auto const& tx : txs)
+        {
+            bool const mayModify = tx.type == ttLOAN_MANAGE;
+            checkLoanAssetsAvailableCase(
+                versions[1].features,
+                LoanTestAsset::XRP,
+                xrpIssuer,
+                false,
+                tx.type,
+                {.balance = Number{10} * tx.direction, .touchVault = false},
+                mayModify ? std::vector<std::string>{}
+                          : std::vector<std::string>{
+                                "vault operation succeeded without modifying a vault",
+                            });
+        }
+
+        // Earlier-fix-off path: with fixCleanup3_2_0 disabled, the pre-3_2_0
+        // branch of computeVaultMinScale runs, and the no-movement case feeds it
+        // a holding delta with no scale. A no-movement LoanManage and a matching
+        // LoanSet transfer on a Legacy IOU vault must both still pass.
+        testcase << "Loan assets available: fixCleanup3_2_0 disabled";
+        {
+            FeatureBitset const noFix320 = versions[0].features - fixCleanup3_2_0;
+            checkLoanAssetsAvailableCase(
+                noFix320,
+                LoanTestAsset::IOU,
+                lowIssuer,
+                true,
+                ttLOAN_MANAGE,
+                LoanVaultChange{},
+                {});
+            checkLoanAssetsAvailableCase(
+                noFix320,
+                LoanTestAsset::IOU,
+                lowIssuer,
+                true,
+                ttLOAN_SET,
+                {.available = Number{-10}, .balance = Number{-10}},
+                {});
+        }
+    }
+
+    // A Legacy IOU vault whose holding already differs from AssetsAvailable:
+    // AssetsAvailable and AssetsTotal are 1e-16 while the holding is 1.1e-15,
+    // on a ten times coarser grid. A 4e-31 LoanSet moves AssetsAvailable but
+    // rounds away on the trust line; that is within one unit of the holding's
+    // grid and passes. Moving the holding by two units of its grid still
+    // fails, as does moving AssetsAvailable by 1.4 units of it against an
+    // unmoved holding (which would round to one unit), and an unmoved holding
+    // on a vault without the existing difference, where 4e-31 is
+    // representable.
+    void
+    testLoanAssetsAvailableExistingDifference()
+    {
+        using namespace test::jtx;
+
+        testcase("Loan assets available: existing difference between holding and assets available");
+
+        FeatureBitset const legacy =
+            testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2;
+        Number const seededTotal{1, -16};
+        Number const drifted{11, -16};
+        Number const principal{4, -31};
+
+        struct Case
+        {
+            Number holding;
+            Number availableDelta;
+            Number holdingDelta;
+            bool pass;
+            // This is a synthetic invariant test: it seeds a drifted vault
+            // state directly rather than simulating a transaction. An inflow
+            // case that raised AssetsAvailable alone would leave
+            // AssetsAvailable > AssetsTotal and trip a different invariant
+            // before this one runs, so the inflow cases move AssetsTotal with
+            // AssetsAvailable to keep AssetsAvailable <= AssetsTotal satisfied
+            // and exercise only the AssetsAvailable-follows-balance check.
+            // Defaults to zero (the outflow cases shrink AssetsAvailable and
+            // need no total change).
+            Number totalDelta = Number{0};
+            TxType txType = ttLOAN_SET;
+            // Which side of the trust line the vault pseudo-account is on. The
+            // invariant reads the holding in the pseudo-account's terms either
+            // way; this exercises both sign paths on a drifted vault.
+            bool vaultHigh = true;
+        };
+        auto const cases = std::to_array<Case>({
+            {
+                .holding = drifted,
+                .availableDelta = -principal,
+                .holdingDelta = Number{0},
+                .pass = true,
+            },
+            {
+                .holding = drifted,
+                .availableDelta = -principal,
+                .holdingDelta = Number{-2, -30},
+                .pass = false,
+            },
+            {
+                .holding = drifted,
+                .availableDelta = Number{-14, -31},
+                .holdingDelta = Number{0},
+                .pass = false,
+            },
+            {
+                .holding = seededTotal,
+                .availableDelta = -principal,
+                .holdingDelta = Number{0},
+                .pass = false,
+            },
+            // Exactly one unit of the holding's grid moved with an unmoved
+            // holding: the inclusive bound accepts it, so a later < versus <=
+            // regression is caught.
+            {
+                .holding = drifted,
+                .availableDelta = Number{-1, -30},
+                .holdingDelta = Number{0},
+                .pass = true,
+            },
+            // LoanPay inflow: AssetsAvailable rises by an amount the coarse
+            // holding cannot record, which is within tolerance and passes; a
+            // 1.4-unit inflow still fails.
+            {
+                .holding = drifted,
+                .availableDelta = principal,
+                .holdingDelta = Number{0},
+                .pass = true,
+                .totalDelta = principal,
+                .txType = ttLOAN_PAY,
+            },
+            {
+                .holding = drifted,
+                .availableDelta = Number{14, -31},
+                .holdingDelta = Number{0},
+                .pass = false,
+                .totalDelta = Number{14, -31},
+                .txType = ttLOAN_PAY,
+            },
+            // The same transfer-too-small-to-record case on the other trust-line
+            // side.
+            {
+                .holding = drifted,
+                .availableDelta = -principal,
+                .holdingDelta = Number{0},
+                .pass = true,
+                .vaultHigh = false,
+            },
+        });
+        for (auto const& c : cases)
+        {
+            Env env = makeEnv(legacy);
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            // The issuer's leading byte fixes which side of the trust line the
+            // vault pseudo-account lands on.
+            Account const issuer =
+                c.vaultHigh ? accountWithLeadingByte(0x00) : accountWithLeadingByte(0xFF);
+            env.fund(XRP(1000), a1, a2, issuer);
+            env.close();
+            PrettyAsset const iou = issuer["IOU"];
+            env.trust(iou(1000), a1, a2);
+            env(pay(issuer, a1, iou(1000)));
+            env.close();
+            Vault const vault{env};
+            auto [createTx, keylet] = vault.create({.owner = a1, .asset = iou});
+            env(createTx);
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = iou(100)}));
+            env.close();
+
+            // Seed the existing difference into the open ledger, which the
+            // invariant check below reads as its starting state.
+            Issue const issue = Asset{iou}.get<Issue>();
+            bool const seeded = env.app().getOpenLedger().modify([&](OpenView& view,
+                                                                     beast::Journal) {
+                Sandbox sb(&view, TapNone);
+                auto const sleVault = sb.peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->at(sfAssetsAvailable) = seededTotal;
+                sleVault->at(sfAssetsTotal) = seededTotal;
+                sb.update(sleVault);
+                AccountID const pseudo = sleVault->at(sfAccount);
+                auto const line = sb.peek(keylet::trustLine(pseudo, issue));
+                if (!line)
+                    return false;
+                auto const balance = line->getFieldAmount(sfBalance);
+                line->setFieldAmount(
+                    sfBalance,
+                    STAmount{balance.asset(), pseudo > issue.getIssuer() ? -c.holding : c.holding});
+                sb.update(line);
+                sb.apply(view);
+                return true;
+            });
+            if (!BEAST_EXPECT(seeded))
+                continue;
+
+            TER const expected = c.pass ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED};
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                c.pass ? std::vector<std::string>{}
+                       : std::vector<std::string>{
+                             "vault balance and assets available must add up",
+                         },
+                [&](Account const&, Account const&, ApplyContext& ac) -> bool {
+                    auto const sleVault = ac.view().peek(keylet);
+                    if (!sleVault)
+                        return false;
+                    addToVaultField(sleVault, sfAssetsAvailable, c.availableDelta);
+                    addToVaultField(sleVault, sfAssetsTotal, c.totalDelta);
+                    ac.view().update(sleVault);
+                    // The transfer always updates the trust line, even when
+                    // the amount rounds away on it.
+                    return adjustHolding(
+                        ac.view(), sleVault->at(sfAccount), Asset{iou}, c.holdingDelta);
+                },
+                XRPAmount{},
+                STTx{c.txType, [](STObject&) {}},
+                {expected, expected});
+        }
+    }
+
+    // The MPT cases of checkLoanAssetsAvailableCase expect a tef on the
+    // harness's second pass. Check where each result comes from: the first
+    // pass fails on the vault check alone, and the second pass, which reruns
+    // on the same view with a tec input, fails on ValidMPTTransfer instead.
+    void
+    testLoanAssetsAvailableMptSecondPass()
+    {
+        using namespace test::jtx;
+
+        testcase("Loan assets available: MPT second pass");
+
+        Env env = makeEnv(testableAmendments() - featureLendingProtocolV1_2);
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const issuer{"issuer"};
+        env.fund(XRP(1000), a1, a2, issuer);
+        env.close();
+        MPTTester const mpt({.env = env, .issuer = issuer, .holders = {a1, a2}, .pay = 1000});
+        Asset const asset = mpt;
+        Vault const vault{env};
+        auto [createTx, keylet] = vault.create({.owner = a1, .asset = asset});
+        env(createTx);
+        env(vault.deposit({
+            .depositor = a1,
+            .id = keylet.key,
+            .amount = STAmount{asset, Number(100)},
+        }));
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx const tx{ttLOAN_PAY, [](STObject&) {}};
+        test::StreamSink sink{beast::Severity::Warning};
+        beast::Journal const jlog{sink};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+        // A transfer into the vault without a change to assets available
+        auto const sleVault = ac.view().peek(keylet);
+        if (!BEAST_EXPECT(sleVault))
+            return;
+        ac.view().update(sleVault);
+        BEAST_EXPECT(adjustHolding(ac.view(), sleVault->at(sfAccount), asset, Number{10}));
+        BEAST_EXPECT(adjustHolding(ac.view(), a2.id(), asset, Number{-10}));
+
+        auto transactor = makeTransactor(ac);
+        if (!BEAST_EXPECT(transactor))
+            return;
+
+        std::string const vaultMessage = "vault balance and assets available must add up";
+        std::string const mptMessage = "MPToken balance changed on failure";
+
+        TER const first =
+            transactor->checkInvariants(tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+        std::string const firstLog = sink.messages().str();
+        BEAST_EXPECT(first == tecINVARIANT_FAILED);
+        BEAST_EXPECT(firstLog.contains(vaultMessage));
+        BEAST_EXPECT(!firstLog.contains(mptMessage));
+
+        TER const second =
+            transactor->checkInvariants(first, XRPAmount{}, Transactor::InvariantScope::Full);
+        std::string const secondLog = sink.messages().str().substr(firstLog.size());
+        BEAST_EXPECT(second == tefINVARIANT_FAILED);
+        BEAST_EXPECT(secondLog.contains(mptMessage));
+        BEAST_EXPECT(!secondLog.contains(vaultMessage));
+    }
+
     void
     run() override
     {
@@ -3854,6 +4506,9 @@ class InvariantsVault_test : public InvariantsBase
         testVaultAssetsDeployedInvariants();
         testVaultYieldUnrealizedInvariants();
         testVaultAvailableOffByOneSubUnit();
+        testLoanAssetsAvailable();
+        testLoanAssetsAvailableExistingDifference();
+        testLoanAssetsAvailableMptSecondPass();
     }
 };
 
