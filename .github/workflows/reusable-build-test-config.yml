@@ -235,9 +235,11 @@ jobs:
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
           # The exitcode=0 option stays out of runtime-tsan-options.txt, so that
-          # a local run still fails on a finding.
+          # a local run still fails on a finding. TSan exits with that code after
+          # a crash it caught as well, so abort_on_error=1 turns such a crash
+          # into SIGABRT, which the test driver counts as a failure.
           TSAN_OPTS="include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp"
-          echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0" >>${GITHUB_ENV}
+          echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0:abort_on_error=1" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
@@ -374,7 +376,7 @@ jobs:
               # The grep stops at the first match and find then dies of SIGPIPE,
               # which pipefail must not turn into a failure.
               instrumented() {
-                  if { find . -name '*.cpp.o' -exec nm -u {} + 2>/dev/null || true; } | grep -qE "${2}"; then
+                  if { find . -name '*.o' -exec nm -u {} + || true; } | grep -qE "${2}"; then
                       echo "${1}: the objects reference the runtime, matching '${2}'."
                   else
                       echo "${1} is enabled, but no object references '${2}'."
@@ -401,8 +403,8 @@ jobs:
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
-          ./xrpl_tests
-          ./xrpld_tests
+          set -o pipefail
+          { ./xrpl_tests && ./xrpld_tests; } 2>&1 | tee "${GITHUB_WORKSPACE}/separate-tests.log"
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -435,7 +437,32 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/embedded-tests.log"
+
+      # With exitcode=0 the reports sit in the log of a green job, so count them
+      # into an annotation and keep the logs, until a new finding can fail the job.
+      - name: Report the ThreadSanitizer findings
+        if: ${{ !cancelled() && !inputs.build_only && env.TSAN_ENABLED == 'true' }}
+        run: |
+          reports="$(cat separate-tests.log embedded-tests.log 2>/dev/null | grep 'WARNING: ThreadSanitizer: ' || true)"
+          if [ -z "${reports}" ]; then
+              echo 'No ThreadSanitizer findings.'
+              exit 0
+          fi
+          kinds="$(sed -E 's/^.*WARNING: ThreadSanitizer: //; s/ \(pid=[0-9]+\)$//' <<<"${reports}" |
+              sort | uniq -c | sort -rn |
+              awk '{ count = $1; $1 = ""; sub(/^ /, ""); printf "%s%s %s", (NR > 1 ? ", " : ""), count, $0 }')"
+          echo "::warning title=ThreadSanitizer findings::$(wc -l <<<"${reports}" | tr -d ' ') reports: ${kinds}"
+
+      - name: Upload the ThreadSanitizer logs
+        if: ${{ !cancelled() && !inputs.build_only && env.TSAN_ENABLED == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tsan-logs-${{ inputs.config_name }}
+          path: |
+            separate-tests.log
+            embedded-tests.log
+          if-no-files-found: ignore
 
       - name: Run Rust tests
         if: ${{ !inputs.build_only }}
@@ -467,9 +494,9 @@ jobs:
         run: |
           cd "${GITHUB_WORKSPACE}"
 
-          if [ -f unittest.log ]; then
-              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
-                  echo "unittest.log present but no failure lines found."
+          if [ -f embedded-tests.log ]; then
+              if ! grep -E "failed" embedded-tests.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "embedded-tests.log present but no failure lines found."
               fi
           elif [ -f build.log ]; then
               # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
@@ -481,7 +508,7 @@ jobs:
                   echo "build.log present but no compile errors found."
               fi
           else
-              echo "unittest.log/build.log not found; something went wrong."
+              echo "embedded-tests.log/build.log not found; something went wrong."
               exit 1
           fi
       - name: Debug failure (Linux)

@@ -101,12 +101,15 @@ More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCpp
 
 > [!IMPORTANT]
 > The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
-> `workflow_dispatch` events, so TSan runs nightly and on a manual run of the
-> Trigger workflow, not on a pull request, in the merge queue or in a tag build.
-> The job cannot fail yet: `halt_on_error=false` continues past a finding, and
-> the workflow adds `exitcode=0` to `TSAN_OPTIONS`, so read the job log for
-> findings. Once the findings are known and stable, drop `exitcode=0` so a new
-> one fails the job, and suppress the rest.
+> `workflow_dispatch` events, so TSan runs on the Trigger workflow's weekday
+> schedule and on a manual run of it, not on a pull request, in the merge queue
+> or in a tag build. A finding cannot fail the job yet: `halt_on_error=false`
+> continues past it, and the workflow adds `exitcode=0` to `TSAN_OPTIONS`. The
+> job counts the findings into a warning annotation and uploads the test logs
+> as the `tsan-logs-<config>` artifact. A crash under TSan does fail the job,
+> since the workflow also sets `abort_on_error=1`. Once the findings are known
+> and stable, drop `exitcode=0` so a new one fails the job, and suppress the
+> rest.
 
 > [!IMPORTANT]
 > Check lock order on Linux, where TSan reports
@@ -116,7 +119,8 @@ More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCpp
 
 > [!TIP]
 > The build defines `XRPL_ASAN`, `XRPL_TSAN` or `XRPL_UBSAN` per active
-> sanitizer. Test them at run time to skip a test that only applies under one
+> sanitizer (`address`, `thread` or `undefinedbehavior`). Test them with
+> `#ifdef` inside a test body to skip a check that only applies under one
 > sanitizer, so every build still compiles the test.
 
 ### LeakSanitizer (LSan)
