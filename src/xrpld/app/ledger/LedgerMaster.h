@@ -273,7 +273,8 @@ public:
     /**
      * A new ledger has been accepted as part of the trusted chain: mark it
      * validated and full, record it as resident, persist it, and repair the
-     * chain behind it if the parent turns out to disagree. It also becomes the
+     * chain behind it if the parent turns out to disagree. A save that fails
+     * removes the ledger from the resident range again. It also becomes the
      * validated ledger if newer, and the published one if none is set.
      *
      * @param ledger Ledger to accept.

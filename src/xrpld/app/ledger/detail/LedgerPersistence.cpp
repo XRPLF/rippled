@@ -25,15 +25,35 @@
 namespace xrpl {
 
 /**
- * Save a validated ledger to the relational database, once.
+ * Release everything a save that did not happen left behind.
  *
- * The pending-saves entry for the sequence is finished on every exit, so a
- * save that throws leaves no sequence marked in progress: a later save of
- * the same ledger can run, and a synchronous caller waiting on it wakes up.
- * The SAVED flag pendSaveValidated() set on the ledger hash is cleared as
- * well, so that later save is not deduplicated away. The sequence is also
- * removed from the complete range, since the write may have deleted the
- * ledger's row before it failed.
+ * The ledger's row may be gone, so the sequence stops being advertised as
+ * complete. Neither the in-progress mark nor the SAVED flag may outlive the
+ * save, or a retry would be deduplicated away. They are released in the
+ * reverse of the order pendSaveValidated() takes them, or a concurrent enqueue
+ * can re-arm the flag.
+ *
+ * @param registry The services that hold the range, the pending saves and
+ *        the flags.
+ * @param ledger The ledger whose save failed.
+ */
+static void
+releaseFailedSave(ServiceRegistry& registry, Ledger const& ledger)
+{
+    registry.getLedgerMaster().clearLedger(ledger.header().seq);
+    registry.getPendingSaves().finishWork(ledger.header().seq);
+    registry.getHashRouter().clearFlags(ledger.header().hash, HashRouterFlags::SAVED);
+}
+
+/**
+ * Write a validated ledger to the relational database.
+ *
+ * The caller owns the pending-saves entry for the sequence. The entry is
+ * finished on every exit, so a save that fails leaves no sequence marked in
+ * progress: a later save of the same ledger can run, and a synchronous caller
+ * waiting on it wakes up. A save that throws, or that the database reports as
+ * not done, also releases the SAVED flag and the complete-range entry through
+ * releaseFailedSave().
  *
  * @param registry The services that hold the pending saves and the database.
  * @param ledger The ledger to save.
@@ -41,20 +61,12 @@ namespace xrpl {
  * @return Whether the database reported the save as done.
  */
 static bool
-saveValidatedLedger(
+writeValidatedLedger(
     ServiceRegistry& registry,
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto const j = registry.getJournal("Ledger");
     auto const seq = ledger->header().seq;
-    if (!registry.getPendingSaves().startWork(seq))
-    {
-        // The save was completed synchronously
-        JLOG(j.debug()) << "Save aborted";
-        return true;
-    }
-
     auto& db = registry.getRelationalDatabase();
 
     bool res = false;
@@ -64,21 +76,45 @@ saveValidatedLedger(
     }
     catch (...)
     {
-        // The ledger's row may be gone, so stop advertising the sequence as complete.
-        registry.getLedgerMaster().clearLedger(seq);
-
-        // Neither the in-progress mark nor the SAVED flag may outlive a save that did not happen,
-        // or a retry would be deduplicated away. Release them in the reverse of the order
-        // pendSaveValidated() takes them, or a concurrent enqueue can re-arm the flag.
-        registry.getPendingSaves().finishWork(seq);
-        registry.getHashRouter().clearFlags(ledger->header().hash, HashRouterFlags::SAVED);
+        releaseFailedSave(registry, *ledger);
         throw;
     }
 
-    // Clients can now trust the database for
-    // information about this ledger sequence.
+    if (!res)
+    {
+        // The database did not write the ledger, so nothing may claim that it did.
+        releaseFailedSave(registry, *ledger);
+        return false;
+    }
+
+    // Clients can now trust the database for information about this ledger sequence.
     registry.getPendingSaves().finishWork(seq);
-    return res;
+    return true;
+}
+
+/**
+ * Save a scheduled validated ledger, unless another thread took the work.
+ *
+ * @param registry The services that hold the pending saves and the database.
+ * @param ledger The ledger to save.
+ * @param current Whether the ledger is the current validated ledger.
+ * @return Whether the database reported the save as done, or true when another
+ *         thread took the work.
+ */
+static bool
+saveValidatedLedger(
+    ServiceRegistry& registry,
+    std::shared_ptr<Ledger const> const& ledger,
+    bool current)
+{
+    if (!registry.getPendingSaves().startWork(ledger->header().seq))
+    {
+        // The save was completed synchronously
+        JLOG(registry.getJournal("Ledger").debug()) << "Save aborted";
+        return true;
+    }
+
+    return writeValidatedLedger(registry, ledger, current);
 }
 
 bool
@@ -90,21 +126,30 @@ pendSaveValidated(
 {
     if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
-        // We have tried to save this ledger recently
+        // We have tried to save this ledger recently. That is enough for an asynchronous
+        // caller: the earlier save, or the retry after its failure, covers it. A synchronous
+        // caller must not trust the flag, since a save that failed clears it separately from
+        // its pending entry, so a retry could read the flag before that cleanup and the entry
+        // after it. It always claims and performs the write itself.
         auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
-        if (!isSynchronous || !registry.getPendingSaves().pending(ledger->header().seq))
-        {
-            // Either we don't need it to be finished
-            // or it is finished
+        if (!isSynchronous)
             return true;
-        }
     }
 
     XRPL_ASSERT(ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
 
-    if (!registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous))
+    if (isSynchronous)
+    {
+        // Own the write outright, after any save of the sequence in progress. Taking it in the
+        // two steps the asynchronous path uses would let another thread win the second step,
+        // and this caller would then return before the ledger is written.
+        registry.getPendingSaves().claimWork(ledger->header().seq);
+        return writeValidatedLedger(registry, ledger, isCurrent);
+    }
+
+    if (!registry.getPendingSaves().shouldWork(ledger->header().seq))
     {
         auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
@@ -113,8 +158,7 @@ pendSaveValidated(
     }
 
     // See if we can use the JobQueue.
-    if (!isSynchronous &&
-        registry.getJobQueue().addJob(
+    if (registry.getJobQueue().addJob(
             isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
             [&registry, ledger, isCurrent] { saveValidatedLedger(registry, ledger, isCurrent); }))
