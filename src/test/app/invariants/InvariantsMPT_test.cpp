@@ -1496,6 +1496,12 @@ class InvariantsMPT_test : public InvariantsBase
             return true;
         };
 
+        // Most of these tests use default Env, so fixTecInvaraint will always be enabled.
+        // If it's not, the invariant will usually assert.
+        bool const fixTecEnabled = true;
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
         // badDelete
         doInvariantCheck(
             {"MPToken deleted with encrypted fields while COA > 0"},
@@ -1526,7 +1532,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         doInvariantCheck(
@@ -1544,7 +1550,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // requiresPrivacyFlag
@@ -1579,7 +1585,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseNoPrivacy);
 
         // badCOA
@@ -1596,7 +1602,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Conservation Violation
@@ -1616,7 +1622,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
@@ -1637,7 +1643,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Send/MergeInbox and zero-COA-delta confidential transactions must not
@@ -1682,7 +1688,7 @@ class InvariantsMPT_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseConfidential);
 
         // Skipping Deleted MPTs (Issuance deleted)
