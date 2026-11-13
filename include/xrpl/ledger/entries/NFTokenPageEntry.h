@@ -8,6 +8,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+
+#include <optional>
 
 namespace xrpl {
 
@@ -28,6 +32,24 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenPage(page, token), view, j)
     {
+    }
+
+    /**
+     * Returns the token with ID @p id if this page holds it.
+     *
+     * @param id the ID of the token to look for.
+     * @return the token, or std::nullopt if this page does not hold it.
+     */
+    [[nodiscard]] std::optional<STObject>
+    findToken(UInt256 const& id) const
+    {
+        for (auto const& t : (*this)->getFieldArray(sfNFTokens))
+        {
+            if (t[sfNFTokenID] == id)
+                return t;
+        }
+
+        return std::nullopt;
     }
 };
 
