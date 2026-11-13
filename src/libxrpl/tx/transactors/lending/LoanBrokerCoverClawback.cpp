@@ -170,10 +170,8 @@ determineClawAmount(
         auto const minRequiredCover = [&] {
             if (rules.enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(
-                    sleBroker->at(sfDebtTotal),
-                    TenthBips32(sleBroker->at(sfCoverRateMinimum)),
-                    vaultSle.rawSle());
+                return vaultSle.minimumBrokerCover(
+                    sleBroker->at(sfDebtTotal), TenthBips32(sleBroker->at(sfCoverRateMinimum)));
             }
 
             // Always round the minimum required up
