@@ -85,7 +85,6 @@ ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h
 ${SED_COMMAND} -i 's/Ripple:/the XRPL:/g' include/xrpl/protocol/SecretKey.h
 ${SED_COMMAND} -i 's/Ripple:/the XRPL:/g' include/xrpl/protocol/Seed.h
 ${SED_COMMAND} -i 's/ripple/xrpl/g' src/test/README.md
-${SED_COMMAND} -i 's/www.ripple.com/www.xrpl.org/g' src/test/protocol/Seed_test.cpp
 
 # Restore specific changes.
 ${SED_COMMAND} -i 's@b5efcc/src/xrpld@b5efcc/src/ripple@' include/xrpl/protocol/README.md
