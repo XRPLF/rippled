@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -49,7 +50,7 @@ private:
     std::expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         SLE::Ref vault,
-        SLE::ConstRef sleShareIssuance,
+        MPTokenIssuanceEntryR const& sleShareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
 };
