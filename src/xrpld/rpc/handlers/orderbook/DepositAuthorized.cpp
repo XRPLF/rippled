@@ -8,7 +8,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -83,8 +82,7 @@ DepositAuthorizedHandler::process(Input const& input) const
                 return output;
             }
 
-            if (credentials::checkExpired(
-                    CredentialEntryR(sleCred, ledger), ledger.header().parentCloseTime))
+            if (CredentialEntryR(sleCred, ledger).isExpired(ledger.header().parentCloseTime))
             {
                 output.error = ::rpc::Status{RpcBadCredentials, "credentials are expired"};
                 return output;
