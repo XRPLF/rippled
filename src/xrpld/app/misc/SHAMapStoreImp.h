@@ -192,10 +192,11 @@ private:
     void
     rescueNode(
         SHAMapTreeNode const& node,
+        std::uint64_t& rescuedCount,
         std::optional<NodeObjectType> expectedType = std::nullopt);
     // callback for visitNodes
     bool
-    copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node);
+    copyNode(std::uint64_t& nodeCount, std::uint64_t& rescuedCount, SHAMapTreeNode const& node);
     void
     run();
     void
@@ -206,7 +207,7 @@ private:
 
     template <class CacheInstance>
     bool
-    freshenCache(CacheInstance& cache)
+    freshenCache(CacheInstance& cache, std::uint64_t& rescuedCount)
     {
         std::uint64_t check = 0;
 
@@ -221,7 +222,9 @@ private:
                 {
                     auto const node = cache.fetch(key);
                     if (node)
-                        rescueNode(*node);
+                    {
+                        rescueNode(*node, rescuedCount);
+                    }
                 }
             }
             if (!(++check % checkHealthInterval_) && healthWait() != HealthResult::KeepGoing)
@@ -245,7 +248,7 @@ private:
     void
     clearCaches(LedgerIndex validatedSeq);
     void
-    freshenCaches();
+    freshenCaches(std::uint64_t& rescuedCount);
     void
     clearPrior(LedgerIndex lastRotated);
 
