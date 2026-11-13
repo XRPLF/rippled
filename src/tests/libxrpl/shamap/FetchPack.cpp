@@ -1,10 +1,11 @@
+#include <tests/libxrpl/helpers/TestNodeFamily.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
-#include <shamap/common.h>
 
 #include <memory>
 

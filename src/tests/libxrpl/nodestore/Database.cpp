@@ -1,5 +1,8 @@
 #include <xrpl/nodestore/Database.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+#include <tests/libxrpl/nodestore/TestBase.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/scope.h>
@@ -13,8 +16,6 @@
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
-#include <nodestore/TestBase.h>
 
 #include <algorithm>
 #include <atomic>

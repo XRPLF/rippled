@@ -1,5 +1,9 @@
 #include <xrpl/consensus/Validations.h>
 
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/ledgers.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/tagged_integer.h>
@@ -7,10 +11,7 @@
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/utility/Journal.h>
 
-#include <csf/Validation.h>
-#include <csf/ledgers.h>
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <chrono>
 #include <cstddef>

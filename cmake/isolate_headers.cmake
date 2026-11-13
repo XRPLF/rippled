@@ -22,9 +22,9 @@ include(create_symbolic_link)
 #     C = libxrpl/jobqueue
 #
 #   - Test private headers:
-#     B = /tests/jobqueue
-#     A = /
-#     C = tests/jobqueue
+#     B = /src/tests/libxrpl/jobqueue
+#     A = /src/
+#     C = tests/libxrpl/jobqueue
 #
 # To isolate headers from each other,
 # we want to create a symlink Y that points to B,
@@ -35,6 +35,11 @@ include(create_symbolic_link)
 # The Cs are all guaranteed to be unique.
 # We can guarantee a unique X per target by using
 # `${CMAKE_CURRENT_BINARY_DIR}/modules/${target}`.
+#
+# A must be a directory of this project, derived from PROJECT_SOURCE_DIR or
+# CMAKE_CURRENT_SOURCE_DIR, never from CMAKE_SOURCE_DIR. When xrpld is added
+# to another project with add_subdirectory, CMAKE_SOURCE_DIR is that project's
+# root, so C would climb out of X and the symlink would land outside it.
 #
 # isolate_headers(target A B scope)
 function(isolate_headers target A B scope)

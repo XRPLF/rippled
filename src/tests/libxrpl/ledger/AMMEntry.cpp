@@ -1,12 +1,13 @@
 #include <xrpl/ledger/entries/AMMEntry.h>
 
+#include <tests/libxrpl/helpers/IOU.h>
+#include <tests/libxrpl/ledger/EntryTestHelpers.h>
+
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 
 #include <gtest/gtest.h>
-#include <helpers/IOU.h>
-#include <ledger/EntryTestHelpers.h>
 
 namespace xrpl::test {
 

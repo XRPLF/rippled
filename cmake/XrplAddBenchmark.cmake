@@ -31,7 +31,7 @@ function(xrpl_add_benchmark name)
 
     isolate_headers(
         ${target}
-        "${CMAKE_SOURCE_DIR}/src"
+        "${PROJECT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/${name}"
         PRIVATE
     )
