@@ -42,9 +42,9 @@ public:
 
     STArray&
     operator=(STArray const&) = default;
-    STArray(STArray&&);
+    STArray(STArray&&) noexcept;
     STArray&
-    operator=(STArray&&);
+    operator=(STArray&&) noexcept;
 
     STArray(SField const& f, std::size_t n);
     STArray(SerialIter& sit, SField const& f, int depth = 0);

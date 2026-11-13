@@ -11,16 +11,20 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl {
 
-STArray::STArray(STArray&& other) : STBase(other.getFName()), v_(std::move(other.v_))
+// Lets std::vector move, not copy, elements when it grows.
+static_assert(std::is_nothrow_move_constructible_v<STArray>);
+
+STArray::STArray(STArray&& other) noexcept : STBase(other.getFName()), v_(std::move(other.v_))
 {
 }
 
 STArray&
-STArray::operator=(STArray&& other)
+STArray::operator=(STArray&& other) noexcept
 {
     setFName(other.getFName());
     v_ = std::move(other.v_);
