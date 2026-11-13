@@ -53,12 +53,14 @@ PathRequest::PathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
     int id,
     PathRequestManager& owner,
-    beast::Journal journal)
+    beast::Journal journal,
+    unsigned int apiVersion)
     : app_(app)
     , journal_(journal)
     , owner_(owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
+    , apiVersion_(apiVersion)
     , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
@@ -82,6 +84,9 @@ PathRequest::PathRequest(
     , owner_(owner)
     , fCompletion_(std::move(completion))
     , consumer_(consumer)
+    // A ripple_path_find request answers its caller once and pushes no update, so it names no
+    // version.
+    , apiVersion_(0)
     , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
