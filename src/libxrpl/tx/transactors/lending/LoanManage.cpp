@@ -30,6 +30,23 @@
 #include <cstdint>
 namespace xrpl {
 
+namespace {
+// sfLossUnrealized is stored at the vault's AssetsTotal scale and re-rounded to
+// nearest on every change (adjustImpreciseNumber). Once that scale coarsens past
+// a loan's LoanScale, the stored aggregate can sit just below the loan's exact
+// exposure, which leaves an impaired loan unable to be unimpaired, defaulted or
+// repaid. Reverse no more recorded loss than the exposure, and never more than is
+// recorded; both sides already floor the aggregate at zero, so clamping here keeps
+// the outcome identical whenever the recorded loss already covers the exposure.
+Number
+lossToReverse(Rules const& rules, Number const& lossUnrealized, Number const& exposure)
+{
+    if (!rules.enabled(fixCleanup3_6_0))
+        return exposure;
+    return std::min(lossUnrealized, exposure);
+}
+}  // namespace
+
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -345,15 +362,15 @@ LoanManage::defaultLoan(
         if (loanSle->isFlag(lsfLoanImpaired))
         {
             auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-            if (vaultLossUnrealizedProxy < totalDefaultAmount)
+            Number const lossRealized =
+                lossToReverse(view.rules(), *vaultLossUnrealizedProxy, totalDefaultAmount);
+            if (vaultLossUnrealizedProxy < lossRealized)
             {
-                // LCOV_EXCL_START
                 JLOG(j.warn()) << "Vault unrealized loss is less than the default amount";
                 return tefBAD_LEDGER;
-                // LCOV_EXCL_STOP
             }
             adjustImpreciseNumber(
-                vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
+                vaultLossUnrealizedProxy, -lossRealized, vaultAsset, vaultScale);
         }
         view.update(vaultSle);
     }
@@ -490,18 +507,18 @@ LoanManage::unimpairLoan(
     else
     {
         auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-        if (vaultLossUnrealizedProxy < lossReversed)
+        Number const lossToClear =
+            lossToReverse(view.rules(), *vaultLossUnrealizedProxy, lossReversed);
+        if (vaultLossUnrealizedProxy < lossToClear)
         {
-            // LCOV_EXCL_START
             JLOG(j.warn()) << "Vault unrealized loss is less than the amount to be cleared";
             return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
         }
         // The vault may be at a different scale than the loan. Reduce rounding
         // errors during the accounting by rounding some of the values to that
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
-        adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+        adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossToClear, vaultAsset, vaultScale);
     }
 
     view.update(vaultSle);
