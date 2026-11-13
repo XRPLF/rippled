@@ -27,6 +27,21 @@ New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING
 
 Comments should explain _why_, not _what_/_how_ — the code already shows that. Only describe what/how when the code itself would otherwise be confusing (a non-obvious workaround, a subtle invariant, a surprising constraint). Write new or changed comments as full sentences: start with a capital letter and end with a period.
 
+## Code review
+
+When reviewing a change, or self-reviewing your own before asking for review, apply [docs/CodeReview.md](./docs/CodeReview.md): correctness rules first, then style and convention rules. Cite the rule ID in each review comment, linked to its anchor (e.g. [CT-2](https://github.com/XRPLF/rippled/blob/develop/docs/CodeReview.md#ct-2)). Never skip, disable or weaken tests, or remove an amendment gate, to satisfy a review comment; raise the conflict instead.
+
+### Review perspectives
+
+Examine every change from each of these angles, individually and as a whole:
+
+1. **Safety.** Log at the right level with the right amount of detail. Use `Throw`, `logicError`, `XRPL_ASSERT`, `SOMETIMES`, `REACHABLE` and `UNREACHABLE` correctly (see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation)). No crash may be reachable from data supplied by a peer or client over RPC, P2P or websocket.
+2. **Correctness.** The code does what its name, comments and commit message say. It protects against malicious peers and clients without penalizing honest peers or regular consensus, transaction and node processing. Variables, constants and functions use `constexpr`, `consteval`, `explicit`, `inline` and other C++23 facilities appropriately.
+3. **Performance.** `std::move` where appropriate, no unnecessary copies, no locking unless absolutely necessary. Minimize memory and CPU use; maximize transaction throughput.
+4. **Conciseness.** The code is easy to read, with no duplication and helper functions where they pay off. Touched functions have docstrings. Comments and commit messages describe what the code does, not what it used to do or could do; condense long comments. The change passes `clang-format` and `clang-tidy` (see [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks)).
+5. **Scope.** Each pull request is self-contained and fixes one problem. Split an oversized change into dependent pull requests; combine small related ones. A later pull request does not rework code changed by an earlier one unless necessary.
+6. **Coverage.** Test coverage of touched code is at least 90% (see [BUILD.md](./BUILD.md#coverage-report)). `LCOV_EXCL` stanzas exclude only untestable or unreachable blocks.
+
 ## Architecture
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the directory-by-directory map of the codebase.
