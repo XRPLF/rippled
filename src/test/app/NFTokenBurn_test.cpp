@@ -1147,8 +1147,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfNextPageMin));
 
         // Attempt to delete alice's account, but fail because she owns NFTs.
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, minter), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, minter), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // minter sells the last 32 NFTs back to alice.

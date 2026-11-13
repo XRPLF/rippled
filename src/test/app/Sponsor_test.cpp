@@ -4901,9 +4901,8 @@ public:
             BEAST_EXPECT(sponsorObj);
 
             // AccountDelete
-            auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
-            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(alice, bob), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(sponsor, bob), Ter(tecHAS_OBLIGATIONS));
         }
 
         {
@@ -4920,8 +4919,7 @@ public:
             incLgrSeqForAccDel(env, alice);
 
             // AccountDelete: destination = non-sponsor
-            auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecNO_SPONSOR_PERMISSION));
+            env(acctdelete(alice, bob), Ter(tecNO_SPONSOR_PERMISSION));
 
             // The failed delete must leave the account sponsored by the original sponsor.
             auto const aliceSle = env.le(keylet::account(alice));
@@ -4935,7 +4933,7 @@ public:
             incLgrSeqForAccDel(env, alice);
 
             // AccountDelete: destination = sponsor
-            env(acctdelete(alice, sponsor), Fee(requiredFee), Ter(tesSUCCESS));
+            env(acctdelete(alice, sponsor), Ter(tesSUCCESS));
 
             auto const sponsorSle2 = env.le(keylet::account(sponsor));
             BEAST_EXPECT(!sponsorSle2->isFieldPresent(sfSponsoringAccountCount));
@@ -4972,8 +4970,7 @@ public:
             incLgrSeqForAccDel(env, sponsor);
 
             // AccountDelete should fail
-            auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(sponsor, bob), Ter(tecHAS_OBLIGATIONS));
             // The failed delete must not decrement the outstanding sponsored-object count.
             auto const sponsorSleAfter = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringOwnerCount));
@@ -5001,8 +4998,7 @@ public:
             incLgrSeqForAccDel(env, sponsor);
 
             // AccountDelete should fail
-            auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(sponsor, bob), Ter(tecHAS_OBLIGATIONS));
             // The failed delete must not decrement the outstanding sponsored-account count.
             auto const sponsorSleAfter = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringAccountCount));
@@ -5033,8 +5029,7 @@ public:
 
             // AccountDelete should succeed
             {
-                auto const requiredFee = drops(env.current()->fees().increment);
-                env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+                env(acctdelete(alice, bob), Ter(tesSUCCESS));
                 BEAST_EXPECT(!env.le(keylet::account(alice)));
                 auto const sponsorSle = env.le(keylet::account(sponsor));
                 BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0);

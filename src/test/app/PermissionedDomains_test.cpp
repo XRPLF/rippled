@@ -411,14 +411,13 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         testBadData(alice[0], env, domain2);
 
         // Try to delete the account with domains.
-        auto const acctDelFee(drops(env.current()->fees().increment));
         static constexpr std::size_t kDeleteDelta = 255;
         {
             // Close enough ledgers to make it potentially deletable if empty.
             std::size_t const ownerSeq = env.seq(alice[0]);
             while (kDeleteDelta + ownerSeq > env.current()->seq())
                 env.close();
-            env(acctdelete(alice[0], alice[2]), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(alice[0], alice[2]), Ter(tecHAS_OBLIGATIONS));
         }
 
         {
@@ -429,7 +428,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             std::size_t const ownerSeq = env.seq(alice[0]);
             while (kDeleteDelta + ownerSeq > env.current()->seq())
                 env.close();
-            env(acctdelete(alice[0], alice[2]), Fee(acctDelFee));
+            env(acctdelete(alice[0], alice[2]));
         }
     }
 

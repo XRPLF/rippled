@@ -4795,7 +4795,7 @@ public:
                 env.close();
 
             // Account deletion has a high fee.  Account for that.
-            env(acctdelete(gw, alice), Fee(drops(env.current()->fees().increment)));
+            env(acctdelete(gw, alice));
             env.close();
 
             // Verify that gw's account root is gone from the ledger.
