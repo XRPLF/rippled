@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -421,7 +422,7 @@ requireAuth(
 
         if (sleIssuer->isFieldPresent(sfVaultID))
         {
-            auto const sleVault = view.read(keylet::vault(sleIssuer->getFieldH256(sfVaultID)));
+            VaultEntryR const sleVault(sleIssuer->getFieldH256(sfVaultID), view);
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 

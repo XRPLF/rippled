@@ -11,6 +11,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1704,7 +1705,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "loanOriginationDeltas dispatcher: amendment enabled, legacy vault picks "
                 "InstantRecognition");
             Env const env{*this};
-            auto const deltas = loanOriginationDeltas(legacyVault, principalRequested, interestDue);
+            auto const deltas = loanOriginationDeltas(
+                VaultEntryR(legacyVault, *env.current()), principalRequested, interestDue);
             auto const expected =
                 xrpl::instant_recognition::loanOriginationDeltas(principalRequested, interestDue);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
@@ -1718,8 +1720,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
             {
-                auto const deltas =
-                    loanOriginationDeltas(makeVaultSle(version), principalRequested, interestDue);
+                auto const deltas = loanOriginationDeltas(
+                    VaultEntryR(makeVaultSle(version), *env.current()),
+                    principalRequested,
+                    interestDue);
                 auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
                 BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
                 BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
@@ -1745,7 +1749,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "picks InstantRecognition");
             Env const env{*this};
             BEAST_EXPECT(
-                loanOriginationExceedsVaultMaximum(legacyVault, vaultTotal, interestDue) ==
+                loanOriginationExceedsVaultMaximum(
+                    VaultEntryR(legacyVault, *env.current()), vaultTotal, interestDue) ==
                 xrpl::instant_recognition::loanOriginationExceedsVaultMaximum(
                     vaultMaximum, vaultTotal, interestDue));
         }
@@ -1759,8 +1764,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(
                     loanOriginationExceedsVaultMaximum(
-                        makeVaultSle(version, vaultMaximum, vaultTotal), vaultTotal, interestDue) ==
-                    false);
+                        VaultEntryR(
+                            makeVaultSle(version, vaultMaximum, vaultTotal), *env.current()),
+                        vaultTotal,
+                        interestDue) == false);
             }
         }
     }
@@ -1779,7 +1786,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(legacyVault, sle) ==
+                loanVaultExposure(VaultEntryR(legacyVault, *env.current()), sle) ==
                 xrpl::instant_recognition::loanVaultExposure(sle));
         }
 
@@ -1792,7 +1799,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
             {
                 BEAST_EXPECT(
-                    loanVaultExposure(makeVaultSle(version), sle) ==
+                    loanVaultExposure(VaultEntryR(makeVaultSle(version), *env.current()), sle) ==
                     xrpl::cash_basis::loanVaultExposure(sle));
             }
         }
@@ -1817,7 +1824,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks "
                 "InstantRecognition");
             Env const env{*this};
-            auto const deltas = loanPaymentDeltas(legacyVault, parts);
+            auto const deltas = loanPaymentDeltas(VaultEntryR(legacyVault, *env.current()), parts);
             auto const expected = xrpl::instant_recognition::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
@@ -1830,7 +1837,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
             {
-                auto const deltas = loanPaymentDeltas(makeVaultSle(version), parts);
+                auto const deltas =
+                    loanPaymentDeltas(VaultEntryR(makeVaultSle(version), *env.current()), parts);
                 auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
                 BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
                 BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);

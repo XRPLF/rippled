@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -44,7 +45,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
 TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -60,7 +61,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
-    if (getAssetsTotal(vault) != 0)
+    if (getAssetsTotal(vault.rawSle()) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
         return tecHAS_OBLIGATIONS;
@@ -97,7 +98,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
 TER
 VaultDelete::doApply()
 {
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntryW vault(ctx_.tx[sfVaultID], view());
     auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -215,10 +216,10 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
+    decreaseOwnerCountForObject(view(), owner, vault.mutableRawSle(), 2, j_);
 
     // Destroy the vault.
-    view().erase(vault);
+    vault.erase();
 
     return tesSUCCESS;
 }

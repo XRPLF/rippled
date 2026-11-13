@@ -11,6 +11,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -92,7 +93,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             if (!BEAST_EXPECT(sle))
                 return;
             BEAST_EXPECT(!sle->isFieldPresent(sfLEVersion));
-            BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::Legacy);
+            BEAST_EXPECT(getVaultVersion(VaultEntryR(sle, *env.current())) == VaultVersion::Legacy);
         }
 
         // Without fixCleanup3_4_0, V1_2 alone leaves a vault on the CashBasis rules,
@@ -642,7 +643,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             legacyEnv(tx, Ter(tesSUCCESS));
             legacyEnv.close();
             if (auto const sle = legacyEnv.le(keylet); BEAST_EXPECT(sle))
-                BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::Legacy);
+            {
+                BEAST_EXPECT(
+                    getVaultVersion(VaultEntryR(sle, *legacyEnv.current())) ==
+                    VaultVersion::Legacy);
+            }
         }
     }
 
@@ -897,7 +902,8 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         if (!BEAST_EXPECT(before))
             return;
         BEAST_EXPECT(Number(before->at(sfAssetsMaximum)) == offGrid);
-        BEAST_EXPECT(getVaultVersion(before) == VaultVersion::CashBasis);
+        BEAST_EXPECT(
+            getVaultVersion(VaultEntryR(before, *env.current())) == VaultVersion::CashBasis);
 
         // A VaultSet that does not touch AssetsMaximum is not affected by the
         // stored off-grid cap.

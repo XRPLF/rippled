@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -91,7 +92,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
     }
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // LCOV_EXCL_START
@@ -112,7 +113,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         // CoverAvailable scale it uses would reject a re-fining withdrawal as
         // sub-ULP.
         roundedAmount = debitToPosteriorBrokerCoverScale(
-            vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+            vault.rawSle(), sleBroker, amount, Number::RoundingMode::TowardsZero);
         if (roundedAmount == beast::kZero)
         {
             JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: withdraw amount: " << amount
@@ -200,7 +201,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         if (fix320Enabled)
         {
             return minimumBrokerCover(
-                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault.rawSle());
         }
 
         // Always round the minimum required up.
@@ -245,14 +246,14 @@ LoanBrokerCoverWithdraw::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    VaultEntryR const vault(broker->at(sfVaultID), view());
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
     auto const amount = getVaultVersion(vault) == VaultVersion::FixedPrecision
         ? debitToPosteriorBrokerCoverScale(
-              vault, broker, requestedAmount, Number::RoundingMode::TowardsZero)
+              vault.rawSle(), broker, requestedAmount, Number::RoundingMode::TowardsZero)
         : requestedAmount;
 
     auto const brokerPseudoID = *broker->at(sfAccount);

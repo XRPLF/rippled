@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -79,7 +80,7 @@ getPosteriorBrokerCoverScale(SLE::ConstRef vault, SLE::ConstRef broker, Number c
         "xrpl::detail::getPosteriorBrokerCoverScale : valid LoanBroker sle");
 
     return posteriorAssetScale(
-        getVaultVersion(vault),
+        decodeVaultVersion(vault->at(~sfLEVersion)),
         vault->at(sfAsset),
         getVaultBaseScale(vault),
         broker->at(sfCoverAvailable),
@@ -167,7 +168,7 @@ checkOptionalBrokerCoverInflow(SLE::ConstRef vault, SLE::ConstRef broker, STAmou
         amount.asset() == vault->at(sfAsset),
         "xrpl::checkOptionalBrokerCoverInflow : amount and Vault asset match");
     XRPL_ASSERT(!amount.negative(), "xrpl::checkOptionalBrokerCoverInflow : non-negative amount");
-    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vault->at(~sfLEVersion)) != VaultVersion::FixedPrecision)
         return tesSUCCESS;
 
     // amount is the effective credit (already floored on the posterior
@@ -199,7 +200,7 @@ adjustBrokerDebtTotal(
 {
     // On FixedPrecision Vaults, LoanSet adds principal to DebtTotal exactly, LoanPay and default
     // subtract exact amounts. Thus DebtTotal must not be rounded coarser than the base scale.
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    if (decodeVaultVersion(vaultSle->at(~sfLEVersion)) == VaultVersion::FixedPrecision)
     {
         brokerSle->at(sfDebtTotal) += delta;
     }
@@ -258,7 +259,7 @@ getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
     if (!brokerSle)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return std::nullopt;  // LCOV_EXCL_LINE
 
@@ -409,7 +410,7 @@ namespace {
 // featureLendingProtocolV1_1 or a later version. Vaults created before
 // activation keep instant interest recognition forever.
 bool
-cashBasisEnabled(SLE::ConstRef vaultSle)
+cashBasisEnabled(VaultEntryR const& vaultSle)
 {
     return getVaultVersion(vaultSle) >= VaultVersion::CashBasis;
 }
@@ -418,7 +419,7 @@ cashBasisEnabled(SLE::ConstRef vaultSle)
 
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& principalRequested,
     Number const& interestDue)
 {
@@ -429,7 +430,7 @@ loanOriginationDeltas(
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& vaultTotal,
     Number const& interestDue)
 {
@@ -444,14 +445,14 @@ loanOriginationExceedsVaultMaximum(
 }
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+loanVaultExposure(VaultEntryR const& vaultSle, SLE::ConstRef loanSle)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
-loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts)
+loanPaymentDeltas(VaultEntryR const& vaultSle, LoanPaymentParts const& parts)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanPaymentDeltas(parts)
                                       : instant_recognition::loanPaymentDeltas(parts);
