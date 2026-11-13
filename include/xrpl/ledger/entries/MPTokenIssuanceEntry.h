@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -68,6 +69,22 @@ public:
      */
     [[nodiscard]] std::int64_t
     maxAmount() const;
+
+    /**
+     * Returns maxAmount() minus OutstandingAmount.
+     *
+     * OutstandingAmount may overflow, so the result might be negative, but it
+     * is always <= |MaximumAmount - OutstandingAmount|.
+     *
+     * @return the amount of this issuance still available to be issued.
+     */
+    [[nodiscard]] std::int64_t
+    availableAmount() const
+    {
+        auto const max = maxAmount();
+        auto const outstanding = (**this)[sfOutstandingAmount];
+        return max - outstanding;
+    }
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;

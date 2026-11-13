@@ -327,9 +327,6 @@ maxMPTAmount(ReadView const& view, MPTID const& mptID);
  * But available amount is always <= |MaximumAmount - OutstandingAmount|.
  */
 std::int64_t
-availableMPTAmount(MPTokenIssuanceEntryR const& sleIssuance);
-
-std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID);
 
 /**
