@@ -416,6 +416,15 @@ public:
     {
         return j_;
     }
+
+    /**
+     * Returns the path of the config file. Empty if no file was loaded.
+     */
+    [[nodiscard]] std::filesystem::path const&
+    configFile() const
+    {
+        return configFile_;
+    }
 };
 
 FeeSetup
