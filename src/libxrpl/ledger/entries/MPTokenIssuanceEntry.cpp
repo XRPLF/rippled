@@ -47,6 +47,16 @@ MPTokenIssuanceEntry<ViewT>::issuerFundsToSelfIssue() const
     return this->readView().balanceHookSelfIssueMPT(issue, available);
 }
 
+template <typename ViewT>
+void
+MPTokenIssuanceEntry<ViewT>::issuerSelfDebitHook(std::uint64_t amount)
+    requires Base::kIsWritable
+{
+    MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
+    auto const available = availableAmount();
+    this->applyView().issuerSelfDebitHookMPT(issue, amount, available);
+}
+
 template class MPTokenIssuanceEntry<ReadView>;
 template class MPTokenIssuanceEntry<ApplyView>;
 
