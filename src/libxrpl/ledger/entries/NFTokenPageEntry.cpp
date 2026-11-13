@@ -1,11 +1,17 @@
 #include <xrpl/ledger/entries/NFTokenPageEntry.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
 
+#include <algorithm>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
@@ -27,6 +33,33 @@ NFTokenPageEntry<ViewT>::insertToken(STObject&& nft)
     }
 
     this->update();
+}
+
+template <typename ViewT>
+TER
+NFTokenPageEntry<ViewT>::changeTokenURI(UInt256 const& id, std::optional<Slice> const& uri)
+    requires Base::kIsWritable
+{
+    // Locate the NFT in the page
+    STArray& arr = (*this)->peekFieldArray(sfNFTokens);
+
+    auto const nftIter =
+        std::ranges::find_if(arr, [&id](STObject const& obj) { return (obj[sfNFTokenID] == id); });
+
+    if (nftIter == arr.end())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (uri)
+    {
+        nftIter->setFieldVL(sfURI, *uri);
+    }
+    else if (nftIter->isFieldPresent(sfURI))
+    {
+        nftIter->makeFieldAbsent(sfURI);
+    }
+
+    this->update();
+    return tesSUCCESS;
 }
 
 template class NFTokenPageEntry<ReadView>;

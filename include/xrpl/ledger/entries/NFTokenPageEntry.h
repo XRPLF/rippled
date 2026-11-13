@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -11,6 +12,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
 
 #include <algorithm>
 #include <optional>
@@ -90,6 +92,18 @@ public:
      */
     void
     insertToken(STObject&& nft)
+        requires Base::kIsWritable;
+
+    /**
+     * Sets the URI of the token with ID @p id on this page to @p uri, or
+     * removes the URI if @p uri is not set, and updates the page.
+     *
+     * @param id the ID of the token to update.
+     * @param uri the new URI, or std::nullopt to remove the URI.
+     * @return tesSUCCESS, or tecINTERNAL if this page does not hold the token
+     */
+    [[nodiscard]] TER
+    changeTokenURI(UInt256 const& id, std::optional<Slice> const& uri)
         requires Base::kIsWritable;
 };
 
