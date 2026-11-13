@@ -6700,6 +6700,44 @@ private:
     }
 
     void
+    testDepositLPTokenOverflow()
+    {
+        testcase("Deposit LPToken overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Sibling of testDepositIntegralOverflow for the tfLPToken deposit
+        // mode (equalDepositTokens). A huge requested LPTokenOut against a
+        // tiny pool makes frac enormous, so the computed asset deposit
+        // exceeds the integral asset's range the same way it does for the
+        // other deposit modes. fixCleanup3_4_0 is already enabled on
+        // Mainnet, so this path's own catch is gated on fixCleanup3_6_0
+        // instead: without it, the legacy local tecINTERNAL is preserved;
+        // with it, the exception reaches applyGuts' centralized handler
+        // (which checks fixCleanup3_4_0, already true) and returns
+        // tecAMM_FAILED, same as every other deposit mode.
+        auto const test = [this](FeatureBitset features, TER expected) {
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            amm.deposit(
+                DepositArg{
+                    .account = alice_,
+                    .tokens = LPToken(STAmount{amm.lptIssue(), 1, 30}),
+                    .err = Ter(expected),
+                });
+        };
+
+        test(all - fixCleanup3_6_0, tecINTERNAL);
+        test(all, tecAMM_FAILED);
+    }
+
+    void
     testDepositEPriceIntegralOverflow()
     {
         testcase("Deposit EPrice integral overflow");
@@ -6880,6 +6918,7 @@ private:
         testStaleAuthAccountsAfterReinit(all);
         testStaleAuthAccountsAfterReinit(all - fixCleanup3_2_0);
         testDepositIntegralOverflow();
+        testDepositLPTokenOverflow();
         testDepositEPriceIntegralOverflow();
         testWithdrawIntegralNoOverflow();
     }
