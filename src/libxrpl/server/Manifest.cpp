@@ -1,6 +1,7 @@
 #include <xrpl/server/Manifest.h>
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -12,11 +13,13 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/tokens.h>
@@ -259,6 +262,94 @@ Manifest::getMasterSignature() const
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);
+}
+
+STObject
+makeManifestFields(
+    PublicKey const& masterKey,
+    PublicKey const& signingKey,
+    std::uint32_t sequence,
+    std::string const& domain)
+{
+    // Refuses what deserializeManifest would reject.
+    if (sequence == std::numeric_limits<std::uint32_t>::max())
+        Throw<std::invalid_argument>("Manifest sequence is the revocation sequence");
+    if (signingKey == masterKey)
+        Throw<std::invalid_argument>("Manifest signing key is the master key");
+    if (!domain.empty() && !isProperlyFormedTomlDomain(domain))
+        Throw<std::invalid_argument>("Manifest domain is not properly formed: " + domain);
+
+    STObject st(sfGeneric);
+    st[sfSequence] = sequence;
+    st[sfPublicKey] = masterKey;
+    st[sfSigningPubKey] = signingKey;
+    if (!domain.empty())
+        st[sfDomain] = makeSlice(domain);
+    return st;
+}
+
+STObject
+makeRevocationFields(PublicKey const& masterKey)
+{
+    STObject st(sfGeneric);
+    st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
+    st[sfPublicKey] = masterKey;
+    return st;
+}
+
+Blob
+manifestSigningData(STObject const& fields)
+{
+    Serializer s;
+    s.add32(HashPrefix::Manifest);
+    fields.addWithoutSigningFields(s);
+    return s.peekData();
+}
+
+namespace {
+
+// Signs with the key the secret derives, of the type of key; every PublicKey
+// has a type, so value_or never falls back.
+Buffer
+signAsKeyType(PublicKey const& key, SecretKey const& secret, Slice const& data)
+{
+    return sign(publicKeyType(key).value_or(KeyType::Secp256k1), secret, data);
+}
+
+std::string
+serializeManifest(STObject const& st)
+{
+    Serializer s;
+    st.add(s);
+    return std::string(static_cast<char const*>(s.data()), s.size());
+}
+
+}  // namespace
+
+std::string
+makeManifest(
+    PublicKey const& masterKey,
+    SecretKey const& masterSecret,
+    PublicKey const& signingKey,
+    SecretKey const& signingSecret,
+    std::uint32_t sequence,
+    std::string const& domain)
+{
+    auto st = makeManifestFields(masterKey, signingKey, sequence, domain);
+    auto const data = manifestSigningData(st);
+    set(st, sfSignature, signAsKeyType(signingKey, signingSecret, makeSlice(data)));
+    set(st, sfMasterSignature, signAsKeyType(masterKey, masterSecret, makeSlice(data)));
+    return serializeManifest(st);
+}
+
+std::string
+makeRevocation(PublicKey const& masterKey, SecretKey const& masterSecret)
+{
+    auto st = makeRevocationFields(masterKey);
+    set(st,
+        sfMasterSignature,
+        signAsKeyType(masterKey, masterSecret, makeSlice(manifestSigningData(st))));
+    return serializeManifest(st);
 }
 
 std::optional<ValidatorToken>
