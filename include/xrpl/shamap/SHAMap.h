@@ -358,12 +358,30 @@ public:
     std::vector<std::pair<SHAMapNodeID, UInt256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
+    /**
+     * Collect a node and some of its descendants in wire form for a peer.
+     *
+     * The walk descends `depth` levels of inner nodes below `wanted`, and
+     * follows an inner node with a single child without spending a level.
+     * Nodes are appended to `data` until it holds `maxNodes` of them,
+     * counting any the caller already placed there, so the reply stays
+     * bounded however the tree below `wanted` fans out. A node left out is
+     * asked for again on a later round trip.
+     *
+     * @param wanted The position of the node asked for.
+     * @param data Receives the nodes, the one asked for first.
+     * @param fatLeaves Whether leaves below `wanted` are included as well.
+     * @param depth How many levels of inner nodes below `wanted` to include.
+     * @param maxNodes The size `data` may not grow past.
+     * @return false if `wanted` is not in the map or is an empty inner node.
+     */
     [[nodiscard]] bool
     getNodeFat(
         SHAMapNodeID const& wanted,
         std::vector<SHAMapNodeData>& data,
         bool fatLeaves,
-        std::uint32_t depth) const;
+        std::uint32_t depth,
+        std::size_t maxNodes) const;
 
     /**
      * Get the proof path of the key. The proof path is every node on the path
