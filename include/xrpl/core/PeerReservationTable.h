@@ -95,6 +95,10 @@ public:
 private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
+    // Initialized to nullptr for safety. Set by load() during the second
+    // phase of ApplicationImp initialization. Methods that dereference
+    // this pointer must validate it first, since two-phase init means
+    // load() may not have been called yet.
     DatabaseCon* connection_{};
     std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table_;
 };
