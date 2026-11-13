@@ -21,14 +21,14 @@ namespace xrpl {
  * 3. An `ltLOAN` may only be created by a `ttLOAN_SET` transaction.
  * 4. Prior to `featureLendingProtocolV1_1`, the `lsfLoanOverpayment` flag on a
  *    Loan must not change. From `featureLendingProtocolV1_1` onward the same
- *    rule is enforced by `NoModifiedUnmodifiableFields`.
+ *    rule is enforced by `NoModifiedImmutableFields`.
  * 5. Under `featureLendingProtocolV1_1`:
  *    a. An `ltLOAN` may only be deleted by a `ttLOAN_DELETE` transaction.
  *    b. If `Loan.PaymentRemaining = 0` then `Loan.NextPaymentDueDate = 0`.
  *    c. The `lsfLoanImpaired` flag may only change through a `ttLOAN_MANAGE`
  *       or `ttLOAN_PAY` transaction.
  *    d. The `lsfLoanDefault` flag may only change through a `ttLOAN_MANAGE`
- *       transaction. Combined with `NoModifiedUnmodifiableFields`, which
+ *       transaction. Combined with `NoModifiedImmutableFields`, which
  *       rejects any clearing of `lsfLoanDefault`, this makes the flag
  *       write-once: `ttLOAN_MANAGE` may set it, and no transaction may
  *       clear it.
