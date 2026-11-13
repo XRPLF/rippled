@@ -23,8 +23,14 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
