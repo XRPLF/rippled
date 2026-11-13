@@ -450,9 +450,10 @@ struct Credentials_test : public beast::unit_test::Suite
             }
 
             {
+                testcase("Credentials fail, invalid Subject account.");
                 auto jv = credentials::create(subject, issuer, credType);
                 jv[jss::Subject] = to_string(xrpAccount());
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temINVALID_ACCOUNT_ID));
             }
 
             {
