@@ -39,13 +39,14 @@ function compile() {
 
 declare -A sanitize=(
     [regular]=""
+    [call_once]=""
 
     [asan]="-fsanitize=address"
     [tsan]="-fsanitize=thread"
     [ubsan]="-fsanitize=undefined -fno-sanitize-recover=all"
 )
 
-for name in regular asan tsan ubsan; do
+for name in regular call_once asan tsan ubsan; do
     san_flag="${sanitize[${name}]}"
     for compiler in g++ clang++; do
         compile "${compiler}" "${name}" "${san_flag}"

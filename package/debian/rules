@@ -3,10 +3,10 @@
 export DH_VERBOSE = 1
 
 # The glibc the Nix toolchain builds against, and so the real floor for the
-# binaries. dpkg-shlibdeps would instead derive libc6 (>= 2.34) from the build
-# host's symbols file, where sysconf carries that minver, locking out distros
-# the binaries actually run on.
-LIBC_MIN = 2.31
+# binaries. dpkg-shlibdeps would instead derive the bound from the build host's
+# symbols file, which can be newer than what the binaries need and lock out
+# distros they actually run on.
+LIBC_MIN = 2.34
 
 # The binary package's name, which a variant build changes to e.g. xrpld-assert,
 # and the directory debhelper expects its files staged in.

@@ -15,9 +15,9 @@ To build from source instead, see [BUILD.md](../BUILD.md).
 Linux is the only operating system officially supported for running `xrpld`;
 macOS and Windows builds are for development only.
 
-Any x86-64 Linux distribution with APT or DNF and glibc 2.31 or newer should work
-(see [How libc is handled](../nix/docker/README.md#how-libc-is-handled)).
-CI tests the packages on Debian 11–13, Ubuntu 20.04–26.04,
+Any x86-64 Linux distribution with APT or DNF and glibc 2.34 or newer should work,
+which means Ubuntu 22.04 LTS or newer on Ubuntu (see [How libc is handled](../nix/docker/README.md#how-libc-is-handled)).
+CI tests the packages on Debian 12–13, Ubuntu 22.04–26.04,
 RHEL (UBI) 9–10, AlmaLinux 9–10, and Rocky Linux 9–10.
 
 For the hardware needed to run a node,

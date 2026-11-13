@@ -21,7 +21,7 @@ selected through the `BASE_IMAGE` build argument; the base images are the
 | Image        | `BASE_IMAGE`                                 | Notes                                              |
 | ------------ | -------------------------------------------- | -------------------------------------------------- |
 | `nix-nixos`  | `nixos/nix:latest`                           | Build/lint only; binaries are not run (see below). |
-| `nix-ubuntu` | `ubuntu:20.04`                               | Oldest supported Ubuntu (glibc 2.31).              |
+| `nix-ubuntu` | `ubuntu:22.04`                               | Oldest supported Ubuntu (glibc 2.35).              |
 | `nix-debian` | `debian:bookworm`                            |                                                    |
 | `nix-rhel`   | `registry.access.redhat.com/ubi9/ubi:latest` |                                                    |
 
@@ -62,16 +62,17 @@ work without `ca-certificates` being installed in the base image.
 ## How libc is handled
 
 The goal is for binaries built in these images to run on the **oldest supported
-base image** (Ubuntu 20.04, glibc 2.31) and newer — without the developer's Nix
-toolchain being present at runtime. Two pieces make that work:
+base image** (RHEL 9, glibc 2.34) and newer — without the developer's Nix
+toolchain being present at runtime. No Ubuntu LTS ships glibc 2.34, so on Ubuntu
+that means 22.04 LTS (glibc 2.35) and newer. Two pieces make that work:
 
 - **Compilers linked against an old glibc.** The Nix CI environment does not use
-  nixpkgs' current glibc. Instead it pins a 2020 nixpkgs snapshot whose primary
-  glibc is **2.31** (matching Ubuntu 20.04), via the `nixpkgs-custom-glibc`
+  nixpkgs' current glibc. Instead it pins a 2023 nixpkgs snapshot whose primary
+  glibc is **2.34** (matching RHEL 9), via the `nixpkgs-custom-glibc`
   flake input. GCC, Clang, binutils and compiler-rt are all rebuilt/wrapped
   against this custom glibc (see [`nix/ci-env.nix`](../ci-env.nix)). As a result
   the libraries they emit (`libstdc++`, `libgcc_s`, the sanitizer runtimes)
-  reference only symbols available in glibc 2.31.
+  reference only symbols available in glibc 2.34.
 
 - **An expected dynamic linker in the image.**
   Binaries built in Nix environments reference a dynamic linker from Nix store paths, which won't be present in the base image. However,
@@ -84,8 +85,9 @@ The build then verifies all of this end to end, and the C++ and Rust programs
 go through the same pipeline: each is compiled in `final`, has its `PT_INTERP`
 patched to the target loader, and is then run in the clean `tester` stage to
 confirm it emits the expected diagnostic on a stock base image. The C++ programs
-are in `test_files/cpp/sources/` (a regular binary plus ASan/TSan/UBSan
-variants); the Rust programs are in `test_files/rust/sources/` (a hello binary
+are in `test_files/cpp/sources/` (a regular binary, a check that an exception
+thrown from a `std::call_once` callable propagates and lets a later call run,
+plus ASan/TSan/UBSan variants); the Rust programs are in `test_files/rust/sources/` (a hello binary
 plus panic and overflow-check variants), plus the `test_files/rust/proc_macro/`
 workspace — a crate whose compilation additionally loads a proc-macro dylib, and
 whose resulting binary is patched and run like the others.
