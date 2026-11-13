@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -12,6 +13,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <string_view>
 
 namespace xrpl {
@@ -42,6 +44,28 @@ LoanBrokerEntry<ViewT>::canApplyToCover(
     }
 
     return tesSUCCESS;
+}
+
+template <typename ViewT>
+void
+LoanBrokerEntry<ViewT>::adjustOwnerCount(std::int32_t delta)
+    requires Base::kIsWritable
+{
+    XRPL_ASSERT(this->exists(), "xrpl::LoanBrokerEntry::adjustOwnerCount : valid loan broker sle");
+    if (!this->exists())
+        return;  // LCOV_EXCL_LINE
+
+    XRPL_ASSERT(delta != 0, "xrpl::LoanBrokerEntry::adjustOwnerCount : nonzero delta input");
+    if (delta == 0)
+        return;  // LCOV_EXCL_LINE
+
+    detail::adjustOwnerCountImpl(
+        this->applyView(),
+        this->mutableRawSle(),
+        sfOwnerCount,
+        (*this)->getAccountID(sfAccount),
+        delta,
+        this->journal());
 }
 
 template class LoanBrokerEntry<ReadView>;
