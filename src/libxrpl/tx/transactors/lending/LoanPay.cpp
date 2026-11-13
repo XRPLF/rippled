@@ -378,7 +378,7 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
+    bool const fixedPrecision = vaultSle.version() == VaultVersion::FixedPrecision;
     auto const vaultScale = getVaultScale(vaultSle.rawSle());
 
     // Send the broker fee to the owner if they have sufficient cover available,
