@@ -1,11 +1,11 @@
 #pragma once
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
@@ -48,7 +48,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 // in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
 // doApply. This will ensure that expired credentials are deleted.
 TER
-validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject);
+validDomain(PermissionedDomainEntryR const& domain, AccountID const& subject);
 
 // This function is only called when we are about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
@@ -69,7 +69,11 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 // Check expired credentials and for credentials matching DomainID of the ledger
 // object
 TER
-verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j);
+verifyValidDomain(
+    ApplyView& view,
+    AccountID const& account,
+    PermissionedDomainEntryR const& domain,
+    beast::Journal j);
 
 /**
  * @brief Check whether src is authorized to deposit to dst.
