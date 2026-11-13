@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,6 +10,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 namespace xrpl {
 
@@ -18,7 +18,7 @@ NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::kZero)
+    if (isZeroId(domain))
         return temMALFORMED;
 
     return tesSUCCESS;

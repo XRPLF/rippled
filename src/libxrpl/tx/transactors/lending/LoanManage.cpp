@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -45,7 +46,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanID]))
         return temINVALID;
 
     // Flags are mutually exclusive
