@@ -2,23 +2,30 @@
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -3324,6 +3331,646 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         }
     }
 
+    void
+    testConfidentialMPTRecoverBalancePreflight(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTRecoverBalance preflight");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        auto const trivialCT = getTrivialCiphertext();
+
+        auto const recoverJV = [&](Account const& account, Account const& holder) {
+            return mptAlice.recoverBalanceJV(
+                {.account = account, .holder = holder, .spendingCiphertext = trivialCT});
+        };
+        // Both amendments are required: ConfidentialMPTKeyRotation and ConfidentialTransfer.
+        if (!features[featureConfidentialMPTKeyRotation] || !features[featureConfidentialTransfer])
+        {
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+            env(recoverJV(alice, bob), Ter(temDISABLED));
+            return;
+        }
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+        });
+
+        // Invalid flags.
+        env(recoverJV(alice, bob), Txflags(tfMPTLock), Ter(temINVALID_FLAG));
+
+        // The account is not the issuer.
+        env(recoverJV(carol, bob), Ter(temMALFORMED));
+
+        // The issuer cannot recover for itself.
+        env(recoverJV(alice, alice), Ter(temMALFORMED));
+
+        // The spending ciphertext has the wrong length.
+        {
+            auto jv = recoverJV(alice, bob);
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(gMakeZeroBuffer(10));
+            env(jv, Ter(temBAD_CIPHERTEXT));
+        }
+
+        // The proof has the wrong length.
+        {
+            auto jv = recoverJV(alice, bob);
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength - 1));
+            env(jv, Ter(temMALFORMED));
+        }
+
+        // The spending ciphertext is the right length but not a valid ciphertext.
+        {
+            auto jv = recoverJV(alice, bob);
+            jv[sfConfidentialBalanceSpending.jsonName] = strHex(getBadCiphertext());
+            env(jv, Ter(temBAD_CIPHERTEXT));
+        }
+    }
+
+    void
+    testConfidentialMPTRecoverBalancePreclaim(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTRecoverBalance preclaim");
+        using namespace test::jtx;
+        auto const trivialCT = getTrivialCiphertext();
+
+        // The holder account does not exist.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+
+            // carol is never funded.
+            env(mptAlice.recoverBalanceJV({.holder = carol, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_TARGET));
+        }
+
+        // The issuance does not exist.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.destroy();
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // The issuance does not allow confidential balances.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({});
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
+        }
+
+        // The issuer encryption key is not set.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.authorize({.account = bob});
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
+        }
+
+        // The holder's MPToken does not exist.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // The holder's MPToken has no issuer mirror (holder never converted).
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
+        }
+
+        // The holder has no pending RecoveryKey.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = 60,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
+        }
+
+        // The holder's issuer mirror is stale after an issuer key rotation.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            std::uint32_t const amount = 100;
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 200);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+
+            // Rotate the issuer key (epoch absent -> 1). bob's mirror stays at epoch 0.
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(1u, std::nullopt));
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
+
+            // The rejected recovery leaves bob's MPToken untouched.
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            BEAST_EXPECT(sleMPToken && sleMPToken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(sleMPToken && !sleMPToken->isFieldPresent(sfIssuerKeyMirrorEpoch));
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
+        }
+    }
+
+    void
+    testConfidentialMPTRecoverBalanceDoApply(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTRecoverBalance doApply");
+        using namespace test::jtx;
+
+        std::uint64_t const amount = 60;
+
+        // Recovery while the issuer key epoch is absent: the holder's issuer
+        // mirror epoch stays absent.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == amount);
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            auto const prevVersion = mptAlice.getMPTokenVersion(bob);
+            auto const prevIssuerMirror =
+                mptAlice.getEncryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+
+            auto const mirrorAmount =
+                mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+            BEAST_EXPECT(mirrorAmount == amount);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext = mptAlice.encryptAmount(bob, amount, generateBlindingFactor()),
+            });
+
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMPToken))
+                return;
+
+            // The holder key is replaced by the recovery key and the pending
+            // RecoveryKey is cleared.
+            auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
+            BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
+
+            // The spending balance is re-encrypted under the recovery key and
+            // the inbox is reset to zero.
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
+            BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
+
+            // The issuer mirror is unchanged, its epoch stays absent and the
+            // version is incremented.
+            BEAST_EXPECT(
+                mptAlice.getEncryptedBalance(bob, MPTTester::issuerEncryptedBalance) ==
+                prevIssuerMirror);
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion + 1);
+        }
+
+        // Recovery after the issuer mirror was migrated to a rotated issuer
+        // key: the holder's issuer mirror epoch matches the issuance's issuer
+        // key epoch.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 200);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+
+            // Rotate the issuer key twice (epoch absent -> 2), leaving bob's
+            // issuer mirror stale at epoch 0.
+            for (int i = 0; i < 2; ++i)
+            {
+                mptAlice.generateKeyPair(alice);
+                mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            }
+            BEAST_EXPECT(mptAlice.checkKeyEpochs(2u, std::nullopt));
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+
+            // Migrate bob's issuer mirror to the current issuer key.
+            mptAlice.mirrorUpdate({
+                .account = alice,
+                .holder = bob,
+                .issuerEncryptedAmount =
+                    mptAlice.encryptAmount(alice, amount, generateBlindingFactor()),
+            });
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 2u, std::nullopt));
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            auto const prevVersion = mptAlice.getMPTokenVersion(bob);
+
+            auto const mirrorAmount =
+                mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+            BEAST_EXPECT(mirrorAmount == amount);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext = mptAlice.encryptAmount(bob, amount, generateBlindingFactor()),
+            });
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleIssuance && sleMPToken))
+                return;
+
+            BEAST_EXPECT(sleIssuance->isFieldPresent(sfIssuerKeyEpoch));
+            BEAST_EXPECT(sleMPToken->isFieldPresent(sfIssuerKeyMirrorEpoch));
+            BEAST_EXPECT(
+                (*sleMPToken)[~sfIssuerKeyMirrorEpoch] == (*sleIssuance)[~sfIssuerKeyEpoch]);
+            BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 2u, std::nullopt));
+
+            auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
+            BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
+            BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion + 1);
+        }
+
+        // Recovery with both a non-zero spending balance and a non-zero inbox:
+        // the new spending balance carries the full mirrored amount and the
+        // inbox is reset to zero.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            std::uint64_t const spendingAmount = 60;
+            std::uint64_t const inboxAmount = 40;
+            std::uint64_t const totalAmount = spendingAmount + inboxAmount;
+
+            mptAlice.create({
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 200);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = spendingAmount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+            mptAlice.convert({
+                .account = bob,
+                .amt = inboxAmount,
+            });
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) ==
+                spendingAmount);
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == inboxAmount);
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            auto const prevVersion = mptAlice.getMPTokenVersion(bob);
+            auto const prevIssuerMirror =
+                mptAlice.getEncryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+
+            auto const mirrorAmount =
+                mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+            BEAST_EXPECT(mirrorAmount == totalAmount);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext =
+                    mptAlice.encryptAmount(bob, totalAmount, generateBlindingFactor()),
+            });
+
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMPToken))
+                return;
+
+            auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
+            BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) ==
+                totalAmount);
+            BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
+            BEAST_EXPECT(
+                mptAlice.getEncryptedBalance(bob, MPTTester::issuerEncryptedBalance) ==
+                prevIssuerMirror);
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion + 1);
+        }
+
+        // Recovery succeeds while the issuer has locked the holder
+        // individually or locked the issuance globally, and the lock remains.
+        for (bool const globalLock : {false, true})
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            if (globalLock)
+            {
+                mptAlice.set({.account = alice, .flags = tfMPTLock});
+            }
+            else
+            {
+                mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            }
+
+            auto const prevVersion = mptAlice.getMPTokenVersion(bob);
+
+            auto const mirrorAmount =
+                mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+            BEAST_EXPECT(mirrorAmount == amount);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext = mptAlice.encryptAmount(bob, amount, generateBlindingFactor()),
+            });
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
+            auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleIssuance && sleMPToken))
+                return;
+
+            auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
+            BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
+            BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion + 1);
+
+            if (globalLock)
+            {
+                BEAST_EXPECT(sleIssuance->isFlag(lsfMPTLocked));
+            }
+            else
+            {
+                BEAST_EXPECT(sleMPToken->isFlag(lsfMPTLocked));
+            }
+        }
+    }
+
+    void
+    testRecoverBalanceDelegated(FeatureBitset features)
+    {
+        if (!features[featureConfidentialMPTKeyRotation])
+            return;
+
+        testcase("test ConfidentialMPTRecoverBalance delegated");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const dgt("dgt");      // delegate acting for the issuer
+        env.fund(XRP(1000), dgt);
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        std::uint64_t const amount = 60;
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+        });
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        // Generate keys for alice (issuer)
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob converts funds to confidential
+        mptAlice.generateKeyPair(bob);
+        mptAlice.convert({
+            .account = bob,
+            .amt = amount,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        // Generate recovery key for bob and register it (bob authorizes).
+        mptAlice.generateKeyPair(bob);
+        mptAlice.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+        });
+
+        auto const baseFee = env.current()->fees().base;
+        auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
+
+        auto const mirrorAmount =
+            mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
+        BEAST_EXPECT(mirrorAmount == amount);
+        auto const spendingCiphertext =
+            mptAlice.encryptAmount(bob, amount, generateBlindingFactor());
+
+        // Failure: a delegate without permission cannot recover, and no fee is
+        // deducted for terNO_DELEGATE_PERMISSION.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext = spendingCiphertext,
+                .delegate = dgt,
+                .fee = expectedFee,
+                .err = terNO_DELEGATE_PERMISSION,
+            });
+            BEAST_EXPECT(env.balance(dgt) == dgtBalance);
+        }
+
+        // Grant the delegate permission for ConfidentialMPTRecoverBalance.
+        env(delegate::set(alice, dgt, {"ConfidentialMPTRecoverBalance"}));
+        env.close();
+
+        // Success: the delegate recovers on behalf of the issuer and pays the fee.
+        {
+            auto const dgtBalance = env.balance(dgt);
+            mptAlice.recoverBalance({
+                .account = alice,
+                .holder = bob,
+                .spendingCiphertext = spendingCiphertext,
+                .delegate = dgt,
+                .fee = expectedFee,
+            });
+            // The delegate (signer) pays the fee.
+            BEAST_EXPECT(dgtBalance - env.balance(dgt) == expectedFee);
+        }
+
+        // Verify holder encryption key has been updated to the recovery key.
+        auto const mptokenID = keylet::mptoken(mptAlice.issuanceID(), bob.id());
+        auto const sleAfter = env.le(mptokenID);
+        BEAST_EXPECT(sleAfter);
+        auto const holderKey = sleAfter->getFieldVL(sfHolderEncryptionKey);
+        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
+        // Verify RecoveryKey field has been removed.
+        BEAST_EXPECT(!sleAfter->isFieldPresent(sfRecoveryKey));
+
+        // Verify confidential balance can be decrypted with the recovery key.
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
+    }
+
 public:
     void
     testMPTokenIssuanceSetWithFeats(FeatureBitset features)
@@ -3369,6 +4016,13 @@ public:
         testConfidentialMPTHolderKeyUpdatePreflight(all - featureConfidentialTransfer);
         testConfidentialMPTHolderKeyUpdatePreclaim(all);
         testConfidentialMPTHolderKeyUpdateDoApply(all);
+
+        testConfidentialMPTRecoverBalancePreflight(all);
+        testConfidentialMPTRecoverBalancePreflight(all - featureConfidentialMPTKeyRotation);
+        testConfidentialMPTRecoverBalancePreflight(all - featureConfidentialTransfer);
+        testConfidentialMPTRecoverBalancePreclaim(all);
+        testConfidentialMPTRecoverBalanceDoApply(all);
+        testRecoverBalanceDelegated(all);
     }
 };
 
