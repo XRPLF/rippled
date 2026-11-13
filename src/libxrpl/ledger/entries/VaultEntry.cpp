@@ -8,6 +8,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 
+#include <utility>
+
 namespace xrpl {
 
 template <typename ViewT>
@@ -17,6 +19,17 @@ VaultEntry<ViewT>::version() const
     XRPL_ASSERT(
         *this && (**this).getType() == ltVAULT, "xrpl::VaultEntry::version : valid Vault sle");
     return decodeVaultVersion((**this).at(~sfLEVersion));
+}
+
+template <typename ViewT>
+VaultKind
+VaultEntry<ViewT>::kind() const
+{
+    XRPL_ASSERT(*this && (*this)->getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
+    auto const vaultKind = (*this)->at(~sfVaultKind);
+    if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
+        return VaultKind::ClosedEnded;
+    return VaultKind::OpenEnded;
 }
 
 template class VaultEntry<ReadView>;
