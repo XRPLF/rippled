@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -182,7 +183,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    AMMEntryR const ammSle(ctx.tx[sfAsset], ctx.tx[sfAsset2], ctx.view);
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -194,7 +195,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const expected = ammHolds(
         ctx.view,
-        *ammSle,
+        ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::IgnoreFreeze,
@@ -275,7 +276,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
-    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammLPHolds(ctx.view, ammSle, ctx.tx[sfAccount], ctx.j);
     auto const lpTokensWithdraw = tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
     if (lpTokens <= beast::kZero)
@@ -338,14 +339,14 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    AMMEntryW ammSle(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], sb, j_);
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
-    auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
+    auto const lpTokens = ammLPHolds(ctx_.view(), ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
@@ -354,13 +355,13 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
         return {res.error(), false};  // LCOV_EXCL_LINE
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
+    auto const tfee = getTradingFee(ctx_.view(), ammSle, accountID_);
 
     auto const freezeHandling = issuerFreezeHandling();
 
     auto const expected = ammHolds(
         sb,
-        *ammSle,
+        ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         freezeHandling,
@@ -379,7 +380,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             return equalWithdrawLimit(
                 sb,
-                *ammSle,
+                ammSle,
                 ammAccountID,
                 amountBalance,
                 amount2Balance,
@@ -392,7 +393,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             return singleWithdrawTokens(
                 sb,
-                *ammSle,
+                ammSle,
                 ammAccountID,
                 amountBalance,
                 lptAMMBalance,
@@ -403,18 +404,18 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType & tfLimitLPToken)
         {
             return singleWithdrawEPrice(
-                sb, *ammSle, ammAccountID, amountBalance, lptAMMBalance, *amount, *ePrice, tfee);
+                sb, ammSle, ammAccountID, amountBalance, lptAMMBalance, *amount, *ePrice, tfee);
         }
         if (subTxType & tfSingleAsset)
         {
             return singleWithdraw(
-                sb, *ammSle, ammAccountID, amountBalance, lptAMMBalance, *amount, tfee);
+                sb, ammSle, ammAccountID, amountBalance, lptAMMBalance, *amount, tfee);
         }
         if (subTxType & tfLPToken || subTxType & tfWithdrawAll)
         {
             return equalWithdrawTokens(
                 sb,
-                *ammSle,
+                ammSle,
                 ammAccountID,
                 amountBalance,
                 amount2Balance,
@@ -497,7 +498,7 @@ AMMWithdraw::doApply()
 std::pair<TER, STAmount>
 AMMWithdraw::withdraw(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
@@ -532,7 +533,7 @@ AMMWithdraw::withdraw(
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::withdraw(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     std::optional<AccountID> const& clawbackIssuer,
     AccountID const& account,
@@ -830,7 +831,7 @@ adjustLPTokensIn(
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
@@ -865,7 +866,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    SLE::pointer const ammSle,
+    AMMEntryW& ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -885,7 +886,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     if (updateBalance)
     {
         ammSle->setFieldAmount(sfLPTokenBalance, lpTokenBalance);
-        sb.update(ammSle);
+        ammSle.update();
     }
 
     return {ter, true};
@@ -897,7 +898,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const account,
     std::optional<AccountID> const& clawbackIssuer,
     AccountID const& ammAccount,
@@ -1013,7 +1014,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawLimit(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
@@ -1084,7 +1085,7 @@ AMMWithdraw::equalWithdrawLimit(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdraw(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& lptAMMBalance,
@@ -1136,7 +1137,7 @@ AMMWithdraw::singleWithdraw(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawTokens(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& lptAMMBalance,
@@ -1190,7 +1191,7 @@ AMMWithdraw::singleWithdrawTokens(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawEPrice(
     Sandbox& view,
-    SLE const& ammSle,
+    AMMEntryR const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& lptAMMBalance,
