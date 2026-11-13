@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1306,7 +1307,6 @@ NoModifiedUnmodifiableFields::finalize(
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||
@@ -1349,6 +1349,29 @@ NoModifiedUnmodifiableFields::finalize(
                                         << tx.getTransactionID();
                     }
                     bad = bad || defaultCleared;
+                }
+
+                {
+                    // The two-step flow creates a pending loan without sfOwnerNode and
+                    // LoanAccept adds it when the borrower accepts. That is the only
+                    // transition LoanAccept may make to the field: it must be absent
+                    // before and present after. Any other tx modifying sfOwnerNode is a bug.
+                    if (isTwoStepLoanFlowEnabled(view.rules()) && tx.getTxnType() == ttLOAN_ACCEPT)
+                    {
+                        bool const ownerNodeAdded = !before->isFieldPresent(sfOwnerNode) &&
+                            after->isFieldPresent(sfOwnerNode);
+                        if (!ownerNodeAdded)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: sfOwnerNode must be added, "
+                                               "and only added, by LoanAccept in "
+                                            << tx.getTransactionID();
+                        }
+                        bad = bad || !ownerNodeAdded;
+                    }
+                    else
+                    {
+                        bad = bad || kFieldChanged(before, after, sfOwnerNode);
+                    }
                 }
                 break;
             case ltVAULT:
