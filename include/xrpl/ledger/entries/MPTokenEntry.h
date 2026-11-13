@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -129,6 +130,17 @@ public:
      */
     [[nodiscard]] bool
     hasObligations() const;
+
+    /**
+     * Moves @p amount of this MPToken's MPTAmount into its LockedAmount,
+     * for an escrow. Does not change the issuance.
+     *
+     * @param amount The amount to move from MPTAmount to LockedAmount.
+     * @return tesSUCCESS, or tecINTERNAL on underflow or overflow
+     */
+    [[nodiscard]] TER
+    lockEscrow(STAmount const& amount)
+        requires Base::kIsWritable;
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;
