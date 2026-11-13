@@ -379,18 +379,6 @@ enum class TruncateShares : bool { No = false, Yes = true };
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
 /**
- * Returns the assets backing outstanding shares for a withdrawal:
- * sfAssetsTotal minus sfLossUnrealized, or sfAssetsTotal alone when the
- * unrealized loss is waived. Used by assetsToSharesWithdraw and
- * sharesToAssetsWithdraw as the numerator of the share/asset exchange rate.
- *
- * @param vault The vault SLE.
- * @param waive Whether to skip subtracting the unrealized loss.
- */
-[[nodiscard]] Number
-assetsTotalForWithdrawal(VaultEntryR const& vault, WaiveUnrealizedLoss waive);
-
-/**
  * Reject a cash outflow that is dust (see debitIsNonZeroDust) or whose check
  * overflows Number, which is easy to hit with a large Scale.
  *
