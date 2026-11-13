@@ -187,7 +187,8 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
+            return ((ctx.flags & ApplyFlags::Retry) != ApplyFlags::None) ? TER{terOWNERS}
+                                                                         : TER{tecOWNERS};
         }
     }
 

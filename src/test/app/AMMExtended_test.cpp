@@ -2015,11 +2015,11 @@ private:
             auto const flowResult = [&] {
                 STAmount const deliver(USD(51));
                 STAmount smax(BTC(61));
-                PaymentSandbox sb(env.current().get(), TapNone);
+                PaymentSandbox sb(env.current().get(), ApplyFlags::None);
                 STPathSet paths;
                 auto const ipe = [](Issue const& iss) {
                     return STPathElement(
-                        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+                        STPathElementType::Currency | STPathElementType::Issuer,
                         xrpAccount(),
                         iss.currency,
                         iss.account);
@@ -2053,7 +2053,7 @@ private:
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
-                Sandbox sb(&view, TapNone);
+                Sandbox sb(&view, ApplyFlags::None);
                 for (auto const& o : flowResult.removableOffers)
                 {
                     if (auto const ok = sb.peek(keylet::offer(o)))

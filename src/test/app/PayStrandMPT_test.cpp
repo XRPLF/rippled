@@ -256,7 +256,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     usd,
                     STPath({
                         STPathElement{
-                            STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                            STPathElementType::Currency, xrpAccount(), xrpCurrency(), xrpAccount()},
                     }),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
@@ -583,7 +583,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         inputs.defaultPathsAllowed = true;
         try
         {
-            PaymentSandbox sb{env.current().get(), TapNone};
+            PaymentSandbox sb{env.current().get(), ApplyFlags::None};
             {
                 auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
