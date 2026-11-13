@@ -12,6 +12,15 @@
 namespace xrpl::test::jtx {
 
 json::Value
+accountSet(Account const& account)
+{
+    json::Value jv;
+    jv[jss::Account] = account.human();
+    jv[jss::TransactionType] = jss::AccountSet;
+    return jv;
+}
+
+json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off)
 {
     json::Value jv;
