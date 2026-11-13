@@ -968,8 +968,10 @@ private:
         auto const shareAsset = vaultSle->at(sfShareMPTID);
         STAmount const oneShare{MPTIssue{shareAsset}, Number(1)};
 
+        // fixCleanup3_6_0 rejects this zero payout on its own, without fixCleanup3_4_0.
+        bool const zeroPayoutRejected = fixed || features[fixCleanup3_6_0];
         env(v.withdraw({.depositor = lender, .id = broker.vaultKeylet().key, .amount = oneShare}),
-            Ter(fixed ? tecPRECISION_LOSS : tecINVARIANT_FAILED));
+            Ter(zeroPayoutRejected ? tecPRECISION_LOSS : tecINVARIANT_FAILED));
         env.close();
 
         // Same bug, IOU asset. Needs a 2nd, minimal depositor: a sole
@@ -1234,6 +1236,7 @@ private:
             testYieldTheftRounding(flags);
         testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
+        testBugVaultWithdrawFixedSharesRoundsToZero(all_ - fixCleanup3_4_0 - fixCleanup3_6_0);
         testBugVaultWithdrawFixedSharesRoundsToZero(all_ - fixCleanup3_4_0);
         testBugVaultWithdrawFixedSharesRoundsToZero(all_);
         testBugVaultWithdrawDustVsAssetsTotal(all_ - fixCleanup3_4_0);

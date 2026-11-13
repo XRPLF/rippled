@@ -29,6 +29,7 @@ Version 3.6.0 is not yet released.
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+- `VaultDeposit`, `VaultWithdraw`, `VaultClawback`: With `fixCleanup3_6_0` enabled, share and asset conversions for XRP and MPT vaults are exact and round in the vault's favor. A deposit is charged at least the fair value of the shares it mints, and a withdrawal or clawback recovers at most the fair value of the shares it burns. Previously these amounts were rounded to nearest, so they could be off by up to half a unit at the other shareholders' expense. A withdrawal or clawback by asset amount now rounds the share count down even without `fixCleanup3_4_0`. A withdrawal (other than the final one) or a clawback that would round down to zero assets while the vault still holds value now fails with `tecPRECISION_LOSS`. The conversion arithmetic for IOU vaults is unchanged. ([#8708](https://github.com/XRPLF/rippled/pull/8708))
 
 ## XRP Ledger server version 3.5.0
 
