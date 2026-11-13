@@ -171,11 +171,11 @@ escrowLockPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(view, account, *sleIssuance))
+    if (sleIssuance.isFrozen(account))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(view, dest, *sleIssuance))
+    if (sleIssuance.isFrozen(dest))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
@@ -309,7 +309,7 @@ escrowUnlockPreclaimHelper<MPTIssue>(
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (checkFreeze && isFrozen(view, account, *sleIssuance))
+    if (checkFreeze && sleIssuance.isFrozen(account))
         return tecLOCKED;
 
     return tesSUCCESS;
