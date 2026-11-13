@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <expected>
@@ -362,6 +363,44 @@ isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
  */
 [[nodiscard]] TER
 checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
+
+/**
+ * Returns the early-exit fee rate that applies to a withdrawal from `vault`.
+ * The rate is zero when no fee applies: before featureLendingProtocolV1_2,
+ * on a vault without sfEarlyExitFeeRate, or outside the Investment phase.
+ * The caller must not charge the fee on a withdrawal that burns every
+ * outstanding share, since the retained fee would be left behind in a vault
+ * with no shares.
+ *
+ * @param view The ledger view whose parent close time is used as the clock.
+ * @param vault The vault SLE.
+ */
+[[nodiscard]] TenthBips32
+getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault);
+
+/**
+ * Computes the early-exit fee charged on a withdrawal from a closed-ended
+ * vault during its Investment phase: `amount * rate`, rounded up at Number's
+ * own precision. A zero rate or zero amount yields zero; a 100% rate yields
+ * `amount`.
+ *
+ * The fee is deliberately not rounded to any ledger grid, because it is never
+ * stored or transferred. The caller subtracts it from `amount` under Downward
+ * rounding and passes the payout through clampVaultOutflow, which floors it
+ * on the grid AssetsAvailable lands on. Whatever that floor removes stays in
+ * the vault, so a non-zero rate always keeps at least one grid unit behind
+ * (one drop for XRP, one unit for MPT).
+ *
+ * @param vault The vault ledger entry.
+ * @param amount The pre-fee withdrawal amount, as converted from the redeemed
+ *               shares. It need not be on the vault's grid.
+ * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
+ *
+ * @return The fee, at least the exact `amount * rate` and never greater than
+ *         `amount`.
+ */
+[[nodiscard]] Number
+calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate);
 
 /**
  * Controls whether to truncate shares instead of rounding.
