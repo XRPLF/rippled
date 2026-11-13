@@ -49,6 +49,8 @@ reduceOffer(auto const& amount)
 
 enum class IsDeposit : bool { No = false, Yes = true };
 
+// This constant is built at startup under the Large MantissaRange. Under the
+// Small range it compares as about 1e-13, not 1e-11. See note 3 on Number.
 inline Number const kAMMInvariantRelativeTolerance{1, -11};
 
 /**
