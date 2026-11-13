@@ -25,9 +25,8 @@ PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
 
 def downloaded_by_name() -> set[str]:
     """Name the configs whose build artifact the packaging workflow downloads by
-    a literal name, such as the voidstar binary for its Docker image.
-
-    @return The config names, without the "xrpld-" artifact prefix.
+    a literal name, such as the voidstar binary for its Docker image, without
+    the "xrpld-" artifact prefix.
     """
     pattern = r"^\s*name: xrpld-([a-z0-9-]+)\s*$"
     names = set(re.findall(pattern, PACKAGE_WORKFLOW.read_text(), re.MULTILINE))
@@ -112,7 +111,7 @@ def test_events_list_is_checked() -> None:
 
 
 def test_packaged_config_must_list_tag() -> None:
-    package = {"type": "deb", "image": "debian:trixie"}
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
     assert rejected(package=package, events=[g.Event.PUSH])
     assert not rejected(package=package, events=[g.Event.PUSH, g.Event.TAG])
     assert rejected(package={**package, "type": "msi"}, events=[g.Event.TAG])
@@ -193,6 +192,22 @@ def test_packaging_events_build_what_the_workflow_downloads() -> None:
     for event in EVENTS:
         if g.expand_linux_packaging(LINUX, event):
             assert downloaded_by_name() <= set(build_names(event)), event
+
+
+def test_packaging_events_build_a_plain_deb_and_every_format() -> None:
+    # The Docker job copies only the plain xrpld deb into its image context, and
+    # the install-test job of a format fails on an empty package list, so every
+    # event that packages anything packages the plain deb and at least one
+    # package of every format.
+    for event in EVENTS:
+        entries = g.expand_linux_packaging(LINUX, event)
+        if not entries:
+            continue
+        assert any(
+            e.package_type == g.PACKAGE_DEB and not e.package_variant for e in entries
+        ), event
+        for package_type in g.PACKAGE_TYPES:
+            assert any(e.package_type == package_type for e in entries), event
 
 
 def test_tag_packages_every_packaged_config() -> None:
