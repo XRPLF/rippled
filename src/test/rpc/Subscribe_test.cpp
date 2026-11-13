@@ -27,6 +27,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -57,9 +58,11 @@
 #include <cstdint>
 #include <initializer_list>
 #include <iterator>
+#include <latch>
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -2525,12 +2528,108 @@ public:
     }
 
     void
+    testReportFeeChangeConcurrent()
+    {
+        // Regression test: concurrent callers reporting the same fee change
+        // must queue a single PubFee job. A single-message result does not
+        // prove that no race exists; run under TSAN to detect unsynchronized
+        // access to lastFeeSummary_.
+        testcase("reportFeeChange concurrent callers");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        // Stop LoadManager so its own reportFeeChange() calls cannot add
+        // messages, and let any startup jobs finish before subscribing.
+        env.app().getLoadManager().stop();
+        env.app().getJobQueue().rendezvous();
+
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("server");
+        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+
+        // raiseLocalFee() only raises the fee from its second consecutive call.
+        env.app().getFeeTrack().raiseLocalFee();
+        BEAST_EXPECT(env.app().getFeeTrack().raiseLocalFee());
+
+        constexpr int kThreads = 16;
+        std::latch start{kThreads};
+        std::vector<std::thread> threads;
+        threads.reserve(kThreads);
+        for (int i = 0; i < kThreads; ++i)
+        {
+            threads.emplace_back([&] {
+                start.arrive_and_wait();
+                env.app().getOPs().reportFeeChange();
+            });
+        }
+        for (auto& t : threads)
+            t.join();
+        env.app().getJobQueue().rendezvous();
+
+        int count = 0;
+        if (wsc->findMsg(5s, [](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
+            ++count;
+        while (auto jvo = wsc->getMsg(50ms))
+        {
+            if ((*jvo)[jss::type] == "serverStatus")
+                ++count;
+        }
+        BEAST_EXPECT(count == 1);
+
+        wsc->invoke("unsubscribe", stream);
+    }
+
+    void
+    testReportFeeChangeNoSubscribers()
+    {
+        // Regression test: a change reported while nobody is subscribed must
+        // still be recorded, so reporting the same summary again later does
+        // not queue another job.
+        testcase("reportFeeChange with no subscribers");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env{*this, singleThreadIo(envconfig())};
+
+        env.app().getLoadManager().stop();
+        auto& jobQueue = env.app().getJobQueue();
+        jobQueue.rendezvous();
+
+        // Report a change with no subscribers and let its job finish.
+        // raiseLocalFee() only raises the fee from its second consecutive call.
+        env.app().getFeeTrack().raiseLocalFee();
+        BEAST_EXPECT(env.app().getFeeTrack().raiseLocalFee());
+        env.app().getOPs().reportFeeChange();
+        jobQueue.rendezvous();
+
+        // Subscribe, then report the same, unchanged summary. A job queued
+        // here would publish a serverStatus to the new subscriber.
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("server");
+        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+
+        env.app().getOPs().reportFeeChange();
+        jobQueue.rendezvous();
+
+        auto const jvo = wsc->getMsg(100ms);
+        BEAST_EXPECTS(!jvo, "getMsg: " + to_string(jvo.value()));
+
+        wsc->invoke("unsubscribe", stream);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
 
         testServer();
+        testReportFeeChangeConcurrent();
+        testReportFeeChangeNoSubscribers();
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
