@@ -1,10 +1,10 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
-#include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/confidential_transfer.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
