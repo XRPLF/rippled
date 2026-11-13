@@ -743,6 +743,17 @@ computeLoanProperties(
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 
+/**
+ * @brief Checks that a payment total is within the size limit for the asset.
+ *
+ * An IOU total must be below 10^(16 + loanScale), an MPT total at most kMaxMpTokenAmount, and an
+ * XRP total at most kInitialXrp in drops.
+ *
+ * @return true if the total is within the limit.
+ */
+[[nodiscard]] bool
+fitsAtLoanScale(Asset const& asset, Number const& total, std::int32_t loanScale);
+
 // Indicates what type of payment is being made.
 // regular, late, and full are mutually exclusive.
 // overpayment is an "add on" to a regular payment, and follows that path with

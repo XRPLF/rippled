@@ -863,9 +863,10 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         env(coverDeposit(owner, fixture.brokerKeylet.key, asset(1'000)));
         env.close();
 
-        // Loan A carries the large service fee; loan B is the one defaulted.
-        // B's principal has a 1e-6 digit, so its cover does too.
-        Number const serviceFee{20'000'000'000};
+        // Loan A carries a service fee on each of its 3 installments, each under the 1e10 limit.
+        // Together they carry CoverAvailable past 1e10. Loan B is the one defaulted. B's principal
+        // has a 1e-6 digit, so its cover does too.
+        Number const serviceFee{4'000'000'000};
         auto const brokerSle0 = env.le(fixture.brokerKeylet);
         if (!BEAST_EXPECT(brokerSle0))
             return;
@@ -875,7 +876,7 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             kLoanServiceFee(serviceFee),
             kGracePeriod(60),
             kPaymentInterval(120),
-            kPaymentTotal(1),
+            kPaymentTotal(3),
             Sig(sfCounterpartySignature, owner),
             Fee(env.current()->fees().base * 2));
         env.close();
@@ -889,9 +890,13 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         auto const loanASle = env.le(loanAKeylet);
         if (!BEAST_EXPECT(loanASle))
             return;
-        Number const paymentA = Number(loanASle->at(sfPeriodicPayment)) + serviceFee;
-        env(pay(depositor, loanAKeylet.key, asset(paymentA).value()));
-        env.close();
+        // One installment per payment, with a unit to spare for the larger last installment.
+        Number const paymentA = Number(loanASle->at(sfPeriodicPayment)) + Number{1} + serviceFee;
+        for (int i = 0; i < 3; ++i)
+        {
+            env(pay(depositor, loanAKeylet.key, asset(paymentA).value()));
+            env.close();
+        }
 
         auto const brokerSleBefore = env.le(fixture.brokerKeylet);
         auto const vaultSleBefore = env.le(fixture.vaultKeylet);

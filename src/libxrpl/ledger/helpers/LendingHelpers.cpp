@@ -14,12 +14,14 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -324,6 +326,27 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
     return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
+
+bool
+fitsAtLoanScale(Asset const& asset, Number const& total, std::int32_t loanScale)
+{
+    if (asset.native())
+        return total <= Number{kInitialXrp.drops()};
+    if (asset.holds<MPTIssue>())
+        return total <= Number{static_cast<std::int64_t>(kMaxMpTokenAmount)};
+    return total < Number{1, 16 + loanScale};
+}
+
+namespace detail {
+// A whole number of the loan's units. Unlike isRounded this works on the Number itself, so it
+// also holds for a total too large to show at 16 digits. Multiplying by a power of ten only moves
+// the exponent, so this is exact.
+[[nodiscard]] bool
+isOnLoanGrid(Number const& value, std::int32_t loanScale)
+{
+    return value == (value * Number{1, -loanScale}).truncate() * Number{1, loanScale};
+}
+}  // namespace detail
 
 [[nodiscard]] bool
 isPaymentLate(ReadView const& view, SLE::ConstRef loanSle)
@@ -1260,7 +1283,7 @@ computeLatePayment(
         periodic.untrackedInterest + roundedLateInterest};
 
     XRPL_ASSERT_PARTS(
-        isRounded(asset, late.totalDue, loanScale),
+        detail::isOnLoanGrid(late.totalDue, loanScale),
         "xrpl::detail::computeLatePayment",
         "total due is rounded");
 
@@ -1380,7 +1403,7 @@ computeFullPayment(
     };
 
     XRPL_ASSERT_PARTS(
-        isRounded(asset, full.totalDue, loanScale),
+        detail::isOnLoanGrid(full.totalDue, loanScale),
         "xrpl::detail::computeFullPayment",
         "total due is rounded");
 
@@ -1861,9 +1884,19 @@ makeRegularPayment(
     // mutations each iteration.
     auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
+    bool stoppedAtLimit = false;
     while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
            numPayments < kLoanMaximumPaymentsPerTransaction)
     {
+        // Under LendingProtocolV1_2, stop before an installment whose total passes the size limit.
+        // The first is always paid, and the rest of the amount is not used, not even to overpay.
+        if (view.rules().enabled(featureLendingProtocolV1_2) && numPayments > 0 &&
+            !fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
+        {
+            stoppedAtLimit = true;
+            break;
+        }
+
         // Try to make more payments
         XRPL_ASSERT_PARTS(
             periodic.trackedPrincipalDelta >= 0,
@@ -1919,6 +1952,7 @@ makeRegularPayment(
         paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment);
 
     bool const overpaymentAllowed =   //
+        !stoppedAtLimit &&            //
         paymentRemainingProxy > 0 &&  //
         totalPaid < roundedAmount &&  //
         numPayments < kLoanMaximumPaymentsPerTransaction;
