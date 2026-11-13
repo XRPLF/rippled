@@ -309,6 +309,18 @@ protected:
 
 public:
     /**
+     * Return the reference fee associated with the runner.
+     */
+    std::optional<std::int64_t>
+    referenceFee() const
+    {
+        assert(runner_);
+        if (runner_ == nullptr)
+            return {};
+        return runner_->referenceFee();
+    }
+
+    /**
      * DEPRECATED
      * @return `true` if the test condition indicates success(a false value)
      */

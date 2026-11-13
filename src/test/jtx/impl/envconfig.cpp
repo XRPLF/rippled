@@ -24,7 +24,7 @@ setupConfigForUnitTests(Config& cfg)
     // Reserves held at pre-2021 mainnet values; many tests carry balance
     // expectations built on them. Extension limits are deliberately unset --
     // tests inherit the FeeSetup defaults, or set [voting].
-    cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
+    cfg.fees.referenceFee = XRPAmount(10);
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();
     cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
 

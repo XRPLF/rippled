@@ -47,6 +47,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -73,7 +74,8 @@ Env::AppBundle::AppBundle(
     beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::Severity thresh)
+    beast::Severity thresh,
+    std::optional<XRPAmount> referenceFee)
     : AppBundle()
 {
     using beast::Severity;
@@ -89,6 +91,14 @@ Env::AppBundle::AppBundle(
     }
     auto tk = std::make_unique<ManualTimeKeeper>();
     timeKeeper = tk.get();
+    if (referenceFee)
+    {
+        config->fees.referenceFee = *referenceFee;
+    }
+    else if (auto const fee = suite.referenceFee())
+    {
+        config->fees.referenceFee = *fee;
+    }
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
         config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
