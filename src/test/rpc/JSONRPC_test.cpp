@@ -906,6 +906,29 @@ static constexpr TxnTestData kTxnTestArray[] = {
     },
 
     {
+        "A Payment with an integer 'TransactionType' gets the Payment checks.",
+        __LINE__,
+        R"({
+    "command": "dummy_command",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "1000000000",
+        "TransactionType": 0
+    }
+})",
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
+    },
+
+    {
         "'Account' must be present.",
         __LINE__,
         R"({

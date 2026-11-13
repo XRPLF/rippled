@@ -36,6 +36,7 @@
 #include <charconv>
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -258,23 +259,32 @@ parseUInt16(
 
     try
     {
+        if (field == sfTransactionType)
+        {
+            auto const txType = txTypeFromJson(value);
+            if (!txType)
+            {
+                if (txType.error() == TxTypeJsonError::BadType)
+                {
+                    error = badType(jsonName, fieldName);
+                }
+                else
+                {
+                    error = invalidData(jsonName, fieldName);
+                }
+                return ret;
+            }
+            return detail::makeStvar<STResult>(
+                field, safeCast<typename STResult::value_type>(*txType));
+        }
+
         if (value.isString())
         {
             std::string const strValue = value.asString();
 
             if (!strValue.empty() && ((strValue[0] < '0') || (strValue[0] > '9')))
             {
-                if (field == sfTransactionType)
-                {
-                    ret = detail::makeStvar<STResult>(
-                        field,
-                        safeCast<typename STResult::value_type>(static_cast<Integer>(
-                            TxFormats::getInstance().findTypeByName(strValue))));
-
-                    if (*name == sfGeneric)
-                        name = &sfTransaction;
-                }
-                else if (field == sfLedgerEntryType)
+                if (field == sfLedgerEntryType)
                 {
                     ret = detail::makeStvar<STResult>(
                         field,

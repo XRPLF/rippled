@@ -129,6 +129,21 @@ public:
         return itr->second;
     }
 
+    /**
+     * Retrieve a format based on its name.
+     *
+     * @param  name The name of the format.
+     * @return      The format with that name, or `nullptr` when none has it.
+     */
+    [[nodiscard]] Item const*
+    findByName(std::string const& name) const
+    {
+        auto const itr = names_.find(name);
+        if (itr == names_.end())
+            return nullptr;
+        return itr->second;
+    }
+
     // begin() and end() are provided for testing purposes.
     [[nodiscard]] std::forward_list<Item>::const_iterator
     begin() const
@@ -143,18 +158,6 @@ public:
     }
 
 protected:
-    /**
-     * Retrieve a format based on its name.
-     */
-    [[nodiscard]] Item const*
-    findByName(std::string const& name) const
-    {
-        auto const itr = names_.find(name);
-        if (itr == names_.end())
-            return nullptr;
-        return itr->second;
-    }
-
     /**
      * Add a new format.
      *
