@@ -40,7 +40,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
     // on testStartTime since XRPL epoch.
     auto const now = env_.timeKeeper().now();
     if (now.time_since_epoch().count() == 0 || arg.close)
-        env_.close(now + kTestStartTime - kEpochOffset);
+        env_.close(now + kTestStart.time_since_epoch());
     if (arg.owner)
         owner_ = *arg.owner;
     if (arg.documentID && validDocumentID(*arg.documentID))
@@ -266,9 +266,8 @@ Oracle::set(UpdateArg const& arg)
     }
     else
     {
-        jv[jss::LastUpdateTime] = to_string(
-            duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
-            kEpochOffset.count());
+        auto const closeTime = NetClock::to_sys(env_.current()->header().closeTime);
+        jv[jss::LastUpdateTime] = to_string(closeTime.time_since_epoch().count());
     }
     json::Value dataSeries(json::ValueType::Array);
     auto const assetToStr = [](std::string const& s) {

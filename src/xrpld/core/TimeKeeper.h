@@ -16,19 +16,11 @@ class TimeKeeper : public beast::AbstractClock<NetClock>
 private:
     std::atomic<std::chrono::seconds> closeOffset_;
 
-    // Adjust system_clock::time_point for NetClock epoch
-    static constexpr time_point
-    adjust(std::chrono::system_clock::time_point when)
-    {
-        return time_point(
-            std::chrono::duration_cast<duration>(when.time_since_epoch() - kEpochOffset));
-    }
-
 public:
     ~TimeKeeper() override = default;
 
     /**
-     * Returns the current time, using the server's clock.
+     * Returns the current network time, using the server's clock.
      *
      * It's possible for servers to have a different value for network
      * time, especially if they do not use some external mechanism for
@@ -38,16 +30,23 @@ public:
      * protocol, but it is possible for them to make an educated guess
      * if this server publishes proposals or validations.
      *
-     * @note The network time is adjusted for the "XRPL epoch" which
-     *       was arbitrarily defined as 2000-01-01T00:00:00Z by Arthur
-     *       Britto and David Schwartz during early development of the
-     *       code. No rationale has been provided for this curious and
-     *       annoying, but otherwise unimportant, choice.
+     * @see NetClock for the epoch and representation of network time.
      */
     [[nodiscard]] time_point
     now() const override
     {
-        return adjust(std::chrono::system_clock::now());
+        try
+        {
+            return NetClock::from_sys(std::chrono::system_clock::now());
+        }
+        catch (std::domain_error const& e)
+        {
+            // The system clock has stepped outside the range network time
+            // represents since the check at startup. Nothing in the server
+            // is prepared for that, so stop here rather than let the
+            // exception surface somewhere arbitrary.
+            logicError(e.what());
+        }
     }
 
     /**

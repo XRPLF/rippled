@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <chrono>
@@ -78,7 +77,7 @@ constexpr std::ratio<80, 100> kAmendmentMajorityCalcThreshold;
 /**
  * The minimum amount of time an amendment must hold a majority
  */
-constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = Weeks{2};
+constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = std::chrono::weeks{2};
 
 }  // namespace xrpl
 

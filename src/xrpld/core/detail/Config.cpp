@@ -3,7 +3,6 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -986,11 +985,11 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (boost::iequals(match[2], "days"))
         {
-            amendmentMajorityTime = Days(duration);
+            amendmentMajorityTime = days(duration);
         }
         else if (boost::iequals(match[2], "weeks"))
         {
-            amendmentMajorityTime = Weeks(duration);
+            amendmentMajorityTime = weeks(duration);
         }
 
         if (amendmentMajorityTime < minutes(15))

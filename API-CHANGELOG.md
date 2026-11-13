@@ -57,6 +57,9 @@ Version 3.5.0 is not yet released.
 ### Bugfixes in 3.5.0
 
 - `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+- `amm_info`: The `auction_slot.expiration` timestamp now ends in `Z`, like every other ISO 8601 timestamp in the API
+  (`close_time_iso` and others), instead of `+0000`. For the same instant, `2026-03-07T09:04:05+0000` becomes
+  `2026-03-07T09:04:05Z`. Both are ISO 8601; only the new form is also RFC 3339. This applies to all API versions.
 
 ## XRP Ledger server version 3.4.0
 

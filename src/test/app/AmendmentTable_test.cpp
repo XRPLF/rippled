@@ -41,6 +41,8 @@
 
 namespace xrpl {
 
+using std::chrono::weeks;
+
 class AmendmentTable_test final : public beast::unit_test::Suite
 {
 private:
@@ -227,7 +229,7 @@ public:
     {
         testcase("Construction");
         test::jtx::Env env{*this, makeConfig()};
-        auto table = makeTable(env, Weeks(1));
+        auto table = makeTable(env, weeks{1});
 
         for (auto const& a : allSupported_)
             BEAST_EXPECT(table->isSupported(amendmentId(a)));
@@ -257,7 +259,7 @@ public:
         testcase("Name to ID mapping");
 
         test::jtx::Env env{*this, makeConfig()};
-        auto table = makeTable(env, Weeks(1));
+        auto table = makeTable(env, weeks{1});
 
         for (auto const& a : yes_)
             BEAST_EXPECT(table->find(a) == amendmentId(a));
@@ -306,7 +308,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, Weeks(2), yesVotes, test, emptySection_))
+                if (makeTable(env, weeks{2}, yesVotes, test, emptySection_))
                     fail("Accepted only amendment ID");
             }
             catch (std::exception const& e)
@@ -322,7 +324,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, Weeks(2), yesVotes, test, emptySection_))
+                if (makeTable(env, weeks{2}, yesVotes, test, emptySection_))
                     fail("Accepted extra arguments");
             }
             catch (std::exception const& e)
@@ -341,7 +343,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, Weeks(2), yesVotes, test, emptySection_))
+                if (makeTable(env, weeks{2}, yesVotes, test, emptySection_))
                     fail("Accepted short amendment ID");
             }
             catch (std::exception const& e)
@@ -360,7 +362,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, Weeks(2), yesVotes, test, emptySection_))
+                if (makeTable(env, weeks{2}, yesVotes, test, emptySection_))
                     fail("Accepted long amendment ID");
             }
             catch (std::exception const& e)
@@ -380,7 +382,7 @@ public:
             try
             {
                 test::jtx::Env env{*this, makeConfig()};
-                if (makeTable(env, Weeks(2), yesVotes, test, emptySection_))
+                if (makeTable(env, weeks{2}, yesVotes, test, emptySection_))
                     fail("Accepted non-hex amendment ID");
             }
             catch (std::exception const& e)
@@ -396,7 +398,7 @@ public:
         testcase("enable and veto");
 
         test::jtx::Env env{*this, makeConfig()};
-        std::unique_ptr<AmendmentTable> table = makeTable(env, Weeks(2));
+        std::unique_ptr<AmendmentTable> table = makeTable(env, weeks{2});
 
         // Note which entries are enabled (convert the amendment names to IDs)
         std::set<UInt256> allEnabled;
@@ -585,7 +587,7 @@ public:
         auto const testAmendment = amendmentId("TestAmendment");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(env, Weeks(2), emptyYes_, emptySection_, emptySection_);
+        auto table = makeTable(env, weeks{2}, emptyYes_, emptySection_, emptySection_);
 
         auto const validators = makeValidators(10, table);
 
@@ -597,7 +599,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{1},
+            weeks{1},
             validators,
             votes,
             ourVotes,
@@ -628,7 +630,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{2},
+            weeks{2},
             validators,
             votes,
             ourVotes,
@@ -637,14 +639,14 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
-        majority[testAmendment] = hourTime(Weeks{1});
+        majority[testAmendment] = hourTime(weeks{1});
 
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{5},
+            weeks{5},
             validators,
             votes,
             ourVotes,
@@ -663,7 +665,7 @@ public:
         auto const testAmendment = amendmentId("vetoedAmendment");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(env, Weeks(2), emptyYes_, emptySection_, makeSection(testAmendment));
+        auto table = makeTable(env, weeks{2}, emptyYes_, emptySection_, makeSection(testAmendment));
 
         auto const validators = makeValidators(10, table);
 
@@ -675,7 +677,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{1},
+            weeks{1},
             validators,
             votes,
             ourVotes,
@@ -690,7 +692,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{2},
+            weeks{2},
             validators,
             votes,
             ourVotes,
@@ -699,12 +701,12 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
-        majority[testAmendment] = hourTime(Weeks{1});
+        majority[testAmendment] = hourTime(weeks{1});
 
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{5},
+            weeks{5},
             validators,
             votes,
             ourVotes,
@@ -721,7 +723,7 @@ public:
         testcase("voteEnable");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(env, Weeks(2), makeDefaultYes(yes_), emptySection_, emptySection_);
+        auto table = makeTable(env, weeks{2}, makeDefaultYes(yes_), emptySection_, emptySection_);
 
         auto const validators = makeValidators(10, table);
 
@@ -734,7 +736,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{1},
+            weeks{1},
             validators,
             votes,
             ourVotes,
@@ -753,7 +755,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{2},
+            weeks{2},
             validators,
             votes,
             ourVotes,
@@ -763,13 +765,13 @@ public:
         BEAST_EXPECT(enabled.empty());
 
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority[amendmentId(i)] == hourTime(Weeks{2}));
+            BEAST_EXPECT(majority[amendmentId(i)] == hourTime(weeks{2}));
 
         // Week 5: We should enable the amendment
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{5},
+            weeks{5},
             validators,
             votes,
             ourVotes,
@@ -781,7 +783,7 @@ public:
         doRound(
             env.current()->rules(),
             *table,
-            Weeks{6},
+            weeks{6},
             validators,
             votes,
             ourVotes,
@@ -802,7 +804,7 @@ public:
         auto const testAmendment = amendmentId("detectMajority");
         test::jtx::Env env{*this, feat};
         auto table =
-            makeTable(env, Weeks(2), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+            makeTable(env, weeks{2}, makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
         auto const validators = makeValidators(16, table);
 
@@ -820,7 +822,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{i},
+                weeks{i},
                 validators,
                 votes,
                 ourVotes,
@@ -868,7 +870,7 @@ public:
 
         test::jtx::Env env{*this, feat};
         auto table =
-            makeTable(env, Weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+            makeTable(env, weeks{8}, makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
         auto const validators = makeValidators(16, table);
 
@@ -885,7 +887,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{1},
+                weeks{1},
                 validators,
                 votes,
                 ourVotes,
@@ -907,7 +909,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{i + 1},
+                weeks{i + 1},
                 validators,
                 votes,
                 ourVotes,
@@ -940,7 +942,7 @@ public:
         auto const testAmendment = amendmentId("changedUNL");
         test::jtx::Env env{*this, feat};
         auto table =
-            makeTable(env, Weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+            makeTable(env, weeks{8}, makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
         std::vector<std::pair<PublicKey, SecretKey>> validators = makeValidators(10, table);
 
@@ -957,7 +959,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{1},
+                weeks{1},
                 validators,
                 votes,
                 ourVotes,
@@ -1000,7 +1002,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{2},
+                weeks{2},
                 validators,
                 votes,
                 ourVotes,
@@ -1024,7 +1026,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{3},
+                weeks{3},
                 validators,
                 votes,
                 ourVotes,
@@ -1043,7 +1045,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{4},
+                weeks{4},
                 validators,
                 votes,
                 ourVotes,
@@ -1065,7 +1067,7 @@ public:
             doRound(
                 env.current()->rules(),
                 *table,
-                Weeks{5},
+                weeks{5},
                 validators,
                 votes,
                 ourVotes,
@@ -1096,7 +1098,7 @@ public:
             test::jtx::Env env{*this, feat};
             auto const testAmendment = amendmentId("validatorFlapping");
             auto table = makeTable(
-                env, Weeks(1), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+                env, weeks{1}, makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
             // Make two lists of validators, one with a missing validator, to
             // make it easy to simulate validator flapping.
@@ -1167,7 +1169,7 @@ public:
         testcase("hasUnsupportedEnabled");
 
         using namespace std::chrono_literals;
-        constexpr Weeks kW(1);
+        constexpr weeks kW{1};
         test::jtx::Env env{*this, makeConfig()};
         auto table = makeTable(env, kW);
         BEAST_EXPECT(!table->hasUnsupportedEnabled());
