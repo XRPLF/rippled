@@ -6,7 +6,15 @@
         "compiler": ["gcc"],
         "build_type": ["Debug"],
         "arch": ["amd64"],
-        "minimal": true,
+        "events": [
+          "pull_request",
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "suffix": "coverage",
         "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=500 -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
       },
@@ -14,7 +22,15 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": true,
+        "events": [
+          "pull_request",
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "benchmark": true
       },
 
@@ -22,20 +38,41 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ]
       },
       {
         "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
         "arch": ["arm64"],
-        "minimal": false
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ]
       },
 
       {
         "compiler": ["gcc", "clang"],
         "build_type": ["Debug", "Release"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "sanitizers": ["address", "undefinedbehavior"]
       },
 
@@ -43,7 +80,14 @@
         "compiler": ["clang"],
         "build_type": ["Debug"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "suffix": "voidstar",
         "extra_cmake_args": "-Dvoidstar=ON"
       },
@@ -51,7 +95,14 @@
         "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "suffix": "reffee",
         "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=1000"
       },
@@ -59,7 +110,14 @@
         "compiler": ["gcc"],
         "build_type": ["Debug"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "suffix": "unity",
         "extra_cmake_args": "-Dunity=ON"
       }
@@ -70,7 +128,14 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "deb",
@@ -81,7 +146,14 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "suffix": "assert",
         "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
         "package": {
@@ -97,7 +169,14 @@
         "compiler": ["gcc"],
         "build_type": ["Release"],
         "arch": ["amd64"],
-        "minimal": false,
+        "events": [
+          "ready_to_merge",
+          "merge_group",
+          "push",
+          "schedule",
+          "tag",
+          "workflow_dispatch"
+        ],
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "rpm",
