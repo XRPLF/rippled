@@ -6,6 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -29,10 +30,14 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -45,6 +50,11 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
     // Long enough that an extra loan's first payment is not yet due when the
     // coarsening loan goes late.
     static constexpr std::uint32_t kLongPaymentInterval = 1000 * 24 * 60 * 60;
+
+    // The loans of the two fee reporter tests below.
+    static constexpr std::uint32_t kReporterPaymentTotal = 30;
+    static constexpr std::uint32_t kReporterPaymentInterval = 60;
+    static constexpr std::uint32_t kReporterGracePeriod = 60;
 
     // A dustBorrower trust line big enough to hold its small funded balance.
     static inline Number const kDustBorrowerTrustLimit{10};
@@ -1596,6 +1606,1013 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
     }
 
 public:
+    enum class VKind { Legacy, CashBasis, Fixed };
+
+    static std::string
+    kindName(VKind kind)
+    {
+        switch (kind)
+        {
+            case VKind::Legacy:
+                return "Legacy";
+            case VKind::CashBasis:
+                return "CashBasis";
+            case VKind::Fixed:
+                return "FixedPrecision";
+        }
+        return "";
+    }
+
+    static FeatureBitset
+    conserveFeatures(VKind kind)
+    {
+        switch (kind)
+        {
+            case VKind::Legacy:
+                return features() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2;
+            case VKind::CashBasis:
+                return features() - featureLendingProtocolV1_2;
+            case VKind::Fixed:
+                return features();
+        }
+        return features();
+    }
+
+    // A vault of kind with a deposit and a broker. Legacy uses an open-ended vault, which a broker
+    // can only be set on before LendingProtocolV1_1.
+    static std::pair<Keylet, Keylet>
+    vaultAndBroker(
+        test::jtx::Env& env,
+        VKind kind,
+        test::jtx::Account const& owner,
+        test::jtx::Account const& depositor,
+        PrettyAsset const& asset,
+        Number const& deposit,
+        std::optional<std::uint8_t> scale,
+        TenthBips16 managementFeeRate = TenthBips16(0))
+    {
+        using namespace test::jtx;
+        if (kind == VKind::Legacy)
+        {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            if (scale)
+                tx[sfScale] = *scale;
+            env(tx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = depositor, .id = keylet.key, .amount = asset(deposit)}));
+            env.close();
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(loan_broker::set(owner, keylet.key),
+                loan_broker::kManagementFeeRate(managementFeeRate));
+            env.close();
+            return {keylet, brokerKeylet};
+        }
+        auto const fixture = setupLendingVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            deposit,
+            std::chrono::seconds{100'000'000},
+            scale,
+            TenthBips32(0),
+            TenthBips32(0),
+            managementFeeRate);
+        return {fixture.vaultKeylet, fixture.brokerKeylet};
+    }
+
+    // Turns on LendingProtocolV1_2 for the vault kinds that start without it.
+    static void
+    enableV12(test::jtx::Env& env, VKind kind)
+    {
+        if (kind == VKind::Fixed)
+            return;
+        if (kind == VKind::Legacy)
+            env.enableFeature(featureLendingProtocolV1_1);
+        env.enableFeature(featureLendingProtocolV1_2);
+        env.close();
+    }
+
+    // An IOU lending setup at Scale 2 (LoanScale -2, a size limit of 10^14).
+    struct LimitSetup
+    {
+        test::jtx::Account issuer{"issuer"};
+        test::jtx::Account owner{"owner"};
+        test::jtx::Account depositor{"depositor"};
+        test::jtx::Account borrower{"borrower"};
+        PrettyAsset asset{issuer["USD"]};
+        Keylet vault = keylet::skip();
+        Keylet broker = keylet::skip();
+        Keylet loan = keylet::skip();
+        test::jtx::Account vaultAccount{"vault"};
+        test::jtx::Account brokerAccount{"brokerPseudo"};
+    };
+
+    // Funds the accounts of s, with a borrower holding borrowerFunds and an owner holding
+    // ownerFunds, and creates the vault and its broker. Neither amendment is changed.
+    void
+    setupLimitVault(
+        test::jtx::Env& env,
+        LimitSetup& s,
+        VKind kind,
+        Number const& deposit,
+        Number const& borrowerFunds,
+        std::optional<Number> const& ownerFunds,
+        TenthBips16 managementFeeRate = TenthBips16(0))
+    {
+        using namespace test::jtx;
+
+        // setupIou makes the same accounts s holds, as they are named alike.
+        auto const accounts = setupIou(
+            env,
+            {
+                .depositorTrust = Number{1, 30},
+                .ownerTrust = Number{1, 30},
+                .depositorFunds = deposit,
+                .ownerFunds = ownerFunds,
+            });
+        fundIouHolder(env, s.borrower, accounts, Number{1, 30}, borrowerFunds);
+        std::tie(s.vault, s.broker) = vaultAndBroker(
+            env, kind, s.owner, s.depositor, s.asset, deposit, std::uint8_t{2}, managementFeeRate);
+        auto const brokerSle = env.le(s.broker);
+        auto const vaultSle = env.le(s.vault);
+        if (!BEAST_EXPECT(brokerSle) || !BEAST_EXPECT(vaultSle))
+            return;
+        s.vaultAccount = Account{"vault", vaultSle->at(sfAccount)};
+        s.brokerAccount = Account{"brokerPseudo", brokerSle->at(sfAccount)};
+        env.memoize(s.vaultAccount);
+        env.memoize(s.brokerAccount);
+    }
+
+    // The LoanSet bound takes the last installment to be at most one loan unit more than the
+    // rounded periodic payment R. Each installment before it leaves the loan within 1.5 units of
+    // its theoretical value, or pays R when capped, which only lowers the excess. So the last one
+    // is below the periodic payment plus 1.5 units, which on the loan's grid is at most R plus one
+    // unit. These schedules, at the coarse LoanScale -2 with interest and management fees that
+    // leave shortages, reach R plus one unit, the most a search of 600,000 schedules found.
+    struct LastInstallmentCase
+    {
+        Number principal;
+        std::uint32_t paymentTotal;
+        TenthBips32 interestRate;
+        std::uint32_t paymentInterval;
+        TenthBips16 managementFeeRate;
+        Number periodic;
+        Number last;
+    };
+
+    void
+    testLastInstallmentBound(VKind kind, LastInstallmentCase const& c)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            "LoanPay last installment is at most one unit over the periodic payment, " +
+            kindName(kind) + ", " + std::to_string(c.paymentTotal) + " installments");
+
+        Env env(*this, conserveFeatures(kind));
+        LimitSetup s;
+        // A vault of 2 * 10^13 sets LoanScale -2 on every vault kind.
+        setupLimitVault(
+            env, s, kind, Number{2, 13}, Number{1'000'000}, std::nullopt, c.managementFeeRate);
+        enableV12(env, kind);
+        auto const& owner = s.owner;
+        auto const& borrower = s.borrower;
+        auto const& asset = s.asset;
+        auto const& brokerKeylet = s.broker;
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        env(set(borrower, brokerKeylet.key, c.principal),
+            kInterestRate(c.interestRate),
+            kGracePeriod(60),
+            kPaymentInterval(c.paymentInterval),
+            kPaymentTotal(c.paymentTotal),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        BEAST_EXPECT(loan->at(sfLoanScale) == -2);
+        Number const periodic =
+            roundPeriodicPayment(asset.raw(), loan->at(sfPeriodicPayment), loan->at(sfLoanScale));
+        BEAST_EXPECT(periodic == c.periodic);
+
+        for (std::uint32_t i = 1; i < c.paymentTotal; ++i)
+        {
+            env(pay(borrower, loanKeylet.key, asset(periodic).value()));
+            env.close();
+        }
+        loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        BEAST_EXPECT(loan->at(sfPaymentRemaining) == 1);
+        Number const last = loan->at(sfTotalValueOutstanding);
+        BEAST_EXPECT(last == c.last);
+        BEAST_EXPECT((last <= periodic + Number{1, -2}));
+
+        env(pay(borrower, loanKeylet.key, asset(last).value()));
+        env.close();
+        loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loan->at(sfTotalValueOutstanding) == beast::kZero);
+    }
+
+    void
+    testLastInstallmentBounds()
+    {
+        std::vector<LastInstallmentCase> const cases{
+            {
+                .principal = Number{24'812'83, -2},
+                .paymentTotal = 5,
+                .interestRate = TenthBips32(56'075),
+                .paymentInterval = 19'800,
+                .managementFeeRate = TenthBips16(6'113),
+                .periodic = Number{4'967'81, -2},
+                .last = Number{4'967'82, -2},
+            },
+            {
+                .principal = Number{37'469'14, -2},
+                .paymentTotal = 6,
+                .interestRate = TenthBips32(22'892),
+                .paymentInterval = 35'498,
+                .managementFeeRate = TenthBips16(8'049),
+                .periodic = Number{6'250'49, -2},
+                .last = Number{6'250'50, -2},
+            },
+            {
+                .principal = Number{46'298'81, -2},
+                .paymentTotal = 4,
+                .interestRate = TenthBips32(43'181),
+                .paymentInterval = 213'804,
+                .managementFeeRate = TenthBips16(5'312),
+                .periodic = Number{11'659'54, -2},
+                .last = Number{11'659'55, -2},
+            },
+        };
+        for (auto const kind : {VKind::Legacy, VKind::CashBasis, VKind::Fixed})
+        {
+            for (auto const& c : cases)
+                testLastInstallmentBound(kind, c);
+        }
+    }
+
+    // LoanSet bounds each payment's fixed fees under LendingProtocolV1_2: a regular or late
+    // payment's largest installment plus the service and late fees, and a full payment's principal,
+    // close interest and close fee, must fit the size limit.
+    struct BoundCase
+    {
+        std::string name;
+        Number principal;
+        std::uint32_t paymentTotal = 4;
+        Number serviceFee{0};
+        Number lateFee{0};
+        Number closeFee{0};
+        TenthBips32 closeInterestRate{0};
+        TER ter = tesSUCCESS;
+    };
+
+    void
+    testLoanSetSizeBound(VKind kind, bool mpt)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        bool const fixed = kind == VKind::Fixed;
+        std::vector<BoundCase> cases;
+        if (mpt)
+        {
+            // An MPT total must be at most kMaxMpTokenAmount. 1000 in 4 installments of 250, and
+            // one more for the larger last installment.
+            Number const max{static_cast<std::int64_t>(kMaxMpTokenAmount)};
+            cases = {
+                {
+                    .name = "service fee at the limit",
+                    .principal = Number{1'000},
+                    .serviceFee = max - Number{251},
+                },
+                {
+                    .name = "service fee one over the limit",
+                    .principal = Number{1'000},
+                    .serviceFee = max - Number{250},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "late fee one over the limit",
+                    .principal = Number{1'000},
+                    .lateFee = max - Number{250},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "close fee at the limit",
+                    .principal = Number{1'000},
+                    .closeFee = max - Number{1'000},
+                },
+                {
+                    .name = "close fee one over the limit",
+                    .principal = Number{1'000},
+                    .closeFee = max - Number{999},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "single installment, service fee at the limit",
+                    .principal = Number{1'000},
+                    .paymentTotal = 1,
+                    .serviceFee = max - Number{1'000},
+                },
+                {
+                    .name = "two installments, service fee over only with the extra unit",
+                    .principal = Number{1'000},
+                    .paymentTotal = 2,
+                    .serviceFee = max - Number{500},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "single installment, close fee at the maximum",
+                    .principal = Number{1'000},
+                    .paymentTotal = 1,
+                    .closeFee = max,
+                },
+            };
+        }
+        else
+        {
+            // At LoanScale -2 a total must be below 10^14. 10^13 in 4 installments of
+            // 2.5 * 10^12, and one unit more for the larger last installment.
+            Number const fee{97'499'999'999'999'98LL, -2};
+            Number const over = fee + Number{1, -2};
+            cases = {
+                {.name = "service fee at the limit", .principal = Number{1, 13}, .serviceFee = fee},
+                // Over only with the last installment's extra unit.
+                {
+                    .name = "service fee one unit over the limit",
+                    .principal = Number{1, 13},
+                    .serviceFee = over,
+                    .ter = tecPRECISION_LOSS,
+                },
+                {.name = "late fee at the limit", .principal = Number{1, 13}, .lateFee = fee},
+                {
+                    .name = "late fee one unit over the limit",
+                    .principal = Number{1, 13},
+                    .lateFee = over,
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "service and late fee together over the limit",
+                    .principal = Number{1, 13},
+                    .serviceFee = Number{5, 13},
+                    .lateFee = Number{5, 13} - Number{25, 11},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "close fee at the limit",
+                    .principal = Number{1, 13},
+                    .closeFee = Number{89'999'999'999'999'99LL, -2},
+                },
+                {
+                    .name = "close fee one unit over the limit",
+                    .principal = Number{1, 13},
+                    .closeFee = Number{9, 13},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "close fee over the limit with close interest",
+                    .principal = Number{1, 13},
+                    .closeFee = Number{88, 12},
+                    .closeInterestRate = TenthBips32{20'000},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "close fee at the limit with close interest",
+                    .principal = Number{1, 13},
+                    .closeFee = Number{87'999'999'999'999'99LL, -2},
+                    .closeInterestRate = TenthBips32{20'000},
+                },
+                // A single installment is the loan's whole value, so it has no extra unit, and it
+                // can not be paid in full, so its close fee is not bounded.
+                {
+                    .name = "single installment, service fee at the limit",
+                    .principal = Number{1, 13},
+                    .paymentTotal = 1,
+                    .serviceFee = Number{89'999'999'999'999'99LL, -2},
+                },
+                {
+                    .name = "two installments, service fee over only with the extra unit",
+                    .principal = Number{1, 13},
+                    .paymentTotal = 2,
+                    .serviceFee = Number{94'999'999'999'999'99LL, -2},
+                    .ter = tecPRECISION_LOSS,
+                },
+                {
+                    .name = "single installment, close fee past the limit",
+                    .principal = Number{1, 13},
+                    .paymentTotal = 1,
+                    .closeFee = Number{95, 12},
+                },
+                {
+                    .name = "two installments, close fee past the limit",
+                    .principal = Number{1, 13},
+                    .paymentTotal = 2,
+                    .closeFee = Number{95, 12},
+                    .ter = tecPRECISION_LOSS,
+                },
+                // A FixedPrecision vault at Scale 2 holds at most 9 * 10^13. The other vaults
+                // hold just the principal, so their grid stays 0.01.
+                {
+                    .name = "small fees on a loan just under the limit",
+                    .principal = fixed ? Number{89'999'999'999'999'99LL, -2}
+                                       : Number{99'999'999'999'998'99LL, -2},
+                    .paymentTotal = 1,
+                    .serviceFee = Number{1, -2},
+                    .lateFee = Number{1, -2},
+                },
+                {
+                    .name = "no close fee on a loan just under the limit",
+                    .principal = fixed ? Number{89'999'999'999'999'99LL, -2}
+                                       : Number{99'999'999'999'998'99LL, -2},
+                    .paymentTotal = 1,
+                    .closeInterestRate = TenthBips32{100'000},
+                },
+            };
+        }
+
+        for (auto const& b : cases)
+        {
+            for (bool const v12 : {true, false})
+            {
+                // A FixedPrecision vault needs the amendment.
+                if (!v12 && fixed)
+                    continue;
+                testcase(
+                    "LoanSet size bound, " + kindName(kind) + (mpt ? " MPT: " : " IOU: ") + b.name +
+                    (v12 ? "" : ", amendment off"));
+
+                Env env(*this, conserveFeatures(kind));
+                Number const deposit = [&] {
+                    if (fixed)
+                        return std::min(b.principal * 2, Number{9, 13});
+                    return b.principal > Number{5, 13} ? b.principal : b.principal * 2;
+                }();
+                AssetAccounts accounts;
+                if (mpt)
+                {
+                    // Not setupMpt: it sets MaximumAmount, and this keeps the default.
+                    env.fund(XRP(1'000'000), accounts.issuer, accounts.owner, accounts.depositor);
+                    env.close();
+                    MPTTester token{env, accounts.issuer, kMptInitNoFund};
+                    token.create({.flags = tfMPTCanTransfer});
+                    accounts.asset = token.issuanceID();
+                    token.authorize({.account = accounts.owner});
+                    token.authorize({.account = accounts.depositor});
+                    env(pay(accounts.issuer, accounts.depositor, accounts.asset(deposit)));
+                    env.close();
+                }
+                else
+                {
+                    accounts = setupIou(
+                        env,
+                        {
+                            .depositorTrust = Number{1, 30},
+                            .ownerTrust = Number{1, 30},
+                            .depositorFunds = deposit,
+                        });
+                }
+                auto const& owner = accounts.owner;
+                auto const& depositor = accounts.depositor;
+                auto const [vaultKeylet, brokerKeylet] = vaultAndBroker(
+                    env,
+                    kind,
+                    owner,
+                    depositor,
+                    accounts.asset,
+                    deposit,
+                    mpt ? std::nullopt : std::optional<std::uint8_t>{2});
+                if (v12)
+                    enableV12(env, kind);
+
+                auto const brokerSle = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerSle))
+                    return;
+                auto const loanKeylet = keylet::loan(
+                    brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+                env(set(depositor, brokerKeylet.key, b.principal),
+                    kInterestRate(TenthBips32(0)),
+                    kLoanServiceFee(b.serviceFee),
+                    kLatePaymentFee(b.lateFee),
+                    kClosePaymentFee(b.closeFee),
+                    kCloseInterestRate(b.closeInterestRate),
+                    kGracePeriod(60),
+                    kPaymentInterval(600),
+                    kPaymentTotal(b.paymentTotal),
+                    Sig(sfCounterpartySignature, owner),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(v12 ? b.ter : TER{tesSUCCESS}));
+                env.close();
+                auto const loan = env.le(loanKeylet);
+                BEAST_EXPECT(static_cast<bool>(loan) == (!v12 || isTesSuccess(b.ter)));
+                if (loan)
+                {
+                    BEAST_EXPECT(loan->at(sfLoanScale) == (mpt ? 0 : -2));
+                }
+            }
+        }
+    }
+
+    void
+    testLoanSetSizeBounds()
+    {
+        for (auto const kind : {VKind::Legacy, VKind::CashBasis, VKind::Fixed})
+        {
+            for (bool const mpt : {false, true})
+                testLoanSetSizeBound(kind, mpt);
+        }
+    }
+
+    struct LimitLoan
+    {
+        Number principal;
+        std::uint32_t paymentTotal = 10;
+        Number serviceFee{0};
+        Number lateFee{0};
+        TenthBips32 lateInterestRate{0};
+        std::uint32_t flags = 0;
+        Number deposit{6, 13};
+        Number borrowerFunds{3, 14};
+    };
+
+    void
+    openLimitLoan(test::jtx::Env& env, LimitSetup& s, LimitLoan const& l)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        auto const brokerSle = env.le(s.broker);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        s.loan = keylet::loan(s.broker.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        env(set(s.borrower, s.broker.key, l.principal, l.flags),
+            kInterestRate(TenthBips32(0)),
+            kLoanServiceFee(l.serviceFee),
+            kLatePaymentFee(l.lateFee),
+            kLateInterestRate(l.lateInterestRate),
+            kGracePeriod(60),
+            kPaymentInterval(600),
+            kPaymentTotal(l.paymentTotal),
+            Sig(sfCounterpartySignature, s.owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        BEAST_EXPECT(env.le(s.loan));
+    }
+
+    // A LimitSetup with an owner holding 1000, and the loan l. LendingProtocolV1_2 is on when it
+    // returns if v12 is set, and it is turned on after LoanSet.
+    void
+    setupLimitLoan(test::jtx::Env& env, LimitSetup& s, VKind kind, LimitLoan const& l, bool v12)
+    {
+        setupLimitVault(env, s, kind, l.deposit, l.borrowerFunds, Number{1'000});
+        openLimitLoan(env, s, l);
+        if (v12)
+            enableV12(env, kind);
+    }
+
+    // One LoanPay offers four installments, each 5 * 10^12 plus a service fee of 2.3 * 10^13.
+    // Three fit below 10^14 and the fourth would not, so under LendingProtocolV1_2 three are paid.
+    // The rest of the amount is not used, even with the overpayment flag. Every amount fits in 16
+    // digits at 0.1, so the trust lines move exactly.
+    void
+    testInstallmentLoopStop(VKind kind, bool overpayment, bool v12)
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "LoanPay installments stop at the size limit, " + kindName(kind) +
+            (overpayment ? ", rest as overpayment" : "") + (v12 ? "" : ", amendment off"));
+
+        Env env(*this, conserveFeatures(kind));
+        LimitSetup s;
+        Number const fee{23, 12};
+        setupLimitLoan(
+            env,
+            s,
+            kind,
+            {
+                .principal = Number{5, 13},
+                .serviceFee = fee,
+                .flags = overpayment ? tfLoanOverpayment : 0,
+            },
+            v12);
+        auto const loanBefore = env.le(s.loan);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        Number const installment = roundPeriodicPayment(
+            s.asset.raw(), loanBefore->at(sfPeriodicPayment), loanBefore->at(sfLoanScale));
+        BEAST_EXPECT((installment == Number{5, 12}));
+        Number const amount = (installment + fee) * 4;
+        auto const vaultBefore = env.le(s.vault);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const borrowerBefore = env.balance(s.borrower, s.asset).value();
+        Number const vaultLineBefore = env.balance(s.vaultAccount, s.asset).value();
+        Number const ownerBefore = env.balance(s.owner, s.asset).value();
+
+        env(loan::pay(
+            s.borrower, s.loan.key, s.asset(amount).value(), overpayment ? tfLoanOverpayment : 0));
+        env.close();
+
+        auto const loanAfter = env.le(s.loan);
+        auto const vaultAfter = env.le(s.vault);
+        if (!BEAST_EXPECT(loanAfter) || !BEAST_EXPECT(vaultAfter))
+            return;
+        std::uint32_t const paid = v12 ? 3 : 4;
+        Number const borrowerDebit = borrowerBefore - env.balance(s.borrower, s.asset).value();
+        Number const vaultGain = env.balance(s.vaultAccount, s.asset).value() - vaultLineBefore;
+        Number const ownerGain = env.balance(s.owner, s.asset).value() - ownerBefore;
+        Number const principalPaid =
+            Number{loanBefore->at(sfPrincipalOutstanding)} - loanAfter->at(sfPrincipalOutstanding);
+
+        BEAST_EXPECT(
+            loanAfter->at(sfPaymentRemaining) == loanBefore->at(sfPaymentRemaining) - paid);
+        BEAST_EXPECT(ownerGain == fee * paid);
+        // No overpayment: the rest of the amount is not charged.
+        BEAST_EXPECT(principalPaid == installment * paid);
+        if (v12)
+        {
+            BEAST_EXPECT((borrowerDebit == Number{84, 12}));
+            BEAST_EXPECT((vaultGain == Number{15, 12}));
+            BEAST_EXPECT((ownerGain == Number{69, 12}));
+        }
+        BEAST_EXPECT(vaultGain == principalPaid);
+        BEAST_EXPECT(borrowerDebit == vaultGain + ownerGain);
+        BEAST_EXPECT(
+            Number{vaultAfter->at(sfAssetsAvailable)} - vaultBefore->at(sfAssetsAvailable) ==
+            vaultGain);
+    }
+
+    void
+    testInstallmentLoopStops()
+    {
+        for (auto const kind : {VKind::Legacy, VKind::CashBasis, VKind::Fixed})
+        {
+            for (bool const overpayment : {false, true})
+            {
+                testInstallmentLoopStop(kind, overpayment, true);
+                // A FixedPrecision vault needs the amendment.
+                if (kind != VKind::Fixed)
+                    testInstallmentLoopStop(kind, overpayment, false);
+            }
+        }
+    }
+
+    // The 16 digit unit of a balance, or 0 for a zero balance.
+    static Number
+    unitOf(Asset const& asset, Number const& value)
+    {
+        if (value == beast::kZero)
+            return Number{0};
+        return Number{1, STAmount{asset, value}.exponent()};
+    }
+
+    // A late payment whose total grows past the size limit from late interest. Fixed fees are
+    // small, so LoanSet takes the loan. The payment succeeds, the invariants hold, and the value
+    // the trust lines create is within the ledger's rounding: half a unit of the payment total
+    // plus half a unit of each line it touches.
+    void
+    testLateInterestPastLimit(VKind kind)
+    {
+        using namespace test::jtx;
+
+        testcase("LoanPay late payment past the size limit from interest, " + kindName(kind));
+
+        Env env(*this, conserveFeatures(kind));
+        LimitSetup s;
+        setupLimitLoan(
+            env,
+            s,
+            kind,
+            {
+                .principal = Number{5'000'000'000'000'001LL, -2},
+                .paymentTotal = 30,
+                .lateFee = Number{12'345, -2},
+                .lateInterestRate = lending::kMaxLateInterestRate,
+                .deposit = Number{9, 13},
+                .borrowerFunds = Number{1, 15},
+            },
+            true);
+        auto const loanBefore = env.le(s.loan);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        env.close(
+            NetClock::time_point{
+                NetClock::duration{loanBefore->at(sfNextPaymentDueDate) + 160'000'000}});
+
+        auto const vaultBefore = env.le(s.vault);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Asset const asset = s.asset.raw();
+        Number const b0 = env.balance(s.borrower, s.asset).value();
+        Number const a0 = env.balance(s.vaultAccount, s.asset).value();
+        Number const p0 = env.balance(s.owner, s.asset).value();
+        Number const c0 = env.balance(s.brokerAccount, s.asset).value();
+
+        env(loan::pay(s.borrower, s.loan.key, s.asset(Number{5, 14}).value(), tfLoanLatePayment));
+        env.close();
+
+        auto const loanAfter = env.le(s.loan);
+        auto const vaultAfter = env.le(s.vault);
+        if (!BEAST_EXPECT(loanAfter) || !BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == loanBefore->at(sfPaymentRemaining) - 1);
+        Number const b1 = env.balance(s.borrower, s.asset).value();
+        Number const a1 = env.balance(s.vaultAccount, s.asset).value();
+        Number const p1 = env.balance(s.owner, s.asset).value();
+        Number const debit = b0 - b1;
+        Number const received = (a1 - a0) + (p1 - p0);
+        Number const created = received - debit;
+        auto const lineUnit = [&](Number const& before, Number const& after) {
+            return std::max(unitOf(asset, before), unitOf(asset, after));
+        };
+        Number const bound =
+            (unitOf(asset, debit) + lineUnit(b0, b1) + lineUnit(a0, a1) + lineUnit(p0, p1)) / 2;
+        BEAST_EXPECT((debit > Number{1, 14}));
+        BEAST_EXPECT((created < beast::kZero ? -created : created) <= bound);
+        // The fee goes to the owner, so the broker's cover does not move.
+        BEAST_EXPECT(env.balance(s.brokerAccount, s.asset).value() == c0);
+        // The vault books exactly what its line gained.
+        BEAST_EXPECT(
+            Number{vaultAfter->at(sfAssetsAvailable)} - vaultBefore->at(sfAssetsAvailable) ==
+            a1 - a0);
+        if (kind == VKind::Fixed)
+        {
+            test::checkFixedPrecisionVaultAssetsDeployed(
+                *this, env, s.vault, {s.broker}, {s.loan}, "late payment past the size limit");
+        }
+    }
+
+    void
+    testLateInterestPastLimits()
+    {
+        for (auto const kind : {VKind::Legacy, VKind::CashBasis, VKind::Fixed})
+            testLateInterestPastLimit(kind);
+    }
+
+    FeatureBitset
+    reporterFeatures(bool v12) const
+    {
+        using namespace test::jtx;
+        return v12 ? (all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2)
+                   : ((all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2);
+    }
+
+    // A loan of principal with the given fee fields, borrowed by borrower and countersigned by the
+    // broker owner. LoanSet is expected to return ter.
+    template <class... Fields>
+    static Keylet
+    openLoanWithFees(
+        test::jtx::Env& env,
+        LendingFixture const& fixture,
+        test::jtx::Account const& borrower,
+        Number const& principal,
+        TenthBips32 interestRate,
+        TER ter,
+        Fields const&... fields)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        auto const brokerSle = env.le(fixture.brokerKeylet);
+        auto const loanKeylet = keylet::loan(
+            fixture.brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        env(set(borrower, fixture.brokerKeylet.key, principal),
+            kInterestRate(interestRate),
+            fields...,
+            kGracePeriod(kReporterGracePeriod),
+            kPaymentInterval(kReporterPaymentInterval),
+            kPaymentTotal(kReporterPaymentTotal),
+            Sig(sfCounterpartySignature, fixture.owner),
+            Fee(env.current()->fees().base * 2),
+            Ter(ter));
+        env.close();
+        return loanKeylet;
+    }
+
+    // A fee more than 10^19 times the installment makes the vault receive an installment nobody
+    // pays.
+    //
+    // 1. A closed-ended IOU vault at Scale 2 (base unit 0.01) takes a deposit of 1,000,000,000,000.
+    // 2. Loan A lends 5,198,461,379.86 at an InterestRate of 1% in 30 installments 60 seconds
+    // apart,
+    //    with a LoanServiceFee of 10^30. LoanSet accepts the fee, which is exact at LoanScale. The
+    //    borrower holds exactly 10^30.
+    // 3. totalDue is the rounded installment of about 173,282,097 plus the fee. Number keeps 19
+    //    digits, so the sum is 10^30 and the installment is lost.
+    // 4. The borrower pays exactly totalDue, 10^30. The payment succeeds. The broker owner receives
+    //    the fee of 10^30 and the vault receives the installment, but the borrower's trust line
+    //    only drops by 10^30, because a 16-digit balance of 10^30 can't show the installment.
+    //
+    // The vault books an installment that no account paid. A LatePaymentFee of 10^30 on a late
+    // payment does the same.
+    //
+    // With LendingProtocolV1_2, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
+    // behaviour above is unchanged.
+    void
+    testFeeSwampsInstallment(bool latePaymentFee, bool v12)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            std::string(
+                latePaymentFee
+                    ? "A huge LatePaymentFee makes the vault receive an unpaid installment"
+                    : "A huge LoanServiceFee makes the vault receive an unpaid installment") +
+            (v12 ? " (V1_2: rejected at LoanSet)" : " (without V1_2)"));
+
+        // 10^30, the fee and the amount the borrower holds and pays.
+        Number const hugeFee{1, 30};
+        Env env{*this, reporterFeatures(v12)};
+        auto const accounts = setupIou(
+            env,
+            {
+                .depositorTrust = Number{10'000'000'000'000LL},
+                .depositorFunds = Number{2'000'000'000'000LL},
+                .ownerFunds = Number{100},
+            });
+        auto const& asset = accounts.asset;
+        Account const borrower{"borrower"};
+        fundIouHolder(env, borrower, accounts, Number{1, 31}, hugeFee);
+
+        // 1. The vault and its broker.
+        auto const fixture = setupLendingVault(
+            env,
+            accounts.owner,
+            accounts.depositor,
+            asset,
+            Number{1'000'000'000'000LL},
+            std::chrono::seconds{1'000'000},
+            std::uint8_t{2});
+
+        // 2. Loan A.
+        Keylet const loanA = openLoanWithFees(
+            env,
+            fixture,
+            borrower,
+            Number{519'846'137'986LL, -2},
+            TenthBips32(1'000),
+            v12 ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
+            latePaymentFee ? kLatePaymentFee(hugeFee) : kLoanServiceFee(hugeFee));
+        if (v12)
+        {
+            // No loan was created.
+            BEAST_EXPECT(!env.le(loanA));
+            return;
+        }
+        auto const loanBefore = env.le(loanA);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        if (latePaymentFee)
+        {
+            std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
+            env.close(NetClock::time_point{NetClock::duration{dueDate + 20}});
+        }
+
+        // 3. and 4. The borrower pays exactly totalDue.
+        auto const vaultBefore = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const borrowerBefore = env.balance(borrower, asset).value();
+        Number const ownerBefore = env.balance(accounts.owner, asset).value();
+        env(pay(borrower,
+                loanA.key,
+                asset(hugeFee).value(),
+                latePaymentFee ? tfLoanLatePayment : 0),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(fixture.vaultKeylet);
+        auto const loanAfter = env.le(loanA);
+        if (!BEAST_EXPECT(vaultAfter) || !BEAST_EXPECT(loanAfter))
+            return;
+        Number const vaultCredit = Number{vaultAfter->at(sfAssetsAvailable)} - availableBefore;
+        Number const borrowerSpent = borrowerBefore - env.balance(borrower, asset).value();
+        Number const ownerReceived = env.balance(accounts.owner, asset).value() - ownerBefore;
+        // Without V1_2 the bug is unchanged: the borrower spends exactly 10^30, all of it reaches
+        // the broker owner, and the vault still receives the installment nobody paid: the value
+        // the loan paid down.
+        Number const installment = Number{loanBefore->at(sfTotalValueOutstanding)} -
+            loanAfter->at(sfTotalValueOutstanding);
+        BEAST_EXPECTS(borrowerSpent == hugeFee, to_string(borrowerSpent));
+        BEAST_EXPECTS(ownerReceived == hugeFee, to_string(ownerReceived));
+        BEAST_EXPECTS(
+            vaultCredit == installment, to_string(vaultCredit) + " " + to_string(installment));
+        BEAST_EXPECT((installment > Number{173'282'097}));
+    }
+
+    // A ClosePaymentFee of 10^25 makes the full payment credit the vault with money nobody paid.
+    //
+    // 1. An IOU vault at Scale 6 holds AssetsAvailable = 3 * 10^9. Its broker has
+    //    ManagementFeeRate = 10%.
+    // 2. Loan A lends 1000 at InterestRate = 10% and CloseInterestRate = 100% in 30 installments 60
+    //    seconds apart, with ClosePaymentFee = 10^25. LoanSet accepts the fee.
+    // 3. The borrower pays loan A off in the next ledger, before any interest accrues. The full
+    //    payment interest is 1000 * 100% = 1000, so the vault gets 1000 + 900 and the management
+    //    fee is 100.
+    // 4. The amount due is 10^25 + 2000, and the broker's part 10^25 + 100. Number keeps 19 digits,
+    //    so both round to 10^25: the borrower pays 10^25 and the broker owner receives 10^25.
+    // 5. The vault still receives 1900, and the broker never gets the management fee of 100.
+    //
+    // Same as testFeeSwampsInstallment, with ClosePaymentFee in place of LoanServiceFee.
+    //
+    // With LendingProtocolV1_2, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
+    // behaviour above is unchanged.
+    void
+    testCloseFeeSwampsPayoff(bool v12)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            std::string("A ClosePaymentFee of 10^25 credits the vault with money nobody paid") +
+            (v12 ? " (V1_2: rejected at LoanSet)" : " (without V1_2)"));
+
+        Number const closePaymentFee{1, 25};
+        // 2 * 10^25, what the borrower holds and offers.
+        Number const paymentAmount{2, 25};
+        Env env{*this, reporterFeatures(v12)};
+        auto const accounts = setupIou(
+            env,
+            {
+                .depositorTrust = Number{10'000'000'000LL},
+                .ownerTrust = Number{1, 26},
+                .depositorFunds = Number{3'000'000'000LL},
+            });
+        auto const& asset = accounts.asset;
+        Account const borrower{"borrower"};
+        fundIouHolder(env, borrower, accounts, Number{1, 26}, paymentAmount);
+
+        // 1. The vault and its broker.
+        auto const fixture = setupLendingVault(
+            env,
+            accounts.owner,
+            accounts.depositor,
+            asset,
+            Number{3'000'000'000LL},
+            std::chrono::seconds{1'000'000},
+            std::uint8_t{6},
+            TenthBips32(0),
+            TenthBips32(0),
+            TenthBips16(10'000));
+
+        // 2. Loan A.
+        Keylet const loanA = openLoanWithFees(
+            env,
+            fixture,
+            borrower,
+            Number{1000},
+            TenthBips32(10'000),
+            v12 ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
+            kCloseInterestRate(TenthBips32(100'000)),
+            kClosePaymentFee(closePaymentFee));
+        if (v12)
+        {
+            // No loan was created.
+            BEAST_EXPECT(!env.le(loanA));
+            return;
+        }
+
+        // 3. to 5. The borrower pays loan A off in the next ledger.
+        auto const vaultBefore = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const borrowerBefore = env.balance(borrower, asset).value();
+        Number const ownerBefore = env.balance(accounts.owner, asset).value();
+        env(pay(borrower, loanA.key, asset(paymentAmount).value(), tfLoanFullPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        Number const vaultReceived = Number{vaultAfter->at(sfAssetsAvailable)} - availableBefore;
+        Number const borrowerSpent = borrowerBefore - env.balance(borrower, asset).value();
+        Number const ownerReceived = env.balance(accounts.owner, asset).value() - ownerBefore;
+        // Without V1_2 the bug is unchanged: the borrower spends exactly the fee, all of it reaches
+        // the broker owner, and the vault still receives 1900 nobody paid.
+        BEAST_EXPECTS(borrowerSpent == closePaymentFee, to_string(borrowerSpent));
+        BEAST_EXPECTS(ownerReceived == closePaymentFee, to_string(ownerReceived));
+        BEAST_EXPECTS(vaultReceived == Number{1'900}, to_string(vaultReceived));
+    }
+
     void
     run() override
     {
@@ -1618,6 +2635,17 @@ public:
         testMinCoverBrokerLoanPayment();
         testVaultDeleteAllowedAfterLoanPayoff();
         testOriginationRejectedOnAlreadyCoarsenedVault();
+        testLoanSetSizeBounds();
+        testInstallmentLoopStops();
+        testLateInterestPastLimits();
+        testLastInstallmentBounds();
+        for (bool const v12 : {false, true})
+        {
+            testFeeSwampsInstallment(false, v12);
+            testFeeSwampsInstallment(true, v12);
+        }
+        testCloseFeeSwampsPayoff(false);
+        testCloseFeeSwampsPayoff(true);
     }
 };
 

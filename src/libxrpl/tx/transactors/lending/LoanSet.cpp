@@ -565,6 +565,48 @@ LoanSet::doApply()
         }
     }
 
+    if (view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        // A fixed fee must not push one payment past the size limit. Only amounts known now are
+        // checked: percentage fees and late interest are handled when the payment is made.
+        auto const serviceFee = tx[~sfLoanServiceFee].value_or(Number{});
+        auto const lateFee = tx[~sfLatePaymentFee].value_or(Number{});
+        auto const closeFee = tx[~sfClosePaymentFee].value_or(Number{});
+
+        // A late payment carries the installment and both fixed fees. With several installments
+        // the last one can be one loan unit larger than the rounded periodic payment. A single
+        // installment is the loan's whole value, which is never more than that payment.
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        Number const roundedPeriodicPayment =
+            roundPeriodicPayment(vaultAsset, properties.periodicPayment, properties.loanScale);
+        Number const largestInstallment = paymentTotal == 1
+            ? roundedPeriodicPayment
+            : roundedPeriodicPayment + Number{1, properties.loanScale};
+        if ((serviceFee != beast::kZero || lateFee != beast::kZero) &&
+            !fitsAtLoanScale(
+                vaultAsset, largestInstallment + serviceFee + lateFee, properties.loanScale))
+        {
+            JLOG(j_.warn()) << "LoanServiceFee and LatePaymentFee are too large for the loan.";
+            return tecPRECISION_LOSS;
+        }
+
+        // A full payment carries the principal, the close interest and the close fee. A loan with
+        // a single installment can not be paid in full, so its close fee is never charged.
+        if (closeFee != beast::kZero && paymentTotal > 1)
+        {
+            TenthBips32 const closeInterestRate{tx[~sfCloseInterestRate].value_or(0)};
+            if (!fitsAtLoanScale(
+                    vaultAsset,
+                    principalRequested + tenthBipsOfValue(principalRequested, closeInterestRate) +
+                        closeFee,
+                    properties.loanScale))
+            {
+                JLOG(j_.warn()) << "ClosePaymentFee is too large for the loan.";
+                return tecPRECISION_LOSS;
+            }
+        }
+    }
+
     if (auto const ret = checkLoanGuards(
             vaultAsset,
             principalRequested,
