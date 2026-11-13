@@ -269,9 +269,10 @@ jobs:
         run: ./bin/nix/check-nix-store-refs.sh "${CONAN_HOME}"
 
       # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
-      # images always references the store. Same condition it uses.
+      # images always references the store, and a gcc sanitizer build keeps the
+      # store loader for its shared runtimes. Same condition it uses.
       - name: Check for Nix store references (Linux)
-        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        if: ${{ runner.os == 'Linux' && (env.SANITIZERS_ENABLED == 'false' || inputs.compiler == 'clang') }}
         run: |
           ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
           ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
@@ -336,8 +337,9 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+      # A gcc sanitizer build links its runtimes dynamically; see above.
       - name: Check linking (Linux)
-        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        if: ${{ runner.os == 'Linux' && (env.SANITIZERS_ENABLED == 'false' || inputs.compiler == 'clang') }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld

@@ -99,8 +99,17 @@ jobs:
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: ${{ matrix.image }}
+    container:
+      image: ${{ matrix.image }}
+      # build_pkg.py runs the binary, and TSan re-executes itself with ASLR
+      # disabled when the kernel's address layout does not suit it, which
+      # Docker's default seccomp profile blocks.
+      options: ${{ matrix.package_variant == 'tsan' && '--security-opt seccomp=unconfined' || '' }}
     timeout-minutes: 10
+    env:
+      # An ASan build reports leaks at exit and then exits nonzero, which would
+      # fail build_pkg.py's version probes on a healthy xrpld-asan build.
+      ASAN_OPTIONS: detect_leaks=0
 
     steps:
       - name: Checkout repository

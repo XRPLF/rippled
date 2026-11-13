@@ -11,7 +11,6 @@
         "merge_group",
         "push",
         "schedule",
-        "tag",
         "workflow_dispatch"
       ]
     },
@@ -24,7 +23,6 @@
         "merge_group",
         "push",
         "schedule",
-        "tag",
         "workflow_dispatch"
       ]
     },
@@ -37,7 +35,6 @@
         "merge_group",
         "push",
         "schedule",
-        "tag",
         "workflow_dispatch"
       ]
     },
@@ -51,7 +48,6 @@
         "merge_group",
         "push",
         "schedule",
-        "tag",
         "workflow_dispatch"
       ]
     }

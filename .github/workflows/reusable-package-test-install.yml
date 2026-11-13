@@ -37,8 +37,16 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
+    container:
+      image: ${{ matrix.image }}
+      # TSan re-executes itself with ASLR disabled when the kernel's address
+      # layout does not suit it, which Docker's default seccomp profile blocks.
+      options: ${{ matrix.package_name == 'xrpld-tsan' && '--security-opt seccomp=unconfined' || '' }}
     timeout-minutes: 5
+    env:
+      # An ASan build reports leaks at exit and then exits nonzero, which would
+      # fail the version checks below on a healthy xrpld-asan package.
+      ASAN_OPTIONS: detect_leaks=0
 
     steps:
       # Every package lands in one directory; the step below picks its own,

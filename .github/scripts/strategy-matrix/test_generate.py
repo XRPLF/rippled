@@ -21,6 +21,7 @@ CONFIGS = [c for cfgs in LINUX.configs.values() for c in cfgs] + [
     c for pf in PLATFORMS for c in pf.configs
 ]
 PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
+STAGE_TWO = (g.Event.READY_TO_MERGE, g.Event.MERGE_GROUP, g.Event.PUSH)
 
 
 def downloaded_by_name() -> set[str]:
@@ -49,6 +50,10 @@ def linux_config(**overrides: Any) -> g.LinuxConfig:
         "events": [g.Event.PUSH],
     }
     return g.LinuxConfig(**{**fields, **overrides})
+
+
+# What every packaged fixture passes besides its 'package' map.
+PACKAGED = {"extra_cmake_args": g.VALIDATOR_KEYS_ARG}
 
 
 def rejected(**overrides: Any) -> bool:
@@ -110,11 +115,31 @@ def test_events_list_is_checked() -> None:
     assert not rejected(events=list(g.Event))
 
 
-def test_packaged_config_must_list_tag() -> None:
+def test_package_map_is_checked() -> None:
     package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
-    assert rejected(package=package, events=[g.Event.PUSH])
-    assert not rejected(package=package, events=[g.Event.PUSH, g.Event.TAG])
-    assert rejected(package={**package, "type": "msi"}, events=[g.Event.TAG])
+    assert not rejected(package=package, events=[g.Event.SCHEDULE], **PACKAGED)
+    assert rejected(
+        package={**package, "type": "msi"}, events=[g.Event.TAG], **PACKAGED
+    )
+
+
+def test_packaged_config_builds_validator_keys() -> None:
+    # Packaging downloads the validator-keys artifact, which the build job
+    # uploads only for a config that passes the argument.
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
+    assert rejected(package=package, events=[g.Event.TAG])
+    assert rejected(
+        package=package, events=[g.Event.TAG], extra_cmake_args="-Dassert=ON"
+    )
+    assert not rejected(package=package, events=[g.Event.TAG], **PACKAGED)
+
+
+def test_packaged_sanitizer_build_is_its_variant() -> None:
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
+    sanitized = {"events": [g.Event.TAG], "sanitizers": ["address"], **PACKAGED}
+    assert not rejected(package=package, **sanitized)
+    assert rejected(package=package, **{**sanitized, "sanitizers": ["thread"]})
+    assert rejected(package={**package, "variant": ""}, **sanitized)
 
 
 def test_disabled_config_is_built_by_no_event() -> None:
@@ -152,6 +177,19 @@ def test_disabled_config_is_named_by_its_entries() -> None:
     assert g.entry_names("macos/arm64", platform) == ["macos-arm64-release-nix"]
 
 
+def test_packaged_config_has_one_sanitizer_at_most() -> None:
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
+    assert not rejected(
+        package=package, events=[g.Event.TAG], sanitizers=["address"], **PACKAGED
+    )
+    assert rejected(
+        package=package,
+        events=[g.Event.TAG],
+        sanitizers=["address", "thread"],
+        **PACKAGED,
+    )
+
+
 # --- invariants over the JSON files -------------------------------------------
 
 
@@ -167,10 +205,28 @@ def test_schedule_and_dispatch_build_every_config() -> None:
         assert g.Event.WORKFLOW_DISPATCH in cfg.events, cfg
 
 
-def test_merge_queue_builds_what_ready_to_merge_builds() -> None:
-    assert set(build_names(g.Event.READY_TO_MERGE)) <= set(
+def test_pull_request_builds_part_of_stage_two() -> None:
+    assert set(build_names(g.Event.PULL_REQUEST)) <= set(
         build_names(g.Event.MERGE_GROUP)
     )
+
+
+def test_stage_two_events_build_the_same_matrix() -> None:
+    for event in STAGE_TWO:
+        assert set(build_names(event)) == set(build_names(g.Event.MERGE_GROUP)), event
+        assert g.expand_linux_packaging(LINUX, event) == g.expand_linux_packaging(
+            LINUX, g.Event.MERGE_GROUP
+        ), event
+
+
+def test_tag_builds_only_what_it_publishes() -> None:
+    # Besides each packaged config's own artifacts, the tag builds the ones the
+    # packaging workflow downloads by a literal name, and nothing else.
+    packaged = {
+        e.xrpld_artifact_name.removeprefix("xrpld-")
+        for e in g.expand_linux_packaging(LINUX, g.Event.TAG)
+    }
+    assert set(build_names(g.Event.TAG)) == packaged | downloaded_by_name()
 
 
 def test_packaging_consumes_what_the_same_event_builds() -> None:
@@ -210,12 +266,14 @@ def test_packaging_events_build_a_plain_deb_and_every_format() -> None:
             assert any(e.package_type == package_type for e in entries), event
 
 
-def test_tag_packages_every_packaged_config() -> None:
-    tagged = g.expand_linux_packaging(LINUX, g.Event.TAG)
-    assert tagged
-    assert len(tagged) == len(
-        g.expand_linux_packaging(LINUX, g.Event.WORKFLOW_DISPATCH)
-    )
+def test_tag_packages_only_what_push_packages() -> None:
+    # No package is built for the first time on a tag: every one of them went
+    # through a push before.
+    def names(event: g.Event) -> set[str]:
+        return {e.package_name for e in g.expand_linux_packaging(LINUX, event)}
+
+    assert names(g.Event.TAG)
+    assert names(g.Event.TAG) <= names(g.Event.PUSH)
 
 
 def main() -> int:
