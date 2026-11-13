@@ -1039,7 +1039,7 @@ checkTrustlineAuthorized(
             // Entries have a canonical representation, determined by a
             // lexicographical "greater than" comparison employing strict
             // weak ordering. Determine which entry we need to access.
-            if (!trustLine->isFlag(id > issue.account ? lsfLowAuth : lsfHighAuth))
+            if (!trustLine.isAuthorized(id, issue.account))
             {
                 return tecNO_AUTH;
             }
@@ -1088,10 +1088,7 @@ checkTrustlineDeepFrozen(
 
         // There's no difference which side enacted deep freeze, accepting
         // tokens shouldn't be possible.
-        bool const deepFrozen =
-            ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
-
-        if (deepFrozen)
+        if (trustLine.isDeepFrozen())
         {
             return tecFROZEN;
         }
