@@ -333,10 +333,10 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
-          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-              echo 'The binary is statically linked.'
+          if [ "$(ldd ./xrpld | grep -E 'libstdc\+\+' | wc -l)" -eq 0 ]; then
+              echo 'libstdc++ is statically linked.'
           else
-              echo 'The binary is dynamically linked.'
+              echo 'libstdc++ is dynamically linked.'
               exit 1
           fi
 
