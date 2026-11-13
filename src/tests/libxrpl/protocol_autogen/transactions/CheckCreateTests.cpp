@@ -34,6 +34,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const invoiceIDValue = canonical_UINT256();
+    auto const deliverAfterValue = canonical_UINT32();
 
     CheckCreateBuilder builder{
         accountValue,
@@ -47,6 +48,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setInvoiceID(invoiceIDValue);
+    builder.setDeliverAfter(deliverAfterValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -100,6 +102,14 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasInvoiceID());
     }
 
+    {
+        auto const& expected = deliverAfterValue;
+        auto const actualOpt = tx.getDeliverAfter();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverAfter should be present";
+        expectEqualField(expected, *actualOpt, "sfDeliverAfter");
+        EXPECT_TRUE(tx.hasDeliverAfter());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -121,6 +131,7 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const invoiceIDValue = canonical_UINT256();
+    auto const deliverAfterValue = canonical_UINT32();
 
     // Build an initial transaction
     CheckCreateBuilder initialBuilder{
@@ -134,6 +145,7 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setExpiration(expirationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setInvoiceID(invoiceIDValue);
+    initialBuilder.setDeliverAfter(deliverAfterValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -183,6 +195,13 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getInvoiceID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfInvoiceID should be present";
         expectEqualField(expected, *actualOpt, "sfInvoiceID");
+    }
+
+    {
+        auto const& expected = deliverAfterValue;
+        auto const actualOpt = rebuiltTx.getDeliverAfter();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDeliverAfter should be present";
+        expectEqualField(expected, *actualOpt, "sfDeliverAfter");
     }
 
 }
@@ -250,6 +269,8 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDestinationTag().has_value());
     EXPECT_FALSE(tx.hasInvoiceID());
     EXPECT_FALSE(tx.getInvoiceID().has_value());
+    EXPECT_FALSE(tx.hasDeliverAfter());
+    EXPECT_FALSE(tx.getDeliverAfter().has_value());
 }
 
 }
