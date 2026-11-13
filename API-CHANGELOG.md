@@ -29,6 +29,7 @@ Version 3.6.0 is not yet released.
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+- `owner_info`: The `account` and `ident` fields now return an `invalidParams` error if the value is not a string. ([#7590](https://github.com/XRPLF/rippled/pull/7590))
 
 ## XRP Ledger server version 3.5.0
 

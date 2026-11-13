@@ -14,19 +14,33 @@
 namespace xrpl {
 
 // {
-//   'ident' : <indent>,
+//   'ident' : <ident>,
 // }
 json::Value
 doOwnerInfo(rpc::JsonContext& context)
 {
-    if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
+    if (!context.params.isMember(jss::account) &&
+        !context.params.isMember(jss::ident))
     {
         return rpc::missingFieldError(jss::account);
     }
 
-    std::string const strIdent = context.params.isMember(jss::account)
-        ? context.params[jss::account].asString()
-        : context.params[jss::ident].asString();
+    std::string strIdent;
+    if (context.params.isMember(jss::account))
+    {
+        if (!context.params[jss::account].isString())
+            return rpc::invalidFieldError(jss::account);
+
+        strIdent = context.params[jss::account].asString();
+    }
+    else
+    {
+        if (!context.params[jss::ident].isString())
+            return rpc::invalidFieldError(jss::ident);
+
+        strIdent = context.params[jss::ident].asString();
+    }
+
     json::Value ret;
 
     // Get info on account.
@@ -40,6 +54,7 @@ doOwnerInfo(rpc::JsonContext& context)
     ret[jss::current] = accountID.has_value()
         ? context.netOps.getOwnerInfo(currentLedger, *accountID)
         : rpcError(RpcActMalformed);
+
     return ret;
 }
 
