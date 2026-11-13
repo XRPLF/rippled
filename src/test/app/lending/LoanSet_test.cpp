@@ -1181,6 +1181,81 @@ private:
         BEAST_EXPECT(env.ownerCount(borrower) == ownerCount);
     }
 
+    void
+    testLoanSetLoanSequence()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("LoanSet LoanSequence");
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+        {
+            // all_ already holds LendingProtocolV1_2; V1_1 is added back.
+            Env env{*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+            env.fund(XRP(3'000'000), lender);
+            env.fund(XRP(100'000), borrower);
+            env.close();
+
+            BrokerInfo const broker = createVaultAndBroker(env, xrpAsset, lender);
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            std::uint32_t const seq = brokerSle->at(sfLoanSequence);
+
+            auto const loanSet = [&](std::uint32_t loanSequence, TER expected) {
+                env(set(borrower, broker.brokerID, broker.asset(1'000).number()),
+                    kLoanSequence(loanSequence),
+                    Sig(sfCounterpartySignature, lender),
+                    Fee(env.current()->fees().base * 2),
+                    Ter(expected));
+                env.close();
+            };
+            auto const brokerSeq = [&] -> std::uint32_t {
+                if (auto const sle = env.le(broker.brokerKeylet()); BEAST_EXPECT(sle))
+                    return sle->at(sfLoanSequence);
+                return 0;
+            };
+            auto const loanAt = [&](std::uint32_t s) {
+                return env.le(keylet::loan(broker.brokerID, SeqProxy::rawSequence(s)));
+            };
+
+            loanSet(seq + 1, tecLOAN_SEQUENCE);
+            BEAST_EXPECT(brokerSeq() == seq);
+            BEAST_EXPECT(!loanAt(seq));
+
+            loanSet(seq, tesSUCCESS);
+            BEAST_EXPECT(loanAt(seq));
+            BEAST_EXPECT(brokerSeq() == seq + 1);
+
+            loanSet(seq, tecLOAN_SEQUENCE);
+            BEAST_EXPECT(brokerSeq() == seq + 1);
+        }
+
+        {
+            // Without LendingProtocolV1_2 the field is not allowed.
+            Env env{*this, all_ - featureLendingProtocolV1_2};
+            env.fund(XRP(3'000'000), lender);
+            env.fund(XRP(100'000), borrower);
+            env.close();
+
+            BrokerInfo const broker = createVaultAndBroker(env, xrpAsset, lender);
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            std::uint32_t const seq = brokerSle->at(sfLoanSequence);
+
+            env(set(borrower, broker.brokerID, broker.asset(1'000).number()),
+                kLoanSequence(seq),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 2),
+                Ter(temDISABLED));
+        }
+    }
+
 public:
     void
     run() override
@@ -1191,6 +1266,7 @@ public:
 
         testLoanSetClosedEnded();
         testFixedPrecisionLoanSet();
+        testLoanSetLoanSequence();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
