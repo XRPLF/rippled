@@ -9,9 +9,10 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
 
+#include <algorithm>
 #include <optional>
 
 namespace xrpl {
@@ -51,6 +52,31 @@ public:
         }
 
         return std::nullopt;
+    }
+
+    /**
+     * Returns a copy of this page's NFTokens array without the token with ID
+     * @p id, or std::nullopt if this page does not hold that token.
+     *
+     * The page itself is not changed.
+     *
+     * @param id the ID of the token to remove from the copy.
+     * @return the shortened copy, or std::nullopt if this page does not hold
+     *         the token.
+     */
+    [[nodiscard]] std::optional<STArray>
+    tokensWithout(UInt256 const& id) const
+    {
+        auto arr = (*this)->getFieldArray(sfNFTokens);
+
+        auto x = std::ranges::find_if(
+            arr, [&id](STObject const& obj) { return (obj[sfNFTokenID] == id); });
+
+        if (x == arr.end())
+            return std::nullopt;
+
+        arr.erase(x);
+        return arr;
     }
 
     /**
