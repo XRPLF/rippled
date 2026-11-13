@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -81,7 +82,7 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
  * The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, SLE::Ref offer);
+deleteTokenOffer(ApplyView& view, NFTokenOfferEntryW& offer);
 
 /**
  * Repairs the links in an NFTokenPage directory.
