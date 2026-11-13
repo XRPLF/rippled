@@ -37,7 +37,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/entries/DelegateEntry.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -45,6 +45,7 @@
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -3094,12 +3095,16 @@ class Delegate_test : public beast::unit_test::Suite
     {
         testcase("DelegateUtils nullptr check");
 
+        using namespace jtx;
+        Env const env(*this);
+        DelegateEntryR const delegate(SLE::const_pointer(), *env.current());
+
         // checkTxPermission nullptr check
         STTx const tx{ttPAYMENT, [](STObject&) {}};
-        BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
+        BEAST_EXPECT(delegate.checkTxPermission(tx) == terNO_DELEGATE_PERMISSION);
 
-        // getGranularPermission nullptr check
-        auto const granularPermissions = getGranularPermission(nullptr, ttPAYMENT);
+        // granularPermission nullptr check
+        auto const granularPermissions = delegate.granularPermission(ttPAYMENT);
         BEAST_EXPECT(granularPermissions.empty());
     }
 
