@@ -124,23 +124,36 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
 }
 
 /**
- * Returns the masked id of the child a parent's branch leads to
+ * Returns the id of the child a parent's branch leads to
  *
- * An id names the subtree its leading nibbles spell, so a child's id is its
- * parent's with the nibble at the parent's own depth set to the branch taken.
- * A parent's id carries no bits below its own depth, so that nibble is free
- * and the result is already masked to the child's depth.
+ * A child's id is its parent's with the nibble at the parent's own depth set to
+ * the branch taken. Every other nibble is copied through, so a masked parent
+ * gives a masked child. The write counterpart of selectBranch.
  *
- * This is the write counterpart of selectBranch, and callers that want only
- * the id use this rather than building a SHAMapNodeID for it.
- *
- * @param parentID the masked id of the parent.
+ * @param parentID the id of the parent. The nibble at parentDepth is
+ *                 overwritten rather than merged, so an id already carrying one
+ *                 there is accepted.
  * @param parentDepth the depth of the parent, below SHAMap::kLeafDepth.
  * @param branch the branch of the parent leading to the child.
- * @return the masked id of that child, whose depth is parentDepth + 1.
+ * @return that child's id, whose depth is parentDepth + 1.
  */
 [[nodiscard]] UInt256
 childNodeID(UInt256 const& parentID, unsigned int parentDepth, unsigned int branch);
+
+/**
+ * Whether two keys name the same position at a given depth
+ *
+ * Both sides are masked, so either may carry bits below `depth`.
+ * SHAMapNodeID::isPrefixOf is the stricter form.
+ *
+ * @param depth how many leading nibbles name the position, at most
+ *              SHAMap::kLeafDepth. A greater depth is clamped to it.
+ * @param lhs one of the keys.
+ * @param rhs the other key.
+ * @return whether the two agree on those nibbles.
+ */
+[[nodiscard]] bool
+samePositionAtDepth(unsigned int depth, UInt256 const& lhs, UInt256 const& rhs);
 
 /**
  * Return an object representing a serialized SHAMap Node ID
@@ -163,9 +176,26 @@ deserializeSHAMapNodeID(std::string_view s)
 /** @} */
 
 /**
- * Returns the branch that would contain the given hash
+ * Returns the branch at the given depth that would contain the given hash
+ *
+ * @param depth the depth of the node whose branch to select.
+ * @param hash the key whose nibble at that depth names the branch.
+ * @return the branch containing the hash.
  */
 [[nodiscard]] unsigned int
-selectBranch(SHAMapNodeID const& id, UInt256 const& hash);
+selectBranch(unsigned int depth, UInt256 const& hash);
+
+/**
+ * Returns the branch that would contain the given hash
+ *
+ * @param id the node whose depth to read.
+ * @param hash the key whose nibble at that depth names the branch.
+ * @return the branch containing the hash.
+ */
+[[nodiscard]] inline unsigned int
+selectBranch(SHAMapNodeID const& id, UInt256 const& hash)
+{
+    return selectBranch(id.getDepth(), hash);
+}
 
 }  // namespace xrpl
