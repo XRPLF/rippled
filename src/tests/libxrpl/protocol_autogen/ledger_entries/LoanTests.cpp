@@ -27,6 +27,7 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const loanSequenceValue = canonical_UINT32();
     auto const borrowerValue = canonical_ACCOUNT();
+    auto const dataValue = canonical_VL();
     auto const loanOriginationFeeValue = canonical_NUMBER();
     auto const loanServiceFeeValue = canonical_NUMBER();
     auto const latePaymentFeeValue = canonical_NUMBER();
@@ -61,6 +62,7 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         periodicPaymentValue
     };
 
+    builder.setData(dataValue);
     builder.setLoanOriginationFee(loanOriginationFeeValue);
     builder.setLoanServiceFee(loanServiceFeeValue);
     builder.setLatePaymentFee(latePaymentFeeValue);
@@ -146,6 +148,14 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         auto const& expected = periodicPaymentValue;
         auto const actual = entry.getPeriodicPayment();
         expectEqualField(expected, actual, "sfPeriodicPayment");
+    }
+
+    {
+        auto const& expected = dataValue;
+        auto const actualOpt = entry.getData();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfData");
+        EXPECT_TRUE(entry.hasData());
     }
 
     {
@@ -304,6 +314,7 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const loanSequenceValue = canonical_UINT32();
     auto const borrowerValue = canonical_ACCOUNT();
+    auto const dataValue = canonical_VL();
     auto const loanOriginationFeeValue = canonical_NUMBER();
     auto const loanServiceFeeValue = canonical_NUMBER();
     auto const latePaymentFeeValue = canonical_NUMBER();
@@ -334,6 +345,7 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     sle->at(sfLoanBrokerID) = loanBrokerIDValue;
     sle->at(sfLoanSequence) = loanSequenceValue;
     sle->at(sfBorrower) = borrowerValue;
+    sle->at(sfData) = dataValue;
     sle->at(sfLoanOriginationFee) = loanOriginationFeeValue;
     sle->at(sfLoanServiceFee) = loanServiceFeeValue;
     sle->at(sfLatePaymentFee) = latePaymentFeeValue;
@@ -462,6 +474,19 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, fromSle, "sfPeriodicPayment");
         expectEqualField(expected, fromBuilder, "sfPeriodicPayment");
+    }
+
+    {
+        auto const& expected = dataValue;
+
+        auto const fromSleOpt = entryFromSle.getData();
+        auto const fromBuilderOpt = entryFromBuilder.getData();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfData");
+        expectEqualField(expected, *fromBuilderOpt, "sfData");
     }
 
     {
@@ -757,6 +782,8 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasData());
+    EXPECT_FALSE(entry.getData().has_value());
     EXPECT_FALSE(entry.hasLoanOriginationFee());
     EXPECT_FALSE(entry.getLoanOriginationFee().has_value());
     EXPECT_FALSE(entry.hasLoanServiceFee());
