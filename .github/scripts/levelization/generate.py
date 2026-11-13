@@ -7,11 +7,9 @@ This script takes no parameters, and can be called from any directory in the fil
 
 import os
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple, Set, Optional
 
 # Compile regex patterns once at module level
 INCLUDE_PATTERN = re.compile(r"^\s*#include.*/.*\.h")
@@ -57,7 +55,7 @@ def get_level(file_path: str) -> str:
     return level.replace("/", ".")
 
 
-def extract_include_level(include_line: str) -> Optional[str]:
+def extract_include_level(include_line: str) -> str | None:
     """
     Extract the include path from an #include directive.
     Gets the first two directory components from the include path.
@@ -90,7 +88,7 @@ def extract_include_level(include_line: str) -> Optional[str]:
 
 def find_repository_directories(
     start_path: Path, depth_limit: int = 10
-) -> Tuple[Path, List[Path]]:
+) -> tuple[Path, list[Path]]:
     """
     Find the repository root by looking for src or include folders.
     Walks up the directory tree from the start path.
@@ -139,7 +137,7 @@ def main():
         repo_root, scan_dirs = find_repository_directories(script_dir)
 
         print(f"Found repository root: {repo_root}")
-        print(f"Scanning directories:")
+        print("Scanning directories:")
         for scan_dir in scan_dirs:
             print(f"  - {scan_dir.relative_to(repo_root)}")
     except RuntimeError as e:
@@ -148,7 +146,7 @@ def main():
 
     print("\nScanning for raw includes...")
     # Find all #include directives
-    raw_includes: List[Tuple[str, str]] = []
+    raw_includes: list[tuple[str, str]] = []
     rawincludes_file = results_dir / "rawincludes.txt"
 
     # Write to file as we go to avoid storing everything in memory.
@@ -182,12 +180,12 @@ def main():
                                 print(entry, end="")
                                 raw_f.write(entry)
                                 raw_includes.append((rel_path_str, line_stripped))
-                except Exception as e:
+                except (OSError, ValueError) as e:
                     print(f"Error reading {file_path}: {e}", file=sys.stderr)
 
     # Build levelization paths and count directly (no need to sort first).
     print("Build levelization paths")
-    path_counts: Dict[Tuple[str, str], int] = defaultdict(int)
+    path_counts: dict[tuple[str, str], int] = defaultdict(int)
 
     for file_path, include_line in raw_includes:
         include_level = extract_include_level(include_line)
@@ -221,8 +219,8 @@ def main():
     included_by_dir.mkdir()
 
     # Batch writes by grouping data first to avoid repeated file opens.
-    includes_data: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
-    included_by_data: Dict[str, List[Tuple[str, int]]] = defaultdict(list)
+    includes_data: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    included_by_data: dict[str, list[tuple[str, int]]] = defaultdict(list)
 
     # Process in sorted order to match bash script behaviour (dictionary order).
     sorted_items = sorted(
@@ -256,13 +254,13 @@ def main():
     loops_file = results_dir / "loops.txt"
     ordering_file = results_dir / "ordering.txt"
 
-    loops_found: Set[Tuple[str, str]] = set()
+    loops_found: set[tuple[str, str]] = set()
 
     # Pre-load all include files into memory to avoid repeated I/O.
     # This is the biggest optimisation - we were reading files repeatedly in nested loops.
     # Use list of tuples to preserve file order.
-    includes_cache: Dict[str, List[Tuple[str, int]]] = {}
-    includes_lookup: Dict[str, Dict[str, int]] = {}  # For fast lookup
+    includes_cache: dict[str, list[tuple[str, int]]] = {}
+    includes_lookup: dict[str, dict[str, int]] = {}  # For fast lookup
 
     # Note: bash script uses 'for source in *' which uses standard glob sorting,
     # NOT dictionary order. So we use standard sorted() here, not dictionary_sort_key.

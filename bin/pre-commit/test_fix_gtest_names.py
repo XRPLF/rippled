@@ -173,8 +173,10 @@ def test_fixture_reported_but_not_renamed() -> None:
     TEST_F(my_fixture, someTest)
     """
     assert reports(code) == [
-        "1: fixture 'my_fixture' is not CamelCase: rename the class to "
-        "'MyFixture' by hand",
+        (
+            "1: fixture 'my_fixture' is not CamelCase: rename the class to "
+            "'MyFixture' by hand"
+        ),
         "1: renamed test case 'someTest' to 'some_test'",
     ]
     assert fixed(code) == dedent("""
@@ -206,8 +208,10 @@ def test_collision_reported_and_not_applied() -> None:
     TEST(Suite, mul_div)
     """
     assert reports(code) == [
-        "1: cannot rename 'Suite, mulDiv' to 'Suite, mul_div': another test "
-        "case already generates that name"
+        (
+            "1: cannot rename 'Suite, mulDiv' to 'Suite, mul_div': another test "
+            "case already generates that name"
+        )
     ]
     assert fixed(code) == dedent(code)
 

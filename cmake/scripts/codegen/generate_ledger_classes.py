@@ -8,19 +8,20 @@ classes for each ledger entry type, similar to the transaction wrapper classes.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
-import io
 import argparse
+import io
 from pathlib import Path
+
 import pyparsing as pp
 
 # Import common utilities
 from macro_parser_common import (
     CppCleaner,
-    parse_sfields_macro,
-    parse_field_list,
+    clear_output_directory,
     generate_cpp_class,
     generate_from_template,
-    clear_output_directory,
+    parse_field_list,
+    parse_sfields_macro,
 )
 
 
