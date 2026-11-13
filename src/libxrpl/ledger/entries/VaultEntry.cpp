@@ -7,7 +7,10 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 
+#include <expected>
 #include <utility>
 
 namespace xrpl {
@@ -43,6 +46,13 @@ VaultEntry<ViewT>::phase() const
         (**this)[~sfVaultKind],
         (**this)[~sfSubscriptionDate],
         (**this)[~sfRedemptionDate]);
+}
+
+template <typename ViewT>
+std::expected<STAmount, TER>
+VaultEntry<ViewT>::clampToAssetsTotalScale(STAmount const& delta) const
+{
+    return xrpl::clampToAssetsTotalScale(this->rawSle(), delta);
 }
 
 template class VaultEntry<ReadView>;
