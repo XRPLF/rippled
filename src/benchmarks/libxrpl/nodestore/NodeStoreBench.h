@@ -237,7 +237,7 @@ struct BackendHarness
         Section config = parseConfig(configString);
         // A private, unique path per harness, so concurrent or repeated runs
         // never share on-disk state.
-        config.set("path", tempDir.path());
+        config.set("path", tempDir.path().string());
         backend =
             Manager::instance().makeBackend(config, megabytes(std::size_t{4}), scheduler, journal);
         backend->setDeletePath();
@@ -265,7 +265,7 @@ struct DatabaseHarness
     DatabaseHarness(std::string const& configString, int readThreads)
     {
         Section config = parseConfig(configString);
-        config.set("path", tempDir.path());
+        config.set("path", tempDir.path().string());
         db = Manager::instance().makeDatabase(
             megabytes(std::size_t{4}), scheduler, readThreads, config, journal);
     }
