@@ -249,4 +249,7 @@ protected:
         ConfidentialSendSetup const& setup);
 };
 
+Buffer
+generateBlindingFactor();
+
 }  // namespace xrpl
