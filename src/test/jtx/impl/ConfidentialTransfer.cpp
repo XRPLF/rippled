@@ -10,13 +10,12 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/crypto/secure_erase.h>
-
-#include <openssl/rand.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
 #include <secp256k1.h>

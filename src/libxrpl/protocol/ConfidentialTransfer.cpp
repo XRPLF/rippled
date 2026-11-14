@@ -15,7 +15,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-
 #include <utility/mpt_utility.h>
 
 #include <mpt_protocol.h>
