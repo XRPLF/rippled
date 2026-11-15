@@ -154,6 +154,9 @@ public:
 
         // known category returns known string value
         BEAST_EXPECT(TrafficCount::toString(TrafficCount::Category::Total) == "total");
+        BEAST_EXPECT(
+            TrafficCount::toString(TrafficCount::Category::GetFetchPack) ==
+            "getobject_Fetch_Pack_get");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
