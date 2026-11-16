@@ -26,7 +26,7 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 ### Bugfixes
 
-- `print`: The `category` for `GetFetchPack` in each peer's `traffic` section now reads `getobject_Fetch_Pack_get` instead of `getobject_Fetch Pack_get`, matching the paired `getobject_Fetch_Pack_share`. [#8720](https://github.com/XRPLF/rippled/pull/8720)
+- `print`: The `category` for `GetFetchPack` in the aggregate `peers.traffic` section now reads `getobject_Fetch_Pack_get` instead of `getobject_Fetch Pack_get`, matching the paired `getobject_Fetch_Pack_share`. [#8720](https://github.com/XRPLF/rippled/pull/8720)
 
 ## XRP Ledger server version 3.6.0
 
