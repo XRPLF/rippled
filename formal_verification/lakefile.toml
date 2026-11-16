@@ -1,0 +1,14 @@
+name = "XRPL"
+defaultTargets = ["XRPL"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.1"
+
+# Everything, proofs included: what `lake build` checks. The part linked into
+# xrpld is built from lakefile-model.toml, without mathlib.
+[[lean_lib]]
+name = "XRPL"
+# Every file under XRPL/, so a file is checked even if nothing imports it.
+globs = ["XRPL", "XRPL.+"]

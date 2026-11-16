@@ -5,6 +5,7 @@ from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.env import Environment
 
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 
 DEV_VERSION = "0.0.0-dev"
 
@@ -22,6 +23,7 @@ class Xrpl(ConanFile):
         "benchmark": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
+        "formal_verification": [True, False],
         "jemalloc": [True, False],
         "rocksdb": [True, False],
         "shared": [True, False],
@@ -57,6 +59,7 @@ class Xrpl(ConanFile):
         "benchmark": True,
         "coverage": False,
         "fPIC": True,
+        "formal_verification": False,
         "jemalloc": False,
         "rocksdb": True,
         "shared": False,
@@ -121,11 +124,20 @@ class Xrpl(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
 
+    def validate(self):
+        if self.options.formal_verification and self.settings.os == "Windows":
+            raise ConanInvalidConfiguration(
+                "formal_verification is not supported on Windows"
+            )
+
     def requirements(self):
         if self.options.benchmark:
             self.requires("benchmark/1.9.5")
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
+        if self.options.formal_verification:
+            self.requires("lean4/4.34.1")
+            self.requires("mathlib4/4.34.1")
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         self.requires("lz4/1.10.0", force=True)
@@ -172,6 +184,17 @@ class Xrpl(ConanFile):
         tc.variables["benchmark"] = self.options.benchmark
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
+        tc.variables["formal_verification"] = self.options.formal_verification
+        if self.options.formal_verification:
+            lean4 = self.dependencies["lean4"].cpp_info
+            mathlib4 = self.dependencies["mathlib4"].cpp_info
+            tc.variables["LEAN4_BINDIR"] = lean4.bindirs[0]
+            tc.variables["MATHLIB4_PACKAGES_DIR"] = mathlib4.get_property(
+                "lean4_packages_dir"
+            )
+            tc.variables["MATHLIB4_LAKE_MANIFEST"] = mathlib4.get_property(
+                "lean4_lake_manifest"
+            )
         tc.variables["jemalloc"] = self.options.jemalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
