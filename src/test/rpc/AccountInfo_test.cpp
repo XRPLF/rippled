@@ -35,6 +35,7 @@ public:
         {
             // account_info with no account.
             auto const info = env.rpc("json", "account_info", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'account'.");
         }
@@ -45,6 +46,7 @@ public:
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
             BEAST_EXPECT(info[jss::result].isMember(jss::ledger_current_index));
@@ -56,6 +58,7 @@ public:
             json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
+            BEAST_EXPECT(info[jss::result][jss::error] == "actNotFound");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account not found.");
             BEAST_EXPECT(info[jss::result][jss::account] == bogie.human());
@@ -65,6 +68,7 @@ public:
         {
             // Cannot use a seed as account
             auto const info = env.rpc("json", "account_info", R"JSON({"account": "foo"})JSON");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
@@ -334,6 +338,7 @@ public:
             BEAST_EXPECT(info[jss::status] == "error");
             BEAST_EXPECT(info[jss::error] == "invalidParams");
             BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(info[jss::error_message] == "Invalid parameters.");
             BEAST_EXPECT(info.isMember(jss::account_data));
             BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(info.isMember(jss::ledger_current_index));
