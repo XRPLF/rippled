@@ -24,7 +24,6 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1850,24 +1849,24 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) != iod.end());
@@ -1883,22 +1882,22 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) == iod.end());
@@ -1915,22 +1914,22 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     !env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) == iod.end());
@@ -1969,15 +1968,15 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(ag);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ag) != aod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ag) != iod.end());
@@ -1989,15 +1988,15 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     !env.le(keylet::payChannel(alice.id(), gw.id(), SeqProxy::rawSequence(aseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ag) == aod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
+                auto const iod = ownerDirEntries(*env.current(), gw);
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ag) == iod.end());
@@ -2282,6 +2281,34 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
 
             BEAST_EXPECT(!gatewayLocked(env, gw).isMember(jss::locked));
+        }
+
+        // Locked channel remainders whose sum overflows STAmount report the
+        // largest valid STAmount.
+        {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const usd = gw["USD"];
+            STAmount const maxUSD(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
+            env.fund(XRP(5'000), gw, alice, bob);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(maxUSD, alice, bob);
+            env.close();
+            env(pay(gw, alice, maxUSD));
+            env(pay(gw, bob, maxUSD));
+            env.close();
+
+            env(paychan::create(alice, bob, maxUSD, 100s, alice.pk()), Ter(tesSUCCESS));
+            env(paychan::create(bob, alice, maxUSD, 100s, bob.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const result = gatewayLocked(env, gw);
+            BEAST_EXPECTS(
+                result[jss::locked]["USD"] == maxUSD.getText(),
+                result[jss::locked]["USD"].asString());
         }
     }
 
@@ -4805,19 +4832,19 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
@@ -4831,19 +4858,19 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
             }
 
@@ -4856,19 +4883,19 @@ struct PayChanToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     !env.le(keylet::payChannel(bob.id(), carol.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
+                auto const bod = ownerDirEntries(*env.current(), bob);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 // NOLINTNEXTLINE(modernize-use-ranges)
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
         }
@@ -6048,7 +6075,8 @@ struct PayChanToken_test : public beast::unit_test::Suite
         {
             Serializer msg;
             serializePayChanAuthorization(msg, chan, XRP(10).value());
-            Serializer expected = prefix;
+            Serializer expected;
+            expected.addRaw(prefix);
             expected.add64(std::uint64_t{10'000'000});
             BEAST_EXPECT(msg.getData() == expected.getData());
         }

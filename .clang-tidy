@@ -140,5 +140,9 @@ CheckOptions:
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
 HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
-ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$'
+# Skip headers reached via add_module's symlinks (<build-dir>/modules/xrpl.lib*/...).
+# verify_headers already checks each one under its real path,
+# so reporting it twice would also apply its fixes twice.
+# .ipp files are kept: they are only ever reached via the symlink.
+ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$|^.*/modules/xrpl\.lib[^/]+/.*\.(h|hpp)$'
 WarningsAsErrors: "*"

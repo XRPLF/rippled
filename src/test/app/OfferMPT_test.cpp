@@ -34,6 +34,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -2755,6 +2756,8 @@ public:
 
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         env.require(Owners(alice, 1), Owners(bob, 1));
     }
@@ -2788,6 +2791,8 @@ public:
 
             auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
             BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+            BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+            BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
         };
         testHelper3TokensMix(test);
     }
@@ -2847,6 +2852,8 @@ public:
         // Verify the offer was consumed
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
         // only 300 XRP should have been payed since that's all
@@ -6557,57 +6564,46 @@ public:
 
             // tfFillOrKill, TakerPays must be filled
             {
-                TER const err = features[fixFillOrKill] ? TER(tesSUCCESS) : tecKILLED;
-
                 env(offer(maker, XRP(100), usd(100)));
                 env.close();
 
-                env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance -= usd(100);
-                    takerUSDBalance += usd(100);
-                    makerXRPBalance += XRP(100).value();
-                    takerXRPBalance -= XRP(100).value();
-                }
+                makerUSDBalance -= usd(100);
+                takerUSDBalance += usd(100);
+                makerXRPBalance += XRP(100).value();
+                takerXRPBalance -= XRP(100).value();
                 BEAST_EXPECT(expectOffers(env, taker, 0));
 
                 env(offer(maker, usd(100), XRP(100)));
                 env.close();
 
-                env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance += usd(100);
-                    takerUSDBalance -= usd(100);
-                    makerXRPBalance -= XRP(100).value();
-                    takerXRPBalance += XRP(100).value();
-                }
+                makerUSDBalance += usd(100);
+                takerUSDBalance -= usd(100);
+                makerXRPBalance -= XRP(100).value();
+                takerXRPBalance += XRP(100).value();
                 BEAST_EXPECT(expectOffers(env, taker, 0));
 
                 env(offer(maker, usd(100), eur(100)));
                 env.close();
 
-                env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance += usd(100);
-                    takerUSDBalance -= usd(100);
-                    makerEURBalance -= eur(100);
-                    takerEURBalance += eur(100);
-                }
+                makerUSDBalance += usd(100);
+                takerUSDBalance -= usd(100);
+                makerEURBalance -= eur(100);
+                takerEURBalance += eur(100);
                 BEAST_EXPECT(expectOffers(env, taker, 0));
             }
 

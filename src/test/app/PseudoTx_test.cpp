@@ -30,19 +30,9 @@ struct PseudoTx_test : public beast::unit_test::Suite
         res.emplace_back(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
-            if (rules.enabled(featureXRPFees))
-            {
-                obj[sfBaseFeeDrops] = XRPAmount{0};
-                obj[sfReserveBaseDrops] = XRPAmount{0};
-                obj[sfReserveIncrementDrops] = XRPAmount{0};
-            }
-            else
-            {
-                obj[sfBaseFee] = 0;
-                obj[sfReserveBase] = 0;
-                obj[sfReserveIncrement] = 0;
-                obj[sfReferenceFeeUnits] = 0;
-            }
+            obj[sfBaseFeeDrops] = XRPAmount{0};
+            obj[sfReserveBaseDrops] = XRPAmount{0};
+            obj[sfReserveIncrementDrops] = XRPAmount{0};
             if (rules.enabled(featureSmartEscrow))
             {
                 obj[sfGasLimit] = 0;
@@ -76,7 +66,7 @@ struct PseudoTx_test : public beast::unit_test::Suite
     }
 
     void
-    testPrevented(FeatureBitset features)
+    testPrevented(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
         Env env(*this, features);
@@ -111,10 +101,7 @@ struct PseudoTx_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
-        FeatureBitset const xrpFees{featureXRPFees};
 
-        testPrevented(all - featureXRPFees - featureSmartEscrow);
-        testPrevented(all - featureXRPFees);
         testPrevented(all - featureSmartEscrow);
         testPrevented(all);
         testAllowed();
