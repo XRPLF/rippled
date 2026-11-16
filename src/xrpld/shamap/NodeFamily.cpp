@@ -11,6 +11,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
@@ -85,33 +86,20 @@ NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& nodeHash)
     {
         maxSeq_ = seq;
 
-        try
+        // Release the latch when the pass is over, so the next report starts a new one. This runs
+        // on every exit, including a throw out of the acquisition, and while the lock is held.
+        ScopeExit const releaseLatch{[this] { maxSeq_ = 0; }};
+
+        do
         {
-            do
-            {
-                // Try to acquire the most recent missing ledger
-                seq = maxSeq_;
+            // Try to acquire the most recent missing ledger.
+            seq = maxSeq_;
 
-                lock.unlock();
-
-                // This can invoke the missing node handler
-                acquire(app_.getLedgerMaster().getHashBySeq(seq), seq);
-
-                lock.lock();
-            } while (maxSeq_ != seq);
-        }
-        catch (...)
-        {
-            // The acquisition ran with the lock released. Retake it and release the latch before
-            // rethrowing.
-            if (!lock.owns_lock())
-                lock.lock();
-            maxSeq_ = 0;
-            throw;
-        }
-
-        // The pass is over. Release the latch so the next report starts a new one.
-        maxSeq_ = 0;
+            // This can invoke the missing node handler, so it runs with the lock released. The
+            // lock is retaken when the unlock goes out of scope, before the loop condition.
+            ScopeUnlock const unlock{lock};
+            acquire(app_.getLedgerMaster().getHashBySeq(seq), seq);
+        } while (maxSeq_ != seq);
     }
     else if (maxSeq_ < seq)
     {
