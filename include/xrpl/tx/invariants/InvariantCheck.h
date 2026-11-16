@@ -311,6 +311,37 @@ public:
 };
 
 /**
+ * @brief Invariant: a payment channel's asset never changes, and a token
+ * payment channel must stay structurally consistent.
+ *
+ * Once `featureTokenPaychan` is enabled, a modified `PayChannel`, XRP channels
+ * included, must keep the `sfAmount` asset it had before the transaction, and
+ * only a `PaymentChannelClawback` may lower its `sfAmount`, leaving `sfBalance`
+ * unchanged.
+ *
+ * For any non-XRP `PayChannel` (only reachable once `featureTokenPaychan` is
+ * enabled): the paid-out `sfBalance` must never exceed the locked `sfAmount`,
+ * `sfBalance` and `sfAmount` must name the same asset, `sfAmount - sfBalance`
+ * must be exact, `sfBalance` must never decrease, and neither may go negative.
+ * This guards every operation that mutates a channel (create, fund, claim,
+ * clawback) against corrupting the amount/balance relationship.
+ */
+class ValidPaymentChannel
+{
+    bool bad_ = false;
+    bool assetChanged_ = false;
+    bool amountDecreased_ = false;
+    bool balanceChanged_ = false;
+
+public:
+    void
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
+/**
  * @brief Invariant: a new account root must be the consequence of a payment,
  *                   must have the right starting sequence, and the payment
  *                   may not create more than one new account root.
@@ -465,6 +496,7 @@ using InvariantChecks = std::tuple<
     TransfersNotFrozen,
     NoBadOffers,
     NoZeroEscrow,
+    ValidPaymentChannel,
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
