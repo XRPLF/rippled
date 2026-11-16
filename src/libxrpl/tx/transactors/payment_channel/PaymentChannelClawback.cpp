@@ -39,6 +39,9 @@ PaymentChannelClawback::preflight(PreflightContext const& ctx)
     if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.tx[sfChannel] == beast::kZero)
+        return temMALFORMED;
+
     if (auto const amount = ctx.tx[~sfAmount])
     {
         if (amount->native() || *amount <= beast::kZero)

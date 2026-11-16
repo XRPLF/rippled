@@ -5505,6 +5505,14 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(paychan::clawback(gw, chan), Ter(temDISABLED));
         }
 
+        // A zero Channel is malformed (rejected before any channel lookup).
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), gw);
+            env.close();
+            env(paychan::clawback(gw, uint256{}), Ter(temMALFORMED));
+        }
+
         // Full clawback of the unclaimed remainder deletes the channel; the
         // issuer's trust line is untouched (value already redeemed at lock).
         {
