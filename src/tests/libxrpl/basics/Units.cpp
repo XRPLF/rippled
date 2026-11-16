@@ -21,11 +21,11 @@ TEST(UnitsTest, types)
         XRPAmount const x{100};
         EXPECT_EQ(x.drops(), 100);
         EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::dropTag>));
-        auto y = 4u * x;
+        auto const y = 4u * x;
         EXPECT_EQ(y.value(), 400);
         EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::dropTag>));
 
-        auto z = 4 * y;
+        auto const z = 4 * y;
         EXPECT_EQ(z.value(), 1600);
         EXPECT_TRUE((std::is_same_v<decltype(z)::UnitType, unit::dropTag>));
 
@@ -45,7 +45,7 @@ TEST(UnitsTest, types)
         XRPAmount const x{100};
         EXPECT_EQ(x.value(), 100);
         EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::dropTag>));
-        auto y = 4u * x;
+        auto const y = 4u * x;
         EXPECT_EQ(y.value(), 400);
         EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::dropTag>));
 
@@ -65,7 +65,7 @@ TEST(UnitsTest, types)
         EXPECT_EQ(x.value(), 1024);
         EXPECT_TRUE((std::is_same_v<decltype(x)::UnitType, unit::feelevelTag>));
         std::uint64_t const m = 4;
-        auto y = m * x;
+        auto const y = m * x;
         EXPECT_EQ(y.value(), 4096);
         EXPECT_TRUE((std::is_same_v<decltype(y)::UnitType, unit::feelevelTag>));
 
@@ -89,56 +89,56 @@ TEST(UnitsTest, json)
 
     {
         FeeLevel32 const x{std::numeric_limits<std::uint32_t>::max()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::UInt);
         EXPECT_EQ(y, json::Value{x.fee()});
     }
 
     {
         FeeLevel32 const x{std::numeric_limits<std::uint32_t>::min()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::UInt);
         EXPECT_EQ(y, json::Value{x.fee()});
     }
 
     {
         FeeLevel64 const x{std::numeric_limits<std::uint64_t>::max()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::UInt);
         EXPECT_EQ(y, json::Value{std::numeric_limits<std::uint32_t>::max()});
     }
 
     {
         FeeLevel64 const x{std::numeric_limits<std::uint64_t>::min()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::UInt);
         EXPECT_EQ(y, json::Value{0});
     }
 
     {
         FeeLevelDouble const x{std::numeric_limits<double>::max()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::Real);
         EXPECT_EQ(y, json::Value{std::numeric_limits<double>::max()});
     }
 
     {
         FeeLevelDouble const x{std::numeric_limits<double>::min()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::Real);
         EXPECT_EQ(y, json::Value{std::numeric_limits<double>::min()});
     }
 
     {
         XRPAmount const x{std::numeric_limits<std::int64_t>::max()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::Int);
         EXPECT_EQ(y, json::Value{std::numeric_limits<std::int32_t>::max()});
     }
 
     {
         XRPAmount const x{std::numeric_limits<std::int64_t>::min()};
-        auto y = x.jsonClipped();
+        auto const y = x.jsonClipped();
         EXPECT_EQ(y.type(), json::ValueType::Int);
         EXPECT_EQ(y, json::Value{std::numeric_limits<std::int32_t>::min()});
     }

@@ -96,7 +96,7 @@ PathRequest::PathRequest(
 PathRequest::~PathRequest()
 {
     using namespace std::chrono;
-    auto stream = journal_.info();
+    auto const stream = journal_.info();
     if (!stream)
         return;
 
@@ -255,7 +255,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
             doUpdate(cache, true);
     }
 
-    if (auto stream = journal_.debug())
+    if (auto const stream = journal_.debug())
     {
         if (valid)
         {
@@ -516,7 +516,7 @@ PathRequest::getPathFinder(
     int const level,
     std::function<bool()> const& continueCallback)
 {
-    auto i = currencyMap.find(currency);
+    auto const i = currencyMap.find(currency);
     if (i != currencyMap.end())
         return i->second;
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
@@ -557,7 +557,7 @@ PathRequest::findPaths(
     if (sourceAssets.empty())
     {
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-        auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
+        auto const assets = accountSourceAssets(*raSrcAccount_, cache, true);
         bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)

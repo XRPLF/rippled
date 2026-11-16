@@ -17,6 +17,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
@@ -131,8 +132,9 @@ public:
             json::Value jvParams;
             jvParams[jss::limit] = "0";  // NOT an integer
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not integer.");
         }
 
@@ -141,8 +143,9 @@ public:
             json::Value jvParams;
             jvParams[jss::marker] = "NOT_A_MARKER";
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
         }
 
@@ -151,8 +154,9 @@ public:
             json::Value jvParams;
             jvParams[jss::marker] = 1;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
         }
 
@@ -161,8 +165,9 @@ public:
             json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
 
@@ -171,8 +176,9 @@ public:
             json::Value jvParams;
             jvParams[jss::binary] = "true";
             auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'binary', not boolean.");
         }
     }
@@ -271,9 +277,10 @@ public:
         using namespace test::jtx;
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
-        for (FeatureBitset const& features :
-             {testableAmendments() - fixInnerObjTemplate2,
-              testableAmendments() | fixInnerObjTemplate2})
+        for (FeatureBitset const& features : {
+                 testableAmendments() - fixInnerObjTemplate2,
+                 testableAmendments() | fixInnerObjTemplate2,
+             })
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -282,7 +289,7 @@ public:
             auto const usd = gw["USD"];
             env.fund(XRP(100000), gw);
 
-            auto makeRequest = [&env](json::StaticString const& type) {
+            auto const makeRequest = [&env](json::StaticString const& type) {
                 json::Value jvParams;
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = type;
@@ -290,17 +297,18 @@ public:
             };
 
             // Assert that state is an empty array.
-            for (auto const& type :
-                 {jss::amendments,
-                  jss::check,
-                  jss::directory,
-                  jss::offer,
-                  jss::signer_list,
-                  jss::state,
-                  jss::ticket,
-                  jss::escrow,
-                  jss::payment_channel,
-                  jss::deposit_preauth})
+            for (auto const& type : {
+                     jss::amendments,
+                     jss::check,
+                     jss::directory,
+                     jss::offer,
+                     jss::signer_list,
+                     jss::state,
+                     jss::ticket,
+                     jss::escrow,
+                     jss::payment_channel,
+                     jss::deposit_preauth,
+                 })
             {
                 auto const jrr = makeRequest(type);
                 BEAST_EXPECT(checkArraySize(jrr[jss::state], 0));
@@ -457,8 +465,8 @@ public:
                 jvParams[jss::ledger_index] = "current";
                 jvParams[jss::type] = "misspelling";
                 auto const jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
-                BEAST_EXPECT(jrr.isMember("error"));
                 BEAST_EXPECT(jrr["error"] == "invalidParams");
+                BEAST_EXPECT(jrr["error_code"] == RpcInvalidParams);
                 BEAST_EXPECT(jrr["error_message"] == "Invalid field 'type'.");
             }
         }

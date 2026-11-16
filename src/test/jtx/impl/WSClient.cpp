@@ -353,7 +353,7 @@ private:
         jr.parse(bufferString(rb_.data()), jv);
         rb_.consume(rb_.size());
 
-        auto m = std::make_shared<Msg>(std::move(jv));
+        auto const m = std::make_shared<Msg>(std::move(jv));
         {
             std::scoped_lock const lock(m_);
             msgs_.push_front(m);

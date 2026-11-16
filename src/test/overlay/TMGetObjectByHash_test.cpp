@@ -104,13 +104,13 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testcase("Reply Object Count");
 
         Env env(*this);
-        auto peer = makeCapturePeer<GetObjectPeer>(env);
+        auto const peer = makeCapturePeer<GetObjectPeer>(env);
 
-        auto request = createRequest(numObjects, env);
+        auto const request = createRequest(numObjects, env);
         peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
-        auto sentMessage = peer->lastSent();
+        auto const sentMessage = peer->lastSent();
         BEAST_EXPECT(sentMessage != nullptr);
 
         // Parse the reply message
@@ -183,7 +183,6 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto* stateObj = request->add_objects();
         stateObj->set_hash(stateHash.data(), stateHash.size());
         stateObj->set_ledgerseq(seq);
-        stateObj->set_nodeid(SHAMapNodeID{}.getRawString());
 
         UInt256 const missing{std::uint64_t{12345}};
         auto* missingObj = request->add_objects();

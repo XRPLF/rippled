@@ -275,7 +275,7 @@ private:
         bool doNodes,
         bool doTxns)
     {
-        auto nodeLedger = app_.getInboundLedgers().acquire(
+        auto const nodeLedger = app_.getInboundLedgers().acquire(
             ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
         {
@@ -381,7 +381,7 @@ private:
     void
     doLedgerCleaner()
     {
-        auto shouldExit = [this] {
+        auto const shouldExit = [this] {
             std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };

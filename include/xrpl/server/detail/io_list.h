@@ -225,14 +225,14 @@ IOList::close(Finisher&& f)
     if (closed_)
         return;
     closed_ = true;
-    auto map = std::move(map_);
+    auto const map = std::move(map_);
     if (!map.empty())
     {
         f_ = std::forward<Finisher>(f);
         lock.unlock();
         for (auto const& p : map)
         {
-            if (auto sp = p.second.lock())
+            if (auto const sp = p.second.lock())
                 sp->close();
         }
     }

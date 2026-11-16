@@ -250,7 +250,7 @@ toStrand(
     }();
 
     // Currency or MPT
-    auto hasAsset = [](STPathElement const pe) {
+    auto const hasAsset = [](STPathElement const pe) {
         return pe.getNodeType() & STPathElement::TypeAsset;
     };
 
@@ -408,7 +408,7 @@ toStrand(
         }
 
         using ImpliedStepRet = std::pair<TER, std::unique_ptr<Step>>;
-        auto getImpliedStep =
+        auto const getImpliedStep =
             [&](AccountID const& src, AccountID const& dst, Asset const& asset) -> ImpliedStepRet {
             return asset.visit(
                 [&](MPTIssue const&) -> ImpliedStepRet {
@@ -505,8 +505,8 @@ toStrand(
         }
     }
 
-    auto checkStrand = [&] -> bool {
-        auto stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
+    auto const checkStrand = [&] -> bool {
+        auto const stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
             if (auto r = s.directStepAccts())
                 return *r;
             if (auto const r = s.bookStepBook())
@@ -589,7 +589,7 @@ toStrands(
     std::vector<Strand> result;
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
-    auto insert = [&](Strand s) {
+    auto const insert = [&](Strand s) {
         bool const hasStrand = std::ranges::find(result, s) != result.end();
 
         if (!hasStrand)
@@ -655,7 +655,7 @@ toStrands(
             ammContext,
             domainID,
             j);
-        auto ter = sp.first;
+        auto const ter = sp.first;
         auto& strand = sp.second;
 
         if (!isTesSuccess(ter))

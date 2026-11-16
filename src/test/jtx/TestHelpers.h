@@ -15,6 +15,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -494,7 +496,7 @@ public:
     waitFor(std::chrono::duration<Rep, Period> const& relTime)
     {
         std::unique_lock<std::mutex> lk(mutex_);
-        auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+        auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
         signaled_ = false;
         return b;
     }
@@ -551,30 +553,36 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
 expectHolding(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     STAmount const& value,
     bool defaultLimits = false);
 
 template <typename... Amts>
 bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, Amts const&... amts)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, Amts const&... amts)
 {
     return expectHolding(env, account, value, false) && expectHolding(env, account, amts...);
 }
 
 bool
-expectHolding(Env& env, AccountID const& account, None const& value);
+expectHolding(Env const& env, AccountID const& account, None const& value);
 
 bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value);
+expectMPT(Env const& env, AccountID const& account, STAmount const& value);
 
 bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
+
+/**
+ * Return the ledger entries in an account's owner directory.
+ */
+std::vector<SLE::const_pointer>
+ownerDirEntries(ReadView const& view, AccountID const& account);
 
 json::Value
 ledgerEntryRoot(Env& env, Account const& acct);

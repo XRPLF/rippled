@@ -121,7 +121,7 @@ class Freeze_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 ff[sfHighLimit.fieldName] ==
                 bob["USD"](100).value().getJson(JsonOptions::Values::None));
-            auto amt = STAmount{Issue{toCurrency("USD"), noAccount()}, -15}.value().getJson(
+            auto const amt = STAmount{Issue{toCurrency("USD"), noAccount()}, -15}.value().getJson(
                 JsonOptions::Values::None);
             BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
@@ -366,7 +366,7 @@ class Freeze_test : public beast::unit_test::Suite
             //  trust line
             env(trust(g1, a1["USD"](0), tfSetFreeze | tfClearFreeze));
             {
-                auto affected =
+                auto const affected =
                     env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
                 BEAST_EXPECT(checkArraySize(affected, 1u));  // means no trustline changes
             }
@@ -612,7 +612,7 @@ class Freeze_test : public beast::unit_test::Suite
             if (!BEAST_EXPECT(checkArraySize(affected, 1u)))
                 return;
 
-            auto let = affected[0u][sfModifiedNode.fieldName][sfLedgerEntryType.fieldName];
+            auto const let = affected[0u][sfModifiedNode.fieldName][sfLedgerEntryType.fieldName];
             BEAST_EXPECT(let == jss::AccountRoot);
         }
 
@@ -1976,7 +1976,7 @@ public:
     void
     run() override
     {
-        auto testAll = [this](FeatureBitset features) {
+        auto const testAll = [this](FeatureBitset features) {
             testRippleState(features);
             testDeepFreeze(features);
             testCreateFrozenTrustline(features);

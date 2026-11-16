@@ -165,8 +165,8 @@ TEST_P(SHAMapTest, add_and_traverse_in_key_order)
     SHAMap sMap{SHAMapType::FREE, f};
     applyBackingMode(sMap);
 
-    auto i1 = makeShamapitem(kH1, intToVuc(1));
-    auto i2 = makeShamapitem(kH2, intToVuc(2));
+    auto const i1 = makeShamapitem(kH1, intToVuc(1));
+    auto const i2 = makeShamapitem(kH2, intToVuc(2));
 
     EXPECT_TRUE(sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2))) << "no add";
     sMap.invariants();
@@ -174,7 +174,7 @@ TEST_P(SHAMapTest, add_and_traverse_in_key_order)
     sMap.invariants();
 
     auto i = sMap.begin();
-    auto e = sMap.end();
+    auto const e = sMap.end();
     EXPECT_FALSE(i == e || (*i != *i1)) << "bad traverse";
     ++i;
     EXPECT_FALSE(i == e || (*i != *i2)) << "bad traverse";
@@ -188,14 +188,14 @@ TEST_P(SHAMapTest, traverse_after_add_and_delete)
     SHAMap sMap{SHAMapType::FREE, f};
     applyBackingMode(sMap);
 
-    auto i1 = makeShamapitem(kH1, intToVuc(1));
-    auto i3 = makeShamapitem(kH3, intToVuc(3));
-    auto i4 = makeShamapitem(kH4, intToVuc(4));
+    auto const i1 = makeShamapitem(kH1, intToVuc(1));
+    auto const i3 = makeShamapitem(kH3, intToVuc(3));
+    auto const i4 = makeShamapitem(kH4, intToVuc(4));
 
     addThenDeleteAndReAdd(sMap);
 
     auto i = sMap.begin();
-    auto e = sMap.end();
+    auto const e = sMap.end();
     EXPECT_FALSE(i == e || (*i != *i1)) << "bad traverse";
     ++i;
     EXPECT_FALSE(i == e || (*i != *i3)) << "bad traverse";
@@ -401,7 +401,7 @@ TEST_F(SHAMapTraversal, upper_bound_walks_the_whole_map)
     // subtree.
     for (std::size_t k = 0; k + 1 < keys.size(); ++k)
     {
-        auto it = map.upperBound(keys[k]);
+        auto const it = map.upperBound(keys[k]);
         ASSERT_NE(it, map.end()) << "no successor for key " << k;
         EXPECT_EQ(it->key(), keys[k + 1]) << "wrong successor for key " << k;
     }
@@ -420,7 +420,7 @@ TEST_F(SHAMapTraversal, lower_bound_walks_the_whole_map)
     // subtree.
     for (std::size_t k = 1; k < keys.size(); ++k)
     {
-        auto it = map.lowerBound(keys[k]);
+        auto const it = map.lowerBound(keys[k]);
         ASSERT_NE(it, map.end()) << "no predecessor for key " << k;
         EXPECT_EQ(it->key(), keys[k - 1]) << "wrong predecessor for key " << k;
     }
@@ -577,7 +577,7 @@ TEST_F(SHAMapTraversal, iteration_survives_deletions)
 
     for (std::size_t k = 0; k + 1 < expected.size(); ++k)
     {
-        auto it = map.upperBound(expected[k]);
+        auto const it = map.upperBound(expected[k]);
         ASSERT_NE(it, map.end());
         EXPECT_EQ(it->key(), expected[k + 1]);
     }
@@ -621,7 +621,7 @@ TEST_F(SHAMapTraversal, iteration_survives_a_collapsed_inner_node)
         visited.push_back(item.key());
     EXPECT_EQ(visited, expected);
 
-    auto it = map.upperBound(sentinel);
+    auto const it = map.upperBound(sentinel);
     ASSERT_NE(it, map.end());
     EXPECT_EQ(it->key(), fanOutKeys.back());
     EXPECT_EQ(map.upperBound(fanOutKeys.back()), map.end());
@@ -660,7 +660,7 @@ TEST_F(SHAMapTraversal, upper_bound_walks_the_whole_map_at_leaf_depth)
     // kLeafDepth for every subtree.
     for (std::size_t k = 0; k + 1 < keys.size(); ++k)
     {
-        auto it = map.upperBound(keys[k]);
+        auto const it = map.upperBound(keys[k]);
         ASSERT_NE(it, map.end()) << "no successor for key " << k;
         EXPECT_EQ(it->key(), keys[k + 1]) << "wrong successor for key " << k;
     }
@@ -679,7 +679,7 @@ TEST_F(SHAMapTraversal, lower_bound_walks_the_whole_map_at_leaf_depth)
     // greatest key below a subtree.
     for (std::size_t k = 1; k < keys.size(); ++k)
     {
-        auto it = map.lowerBound(keys[k]);
+        auto const it = map.lowerBound(keys[k]);
         ASSERT_NE(it, map.end()) << "no predecessor for key " << k;
         EXPECT_EQ(it->key(), keys[k - 1]) << "wrong predecessor for key " << k;
     }
@@ -765,7 +765,7 @@ TEST_F(SHAMapTraversal, iteration_survives_deletions_at_leaf_depth)
 
     for (std::size_t k = 0; k + 1 < expected.size(); ++k)
     {
-        auto it = map.upperBound(expected[k]);
+        auto const it = map.upperBound(expected[k]);
         ASSERT_NE(it, map.end());
         EXPECT_EQ(it->key(), expected[k + 1]);
     }
@@ -797,7 +797,7 @@ TEST_F(SHAMapPathProof, verify_proof_path)
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
         map.invariants();
 
-        auto root = map.getHash().asUInt256();
+        auto const root = map.getHash().asUInt256();
         auto path = map.getProofPath(k);
         if (!path)
         {
@@ -907,7 +907,7 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
         s.add8(kWireTypeInner);
         path.push_back(s.getData());
 
-        auto node = SHAMapTreeNode::makeFromWire(makeSlice(path.back()));
+        auto const node = SHAMapTreeNode::makeFromWire(makeSlice(path.back()));
         ASSERT_TRUE(node);
         node->updateHash();
         childHash = node->getHash();
@@ -931,7 +931,7 @@ TEST_F(SHAMapPathProof, all_inner_path_at_leaf_depth_is_rejected)
 [[nodiscard]] static std::pair<std::vector<Blob>, UInt256>
 forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
 {
-    auto leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
+    auto const leaf = SHAMapTreeNode::makeFromWire(makeSlice(leafBlob));
     if (!leaf || !leaf->isLeaf())
         return {};
     leaf->updateHash();
@@ -942,7 +942,7 @@ forgeRootOverLeaf(Blob const& leafBlob, UInt256 const& key)
         s.addBitString(i == branch ? leaf->getHash().asUInt256() : UInt256{});
     s.add8(kWireTypeInner);
 
-    auto root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
+    auto const root = SHAMapTreeNode::makeFromWire(makeSlice(s.peekData()));
     if (!root)
         return {};
     root->updateHash();

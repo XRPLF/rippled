@@ -2,33 +2,12 @@
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md).<br><br>These instructions also assume a basic familiarity with Conan and CMake. If you are unfamiliar with Conan, you can read our [crash course](./docs/build/conan.md) or the official [Getting Started][conan-getting-started] walkthrough. |
 
-## Minimum Requirements
+## Supported platforms
 
-For the hardware needed to run a node, see
-[System Requirements](https://xrpl.org/system-requirements.html).
-
-For the software needed to build xrpld, see the
-[environment setup guide](./docs/build/environment.md).
-
-## Operating Systems
-
-### Linux
-
-The Ubuntu Linux distribution has received the highest level of quality
-assurance, testing, and support. We also support Red Hat and use Debian
-internally.
-Our Linux CI tooling is distro-independent and uses a Nix-based environment, so it should be possible to build on other Linux distributions as well, although we have not tested them.
-
-### macOS
-
-Many `xrpld` engineers use macOS for development.
-The minimum supported version is macOS 15 (Sequoia).
-CI testing is done in macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
-
-### Windows
-
-Windows is used by some engineers for development only, and is not recommended
-for production use.
+Building and testing are supported on Linux, macOS, and (best effort) Windows;
+see [Supported development platforms](./docs/build/environment.md#supported-development-platforms).
+Running `xrpld` is officially supported on Linux only;
+see [Requirements](./docs/install.md#requirements).
 
 ## Steps
 

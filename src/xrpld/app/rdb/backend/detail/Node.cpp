@@ -106,16 +106,20 @@ makeLedgerDBs(
     beast::Journal j)
 {
     // ledger database
-    auto lgr{std::make_unique<DatabaseCon>(
-        setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j)};
+    auto lgr{
+        std::make_unique<DatabaseCon>(
+            setup, kLgrDbName, setup.lgrPragma, kLgrDbInit, checkpointerSetup, j),
+    };
     lgr->getSession() << std::format(
         "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
         // transaction database
-        auto tx{std::make_unique<DatabaseCon>(
-            setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j)};
+        auto tx{
+            std::make_unique<DatabaseCon>(
+                setup, kTxDbName, setup.txPragma, kTxDbInit, checkpointerSetup, j),
+        };
         tx->getSession() << std::format(
             "PRAGMA cache_size=-{};", kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
@@ -141,7 +145,10 @@ makeLedgerDBs(
                 if (pk == 1)
                 {
                     return {
-                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
+                        .ledgerDb = std::move(lgr),
+                        .transactionDb = std::move(tx),
+                        .valid = false,
+                    };
                 }
             }
         }
@@ -219,7 +226,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = app.getJournal("Ledger");
+    auto const j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
@@ -573,7 +580,7 @@ getHashesByIndex(soci::session& session, LedgerIndex ledgerIndex, beast::Journal
 
     if (!lhO || !phO)
     {
-        auto stream = j.trace();
+        auto const stream = j.trace();
         JLOG(stream) << "Don't have ledger " << ledgerIndex;
         return {};
     }
@@ -581,7 +588,7 @@ getHashesByIndex(soci::session& session, LedgerIndex ledgerIndex, beast::Journal
     LedgerHashPair hashes;
     if (!hashes.ledgerHash.parseHex(*lhO) || !hashes.parentHash.parseHex(*phO))
     {
-        auto stream = j.trace();
+        auto const stream = j.trace();
         JLOG(stream) << "Error parse hashes for ledger " << ledgerIndex;
         return {};
     }
@@ -663,7 +670,7 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
                 rawTxn.clear();
             }
 
-            if (auto trans = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app))
+            if (auto const trans = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app))
             {
                 total++;
                 txs.push_back(trans);
@@ -693,7 +700,7 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
  */
 static std::string
 transactionsSQL(
-    Application& app,
+    Application const& app,
     std::string selection,
     RelationalDatabase::AccountTxOptions const& options,
     bool descending,
@@ -858,7 +865,7 @@ getAccountTxs(
                 txnMeta.clear();
             }
 
-            auto txn = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
+            auto const txn = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
 
             if (txnMeta.empty())
             {  // Work around a bug that could leave the metadata missing
@@ -866,7 +873,7 @@ getAccountTxs(
 
                 JLOG(j.warn()) << "Recovering ledger " << seq << ", txn " << txn->getID();
 
-                if (auto l = ledgerMaster.getLedgerBySeq(seq))
+                if (auto const l = ledgerMaster.getLedgerBySeq(seq))
                     pendSaveValidated(app, l, false, false);
             }
 
@@ -927,7 +934,7 @@ getNewestAccountTxs(
 static std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getAccountTxsB(
     soci::session& session,
-    Application& app,
+    Application const& app,
     RelationalDatabase::AccountTxOptions const& options,
     bool descending,
     beast::Journal j)
@@ -984,7 +991,7 @@ getAccountTxsB(
 std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
-    Application& app,
+    Application const& app,
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
@@ -994,7 +1001,7 @@ getOldestAccountTxsB(
 std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
-    Application& app,
+    Application const& app,
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j)
 {
@@ -1158,7 +1165,8 @@ accountTxPage(
                 ++fetchedRows;
                 lastScanned = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
             }
 
             if (lookingForMarker)
@@ -1181,7 +1189,8 @@ accountTxPage(
             {
                 newmarker = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
                 break;
             }
 
@@ -1245,7 +1254,8 @@ accountTxPage(
             {
                 lastEmitted = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    .txnSeq = txnSeq.value_or(0),
+                };
             }
         }
 

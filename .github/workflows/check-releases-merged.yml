@@ -53,7 +53,7 @@ jobs:
 
       - name: Create issue
         if: ${{ failure() && github.event_name == 'schedule' && github.repository == 'XRPLF/rippled' }}
-        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        uses: XRPLF/actions/create-issue@b489c21d53928f7dab4874912fec40e4f6c9e85e
         with:
           title: "Releases not merged back into develop"
           body_file: ${{ env.ISSUE_FILE }}

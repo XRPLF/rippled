@@ -182,7 +182,7 @@ public:
         // requests let the server close the socket, the write/read here fails
         // with end_of_stream; reconnect and retry the request exactly once.
         response<dynamic_body> res;
-        auto writeAndRead = [&] {
+        auto const writeAndRead = [&] {
             write(stream_, req);
             read(stream_, bin_, res);
         };

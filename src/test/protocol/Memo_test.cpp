@@ -32,7 +32,7 @@ public:
 
         // Lambda that returns a valid JTx with a memo that we can hack up.
         // This is the basis for building tests of invalid states.
-        auto makeJtxWithMemo = [&env, &alice] {
+        auto const makeJtxWithMemo = [&env, &alice] {
             JTx example = noop(alice);
             Memo const exampleMemo{"tic", "tac", "toe"};
             exampleMemo(env, example);

@@ -55,6 +55,7 @@ TEST(JsonView, field_types)
     EXPECT_TRUE(str.present());
     EXPECT_EQ(str.key(), "str");
     EXPECT_TRUE(str.isString());
+    EXPECT_FALSE(str.isNull());
     EXPECT_EQ(str.asString(), "hello");
     EXPECT_TRUE(str.is<std::string>());
     EXPECT_FALSE(str.isBool());
@@ -98,9 +99,10 @@ TEST(JsonView, field_types)
     EXPECT_FALSE(flag.isInt64());
     EXPECT_FALSE(flag.isUint32());
 
-    // Present, but null: no predicate claims it.
+    // Present, but null: no type predicate claims it.
     auto const nothing = root.child("nothing");
     EXPECT_TRUE(nothing.present());
+    EXPECT_TRUE(nothing.isNull());
     EXPECT_FALSE(nothing.isString());
     EXPECT_FALSE(nothing.isInt64());
     EXPECT_FALSE(nothing.isBool());
@@ -130,6 +132,7 @@ TEST(JsonView, field_absent)
     // an optional field was supplied.
     auto const missing = root.child("nope");
     EXPECT_FALSE(missing.present());
+    EXPECT_FALSE(missing.isNull());
     EXPECT_EQ(missing.key(), "nope");
     EXPECT_FALSE(missing.isString());
     EXPECT_FALSE(missing.isInt64());

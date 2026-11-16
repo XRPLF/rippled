@@ -3,6 +3,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -53,8 +54,10 @@ class LedgerHeader_test : public beast::unit_test::Suite
         json::Value params{json::ValueType::Object};
         params[jss::api_version] = 2;
         auto const result = env.client().invoke("ledger_header", params)[jss::result];
-        BEAST_EXPECT(result[jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result[jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::error_code] == RpcUnknownCommand);
+        BEAST_EXPECT(result[jss::error_message] == "Unknown method.");
     }
 
 public:

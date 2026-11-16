@@ -39,9 +39,11 @@ SkipListAcquire::SkipListAcquire(
           app,
           ledgerHash,
           ledger_replay_parameters::kSubTaskTimeout,
-          {.jobType = JtReplayTask,
-           .jobName = "SkipListAcq",
-           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
+          {
+              .jobType = JtReplayTask,
+              .jobName = "SkipListAcq",
+              .jobLimit = ledger_replay_parameters::kMaxQueuedTasks,
+          },
           app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -146,7 +148,7 @@ SkipListAcquire::processData(
     JLOG(journal_.trace()) << "got data for " << hash_;
     try
     {
-        if (auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key()); sle)
+        if (auto const sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key()); sle)
         {
             if (auto const& skipList = sle->getFieldV256(sfHashes).value(); !skipList.empty())
                 onSkipListAcquired(skipList, ledgerSeq, sl);
@@ -221,7 +223,7 @@ SkipListAcquire::notify(ScopedLockType& sl)
     auto const good = !failed_;
     sl.unlock();
 
-    for (auto& cb : toCall)
+    for (auto const& cb : toCall)
     {
         cb(good, hash_);
     }

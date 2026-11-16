@@ -24,7 +24,7 @@ textTime(
     char const* unitName,
     std::chrono::seconds unitVal)
 {
-    auto i = seconds.time_since_epoch() / unitVal;
+    auto const i = seconds.time_since_epoch() / unitVal;
 
     if (i == 0)
         return;
@@ -45,7 +45,7 @@ textTime(
 json::Value
 getCountsJson(Application& app, int minObjectCount)
 {
-    auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
+    auto const objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
     json::Value ret(json::ValueType::Object);
 

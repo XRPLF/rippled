@@ -99,30 +99,30 @@ randomB256TestData(std::span<std::uint8_t> d)
 inline void
 printAsChar(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
 {
-    auto asString = [](std::span<std::uint8_t> s) {
+    auto const asString = [](std::span<std::uint8_t> s) {
         std::string r;
         r.resize(s.size());
         std::ranges::copy(s, r.begin());
         return r;
     };
-    auto sa = asString(a);
-    auto sb = asString(b);
+    auto const sa = asString(a);
+    auto const sb = asString(b);
     std::cerr << "\n\n" << sa << "\n" << sb << "\n";
 }
 
 inline void
 printAsInt(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
 {
-    auto asString = [](std::span<std::uint8_t> s) -> std::string {
+    auto const asString = [](std::span<std::uint8_t> s) -> std::string {
         std::stringstream sstr;
-        for (auto i : s)
+        for (auto const i : s)
         {
             sstr << std::setw(3) << int(i) << ',';
         }
         return sstr.str();
     };
-    auto sa = asString(a);
-    auto sb = asString(b);
+    auto const sa = asString(a);
+    auto const sb = asString(b);
     std::cerr << "\n\n" << sa << "\n" << sb << "\n";
 }
 

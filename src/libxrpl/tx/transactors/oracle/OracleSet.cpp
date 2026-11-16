@@ -49,7 +49,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     if (dataSeries.size() > kMaxOracleDataSeries)
         return temARRAY_TOO_LARGE;
 
-    auto isInvalidLength = [&](auto const& sField, std::size_t length) {
+    auto const isInvalidLength = [&](auto const& sField, std::size_t length) {
         return ctx.tx.isFieldPresent(sField) &&
             (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
@@ -117,7 +117,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     // Lambda is used to check if the value of a field, passed
     // in the transaction, is equal to the value of that field
     // in the on-ledger object.
-    auto isConsistent = [&ctx, &sle](auto const& field) {
+    auto const isConsistent = [&ctx, &sle](auto const& field) {
         auto const v = ctx.tx[~field];
         return !v || *v == (*sle)[field];
     };
@@ -218,7 +218,7 @@ OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
 
-    auto populatePriceData = [](STObject& priceData, STObject const& entry) {
+    auto const populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
         priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
         priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
@@ -253,7 +253,7 @@ OracleSet::doApply()
                 // delete token pair
                 pairs.erase(key);
             }
-            else if (auto iter = pairs.find(key); iter != pairs.end())
+            else if (auto const iter = pairs.find(key); iter != pairs.end())
             {
                 // update the price
                 iter->second.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));

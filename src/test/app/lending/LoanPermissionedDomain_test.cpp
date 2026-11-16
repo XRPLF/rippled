@@ -16,6 +16,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -134,7 +135,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Borrower without credentials
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -166,36 +168,46 @@ class LoanPermissionedDomain_test : public LoanTestBase
         };
 
         std::vector<Step> const steps{
-            {.name = "DomainID set",
-             .changeState = {},
-             .expectedDomainId = domainId,
-             .memberResult = tesSUCCESS,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "DomainID unset",
-             .changeState = [&] { setBrokerDomain(beast::kZero); },
-             .expectedDomainId = std::nullopt,
-             .memberResult = tecNO_AUTH,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "DomainID set again",
-             .changeState = [&] { setBrokerDomain(domainId); },
-             .expectedDomainId = domainId,
-             .memberResult = tesSUCCESS,
-             .nonMemberResult = tecNO_AUTH},
-            {.name = "Domain deleted while the broker still refers to it",
-             .changeState =
-                 [&] {
-                     env(pdomain::deleteTx(credIssuer, domainId));
-                     env.close();
-                     BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
-                 },
-             .expectedDomainId = domainId,
-             .memberResult = tecOBJECT_NOT_FOUND,
-             .nonMemberResult = tecOBJECT_NOT_FOUND},
-            {.name = "Stale DomainID cleared by the broker owner",
-             .changeState = [&] { setBrokerDomain(beast::kZero); },
-             .expectedDomainId = std::nullopt,
-             .memberResult = tecNO_AUTH,
-             .nonMemberResult = tecNO_AUTH},
+            {
+                .name = "DomainID set",
+                .changeState = {},
+                .expectedDomainId = domainId,
+                .memberResult = tesSUCCESS,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "DomainID unset",
+                .changeState = [&] { setBrokerDomain(beast::kZero); },
+                .expectedDomainId = std::nullopt,
+                .memberResult = tecNO_AUTH,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "DomainID set again",
+                .changeState = [&] { setBrokerDomain(domainId); },
+                .expectedDomainId = domainId,
+                .memberResult = tesSUCCESS,
+                .nonMemberResult = tecNO_AUTH,
+            },
+            {
+                .name = "Domain deleted while the broker still refers to it",
+                .changeState =
+                    [&] {
+                        env(pdomain::deleteTx(credIssuer, domainId));
+                        env.close();
+                        BEAST_EXPECT(!env.le(keylet::permissionedDomain(domainId)));
+                    },
+                .expectedDomainId = domainId,
+                .memberResult = tecOBJECT_NOT_FOUND,
+                .nonMemberResult = tecOBJECT_NOT_FOUND,
+            },
+            {
+                .name = "Stale DomainID cleared by the broker owner",
+                .changeState = [&] { setBrokerDomain(beast::kZero); },
+                .expectedDomainId = std::nullopt,
+                .memberResult = tecNO_AUTH,
+                .nonMemberResult = tecNO_AUTH,
+            },
         };
 
         // Submits a LoanSet for `borrower` and checks a loan is created only
@@ -249,7 +261,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Borrower without credentials
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -365,7 +378,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Neither owner nor member
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -477,7 +491,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const bob{"bob"};      // Borrower
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         env.fund(XRP(1'000'000), credIssuer);
@@ -527,7 +542,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const bob{"bob"};      // Borrower
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         env.fund(XRP(1'000'000), credIssuer);

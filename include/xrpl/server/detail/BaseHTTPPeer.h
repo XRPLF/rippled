@@ -267,7 +267,7 @@ template <class Handler, class Impl>
 void
 BaseHTTPPeer<Handler, Impl>::onTimer()
 {
-    auto ec = boost::system::errc::make_error_code(boost::system::errc::timed_out);
+    auto const ec = boost::system::errc::make_error_code(boost::system::errc::timed_out);
     fail(ec, "timer");
 }
 

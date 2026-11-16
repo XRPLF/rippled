@@ -75,9 +75,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         uint32_t const flags = 0,
         bool const domainOffer = false)
     {
-        auto offerInDir = [&](UInt256 const& directory,
-                              uint64_t const pageIndex,
-                              std::optional<UInt256> domain = std::nullopt) -> bool {
+        auto const offerInDir = [&](UInt256 const& directory,
+                                    uint64_t const pageIndex,
+                                    std::optional<UInt256> domain = std::nullopt) -> bool {
             auto const page = env.le(keylet::page(directory, pageIndex));
             if (!page)
                 return false;
@@ -710,7 +710,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const badCredType = "badCred";
             pdomain::Credentials const credentials{
-                {.issuer = badDomainOwner, .credType = badCredType}};
+                {.issuer = badDomainOwner, .credType = badCredType},
+            };
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);
@@ -1347,7 +1348,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             auto const badCredType = "badCred";
             pdomain::Credentials const credentials{
-                {.issuer = badDomainOwner, .credType = badCredType}};
+                {.issuer = badDomainOwner, .credType = badCredType},
+            };
             env(pdomain::setTx(badDomainOwner, credentials));
 
             auto objects = pdomain::getObjects(badDomainOwner, env);
@@ -1880,7 +1882,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const sle = view.read(offerKey);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            auto const replacement = std::make_shared<SLE>(*sle, sle->key());
             replacement->setFieldArray(sfAdditionalBooks, STArray{});
             view.rawReplace(replacement);
             return true;
@@ -2254,7 +2256,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const sle = view.read(offerKey);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            auto const replacement = std::make_shared<SLE>(*sle, sle->key());
             replacement->setFieldH256(sfDomainID, domainID2);
             view.rawReplace(replacement);
             return true;
@@ -2320,7 +2322,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             auto const sle = view.read(offerKey);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            auto const replacement = std::make_shared<SLE>(*sle, sle->key());
             replacement->makeFieldAbsent(sfDomainID);
             view.rawReplace(replacement);
             return true;

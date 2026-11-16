@@ -263,7 +263,7 @@ numberFromJson(SField const& field, json::Value const& value)
     // value has been rounded one way or another, and should not be used, because it may lead to an
     // unexpected result. canonicalizeParts is not to be confused with Number::canonicalize, because
     // they have completely different goals.
-    auto canonicalizeParts = [](NumberParts p, int otherExponent) {
+    auto const canonicalizeParts = [](NumberParts p, int otherExponent) {
         if (p.mantissa == 0)
             return NumberParts{};
 
