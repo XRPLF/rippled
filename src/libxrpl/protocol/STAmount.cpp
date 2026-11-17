@@ -293,8 +293,10 @@ STAmount::iou() const
     auto mantissa = static_cast<std::int64_t>(value_);
     auto const exponent = offset_;
 
+    // Negate in unsigned arithmetic: negating the minimum int64 as a signed
+    // value is undefined behavior. The result is unchanged for every mantissa.
     if (isNegative_)
-        mantissa = -mantissa;
+        mantissa = static_cast<std::int64_t>(-static_cast<std::uint64_t>(mantissa));
 
     return {mantissa, exponent};
 }
@@ -875,7 +877,7 @@ STAmount::set(std::int64_t v)
     if (v < 0)
     {
         isNegative_ = true;
-        value_ = static_cast<std::uint64_t>(-v);
+        value_ = -static_cast<std::uint64_t>(v);
     }
     else
     {
