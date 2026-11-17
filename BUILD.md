@@ -289,6 +289,8 @@ needs only the `lean4` package; `mathlib4`, a prebuilt mathlib, is only used by
 the `lean4_proofs` target that checks the proofs. Both come from the `xrplf`
 remote. Run this from `nix develop .#formal-verification` on Linux, as the
 prebuilt `lean4` binaries are built in the Nix CI environment and use its loader.
+With Apple Clang it needs GNU ar (`brew install binutils`, or set `LEAN_AR`):
+lake archives through a response file, which Apple's `ar` cannot read.
 
 ```bash
 conan install .. --output-folder . --build missing --settings build_type=Release --profile:all ci -o formal_verification=True

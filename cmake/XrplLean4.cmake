@@ -44,13 +44,18 @@ endif()
 
 # lake keys its build traces on LEAN_GITHASH when set (the dev shell sets it
 # for its own lean): pin it to this toolchain's, so prebuilt mathlib matches.
-set(lean4_lake
-    ${CMAKE_COMMAND}
-    -E
-    env
-    LEAN_GITHASH=${lean4_githash}
-    ${LEAN4_BINDIR}/lake
-)
+set(lean4_lake ${CMAKE_COMMAND} -E env LEAN_GITHASH=${lean4_githash})
+# lake archives through a response file, which Apple's ar cannot read.
+# Homebrew's binutils is keg-only: gar is not on PATH. A LEAN_AR already set wins.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND NOT DEFINED ENV{LEAN_AR})
+    execute_process(
+        COMMAND brew --prefix binutils
+        OUTPUT_VARIABLE lean4_binutils
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    list(APPEND lean4_lake LEAN_AR=${lean4_binutils}/bin/gar)
+endif()
+list(APPEND lean4_lake ${LEAN4_BINDIR}/lake)
 
 # A lake workspace in the build dir, so the source tree is never written to.
 # It links the sources and uses mathlib4's manifest and prebuilt packages.
