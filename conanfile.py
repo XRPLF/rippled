@@ -155,6 +155,8 @@ class Xrpl(ConanFile):
         "cfg/*",
         "cmake/*",
         "external/*",
+        "formal_verification/*",
+        "!formal_verification/.lake/*",
         "include/*",
         "src/*",
     )

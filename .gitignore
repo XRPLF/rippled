@@ -100,3 +100,6 @@ target/
 
 # Rust build directory
 crates/target
+
+# Lean build directory
+/formal_verification/.lake/
