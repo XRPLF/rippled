@@ -869,7 +869,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 std::nullopt,
                 STPath(),
-                features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{terNO_AUTH});
+                features[fixCleanup3_6_0] ? TER{tecNO_AUTH} : TER{terNO_AUTH});
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
@@ -1148,7 +1148,7 @@ struct PayStrand_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
-        testToStrand(sa - fixCleanup3_5_0);
+        testToStrand(sa - fixCleanup3_6_0);
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 

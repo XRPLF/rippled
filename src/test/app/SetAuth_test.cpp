@@ -48,7 +48,7 @@ struct SetAuth_test : public beast::unit_test::Suite
         Env env(*this, features);
 
         // tecNO_AUTH is final post amendment; terNO_AUTH left a dry path before.
-        TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
+        TER const noAuth = features[fixCleanup3_6_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
 
         env.fund(XRP(100000), "alice", "bob", gw);
         env(fset(gw, asfRequireAuth));
@@ -101,7 +101,7 @@ struct SetAuth_test : public beast::unit_test::Suite
 
         // Authorization is directional: gwA may not issue its own USD to gwB.
         // gwB extends trust first so only authorization can fail.
-        TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
+        TER const noAuth = features[fixCleanup3_6_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
         auto const usdA = gwA["USD"];
 
         env(trust(gwB, usdA(1000)));
@@ -138,10 +138,10 @@ struct SetAuth_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
-        testAuth(sa - fixCleanup3_5_0);
+        testAuth(sa - fixCleanup3_6_0);
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
-        testRedeemForeignIou(sa - fixCleanup3_5_0);
+        testRedeemForeignIou(sa - fixCleanup3_6_0);
         testRedeemForeignIou(sa);
     }
 };

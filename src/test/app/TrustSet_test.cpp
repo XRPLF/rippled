@@ -371,7 +371,7 @@ public:
 
         for (bool const withCleanup : {true, false})
         {
-            Env env = withCleanup ? Env{*this} : Env{*this, testableAmendments() - fixCleanup3_5_0};
+            Env env = withCleanup ? Env{*this} : Env{*this, testableAmendments() - fixCleanup3_6_0};
 
             auto const bob = Account{"bob"};
             auto const alice = Account{"alice"};

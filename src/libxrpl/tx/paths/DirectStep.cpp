@@ -396,7 +396,7 @@ DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
     // check() runs once per strand and admits a redeeming step to an unauthorized
     // dst_; when that balance reaches zero this step would issue to the line.
     // A pseudo-account is implicitly authorized, as in requireAuth.
-    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
+    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_6_0) &&
         !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
         !isPseudoAccount(sb, dst_))
     {
@@ -441,8 +441,11 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
         }
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
+        bool const cleanupEnabled = ctx.view.rules().enabled(fixCleanup3_6_0);
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
+        // A pseudo-account is implicitly authorized, matching maxFlow and requireAuth.
+        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
+            !(cleanupEnabled && isPseudoAccount(ctx.view, dst_)))
         {
             // Returning dst_ its own IOU needs no authorization.
             int const balanceSign = (*sleLine)[sfBalance].signum();
@@ -450,7 +453,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 
             // Only an empty unauthorized line used to be refused, so a funded one could
             // keep growing (XRPLF/rippled issue #5450).
-            if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
+            if (cleanupEnabled && !srcHoldsDstIou)
             {
                 JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
                                  << " src: " << src_;

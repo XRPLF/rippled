@@ -21,7 +21,7 @@ namespace xrpl::test {
 // The payment engine's authorization gate used to fire only on an empty trust
 // line. An unauthorized line that already carried a balance could keep
 // receiving, and a payment crossing zero could create such a balance
-// (XRPLF/rippled issue #5450). Post fixCleanup3_5_0 an unauthorized line can
+// (XRPLF/rippled issue #5450). Post fixCleanup3_6_0 an unauthorized line can
 // be redeemed but never credited. These tests pin both eras.
 class TrustLineAuth_test : public beast::unit_test::Suite
 {
@@ -29,7 +29,7 @@ class TrustLineAuth_test : public beast::unit_test::Suite
     makeEnv(beast::unit_test::Suite& suite, bool withCleanup)
     {
         using namespace jtx;
-        return withCleanup ? Env{suite} : Env{suite, testableAmendments() - fixCleanup3_5_0};
+        return withCleanup ? Env{suite} : Env{suite, testableAmendments() - fixCleanup3_6_0};
     }
 
     void
@@ -128,7 +128,7 @@ class TrustLineAuth_test : public beast::unit_test::Suite
         Account const a2{"A2"};
 
         // Pre-amendment, with the NFT authorization gap still open.
-        Env env{*this, testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0};
+        Env env{*this, testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_6_0};
         env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
@@ -151,7 +151,7 @@ class TrustLineAuth_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
 
         // The amendment activates with the legacy balance in place.
-        env.enableFeature(fixCleanup3_5_0);
+        env.enableFeature(fixCleanup3_6_0);
         env.close();
         BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
 
