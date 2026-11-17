@@ -10,6 +10,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -172,7 +173,12 @@ public:
 
             auto response = jv[jss::result];
             auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const errorCode = apiVersion < 2u ? RpcInvalidHotwallet : RpcInvalidParams;
+            auto const errorMessage =
+                apiVersion < 2u ? "Invalid hotwallet." : "Invalid parameters.";
             BEAST_EXPECT(response[jss::error] == error);
+            BEAST_EXPECT(response[jss::error_code] == errorCode);
+            BEAST_EXPECT(response[jss::error_message] == errorMessage);
         });
     }
 
@@ -201,6 +207,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'account'.");
         });
 
         // The same applies to a non-string "ident".
@@ -212,6 +220,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'ident'.");
         });
     }
 

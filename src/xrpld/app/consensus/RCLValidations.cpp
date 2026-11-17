@@ -125,7 +125,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
     if (!ledger)
     {
-        JLOG(j_.warn()) << "Need validated ledger for preferred ledger analysis " << hash;
+        JLOG(j_.debug()) << "Need validated ledger for preferred ledger analysis " << hash;
 
         Application* pApp = &app_;
 

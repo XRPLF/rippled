@@ -32,6 +32,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -894,8 +895,9 @@ public:
                 auto const jNoCred = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
-                    jNoCred[jss::result].isMember(jss::error) &&
-                    jNoCred[jss::result][jss::error] == "entryNotFound");
+                    jNoCred[jss::result][jss::error] == "entryNotFound" &&
+                    jNoCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jNoCred[jss::result][jss::error_message] == "Entry not found.");
             }
 
             testcase("Credentials that aren't required");
@@ -918,8 +920,9 @@ public:
 
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
-                    jNoCred[jss::result].isMember(jss::error) &&
-                    jNoCred[jss::result][jss::error] == "entryNotFound");
+                    jNoCred[jss::result][jss::error] == "entryNotFound" &&
+                    jNoCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jNoCred[jss::result][jss::error_message] == "Entry not found.");
             }
 
             {
@@ -957,8 +960,9 @@ public:
 
                 BEAST_EXPECT(
                     jNoCred.isObject() && jNoCred.isMember(jss::result) &&
-                    jNoCred[jss::result].isMember(jss::error) &&
-                    jNoCred[jss::result][jss::error] == "entryNotFound");
+                    jNoCred[jss::result][jss::error] == "entryNotFound" &&
+                    jNoCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jNoCred[jss::result][jss::error_message] == "Entry not found.");
             }
 
             testcase("Expired credentials");
@@ -994,8 +998,9 @@ public:
                     auto jv = credentials::ledgerEntry(env, john, carol, credType);
                     BEAST_EXPECT(
                         jv.isObject() && jv.isMember(jss::result) &&
-                        jv[jss::result].isMember(jss::error) &&
-                        jv[jss::result][jss::error] == "entryNotFound");
+                        jv[jss::result][jss::error] == "entryNotFound" &&
+                        jv[jss::result][jss::error_code] == RpcEntryNotFound &&
+                        jv[jss::result][jss::error_message] == "Entry not found.");
                 }
             }
         }
@@ -1079,8 +1084,9 @@ public:
                 auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jv.isObject() && jv.isMember(jss::result) &&
-                    jv[jss::result].isMember(jss::error) &&
-                    jv[jss::result][jss::error] == "entryNotFound");
+                    jv[jss::result][jss::error] == "entryNotFound" &&
+                    jv[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jv[jss::result][jss::error_message] == "Entry not found.");
             }
         }
 
@@ -1121,8 +1127,9 @@ public:
                 auto const jv = credentials::ledgerEntry(env, becky, carol, credType);
                 BEAST_EXPECT(
                     jv.isObject() && jv.isMember(jss::result) &&
-                    jv[jss::result].isMember(jss::error) &&
-                    jv[jss::result][jss::error] == "entryNotFound");
+                    jv[jss::result][jss::error] == "entryNotFound" &&
+                    jv[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jv[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }

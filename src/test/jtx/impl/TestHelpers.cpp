@@ -484,6 +484,14 @@ expectOffers(
     return size == cnt && ((toMatch.empty() && size != 0) || (matched == toMatch.size()));
 }
 
+std::vector<SLE::ConstPointer>
+ownerDirEntries(ReadView const& view, AccountID const& account)
+{
+    std::vector<SLE::ConstPointer> result;
+    forEachItem(view, account, [&result](SLE::ConstRef sle) { result.push_back(sle); });
+    return result;
+}
+
 json::Value
 ledgerEntryRoot(Env& env, Account const& acct)
 {

@@ -2063,7 +2063,7 @@ LedgerMaster::getFetchPack(UInt256 const& hash)
 }
 
 void
-LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
+LedgerMaster::gotFetchPack()
 {
     if (!gotFetchPackThread_.test_and_set(std::memory_order_acquire))
     {

@@ -15,6 +15,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace json {
@@ -187,8 +188,11 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::Int:
-        case ValueType::UInt:
             value_.intVal = 0;
+            break;
+
+        case ValueType::UInt:
+            value_.uintVal = 0;
             break;
 
         case ValueType::Real:
@@ -241,10 +245,14 @@ Value::Value(xrpl::Number const& value) : type_(ValueType::String), allocated_(t
     value_.stringVal = valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
 }
 
-Value::Value(std::string const& value) : type_(ValueType::String), allocated_(true)
+Value::Value(std::string const& value) : Value(std::string_view{value})
 {
-    value_.stringVal =
-        valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
+}
+
+Value::Value(std::string_view value) : type_(ValueType::String), allocated_(true)
+{
+    value_.stringVal = valueAllocator()->duplicateStringValue(
+        value.data(), static_cast<unsigned int>(value.length()));
 }
 
 Value::Value(StaticString const& value) : type_(ValueType::String)
@@ -713,8 +721,10 @@ Value::asBool() const
             return false;
 
         case ValueType::Int:
-        case ValueType::UInt:
             return value_.intVal != 0;
+
+        case ValueType::UInt:
+            return value_.uintVal != 0;
 
         case ValueType::Real:
             return value_.realVal != 0.0;
