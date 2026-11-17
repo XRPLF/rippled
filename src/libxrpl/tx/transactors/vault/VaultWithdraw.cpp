@@ -188,8 +188,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, amount, ctx.view.rules(), waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -360,6 +360,7 @@ VaultWithdraw::doApply()
                     vault,
                     sleIssuance,
                     addTransferFee(amount, rate),
+                    view().rules(),
                     truncate,
                     waiveUnrealizedLoss);
                 if (!maybeShares)
@@ -373,8 +374,8 @@ VaultWithdraw::doApply()
                 return tecPRECISION_LOSS;
             // Convert shares back to assets so the payout matches the shares actually burned, not
             // the requested amount. The extra would otherwise be paid from the vault for free.
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, view().rules(), waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -384,8 +385,8 @@ VaultWithdraw::doApply()
             // Fixed shares, variable assets. No round-trip: the share count is exactly what the
             // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, view().rules(), waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;

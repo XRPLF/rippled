@@ -55,6 +55,8 @@ class VaultBugs_test : public VaultTestBase
     // (9e(15-Scale)) makes that value unreachable at any Scale, so these
     // scenarios cannot be reproduced under V1.2 by construction.
     FeatureBitset const cashBasisAll_{all_ - featureLendingProtocolV1_2};
+    // cashBasisAll_ without fixCleanup3_4_0 and fixCleanup3_6_0.
+    FeatureBitset const pre340_{cashBasisAll_ - fixCleanup3_4_0 - fixCleanup3_6_0};
 
 private:
     // Bug: the equality check (vault outflow == destination inflow) was
@@ -442,7 +444,7 @@ private:
             // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
             // introduced by that amendment does not short-circuit this
             // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
-            runScenario(cashBasisAll_ - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(pre340_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
@@ -587,18 +589,18 @@ private:
         // added by LP V1.1 is unrelated to the truncation bug asserted
         // here.
         auto const legacy = cashBasisAll_ - featureLendingProtocolV1_1;
+        auto const legacyPre340 = pre340_ - featureLendingProtocolV1_1;
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(legacy - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+            runScenario(legacyPre340, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
                 "round away to zero (pre-fixCleanup3_2_0 and pre-fixCleanup3_4_0)");
-            runScenario(
-                legacy - fixCleanup3_2_0 - fixCleanup3_4_0, Line::Holding, tecINVARIANT_FAILED);
+            runScenario(legacyPre340 - fixCleanup3_2_0, Line::Holding, tecINVARIANT_FAILED);
         }
         {
             testcase(
@@ -616,7 +618,7 @@ private:
             testcase(
                 "bug: VaultDeposit share truncation against a debt balance "
                 "round away to zero (pre-fixCleanup3_4_0)");
-            runScenario(legacy - fixCleanup3_4_0, Line::InDebt, tecINVARIANT_FAILED);
+            runScenario(legacyPre340, Line::InDebt, tecINVARIANT_FAILED);
         }
         {
             testcase(
@@ -792,7 +794,7 @@ private:
             };
 
             testcase("bug: VaultClawback dust debit fires invariant (pre-fixCleanup3_4_0)");
-            runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(pre340_, tecINVARIANT_FAILED);
             testcase("bug: VaultClawback dust debit rejected cleanly (post-fixCleanup3_4_0)");
             runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
@@ -816,7 +818,7 @@ private:
             };
 
             testcase("bug: VaultWithdraw dust debit fires invariant (pre-fixCleanup3_4_0)");
-            runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(pre340_, tecINVARIANT_FAILED);
             testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
             runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
@@ -884,7 +886,7 @@ private:
         testcase(
             "bug: VaultDeposit overcredits across an IOU scale boundary "
             "(pre-fixCleanup3_4_0)");
-        runScenario(cashBasisAll_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+        runScenario(pre340_ - fixCleanup3_2_0, true);
 
         testcase(
             "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
@@ -937,7 +939,7 @@ private:
         testcase(
             "bug: VaultWithdraw permanently locks a large IOU vault "
             "(pre-fixCleanup3_4_0)");
-        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(pre340_, tecINVARIANT_FAILED);
         testcase(
             "bug: VaultWithdraw no longer locks a large IOU vault "
             "(post-fixCleanup3_4_0)");
@@ -1291,7 +1293,7 @@ private:
             testcase(
                 "bug: VaultClawback round-trip overshoot lets issuer recover "
                 "more than requested (pre-fixCleanup3_4_0)");
-            runScenario(cashBasisAll_ - fixCleanup3_4_0, false);
+            runScenario(pre340_, false);
         }
         {
             testcase(
@@ -1355,7 +1357,7 @@ private:
             testcase(
                 "bug: VaultWithdraw round-trip overshoot delivers more than "
                 "requested (pre-fixCleanup3_4_0)");
-            runScenario(cashBasisAll_ - fixCleanup3_4_0, false);
+            runScenario(pre340_, false);
         }
         {
             testcase(
@@ -1535,6 +1537,7 @@ private:
                 vaultBefore,
                 issuanceBefore,
                 setup.usd(9'000).value(),
+                env.current()->rules(),
                 TruncateShares::Yes,
                 WaiveUnrealizedLoss::Yes);
             if (!BEAST_EXPECT(maybeSharesDestroyed))
@@ -1559,7 +1562,7 @@ private:
             BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == expectedSharesAfter);
         };
 
-        runSole(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runSole(pre340_, tecINVARIANT_FAILED);
         runSole(cashBasisAll_, tesSUCCESS);
 
         testcase("VaultClawback after impaired loan, non-sole holder");
@@ -1796,22 +1799,22 @@ private:
             true /* withdrawAllAliceShares */,
             tesSUCCESS);
         runScenario(
-            cashBasisAll_ - fixCleanup3_4_0,
+            pre340_,
             false /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            cashBasisAll_ - fixCleanup3_4_0,
+            pre340_,
             false /* removeAssetToken */,
             true /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            cashBasisAll_ - fixCleanup3_4_0,
+            pre340_,
             true /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            cashBasisAll_ - fixCleanup3_4_0,
+            pre340_,
             true /* removeAssetToken */,
             true /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
@@ -2072,7 +2075,7 @@ private:
         };
 
         runScenario(cashBasisAll_, tesSUCCESS);
-        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(pre340_, tecINVARIANT_FAILED);
     }
 
     // addEmptyHolding() used to check isGlobalFrozen(issuer) and
@@ -2367,7 +2370,7 @@ private:
             "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
             "clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runExistingLine(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
+        runExistingLine(pre340_, tecINTERNAL);
 
         testcase(
             "bug: VaultWithdraw to self succeeds after issuer clears "
@@ -2383,7 +2386,7 @@ private:
             "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
             "clears asfDefaultRipple and the trust line was deleted "
             "(pre-fixCleanup3_4_0)");
-        runDeletedLine(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
+        runDeletedLine(pre340_, tecINTERNAL);
 
         testcase(
             "bug: VaultWithdraw to self fails with terNO_RIPPLE after issuer "
@@ -2395,7 +2398,7 @@ private:
             "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runCoverWithdraw(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
+        runCoverWithdraw(pre340_, tecINTERNAL);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self succeeds after issuer clears "
@@ -2406,7 +2409,7 @@ private:
             "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple and the trust line was deleted "
             "(pre-fixCleanup3_4_0)");
-        runDeletedCoverWithdraw(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
+        runDeletedCoverWithdraw(pre340_, tecINTERNAL);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self fails with terNO_RIPPLE after "
@@ -2418,7 +2421,7 @@ private:
             "bug: private VaultWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runPrivateVault(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
+        runPrivateVault(pre340_, tecINTERNAL);
 
         testcase(
             "bug: private VaultWithdraw to self succeeds after issuer clears "
@@ -2515,7 +2518,7 @@ private:
             "bug: sponsored XRP withdrawal to a distinct destination misreads a "
             "touched-but-zero sender delta as a second recipient "
             "(pre-fixCleanup3_4_0)");
-        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(pre340_, tecINVARIANT_FAILED);
 
         testcase(
             "bug: sponsored XRP withdrawal to a distinct destination succeeds "
@@ -2594,7 +2597,7 @@ private:
             "bug: co-signed sponsor named as withdrawal destination has its "
             "own fee debit misread as breaking the payout equality "
             "(pre-fixCleanup3_4_0)");
-        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(pre340_, tecINVARIANT_FAILED);
 
         testcase(
             "bug: co-signed sponsor named as withdrawal destination succeeds "
@@ -2702,7 +2705,7 @@ private:
             "bug: pre-funded sponsor named as withdrawal destination misreads "
             "the sender's touched-but-zero delta as a second recipient "
             "(pre-fixCleanup3_4_0)");
-        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
+        runScenario(pre340_, tecINVARIANT_FAILED, true);
 
         testcase(
             "bug: pre-funded sponsor named as withdrawal destination receives "
@@ -2722,7 +2725,7 @@ private:
             "unsponsored XRP withdrawal to a distinct destination succeeds "
             "(pre-fixCleanup3_4_0)");
 
-        Env env{*this, cashBasisAll_ - fixCleanup3_4_0};
+        Env env{*this, pre340_};
         Account const owner{"owner"};
         Account const holder{"holder"};
         Account const destination{"destination"};

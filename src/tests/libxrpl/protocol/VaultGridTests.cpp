@@ -343,8 +343,24 @@ TEST(VaultGrid, get_vault_default_version)
             .expected = VaultVersion::CashBasis,
         },
         {
-            .name = "V1_1, V1_2 and fixCleanup3_4_0: FixedPrecision",
+            .name = "V1_1, V1_2 and fixCleanup3_4_0 without fixCleanup3_6_0: CashBasis",
             .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_4_0},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_1, V1_2 and fixCleanup3_6_0 without fixCleanup3_4_0: CashBasis",
+            .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_6_0},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_1, V1_2, fixCleanup3_4_0 and fixCleanup3_6_0: FixedPrecision",
+            .enabled =
+                {
+                    featureLendingProtocolV1_1,
+                    featureLendingProtocolV1_2,
+                    fixCleanup3_4_0,
+                    fixCleanup3_6_0,
+                },
             .expected = VaultVersion::FixedPrecision,
         },
         {
@@ -353,13 +369,14 @@ TEST(VaultGrid, get_vault_default_version)
             .expected = VaultVersion::Legacy,
         },
         {
-            .name = "V1_1, V1_2 and both cleanups: FixedPrecision",
+            .name = "V1_1, V1_2 and all three cleanups: FixedPrecision",
             .enabled =
                 {
                     featureLendingProtocolV1_1,
                     featureLendingProtocolV1_2,
                     fixCleanup3_2_0,
                     fixCleanup3_4_0,
+                    fixCleanup3_6_0,
                 },
             .expected = VaultVersion::FixedPrecision,
         },

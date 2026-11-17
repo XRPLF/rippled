@@ -26,6 +26,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <optional>
 #include <stdexcept>
 
@@ -298,7 +299,8 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares =
+                assetsToSharesDeposit(vault, sleIssuance, amount, view().rules());
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -310,13 +312,18 @@ VaultDeposit::doApply()
         // Convert shares back to assets so the depositor is debited for the amount actually minted.
         // The truncated share count is worth <= amount; without this the difference would be
         // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        auto maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated, view().rules());
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        // Post-fixCleanup3_6_0 the assets taken for shares round up, so never charge more than
+        // the depositor offered.
+        if (view().rules().enabled(fixCleanup3_6_0))
+            maybeAssets = std::min(*maybeAssets, amount);
         // The round-trip must never return more than the original amount. If it does, a conversion
         // helper is broken. Reject rather than overcharge the depositor.
+        // Unreachable once fixCleanup3_6_0 is enabled; remove it when that amendment is permanent.
         if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START

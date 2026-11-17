@@ -1,6 +1,12 @@
 #include <test/app/lending/LoanPayFixedPrecisionBase.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
@@ -8,13 +14,24 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 
 #include <chrono>
+#include <cstdint>
+#include <optional>
 #include <string>
+#include <tuple>
 
 namespace xrpl {
 
@@ -23,6 +40,185 @@ namespace xrpl {
 // grid. The coarsening needs FixedPrecision LoanPay, so these live with it.
 class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
 {
+    // An MPT vault grown by late interest holds AssetsAvailable = AssetsTotal at 19 digits for
+    // S = D shares and has no loan left. AT * S / S in 19-digit Numbers is AT +- 1, so a full
+    // withdrawal or clawback used to ask for one unit more or less than the vault holds.
+    //
+    // 1. An MPT issuance, optionally with clawback, held by the depositor and the borrower.
+    // 2. A closed-ended vault takes D from its only shareholder. Loan A lends all of D at
+    //    InterestRate = 0 and LateInterestRate = 100% in 150 installments 60 seconds apart.
+    // 3. Every instalment is paid two years late, which grows the vault.
+    static constexpr std::uint32_t kLatePaymentTotal = 150;
+    static constexpr std::uint32_t kLatePaymentInterval = 60;
+    static constexpr std::uint32_t kLateGracePeriod = 60;
+    static constexpr NetClock::duration kTwoYears{2 * 365 * 24 * 60 * 60};
+
+    struct LateInterestMptVault
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account depositor;
+        test::jtx::PrettyAsset asset;
+        LendingFixture fixture;
+    };
+
+    static TER
+    submitAndClose(test::jtx::Env& env, json::Value const& tx)
+    {
+        env(tx, test::jtx::Ter(std::ignore));
+        TER const result = env.ter();
+        env.close();
+        return result;
+    }
+
+    std::optional<LateInterestMptVault>
+    setupLateInterestMptVault(test::jtx::Env& env, Number const& deposit, bool clawback)
+    {
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), issuer, owner, depositor, borrower);
+        env.close();
+
+        MPTTester mpt{env, issuer, kMptInitNoFund};
+        mpt.create({.flags = tfMPTCanTransfer | (clawback ? tfMPTCanClawback : 0u)});
+        PrettyAsset const asset = mpt.issuanceID();
+        mpt.authorize({.account = owner});
+        mpt.authorize({.account = depositor});
+        mpt.authorize({.account = borrower});
+        env(pay(issuer, depositor, asset(deposit)));
+        env(pay(issuer, borrower, asset(Number{2'000'000'000'000'000'000LL})));
+        env.close();
+
+        auto const fixture = setupLendingVault(
+            env, owner, depositor, asset, deposit, std::chrono::seconds{24 * 60 * 60});
+
+        // Loan A for all of D, with no interest and LateInterestRate = 100%.
+        auto const brokerSle = env.le(fixture.brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return std::nullopt;
+        Keylet const loanKeylet = keylet::loan(
+            fixture.brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        env(loan::set(borrower, fixture.brokerKeylet.key, deposit),
+            loan::kInterestRate(TenthBips32(0)),
+            loan::kLateInterestRate(percentageToTenthBips(100)),
+            loan::kGracePeriod(kLateGracePeriod),
+            loan::kPaymentInterval(kLatePaymentInterval),
+            loan::kPaymentTotal(kLatePaymentTotal),
+            Sig(sfCounterpartySignature, fixture.owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return std::nullopt;
+        NetClock::time_point const startDate{NetClock::duration{loanSle->at(sfStartDate)}};
+        env.close(startDate + kTwoYears);
+        for (std::uint32_t instalment = 1; instalment <= kLatePaymentTotal; ++instalment)
+        {
+            TER const payResult = submitAndClose(
+                env,
+                loan::pay(
+                    borrower,
+                    loanKeylet.key,
+                    asset(Number{30'000'000'000'000'000LL}).value(),
+                    tfLoanLatePayment));
+            if (!BEAST_EXPECT(payResult == tesSUCCESS))
+                return std::nullopt;
+        }
+
+        // The vault is in redemption once the investment window has passed.
+        env.close(fixture.redemptionDate + std::chrono::seconds{1});
+        return LateInterestMptVault{
+            .issuer = issuer,
+            .depositor = depositor,
+            .asset = asset,
+            .fixture = fixture,
+        };
+    }
+
+    // The vault, its shares and the depositor's shares, all gone.
+    void
+    expectVaultEmptied(test::jtx::Env& env, LateInterestMptVault const& late, char const* what)
+    {
+        auto const vaultSle = env.le(late.fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        auto const issuance = env.le(keylet::mptokenIssuance(vaultSle->at(sfShareMPTID)));
+        if (!BEAST_EXPECT(issuance))
+            return;
+        BEAST_EXPECTS(
+            Number{vaultSle->at(sfAssetsTotal)} == beast::kZero &&
+                Number{vaultSle->at(sfAssetsAvailable)} == beast::kZero &&
+                issuance->at(sfOutstandingAmount) == 0,
+            std::string{what} + " should leave no assets and no shares");
+    }
+
+    void
+    testFullWithdrawAfterLateInterest()
+    {
+        testcase("Lending: the sole holder of an MPT vault grown by late interest withdraws all");
+
+        using namespace test::jtx;
+        Env env{*this, features()};
+        auto const late = setupLateInterestMptVault(env, Number{8'999'999'999'999'942LL}, false);
+        if (!late)
+            return;
+
+        auto const vaultSle = env.le(late->fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        MPTIssue const share{vaultSle->at(sfShareMPTID)};
+        auto const issuance = env.le(keylet::mptokenIssuance(share.getMptID()));
+        if (!BEAST_EXPECT(issuance))
+            return;
+
+        TER const result = submitAndClose(
+            env,
+            late->fixture.vault.withdraw({
+                .depositor = late->depositor,
+                .id = late->fixture.vaultKeylet.key,
+                .amount = STAmount{share, issuance->at(sfOutstandingAmount)},
+            }));
+        BEAST_EXPECTS(
+            result == tesSUCCESS,
+            "withdrawing every share should empty the vault, but it returned " +
+                transToken(result));
+        expectVaultEmptied(env, *late, "a full withdrawal");
+    }
+
+    void
+    testFullClawbackAfterLateInterest()
+    {
+        testcase("Lending: a full clawback of an MPT vault grown by late interest");
+
+        using namespace test::jtx;
+        // The second deposit is the one whose AT * S / S is AT - 1 instead of AT + 1.
+        for (std::int64_t const deposit : {8'999'999'999'999'942LL, 8'999'999'999'999'916LL})
+        {
+            Env env{*this, features()};
+            auto const late = setupLateInterestMptVault(env, Number{deposit}, true);
+            if (!late)
+                return;
+
+            TER const result = submitAndClose(
+                env,
+                late->fixture.vault.clawback({
+                    .issuer = late->issuer,
+                    .id = late->fixture.vaultKeylet.key,
+                    .holder = late->depositor,
+                    .amount = late->asset(Number{0}).value(),
+                }));
+            BEAST_EXPECTS(
+                result == tesSUCCESS,
+                "clawing back every share of a vault of " + std::to_string(deposit) +
+                    " should empty the vault, but it returned " + transToken(result));
+            expectVaultEmptied(env, *late, "a full clawback");
+        }
+    }
+
     void
     testCoarsenedVaultWithdrawClawbackKeepAvailableGridDigit()
     {
@@ -303,6 +499,8 @@ public:
         testCoarsenedVaultDebitCrossesPowerOfTenDownward();
         testValidVaultLargeSingleDebitAcrossAssetsTotalGridDoesNotFalsePositive();
         testDepositRefusedOnDebtCoarsenedVault();
+        testFullWithdrawAfterLateInterest();
+        testFullClawbackAfterLateInterest();
     }
 };
 
