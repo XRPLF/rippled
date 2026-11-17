@@ -441,11 +441,11 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
         }
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
-        bool const cleanupEnabled = ctx.view.rules().enabled(fixCleanup3_6_0);
+        bool const fix360Enabled = ctx.view.rules().enabled(fixCleanup3_6_0);
 
         // A pseudo-account is implicitly authorized, matching maxFlow and requireAuth.
         if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            !(cleanupEnabled && isPseudoAccount(ctx.view, dst_)))
+            !(fix360Enabled && isPseudoAccount(ctx.view, dst_)))
         {
             // Returning dst_ its own IOU needs no authorization.
             int const balanceSign = (*sleLine)[sfBalance].signum();
@@ -453,7 +453,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 
             // Only an empty unauthorized line used to be refused, so a funded one could
             // keep growing (XRPLF/rippled issue #5450).
-            if (cleanupEnabled && !srcHoldsDstIou)
+            if (fix360Enabled && !srcHoldsDstIou)
             {
                 JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
                                  << " src: " << src_;
@@ -461,7 +461,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
             }
 
             // Reached with a zero balance only pre-amendment.
-            if ((*sleLine)[sfBalance] == beast::kZero)
+            if (balanceSign == 0)
             {
                 JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                                  << " src: " << src_;
