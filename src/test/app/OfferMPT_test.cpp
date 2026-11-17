@@ -3286,8 +3286,7 @@ public:
             BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jrr.isMember(jss::jsonrpc) && jrr[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jrr.isMember(jss::ripplerpc) && jrr[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jrr));
                 BEAST_EXPECT(jrr.isMember(jss::id) && jrr[jss::id] == 5);
             }
 
@@ -6564,57 +6563,46 @@ public:
 
             // tfFillOrKill, TakerPays must be filled
             {
-                TER const err = features[fixFillOrKill] ? TER(tesSUCCESS) : tecKILLED;
-
                 env(offer(maker, XRP(100), usd(100)));
                 env.close();
 
-                env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance -= usd(100);
-                    takerUSDBalance += usd(100);
-                    makerXRPBalance += XRP(100).value();
-                    takerXRPBalance -= XRP(100).value();
-                }
+                makerUSDBalance -= usd(100);
+                takerUSDBalance += usd(100);
+                makerXRPBalance += XRP(100).value();
+                takerXRPBalance -= XRP(100).value();
                 BEAST_EXPECT(expectOffers(env, taker, 0));
 
                 env(offer(maker, usd(100), XRP(100)));
                 env.close();
 
-                env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance += usd(100);
-                    takerUSDBalance -= usd(100);
-                    makerXRPBalance -= XRP(100).value();
-                    takerXRPBalance += XRP(100).value();
-                }
+                makerUSDBalance += usd(100);
+                takerUSDBalance -= usd(100);
+                makerXRPBalance -= XRP(100).value();
+                takerXRPBalance += XRP(100).value();
                 BEAST_EXPECT(expectOffers(env, taker, 0));
 
                 env(offer(maker, usd(100), eur(100)));
                 env.close();
 
-                env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+                env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill));
                 env.close();
 
                 makerXRPBalance -= txFee(env, 1);
                 takerXRPBalance -= txFee(env, 1);
-                if (err == tesSUCCESS)
-                {
-                    makerUSDBalance += usd(100);
-                    takerUSDBalance -= usd(100);
-                    makerEURBalance -= eur(100);
-                    takerEURBalance += eur(100);
-                }
+                makerUSDBalance += usd(100);
+                takerUSDBalance -= usd(100);
+                makerEURBalance -= eur(100);
+                takerEURBalance += eur(100);
                 BEAST_EXPECT(expectOffers(env, taker, 0));
             }
 

@@ -142,11 +142,11 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
  * off-ledger signatures it carries, and any change to a non-signature field
  * results in a false-return value.
  *
- * Signature (PaymentChannelClaim and the XChain attestation transactions)
- * is deliberately not compared: it is outside the account's own TxnSignature
- * even for an ordinary submission, so a proposal cannot bind it more tightly
- * than the signatures it collects do, and those transactors still validate a
- * substituted value exactly as they would for an ordinary submission.
+ * Signature (PaymentChannelClaim) is deliberately not compared: it is
+ * outside the account's own TxnSignature even for an ordinary submission, so
+ * a proposal cannot bind it more tightly than the signatures it collects do,
+ * and that transactor still validates a substituted value exactly as it would
+ * for an ordinary submission.
  * MasterSignature appears in no transaction format.
  *
  * @param proposedTx The proposal's ProposedTransaction field.

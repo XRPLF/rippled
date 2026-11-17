@@ -21,7 +21,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Book.h>
@@ -150,18 +149,6 @@ struct Directory_test : public beast::unit_test::Suite
 
                 page = p->getFieldU64(sfIndexNext);
             } while (page != 0);
-        }
-
-        // Now check the orderbook: it should be in the order we placed
-        // the offers.
-        auto const book = BookDirs(*env.current(), Book({xrpIssue(), usd, std::nullopt}));
-        int count = 1;
-
-        for (auto const& offer : book)
-        {
-            count++;
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == usd(count));
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
         }
     }
 

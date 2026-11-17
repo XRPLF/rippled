@@ -53,9 +53,11 @@ ENV PATH="/nix/ci-env/bin:${PATH}"
 
 # Point HTTPS clients (git, curl, conan, ...) at the CA bundle shipped in the
 # Nix CI environment, so TLS verification works without ca-certificates being
-# installed in the system.
+# installed in the system. Nix's Python certifi (used by Conan) reads only
+# NIX_SSL_CERT_FILE, falling back to its own copy otherwise.
 ENV SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
+ENV NIX_SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
@@ -107,7 +109,13 @@ COPY nix/docker/test_files/rust/run-binaries.sh /tmp/test_files/rust/run-binarie
 COPY --from=final /tmp/cpp-bins /tmp/cpp-bins
 COPY --from=final /tmp/rust-bins /tmp/rust-bins
 
+# Sanity-check that the CA bundle shipped in the Nix CI environment distrusts
+# the compromised eMudhra roots.
+COPY bin/check-distrusted-roots.sh /tmp/check-distrusted-roots.sh
+COPY --from=final /nix/ci-env/etc/ssl/certs/ca-bundle.crt /tmp/ca-bundle.crt
+
 RUN <<EOF
+/tmp/check-distrusted-roots.sh /tmp/ca-bundle.crt
 if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
     echo "Skipping runnning binaries on NixOS."
 else

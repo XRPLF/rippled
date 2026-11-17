@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
@@ -85,8 +86,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -115,8 +115,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -151,8 +150,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
@@ -186,8 +184,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -210,8 +207,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -268,8 +264,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -283,8 +278,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -316,8 +310,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -346,8 +339,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -366,8 +358,7 @@ public:
                     == "2000-01-01T00:00:10Z" &&
                     jv[jss::validated] == true &&  //
                     jv[jss::ledger_hash] ==
-                    "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB"
-                    "853185" &&  //
+                    "5CC95BD8BA54A009A4F5BA437867BBFCF18F5A9CFB7F68FE7816258D164C1516" &&  //
                     !jv[jss::inLedger] &&
                     jv[jss::ledger_index] == 3 &&           //
                     jv[jss::tx_json][jss::TransactionType]  //
@@ -393,8 +384,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -416,8 +406,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -427,15 +416,14 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void
-    testValidations(FeatureBitset features)
+    testValidations(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
 
@@ -475,8 +463,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -573,8 +560,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -2530,14 +2516,12 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
-        FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
         testManifests();
-        testValidations(all - featureXRPFees - featureSmartEscrow);
         testValidations(all - featureSmartEscrow);
         testValidations(all);
         testSubErrors(true);
