@@ -42,6 +42,12 @@ Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with
    > [!NOTE]
    > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
 
+   > [!NOTE]
+   > The profile adds `-O1` ahead of the build type's own flags, so a Release
+   > build keeps its `-O3` and a clang Debug build compiles at `-O1`. A gcc Debug
+   > build compiles at `-O0`, which `cmake/XrplCompiler.cmake` adds after the
+   > profile's flags.
+
 4. Set `ASAN_OPTIONS`, `LSAN_OPTIONS`, `UBSAN_OPTIONS` and `TSAN_OPTIONS` environment variables to configure sanitizer behavior when running executables. [More details below](#running-tests-with-sanitizers).
 
 ---
@@ -100,16 +106,16 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
 > [!IMPORTANT]
-> The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
-> `workflow_dispatch` events, so TSan runs on the Trigger workflow's weekday
+> The `debian-clang-release-amd64-tsan` CI config lists only the `schedule`
+> and `workflow_dispatch` events, so TSan runs on the Trigger workflow's weekday
 > schedule and on a manual run of it, not on a pull request, in the merge queue
-> or in a tag build. A finding cannot fail the job yet: `halt_on_error=false`
-> continues past it, and the workflow adds `exitcode=0` to `TSAN_OPTIONS`. The
-> job counts the findings into a warning annotation and uploads the test logs
-> as the `tsan-logs-<config>` artifact. A crash under TSan does fail the job,
-> since the workflow also sets `abort_on_error=1`. Once the findings are known
-> and stable, drop `exitcode=0` so a new one fails the job, and suppress the
-> rest.
+> or in a tag build. A finding cannot fail the job yet:
+> `halt_on_error=false` continues past it, and the workflow adds `exitcode=0`
+> to `TSAN_OPTIONS`. The job counts the findings into a warning annotation and
+> uploads the test logs as the `tsan-logs-<config>` artifact. A crash under TSan
+> does fail the job, since the workflow also sets `abort_on_error=1`. Once the
+> findings are known and stable, drop `exitcode=0` so a new one fails the job,
+> and suppress the rest.
 
 > [!IMPORTANT]
 > Check lock order on Linux, where TSan reports
