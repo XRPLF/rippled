@@ -202,8 +202,8 @@ private:
             env.fund(XRP(100000), issuer, owner, depositor, bob);
             env.close();
 
-            // The asset is escrowable and clawable; the shares stay non-escrowable so that
-            // VaultClawback can reach every share.
+            // The asset is escrowable and clawable; whether the shares are escrowable depends only
+            // on fixVaultV1_1.
             MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow | tfMPTCanClawback});
