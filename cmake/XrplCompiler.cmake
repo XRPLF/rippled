@@ -4,12 +4,9 @@
 
 include(CompilationEnv)
 
-# Map the checkout and build directory out of __FILE__ strings and debug
-# information, so a build gives the same bytes wherever it runs; conanfile.py
-# maps the dependency package folders. Directory scope, so it also reaches
-# FetchContent subprojects such as validator-keys. The build directory comes
-# after the checkout because it is usually inside it, and GCC applies the last
-# matching map.
+# Map the checkout and build directory out of __FILE__ and debug information,
+# so the bytes do not depend on where the build runs. GCC applies the last
+# matching map, so the build directory, usually inside the checkout, comes last.
 if(NOT is_msvc)
     add_compile_options(
         "-ffile-prefix-map=${CMAKE_SOURCE_DIR}=."

@@ -31,8 +31,8 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
     /**
      * @brief Whether the test runs on a CI runner, which sets CI to "true".
      *
-     * Read at run time rather than compiled in, so a build's bytes do not
-     * depend on the environment it was built in.
+     * Read at run time, so a build's bytes do not depend on the
+     * environment it was built in.
      */
     static bool
     runningInCi()
