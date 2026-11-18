@@ -111,14 +111,17 @@ private:
             env.close();
         }
 
-        // From FIND-010. The fees are small enough for the size bound of LendingProtocolV1_2. The
-        // original fees are far past it, so they run without the amendment.
+        // From FIND-010. The fees are small enough for the size bound of fixCleanup3_6_0. The
+        // original fees are far past it, so they run without the amendment, and without
+        // LendingProtocolV1_2 so no FixedPrecision vault is built.
         for (bool const largeFees : {false, true})
         {
             testcase << "xrpl::loanComputePaymentParts : valid total interest"
-                     << (largeFees ? ", large fees without LendingProtocolV1_2" : "");
+                     << (largeFees ? ", large fees without fixCleanup3_6_0" : "");
 
-            Env env(*this, largeFees ? features - featureLendingProtocolV1_2 : features);
+            Env env(
+                *this,
+                largeFees ? features - featureLendingProtocolV1_2 - fixCleanup3_6_0 : features);
 
             Account const issuer{"issuer"};
             Account const lender{"lender"};

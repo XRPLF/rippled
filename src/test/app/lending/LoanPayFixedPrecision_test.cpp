@@ -1623,19 +1623,24 @@ public:
         return "";
     }
 
+    // The amendments for a vault of kind, with fixCleanup3_6_0 on or off. A FixedPrecision vault
+    // needs LendingProtocolV1_2, so it is never built with the fix off.
     static FeatureBitset
-    conserveFeatures(VKind kind)
+    conserveFeatures(VKind kind, bool fix = true)
     {
-        switch (kind)
-        {
-            case VKind::Legacy:
-                return features() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2;
-            case VKind::CashBasis:
-                return features() - featureLendingProtocolV1_2;
-            case VKind::Fixed:
-                return features();
-        }
-        return features();
+        auto const base = [&] {
+            switch (kind)
+            {
+                case VKind::Legacy:
+                    return features() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2;
+                case VKind::CashBasis:
+                    return features() - featureLendingProtocolV1_2;
+                case VKind::Fixed:
+                    return features();
+            }
+            return features();
+        }();
+        return fix ? base : base - fixCleanup3_6_0;
     }
 
     // A vault of kind with a deposit and a broker. Legacy uses an open-ended vault, which a broker
@@ -1682,18 +1687,6 @@ public:
             TenthBips32(0),
             managementFeeRate);
         return {fixture.vaultKeylet, fixture.brokerKeylet};
-    }
-
-    // Turns on LendingProtocolV1_2 for the vault kinds that start without it.
-    static void
-    enableV12(test::jtx::Env& env, VKind kind)
-    {
-        if (kind == VKind::Fixed)
-            return;
-        if (kind == VKind::Legacy)
-            env.enableFeature(featureLendingProtocolV1_1);
-        env.enableFeature(featureLendingProtocolV1_2);
-        env.close();
     }
 
     // An IOU lending setup at Scale 2 (LoanScale -2, a size limit of 10^14).
@@ -1779,7 +1772,6 @@ public:
         // A vault of 2 * 10^13 sets LoanScale -2 on every vault kind.
         setupLimitVault(
             env, s, kind, Number{2, 13}, Number{1'000'000}, std::nullopt, c.managementFeeRate);
-        enableV12(env, kind);
         auto const& owner = s.owner;
         auto const& borrower = s.borrower;
         auto const& asset = s.asset;
@@ -1866,7 +1858,7 @@ public:
         }
     }
 
-    // LoanSet bounds each payment's fixed fees under LendingProtocolV1_2: a regular or late
+    // LoanSet bounds each payment's fixed fees under fixCleanup3_6_0: a regular or late
     // payment's largest installment plus the service and late fees, and a full payment's principal,
     // close interest and close fee, must fit the size limit.
     struct BoundCase
@@ -2047,16 +2039,16 @@ public:
 
         for (auto const& b : cases)
         {
-            for (bool const v12 : {true, false})
+            for (bool const fix : {true, false})
             {
-                // A FixedPrecision vault needs the amendment.
-                if (!v12 && fixed)
+                // A FixedPrecision vault is never built without the fix.
+                if (!fix && fixed)
                     continue;
                 testcase(
                     "LoanSet size bound, " + kindName(kind) + (mpt ? " MPT: " : " IOU: ") + b.name +
-                    (v12 ? "" : ", amendment off"));
+                    (fix ? "" : ", amendment off"));
 
-                Env env(*this, conserveFeatures(kind));
+                Env env(*this, conserveFeatures(kind, fix));
                 Number const deposit = [&] {
                     if (fixed)
                         return std::min(b.principal * 2, Number{9, 13});
@@ -2096,9 +2088,6 @@ public:
                     accounts.asset,
                     deposit,
                     mpt ? std::nullopt : std::optional<std::uint8_t>{2});
-                if (v12)
-                    enableV12(env, kind);
-
                 auto const brokerSle = env.le(brokerKeylet);
                 if (!BEAST_EXPECT(brokerSle))
                     return;
@@ -2115,10 +2104,10 @@ public:
                     kPaymentTotal(b.paymentTotal),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
-                    Ter(v12 ? b.ter : TER{tesSUCCESS}));
+                    Ter(fix ? b.ter : TER{tesSUCCESS}));
                 env.close();
                 auto const loan = env.le(loanKeylet);
-                BEAST_EXPECT(static_cast<bool>(loan) == (!v12 || isTesSuccess(b.ter)));
+                BEAST_EXPECT(static_cast<bool>(loan) == (!fix || isTesSuccess(b.ter)));
                 if (loan)
                 {
                     BEAST_EXPECT(loan->at(sfLoanScale) == (mpt ? 0 : -2));
@@ -2173,31 +2162,28 @@ public:
         BEAST_EXPECT(env.le(s.loan));
     }
 
-    // A LimitSetup with an owner holding 1000, and the loan l. LendingProtocolV1_2 is on when it
-    // returns if v12 is set, and it is turned on after LoanSet.
+    // A LimitSetup with an owner holding 1000, and the loan l.
     void
-    setupLimitLoan(test::jtx::Env& env, LimitSetup& s, VKind kind, LimitLoan const& l, bool v12)
+    setupLimitLoan(test::jtx::Env& env, LimitSetup& s, VKind kind, LimitLoan const& l)
     {
         setupLimitVault(env, s, kind, l.deposit, l.borrowerFunds, Number{1'000});
         openLimitLoan(env, s, l);
-        if (v12)
-            enableV12(env, kind);
     }
 
     // One LoanPay offers four installments, each 5 * 10^12 plus a service fee of 2.3 * 10^13.
-    // Three fit below 10^14 and the fourth would not, so under LendingProtocolV1_2 three are paid.
+    // Three fit below 10^14 and the fourth would not, so under fixCleanup3_6_0 three are paid.
     // The rest of the amount is not used, even with the overpayment flag. Every amount fits in 16
     // digits at 0.1, so the trust lines move exactly.
     void
-    testInstallmentLoopStop(VKind kind, bool overpayment, bool v12)
+    testInstallmentLoopStop(VKind kind, bool overpayment, bool fix)
     {
         using namespace test::jtx;
 
         testcase(
             "LoanPay installments stop at the size limit, " + kindName(kind) +
-            (overpayment ? ", rest as overpayment" : "") + (v12 ? "" : ", amendment off"));
+            (overpayment ? ", rest as overpayment" : "") + (fix ? "" : ", amendment off"));
 
-        Env env(*this, conserveFeatures(kind));
+        Env env(*this, conserveFeatures(kind, fix));
         LimitSetup s;
         Number const fee{23, 12};
         setupLimitLoan(
@@ -2208,8 +2194,7 @@ public:
                 .principal = Number{5, 13},
                 .serviceFee = fee,
                 .flags = overpayment ? tfLoanOverpayment : 0,
-            },
-            v12);
+            });
         auto const loanBefore = env.le(s.loan);
         if (!BEAST_EXPECT(loanBefore))
             return;
@@ -2232,7 +2217,7 @@ public:
         auto const vaultAfter = env.le(s.vault);
         if (!BEAST_EXPECT(loanAfter) || !BEAST_EXPECT(vaultAfter))
             return;
-        std::uint32_t const paid = v12 ? 3 : 4;
+        std::uint32_t const paid = fix ? 3 : 4;
         Number const borrowerDebit = borrowerBefore - env.balance(s.borrower, s.asset).value();
         Number const vaultGain = env.balance(s.vaultAccount, s.asset).value() - vaultLineBefore;
         Number const ownerGain = env.balance(s.owner, s.asset).value() - ownerBefore;
@@ -2244,7 +2229,7 @@ public:
         BEAST_EXPECT(ownerGain == fee * paid);
         // No overpayment: the rest of the amount is not charged.
         BEAST_EXPECT(principalPaid == installment * paid);
-        if (v12)
+        if (fix)
         {
             BEAST_EXPECT((borrowerDebit == Number{84, 12}));
             BEAST_EXPECT((vaultGain == Number{15, 12}));
@@ -2265,7 +2250,7 @@ public:
             for (bool const overpayment : {false, true})
             {
                 testInstallmentLoopStop(kind, overpayment, true);
-                // A FixedPrecision vault needs the amendment.
+                // A FixedPrecision vault is never built without the fix.
                 if (kind != VKind::Fixed)
                     testInstallmentLoopStop(kind, overpayment, false);
             }
@@ -2305,8 +2290,7 @@ public:
                 .lateInterestRate = lending::kMaxLateInterestRate,
                 .deposit = Number{9, 13},
                 .borrowerFunds = Number{1, 15},
-            },
-            true);
+            });
         auto const loanBefore = env.le(s.loan);
         if (!BEAST_EXPECT(loanBefore))
             return;
@@ -2365,11 +2349,13 @@ public:
     }
 
     FeatureBitset
-    reporterFeatures(bool v12) const
+    reporterFeatures(bool fix) const
     {
         using namespace test::jtx;
-        return v12 ? (all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2)
-                   : ((all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2);
+        // With the fix the vault is FixedPrecision. Without it the vault is CashBasis.
+        return fix
+            ? (all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2)
+            : ((all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2 - fixCleanup3_6_0);
     }
 
     // A loan of principal with the given fee fields, borrowed by borrower and countersigned by the
@@ -2421,10 +2407,10 @@ public:
     // The vault books an installment that no account paid. A LatePaymentFee of 10^30 on a late
     // payment does the same.
     //
-    // With LendingProtocolV1_2, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
+    // With fixCleanup3_6_0, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
     // behaviour above is unchanged.
     void
-    testFeeSwampsInstallment(bool latePaymentFee, bool v12)
+    testFeeSwampsInstallment(bool latePaymentFee, bool fix)
     {
         using namespace test::jtx;
         using namespace loan;
@@ -2434,11 +2420,11 @@ public:
                 latePaymentFee
                     ? "A huge LatePaymentFee makes the vault receive an unpaid installment"
                     : "A huge LoanServiceFee makes the vault receive an unpaid installment") +
-            (v12 ? " (V1_2: rejected at LoanSet)" : " (without V1_2)"));
+            (fix ? " (fix: rejected at LoanSet)" : " (without the fix)"));
 
         // 10^30, the fee and the amount the borrower holds and pays.
         Number const hugeFee{1, 30};
-        Env env{*this, reporterFeatures(v12)};
+        Env env{*this, reporterFeatures(fix)};
         auto const accounts = setupIou(
             env,
             {
@@ -2467,9 +2453,9 @@ public:
             borrower,
             Number{519'846'137'986LL, -2},
             TenthBips32(1'000),
-            v12 ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
+            fix ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
             latePaymentFee ? kLatePaymentFee(hugeFee) : kLoanServiceFee(hugeFee));
-        if (v12)
+        if (fix)
         {
             // No loan was created.
             BEAST_EXPECT(!env.le(loanA));
@@ -2505,9 +2491,9 @@ public:
         Number const vaultCredit = Number{vaultAfter->at(sfAssetsAvailable)} - availableBefore;
         Number const borrowerSpent = borrowerBefore - env.balance(borrower, asset).value();
         Number const ownerReceived = env.balance(accounts.owner, asset).value() - ownerBefore;
-        // Without V1_2 the bug is unchanged: the borrower spends exactly 10^30, all of it reaches
-        // the broker owner, and the vault still receives the installment nobody paid: the value
-        // the loan paid down.
+        // Without the fix the bug is unchanged: the borrower spends exactly 10^30, all of it
+        // reaches the broker owner, and the vault still receives the installment nobody paid: the
+        // value the loan paid down.
         Number const installment = Number{loanBefore->at(sfTotalValueOutstanding)} -
             loanAfter->at(sfTotalValueOutstanding);
         BEAST_EXPECTS(borrowerSpent == hugeFee, to_string(borrowerSpent));
@@ -2532,22 +2518,22 @@ public:
     //
     // Same as testFeeSwampsInstallment, with ClosePaymentFee in place of LoanServiceFee.
     //
-    // With LendingProtocolV1_2, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
+    // With fixCleanup3_6_0, LoanSet rejects such a fee with tecPRECISION_LOSS. Without it the
     // behaviour above is unchanged.
     void
-    testCloseFeeSwampsPayoff(bool v12)
+    testCloseFeeSwampsPayoff(bool fix)
     {
         using namespace test::jtx;
         using namespace loan;
 
         testcase(
             std::string("A ClosePaymentFee of 10^25 credits the vault with money nobody paid") +
-            (v12 ? " (V1_2: rejected at LoanSet)" : " (without V1_2)"));
+            (fix ? " (fix: rejected at LoanSet)" : " (without the fix)"));
 
         Number const closePaymentFee{1, 25};
         // 2 * 10^25, what the borrower holds and offers.
         Number const paymentAmount{2, 25};
-        Env env{*this, reporterFeatures(v12)};
+        Env env{*this, reporterFeatures(fix)};
         auto const accounts = setupIou(
             env,
             {
@@ -2579,10 +2565,10 @@ public:
             borrower,
             Number{1000},
             TenthBips32(10'000),
-            v12 ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
+            fix ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS},
             kCloseInterestRate(TenthBips32(100'000)),
             kClosePaymentFee(closePaymentFee));
-        if (v12)
+        if (fix)
         {
             // No loan was created.
             BEAST_EXPECT(!env.le(loanA));
@@ -2606,8 +2592,8 @@ public:
         Number const vaultReceived = Number{vaultAfter->at(sfAssetsAvailable)} - availableBefore;
         Number const borrowerSpent = borrowerBefore - env.balance(borrower, asset).value();
         Number const ownerReceived = env.balance(accounts.owner, asset).value() - ownerBefore;
-        // Without V1_2 the bug is unchanged: the borrower spends exactly the fee, all of it reaches
-        // the broker owner, and the vault still receives 1900 nobody paid.
+        // Without the fix the bug is unchanged: the borrower spends exactly the fee, all of it
+        // reaches the broker owner, and the vault still receives 1900 nobody paid.
         BEAST_EXPECTS(borrowerSpent == closePaymentFee, to_string(borrowerSpent));
         BEAST_EXPECTS(ownerReceived == closePaymentFee, to_string(ownerReceived));
         BEAST_EXPECTS(vaultReceived == Number{1'900}, to_string(vaultReceived));
@@ -2639,10 +2625,10 @@ public:
         testInstallmentLoopStops();
         testLateInterestPastLimits();
         testLastInstallmentBounds();
-        for (bool const v12 : {false, true})
+        for (bool const fix : {false, true})
         {
-            testFeeSwampsInstallment(false, v12);
-            testFeeSwampsInstallment(true, v12);
+            testFeeSwampsInstallment(false, fix);
+            testFeeSwampsInstallment(true, fix);
         }
         testCloseFeeSwampsPayoff(false);
         testCloseFeeSwampsPayoff(true);

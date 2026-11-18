@@ -1888,9 +1888,9 @@ makeRegularPayment(
     while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
            numPayments < kLoanMaximumPaymentsPerTransaction)
     {
-        // Under LendingProtocolV1_2, stop before an installment whose total passes the size limit.
+        // Under fixCleanup3_6_0, stop before an installment whose total passes the size limit.
         // The first is always paid, and the rest of the amount is not used, not even to overpay.
-        if (view.rules().enabled(featureLendingProtocolV1_2) && numPayments > 0 &&
+        if (view.rules().enabled(fixCleanup3_6_0) && numPayments > 0 &&
             !fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
         {
             stoppedAtLimit = true;

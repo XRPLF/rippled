@@ -565,7 +565,7 @@ LoanSet::doApply()
         }
     }
 
-    if (view.rules().enabled(featureLendingProtocolV1_2))
+    if (view.rules().enabled(fixCleanup3_6_0))
     {
         // A fixed fee must not push one payment past the size limit. Only amounts known now are
         // checked: percentage fees and late interest are handled when the payment is made.
