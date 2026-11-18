@@ -642,7 +642,9 @@ isValidClosedEndedGap(Rules const& rules, std::uint32_t sub, std::uint32_t red);
  * Before fixCleanup3_6_0 the grace period is ignored and only the final due
  * date must precede RedemptionDate by kLegacyLoanRedemptionBuffer seconds.
  *
- * The arithmetic is performed in std::uint64_t so that it cannot overflow.
+ * The final due date is computed in std::uint64_t, where it cannot overflow.
+ * The grace period and the buffer are then compared against the time left
+ * before RedemptionDate, so no input can wrap the check.
  *
  * @param rules The rules that select the bound.
  * @param startDate The value of sfStartDate.

@@ -812,12 +812,19 @@ isValidClosedEndedLoanSchedule(
     auto const finalDueDate =
         std::uint64_t{startDate} + (std::uint64_t{paymentInterval} * paymentTotal);
 
+    // finalDueDate fits in 64 bits for any input, but adding the grace period
+    // and the buffer to it can wrap. The time left before RedemptionDate is
+    // compared against them instead.
+    if (finalDueDate > redemptionDate)
+        return false;
+    auto const timeToRedemption = redemptionDate - finalDueDate;
+
     if (!rules.enabled(fixCleanup3_6_0))
-        return finalDueDate + kLegacyLoanRedemptionBuffer <= redemptionDate;
+        return timeToRedemption >= kLegacyLoanRedemptionBuffer;
 
     // A loan can be defaulted only after its grace period ends, so the grace
     // period has to fit before RedemptionDate as well.
-    return finalDueDate + gracePeriod + kLoanRedemptionBuffer <= redemptionDate;
+    return timeToRedemption >= std::uint64_t{gracePeriod} + kLoanRedemptionBuffer;
 }
 
 [[nodiscard]] VaultPhase

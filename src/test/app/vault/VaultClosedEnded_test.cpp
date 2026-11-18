@@ -273,8 +273,7 @@ private:
 
             // Act
             auto const preFixAtLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod);
-            auto const preFixBelowLegacyMin =
-                createWithGap(preFix, kLegacyMinInvestmentPeriod - 1);
+            auto const preFixBelowLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod - 1);
             auto const postFixAtLegacyMin = createWithGap(postFix, kLegacyMinInvestmentPeriod);
             auto const postFixAtMin = createWithGap(postFix, kMinInvestmentPeriod);
 
@@ -981,8 +980,7 @@ private:
 
             // Impairment needs the clock to be past the due date. Default needs it to be past
             // the grace period as well.
-            std::uint32_t const boundary =
-                manageFlag == tfLoanDefault ? dueDate + kGrace : dueDate;
+            std::uint32_t const boundary = manageFlag == tfLoanDefault ? dueDate + kGrace : dueDate;
             closeToTime(env, Tp{D{boundary}});
             env(manage(owner, loanKeylet.key, manageFlag), Ter(std::ignore));
             auto const manageAtBoundary = env.ter();
@@ -1015,9 +1013,11 @@ private:
             // Assert
             if (BEAST_EXPECT(outcome))
             {
+                // NOLINTBEGIN(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(outcome->manageAtBoundary == tecTOO_SOON);
                 BEAST_EXPECT(outcome->withdrawAfterJump == tesSUCCESS);
                 BEAST_EXPECT(outcome->manageAfterJump == tesSUCCESS);
+                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
 
@@ -1033,9 +1033,11 @@ private:
                 // Assert
                 if (BEAST_EXPECT(outcome))
                 {
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access)
                     BEAST_EXPECT(outcome->manageAtBoundary == tecTOO_SOON);
                     BEAST_EXPECT(outcome->withdrawAfterJump == tecTOO_SOON);
                     BEAST_EXPECT(outcome->manageAfterJump == tesSUCCESS);
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                 }
             }
         }

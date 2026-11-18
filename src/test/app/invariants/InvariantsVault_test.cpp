@@ -52,6 +52,7 @@
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -3104,45 +3105,84 @@ class InvariantsVault_test : public InvariantsBase
         // the wrong rules flips the outcome of at least one case. The loan also has several
         // payments and an interval that differs from the grace period, so a check that ignores
         // the payment count or mixes up the interval and the grace period flips one as well.
+        //
+        // The last case sets every schedule field to its maximum. The final due date, the grace
+        // period and the buffer then add up to more than 64 bits can hold, so a check that sums
+        // them wraps to a small number and accepts a loan that ends far past RedemptionDate.
         {
             constexpr std::uint32_t kInterval = 60;
             constexpr std::uint32_t kPayments = 3;
             constexpr std::uint32_t kGrace = 600;
+            constexpr std::uint32_t kMaxField = std::numeric_limits<std::uint32_t>::max();
             std::string const scheduleLog =
                 "closed-ended loan schedule ends too close to RedemptionDate";
+
+            struct Schedule
+            {
+                std::uint32_t startDate;
+                std::uint32_t interval;
+                std::uint32_t payments;
+                std::uint32_t grace;
+            };
+            // Builds a schedule whose final due date is dueToRedemption seconds before the
+            // vault's RedemptionDate.
+            auto const makeScheduleDueBefore = [](std::uint32_t dueToRedemption) {
+                return [dueToRedemption](std::uint32_t redemptionDate) {
+                    return Schedule{
+                        .startDate = redemptionDate - dueToRedemption - (kInterval * kPayments),
+                        .interval = kInterval,
+                        .payments = kPayments,
+                        .grace = kGrace,
+                    };
+                };
+            };
 
             struct Case
             {
                 std::string name;
                 FeatureBitset features;
-                // Seconds from the loan's final due date to the vault's RedemptionDate.
-                std::uint32_t dueToRedemption;
+                // Builds the loan's schedule from the vault's RedemptionDate.
+                std::function<Schedule(std::uint32_t)> makeSchedule;
                 bool expectFailure;
             };
             auto const cases = std::to_array<Case>({
                 {
                     .name = "grace period ends inside the buffer",
                     .features = all_,
-                    .dueToRedemption = kGrace + kLoanRedemptionBuffer - 1,
+                    .makeSchedule = makeScheduleDueBefore(kGrace + kLoanRedemptionBuffer - 1),
                     .expectFailure = true,
                 },
                 {
                     .name = "grace period ends exactly at the buffer",
                     .features = all_,
-                    .dueToRedemption = kGrace + kLoanRedemptionBuffer,
+                    .makeSchedule = makeScheduleDueBefore(kGrace + kLoanRedemptionBuffer),
                     .expectFailure = false,
                 },
                 {
                     .name = "legacy: final due date inside the buffer",
                     .features = all_ - fixCleanup3_6_0,
-                    .dueToRedemption = kLegacyLoanRedemptionBuffer - 1,
+                    .makeSchedule = makeScheduleDueBefore(kLegacyLoanRedemptionBuffer - 1),
                     .expectFailure = true,
                 },
                 {
                     .name = "legacy: grace period is ignored",
                     .features = all_ - fixCleanup3_6_0,
-                    .dueToRedemption = kLegacyLoanRedemptionBuffer,
+                    .makeSchedule = makeScheduleDueBefore(kLegacyLoanRedemptionBuffer),
                     .expectFailure = false,
+                },
+                {
+                    .name = "schedule too long for 64 bits",
+                    .features = all_,
+                    .makeSchedule =
+                        [](std::uint32_t) {
+                            return Schedule{
+                                .startDate = kMaxField,
+                                .interval = kMaxField,
+                                .payments = kMaxField,
+                                .grace = kMaxField,
+                            };
+                        },
+                    .expectFailure = true,
                 },
             });
 
@@ -3169,14 +3209,13 @@ class InvariantsVault_test : public InvariantsBase
                 if (!BEAST_EXPECT(sleVault))
                     continue;
                 ac.view().update(sleVault);
-                std::uint32_t const redemptionDate = sleVault->at(sfRedemptionDate);
+                auto const schedule = c.makeSchedule(sleVault->at(sfRedemptionDate));
 
                 auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
-                sleLoan->at(sfStartDate) =
-                    redemptionDate - c.dueToRedemption - (kInterval * kPayments);
-                sleLoan->at(sfPaymentInterval) = kInterval;
-                sleLoan->at(sfPaymentRemaining) = kPayments;
-                sleLoan->at(sfGracePeriod) = kGrace;
+                sleLoan->at(sfStartDate) = schedule.startDate;
+                sleLoan->at(sfPaymentInterval) = schedule.interval;
+                sleLoan->at(sfPaymentRemaining) = schedule.payments;
+                sleLoan->at(sfGracePeriod) = schedule.grace;
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 ac.view().insert(sleLoan);
 

@@ -904,9 +904,9 @@ private:
         struct MinPeriodCase
         {
             FeatureBitset features;
-            std::uint32_t minInvestmentPeriod;
+            std::uint32_t minInvestmentPeriod{};
             // Seconds a minimum loan needs between StartDate and RedemptionDate.
-            std::uint32_t minScheduleLength;
+            std::uint32_t minScheduleLength{};
         };
         for (auto const& testCase : {
                  MinPeriodCase{
@@ -998,8 +998,7 @@ private:
         // RedemptionDate, closes the ledger, and returns the result recorded in the closed
         // ledger. The result on submit is ignored because it is computed from the earlier
         // StartDate and can differ at the boundary.
-        auto const submitLoan =
-            [&, this](FeatureBitset const& features, std::uint32_t gap) -> TER {
+        auto const submitLoan = [&, this](FeatureBitset const& features, std::uint32_t gap) -> TER {
             Env env(*this, features);
             env.fund(XRP(1'000'000'000), lender, borrower);
             env.close();
