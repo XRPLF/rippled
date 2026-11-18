@@ -348,26 +348,27 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         // The XDG config and data directories, which only apply when the home
         // directory is set. See
         // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
-        if (auto const strHome = getEnvVar("HOME"); !strHome.empty())
+        if (std::filesystem::path const home = getEnvVar("HOME"); !home.empty())
         {
-            auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-            if (strXdgConfigHome.empty())
+            std::filesystem::path xdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+            if (xdgConfigHome.empty())
             {
                 // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome = strHome + "/.config";
+                xdgConfigHome = home / ".config";
             }
-            auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-            if (strXdgDataHome.empty())
+            std::filesystem::path xdgDataHome = getEnvVar("XDG_DATA_HOME");
+            if (xdgDataHome.empty())
             {
                 // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome = strHome + "/.local/share";
+                xdgDataHome = home / ".local" / "share";
             }
-            candidates.emplace_back(
-                strXdgConfigHome + "/" + systemName(), strXdgDataHome + "/" + systemName());
+            candidates.emplace_back(xdgConfigHome / systemName(), xdgDataHome / systemName());
         }
 
         // The system config directory, as a last resort.
-        candidates.emplace_back("/etc/" + systemName(), "/var/lib/" + systemName());
+        candidates.emplace_back(
+            std::filesystem::path("/etc") / systemName(),
+            std::filesystem::path("/var/lib") / systemName());
 
         // Take the first candidate holding a config file under either name.
         // When none does, the last candidate's values stand.
