@@ -305,11 +305,11 @@ TEST(STAmount, mul_div_round_division_by_zero)
     for (Asset const& asset : {assets.iou, assets.mptAsset, assets.xrp})
     {
         EXPECT_THROW(
-            detail::mulDivRound(Number{1}, Number{1}, Number{0}, asset, kDown),
+            (void)detail::mulDivRound(Number{1}, Number{1}, Number{0}, asset, kDown),
             std::overflow_error);
         // c == 0 is rejected even when the numerator is zero.
         EXPECT_THROW(
-            detail::mulDivRound(Number{0}, Number{1}, Number{0}, asset, kDown),
+            (void)detail::mulDivRound(Number{0}, Number{1}, Number{0}, asset, kDown),
             std::overflow_error);
     }
 }
@@ -321,21 +321,21 @@ TEST(STAmount, mul_div_round_overflow)
 
     // Past the largest MPT amount and XRP amount.
     EXPECT_THROW(
-        detail::mulDivRound(Number{9, 18}, Number{2}, Number{1}, assets.mptAsset, kDown),
+        (void)detail::mulDivRound(Number{9, 18}, Number{2}, Number{1}, assets.mptAsset, kDown),
         std::overflow_error);
     EXPECT_THROW(
-        detail::mulDivRound(Number{1, 18}, Number{1}, Number{1}, assets.xrp, kDown),
+        (void)detail::mulDivRound(Number{1, 18}, Number{1}, Number{1}, assets.xrp, kDown),
         std::overflow_error);
     EXPECT_THROW(
-        detail::mulDivRound(Number{1, 30}, Number{1, 30}, Number{1}, assets.mptAsset, kDown),
+        (void)detail::mulDivRound(Number{1, 30}, Number{1, 30}, Number{1}, assets.mptAsset, kDown),
         std::overflow_error);
     // A grid past 10^19 is beyond any integral amount.
     EXPECT_THROW(
-        detail::mulDivRound(Number{1}, Number{1}, Number{1}, assets.mptAsset, kDown, 20),
+        (void)detail::mulDivRound(Number{1}, Number{1}, Number{1}, assets.mptAsset, kDown, 20),
         std::overflow_error);
     // So is a grid coarser than the largest IOU, below 10^(kMaxOffset + 16).
     EXPECT_THROW(
-        detail::mulDivRound(
+        (void)detail::mulDivRound(
             Number{1}, Number{1}, Number{1}, assets.iou, kDown, STAmount::kMaxOffset + 17),
         std::overflow_error);
     // 10^(kMaxOffset + 16) is the coarsest grid: rounding down gives zero, rounding up overflows.
@@ -344,7 +344,7 @@ TEST(STAmount, mul_div_round_overflow)
             Number{1}, Number{1}, Number{1}, assets.iou, kDown, STAmount::kMaxOffset + 16),
         STAmount{assets.usd});
     EXPECT_THROW(
-        detail::mulDivRound(
+        (void)detail::mulDivRound(
             Number{1}, Number{1}, Number{1}, assets.iou, kUp, STAmount::kMaxOffset + 16),
         std::overflow_error);
     // A grid above kMaxOffset still holds a value: 10^95 is 10^15 at the largest exponent.
@@ -354,7 +354,7 @@ TEST(STAmount, mul_div_round_overflow)
         STAmount(assets.usd, STAmount::kMinValue, STAmount::kMaxOffset));
     // Past the largest IOU exponent.
     EXPECT_THROW(
-        detail::mulDivRound(Number{1, 60}, Number{1, 60}, Number{1}, assets.iou, kDown),
+        (void)detail::mulDivRound(Number{1, 60}, Number{1, 60}, Number{1}, assets.iou, kDown),
         std::overflow_error);
     // The largest values still fit.
     EXPECT_EQ(
