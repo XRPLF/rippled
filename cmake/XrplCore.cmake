@@ -328,6 +328,11 @@ if(xrpld)
         rpcspec::rpcspec
     )
     exclude_if_included(xrpld)
+    # define a macro for tests that might need to
+    # be excluded or run differently in CI environment
+    if(is_ci)
+        target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
+    endif()
 
     if(voidstar)
         target_compile_options(xrpld PRIVATE -fsanitize-coverage=trace-pc-guard)
