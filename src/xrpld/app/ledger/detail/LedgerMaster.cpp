@@ -2061,6 +2061,39 @@ LedgerMaster::fetchForHistory(
             }
         }
     }
+    else if (app_.getSHAMapStore().isNullBackend())
+    {
+        // The node store cannot reload this hash. The next resident ledger's
+        // parent hash is the hole when that ledger is still pinned. Clearing
+        // it, as the disk path does, walks the hole forward through the window.
+        auto const next = getResidentLedgerBySeq(missing + 1);
+        if (next && next->header().seq == missing + 1 && next->header().parentHash.isNonZero())
+        {
+            JLOG(journal_.debug()) << "fetchForHistory RWDB hole " << missing << " from parent of "
+                                   << (missing + 1);
+            auto ledger =
+                app_.getInboundLedgers().acquire(next->header().parentHash, missing, reason);
+            if (ledger && ledger->header().seq == missing &&
+                ledger->header().hash == next->header().parentHash)
+            {
+                JLOG(journal_.trace()) << "fetchForHistory acquired " << missing;
+                setFullLedger(ledger, false, false);
+                std::scoped_lock const lock(mutex_);
+                histLedger_ = ledger;
+                progress = true;
+            }
+            else
+            {
+                JLOG(journal_.warn()) << "fetchForHistory RWDB hole " << missing
+                                      << " not acquired; leaving " << (missing + 1);
+            }
+        }
+        else
+        {
+            JLOG(journal_.debug()) << "fetchForHistory RWDB hole " << missing
+                                   << " is below the retained window";
+        }
+    }
     else
     {
         JLOG(journal_.fatal()) << "Can't find ledger following prevMissing " << missing;
