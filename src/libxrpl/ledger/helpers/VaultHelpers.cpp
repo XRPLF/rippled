@@ -165,7 +165,8 @@ toExactUInt(Number const& n)
 }
 
 // Converts with VaultRounding::FavorVault for a vault holding an integral
-// asset: returns a * b / c in units of `to`, rounded up or down.
+// asset: returns multiplicand * multiplier / divisor in units of `to`, rounded
+// up or down.
 //
 // Every total and amount of an integral asset is an integer, so the quotient
 // is computed exactly in 128 bits and rounded once. Number keeps only 19
@@ -174,15 +175,20 @@ toExactUInt(Number const& n)
 // result: 1'000'000'000'000'007 * 123'456'789 / 1'000'000'000'000'007 is
 // exactly 123'456'789, but rounding every Number step up gives 123'456'790.
 //
-// Throws std::overflow_error if c is zero or the quotient does not fit in an
-// int64, as the Number path does; callers already handle that.
+// Throws std::overflow_error if divisor is zero or the quotient does not fit in
+// an int64, as the Number path does; callers already handle that.
 STAmount
-favorVaultMulDiv(Asset const& to, Number const& a, Number const& b, Number const& c, RoundUp up)
+favorVaultMulDiv(
+    Asset const& to,
+    Number const& multiplicand,
+    Number const& multiplier,
+    Number const& divisor,
+    RoundUp up)
 {
-    auto const ua = toExactUInt(a);
-    auto const ub = toExactUInt(b);
-    auto const uc = toExactUInt(c);
-    if (!ua || !ub || !uc)
+    auto const exactMultiplicand = toExactUInt(multiplicand);
+    auto const exactMultiplier = toExactUInt(multiplier);
+    auto const exactDivisor = toExactUInt(divisor);
+    if (!exactMultiplicand || !exactMultiplier || !exactDivisor)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::favorVaultMulDiv : integral operands");
@@ -190,16 +196,16 @@ favorVaultMulDiv(Asset const& to, Number const& a, Number const& b, Number const
         // while the guard is active.
         NumberRoundModeGuard const rg(
             up == RoundUp::Yes ? Number::RoundingMode::Upward : Number::RoundingMode::Downward);
-        return STAmount{to, (a * b) / c};
+        return STAmount{to, (multiplicand * multiplier) / divisor};
         // LCOV_EXCL_STOP
     }
 
     using boost::multiprecision::uint128_t;
-    if (*uc == 0)
+    if (*exactDivisor == 0)
         throw std::overflow_error("xrpl::favorVaultMulDiv : divide by zero");
-    uint128_t const num = uint128_t{*ua} * *ub;
-    uint128_t quotient = num / *uc;
-    if (up == RoundUp::Yes && quotient * *uc != num)
+    uint128_t const num = uint128_t{*exactMultiplicand} * *exactMultiplier;
+    uint128_t quotient = num / *exactDivisor;
+    if (up == RoundUp::Yes && quotient * *exactDivisor != num)
         ++quotient;
     if (quotient > std::numeric_limits<std::int64_t>::max())
         throw std::overflow_error("xrpl::favorVaultMulDiv : overflow");

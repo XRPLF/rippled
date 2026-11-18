@@ -530,6 +530,46 @@ class VaultRounding_test : public VaultTestBase
         }
     }
 
+    // Without fixCleanup3_1_3 a clawback of all shares converts outside the
+    // main overflow handler. With assets in the vault and no shares
+    // outstanding the conversion divides by zero. fixCleanup3_6_0 reports
+    // that as tecPATH_DRY, like every other conversion; without it the
+    // exception still escapes the transactor.
+    void
+    testClawbackAllSharesOverflowWithoutFix313()
+    {
+        using namespace test::jtx;
+
+        FeatureBitset const base = all_ - featureLendingProtocolV1_2 - fixCleanup3_1_3;
+        for (bool const fixed : {false, true})
+        {
+            testcase(
+                std::string{"Clawback all shares overflow without fixCleanup3_1_3, "} +
+                (fixed ? "post" : "pre") + "-fixCleanup3_6_0");
+            withVault(
+                fixed ? base : base - fixCleanup3_6_0,
+                2,
+                0,
+                2,
+                [&](Env& env, Vault& vault, Fixture const& f) {
+                    PrettyAsset const asset{f.assetID};
+                    env(vault.withdraw(
+                        {.depositor = f.alice, .id = f.keylet.key, .amount = asset(2)}));
+                    env.close();
+                    BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 0);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 0);
+
+                    shiftVaultAssets(env, f, 5);
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 5);
+
+                    env(vault.clawback({.issuer = f.issuer, .id = f.keylet.key, .holder = f.alice}),
+                        Ter(fixed ? TER{tecPATH_DRY} : TER{tefEXCEPTION}));
+
+                    BEAST_EXPECT(vaultTotal(env, f.keylet) == 5);
+                });
+        }
+    }
+
 public:
     void
     run() override
@@ -543,6 +583,7 @@ public:
         testClawbackZeroRecoveryRejected();
         testClawbackSharesTruncatedWithoutFix340();
         testClawbackAllSharesRoundsDownWithoutFix313();
+        testClawbackAllSharesOverflowWithoutFix313();
     }
 };
 

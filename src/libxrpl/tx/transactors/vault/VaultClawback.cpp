@@ -265,6 +265,17 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
+    // It's easy to hit this exception from Number with large enough
+    // Scale so we avoid spamming the log and only use debug here.
+    auto const logOverflow = [&]() {
+        JLOG(j_.debug())  //
+            << "VaultClawback: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
+            << ", amount=" << clawbackAmount.value();
+    };
+
     // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
@@ -272,14 +283,26 @@ VaultClawback::assetsToClawback(
     // here, since the amendments can be enabled in either order.
     if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
     {
-        auto const sharesDestroyed = accountHolds(
-            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-        auto const maybeAssets = sharesToAssetsWithdraw(
-            vault, sleShareIssuance, sharesDestroyed, WaiveUnrealizedLoss::No, rounding);
-        if (!maybeAssets)
-            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        try
+        {
+            auto const sharesDestroyed = accountHolds(
+                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed, WaiveUnrealizedLoss::No, rounding);
+            if (!maybeAssets)
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-        return std::make_pair(*maybeAssets, sharesDestroyed);
+            return std::make_pair(*maybeAssets, sharesDestroyed);
+        }
+        catch (std::overflow_error const&)
+        {
+            // Before fixCleanup3_6_0 this conversion ran outside any handler, so the exception
+            // must keep propagating for ledger replay compatibility.
+            if (!fix360Enabled)
+                throw;
+            logOverflow();
+            return std::unexpected(tecPATH_DRY);
+        }
     }
 
     STAmount sharesDestroyed;
@@ -400,14 +423,7 @@ VaultClawback::assetsToClawback(
     }
     catch (std::overflow_error const&)
     {
-        // It's easy to hit this exception from Number with large enough
-        // Scale so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultClawback: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
-            << ", amount=" << clawbackAmount.value();
+        logOverflow();
         // Overflow means this transaction cannot apply, but ledger state is still consistent.
         // Return tecPATH_DRY rather than a hard internal error.
         return std::unexpected(tecPATH_DRY);
