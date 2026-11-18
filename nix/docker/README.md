@@ -69,7 +69,9 @@ that means 22.04 LTS (glibc 2.35) and newer. Two pieces make that work:
 - **Compilers linked against an old glibc.** The Nix CI environment does not use
   nixpkgs' current glibc. Instead it pins a 2023 nixpkgs snapshot whose primary
   glibc is **2.34** (matching RHEL 9), via the `nixpkgs-custom-glibc`
-  flake input. GCC, Clang, binutils and compiler-rt are all rebuilt/wrapped
+  flake input. 2.34 is the floor because it is the first glibc where an
+  exception thrown from a `std::call_once` callable resets the flag instead of
+  hanging every later caller (glibc BZ #18435). GCC, Clang, binutils and compiler-rt are all rebuilt/wrapped
   against this custom glibc (see [`nix/ci-env.nix`](../ci-env.nix)). As a result
   the libraries they emit (`libstdc++`, `libgcc_s`, the sanitizer runtimes)
   reference only symbols available in glibc 2.34.

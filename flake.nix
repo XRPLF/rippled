@@ -2,14 +2,9 @@
   description = "Nix related things for xrpld";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    # nixpkgs snapshot (the final nixos-22.05 commit, 2023-05-31) that
-    # shipped glibc 2.34 as the primary version — matches the system libc on
-    # RHEL 9. No Ubuntu LTS ships 2.34, so the oldest supported Ubuntu is
-    # 22.04 LTS (glibc 2.35). 2.34 is the first release where an exception thrown from a
-    # pthread_once / std::call_once initializer resets the once-flag instead
-    # of hanging every later caller (glibc BZ #18435). Imported as a plain
-    # source tree (flake = false): only `glibc` is taken from it, never its
-    # flake outputs.
+    # nixpkgs snapshot (final nixos-22.05 commit, 2023-05-31) whose primary
+    # glibc is 2.34 — see nix/docker/README.md. Imported as a plain source
+    # tree (flake = false): only `glibc` is taken from it.
     nixpkgs-custom-glibc = {
       url = "github:NixOS/nixpkgs/380be19fbd2d9079f677978361792cb25e8a3635";
       flake = false;
