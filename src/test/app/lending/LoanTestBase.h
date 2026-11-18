@@ -230,8 +230,9 @@ protected:
         std::uint32_t subscriptionOffset = 60;
         // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
         // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
-        // (finalPayment must precede RedemptionDate by at least kLoanRedemptionBuffer). Default
-        // sized to comfortably exceed any schedule realistic tests are likely to configure.
+        // (isValidClosedEndedLoanSchedule defines the gap a schedule has to leave before
+        // RedemptionDate). Default sized to comfortably exceed any schedule realistic tests are
+        // likely to configure.
         std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
         // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
         // Useful for tests that need to observe the vault while it is still in the Subscription
@@ -2060,28 +2061,28 @@ protected:
         // sfPaymentInterval: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kPaymentInterval(LoanSet::kMinPaymentInterval),
+            kPaymentInterval(lending::kMinLoanPaymentInterval),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfPaymentInterval: too small (there is no max)
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kPaymentInterval(LoanSet::kMinPaymentInterval - 1),
+            kPaymentInterval(lending::kMinLoanPaymentInterval - 1),
             loanSetFee,
             Ter(temINVALID));
 
         // sfGracePeriod: good value, bad account
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, borrower),
-            kPaymentInterval(LoanSet::kMinPaymentInterval * 2),
-            kGracePeriod(LoanSet::kMinPaymentInterval * 2),
+            kPaymentInterval(lending::kMinLoanPaymentInterval * 2),
+            kGracePeriod(lending::kMinLoanPaymentInterval * 2),
             loanSetFee,
             Ter(tefBAD_AUTH));
         // sfGracePeriod: larger than paymentInterval
         env(set(evan, broker.brokerID, principalRequest),
             Sig(sfCounterpartySignature, lender),
-            kPaymentInterval(LoanSet::kMinPaymentInterval * 2),
-            kGracePeriod(LoanSet::kMinPaymentInterval * 3),
+            kPaymentInterval(lending::kMinLoanPaymentInterval * 2),
+            kGracePeriod(lending::kMinLoanPaymentInterval * 3),
             loanSetFee,
             Ter(temINVALID));
 

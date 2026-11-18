@@ -913,7 +913,9 @@ ValidVault::finalize(
                         result = false;
                     }
                     else if (!isValidClosedEndedGap(
-                                 *afterVault.subscriptionDate, *afterVault.redemptionDate))
+                                 view.rules(),
+                                 *afterVault.subscriptionDate,
+                                 *afterVault.redemptionDate))
                     {
                         JLOG(j.fatal())  //
                             << "Invariant failed: closed-ended vault RedemptionDate - "

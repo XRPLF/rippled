@@ -127,7 +127,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
     {
         if (!hasSubscription || !hasRedemption)
             return temMALFORMED;
-        if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
+        if (!isValidClosedEndedGap(
+                ctx.rules, ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
             return temMALFORMED;
     }
 

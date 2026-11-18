@@ -62,11 +62,13 @@ ValidLoan::finalize(
     // Ledger entry validation checks.
     for (auto const& [before, after] : loans_)
     {
-        // A closed-ended vault must not accept a loan whose final scheduled payment falls fewer
-        // than kLoanRedemptionBuffer seconds before the vault's RedemptionDate. This mirrors the
-        // LoanSet::preclaim gate and only fires on loan creation; once the loan exists, its
-        // StartDate / PaymentInterval are immutable and PaymentRemaining only decreases, so the
-        // bound is preserved.
+        // A closed-ended vault must not accept a loan whose schedule ends too close to the
+        // vault's RedemptionDate. With fixCleanup3_6_0 the final grace period must end at least
+        // kLoanRedemptionBuffer seconds before RedemptionDate. Before the fix only the final
+        // payment must precede it, by kLegacyLoanRedemptionBuffer seconds. This mirrors the
+        // LoanSet::preclaim gate and only fires on loan creation. Once the loan exists, its
+        // StartDate, PaymentInterval and GracePeriod are immutable and PaymentRemaining only
+        // decreases, so the bound is preserved.
         if (!before && isTesSuccess(result))
         {
             auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
@@ -77,17 +79,16 @@ ValidLoan::finalize(
                 // not exist without the amendment enabled
                 if (vault && getVaultKind(vault) == VaultKind::ClosedEnded)
                 {
-                    std::uint32_t const startDate = after->at(sfStartDate);
-                    std::uint32_t const interval = after->at(sfPaymentInterval);
-                    std::uint32_t const remaining = after->at(sfPaymentRemaining);
-                    std::uint32_t const redemption = vault->at(sfRedemptionDate);
-                    if (std::uint64_t{startDate} + (std::uint64_t{interval} * remaining) +
-                            kLoanRedemptionBuffer >
-                        redemption)
+                    if (!isValidClosedEndedLoanSchedule(
+                            view.rules(),
+                            after->at(sfStartDate),
+                            after->at(sfPaymentInterval),
+                            after->at(sfPaymentRemaining),
+                            after->at(sfGracePeriod),
+                            vault->at(sfRedemptionDate)))
                     {
-                        JLOG(j.fatal()) << "Invariant failed: closed-ended loan final payment "
-                                           "must precede RedemptionDate by at least "
-                                           "kLoanRedemptionBuffer";
+                        JLOG(j.fatal()) << "Invariant failed: closed-ended loan schedule ends "
+                                           "too close to RedemptionDate";
                         return false;
                     }
                 }
