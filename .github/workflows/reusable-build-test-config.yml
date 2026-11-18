@@ -328,7 +328,7 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      - name: Check linking (Linux)
+      - name: Check `libstdc++` is statically linked (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
