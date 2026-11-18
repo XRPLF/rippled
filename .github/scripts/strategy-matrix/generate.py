@@ -82,8 +82,7 @@ class Event(StrEnum):
     PUSH = "push"
     SCHEDULE = "schedule"
     WORKFLOW_DISPATCH = "workflow_dispatch"
-    # The events derived from context: a labeled pull request and the push of a
-    # tag.
+    # The events derived from context: a labeled pull request and the push of a tag.
     READY_TO_MERGE = "ready_to_merge"
     TAG = "tag"
 
