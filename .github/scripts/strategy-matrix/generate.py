@@ -110,8 +110,6 @@ class LinuxFile:
     """Shape of linux.json."""
 
     image_tag: str
-    # distro → digest of nix-<distro>:<image_tag>, so a moved tag cannot change the build
-    image_digests: dict[str, str]
     configs: dict[str, list[LinuxConfig]]  # distro → configs
 
     @classmethod
@@ -119,7 +117,6 @@ class LinuxFile:
         data = json.loads(path.read_text())
         return cls(
             image_tag=data["image_tag"],
-            image_digests=data["image_digests"],
             configs={
                 distro: [LinuxConfig(**c) for c in cfgs]
                 for distro, cfgs in data["configs"].items()
@@ -201,11 +198,6 @@ class PackagingEntry:
     package_type: str  # "deb" or "rpm"; drives the format-specific steps
     package_variant: str  # passed to build_pkg.py --variant; empty for xrpld
     package_name: str  # the name it builds under, which the artifact globs use
-    # How the packaged binaries are built, for bin/rebuild-release.sh
-    config_name: str
-    build_image: str
-    compiler: str
-    cmake_args: str
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +244,7 @@ def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
                 entries.append(
                     MatrixEntry(
                         config_name=name,
-                        image=f"ghcr.io/xrplf/xrpld/nix-{distro}:{linux.image_tag}@{linux.image_digests[distro]}",
+                        image=f"ghcr.io/xrplf/xrpld/nix-{distro}:{linux.image_tag}",
                         cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                         cmake_target="all",
                         build_only=False,
@@ -301,10 +293,6 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
                             if cfg.package.variant
                             else BASE_NAME
                         ),
-                        config_name=name,
-                        build_image=f"ghcr.io/xrplf/xrpld/nix-{distro}:{linux.image_tag}@{linux.image_digests[distro]}",
-                        compiler=compiler,
-                        cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     )
                 )
 

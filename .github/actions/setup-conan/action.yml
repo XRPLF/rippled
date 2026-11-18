@@ -30,11 +30,6 @@ runs:
       run: |
         conan config install conan/profiles/ -tf $(conan config home)/profiles/
 
-    - name: Install hooks
-      shell: bash
-      run: |
-        conan config install conan/extensions/ -tf $(conan config home)/extensions/
-
     - name: Show CI profile
       shell: bash
       run: |

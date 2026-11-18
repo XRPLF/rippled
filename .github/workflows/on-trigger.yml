@@ -105,13 +105,6 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # A rebuild from source compiles every dependency, so it runs on the schedule
-  # rather than on every merge; tag builds run it too.
-  rebuild-check:
-    needs: build-test
-    if: ${{ github.event_name == 'schedule' }}
-    uses: ./.github/workflows/reusable-rebuild-check.yml
-
   rust:
     uses: ./.github/workflows/reusable-rust.yml
     secrets:

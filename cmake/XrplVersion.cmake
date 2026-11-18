@@ -2,7 +2,6 @@ find_package(Git)
 
 set(GIT_BUILD_BRANCH "")
 set(GIT_COMMIT_HASH "")
-set(git_exact_tag "")
 
 if(DEFINED ENV{GITHUB_BRANCH_NAME})
     set(GIT_BUILD_BRANCH $ENV{GITHUB_BRANCH_NAME})
@@ -23,36 +22,10 @@ elseif(Git_FOUND AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/../.git")
         OUTPUT_STRIP_TRAILING_WHITESPACE
         COMMAND_ERROR_IS_FATAL ANY
     )
-
-    # A detached checkout of a tag names the tag, as a CI tag build does
-    # through GITHUB_BRANCH_NAME, so a rebuild embeds the same branch.
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe --exact-match --tags HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/..
-        OUTPUT_VARIABLE git_exact_tag
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-        RESULT_VARIABLE git_describe_result
-    )
-    if(NOT git_describe_result EQUAL 0)
-        set(git_exact_tag "")
-    elseif(GIT_BUILD_BRANCH STREQUAL "HEAD")
-        set(GIT_BUILD_BRANCH "${git_exact_tag}")
-    endif()
 endif()
 
 message(STATUS "Git branch: ${GIT_BUILD_BRANCH}")
 message(STATUS "Git commit hash: ${GIT_COMMIT_HASH}")
-
-# The rules beast::SemanticVersion::parse applies, so that an invalid version
-# fails here rather than when xrpld starts. It reads each number as an int.
-set(SEMVER_NUMBER "(0|[1-9][0-9]*)")
-set(SEMVER_PRE_RELEASE "[A-Za-z1-9-][A-Za-z0-9-]*")
-set(SEMVER_METADATA "[A-Za-z0-9-]+")
-set(SEMVER_NUMBER_MAX 2147483647)
-set(SEMVER_REGEX
-    "^${SEMVER_NUMBER}\\.${SEMVER_NUMBER}\\.${SEMVER_NUMBER}(-${SEMVER_PRE_RELEASE}(\\.${SEMVER_PRE_RELEASE})*)?(\\+${SEMVER_METADATA}(\\.${SEMVER_METADATA})*)?$"
-)
 
 if(
     DEFINED ENV{FORCE_XRPLD_VERSION}
@@ -62,26 +35,26 @@ if(
         STATUS
         "Using explicitly provided '$ENV{FORCE_XRPLD_VERSION}' as xrpld version"
     )
-    set(forced_version "$ENV{FORCE_XRPLD_VERSION}")
-elseif(git_exact_tag MATCHES "${SEMVER_REGEX}")
-    # CI sets FORCE_XRPLD_VERSION to the tag on a tag build; a plain checkout of
-    # the same tag gets the same version.
-    message(STATUS "Using exact tag '${git_exact_tag}' as xrpld version")
-    set(forced_version "${git_exact_tag}")
-endif()
 
-if(DEFINED forced_version)
-    set(XRPLD_VERSION "${forced_version}")
+    set(XRPLD_VERSION "$ENV{FORCE_XRPLD_VERSION}")
 
+    # The rules beast::SemanticVersion::parse applies, so that an invalid version
+    # fails here rather than when xrpld starts. It reads each number as an int.
+    set(SEMVER_NUMBER "(0|[1-9][0-9]*)")
+    set(SEMVER_PRE_RELEASE "[A-Za-z1-9-][A-Za-z0-9-]*")
+    set(SEMVER_METADATA "[A-Za-z0-9-]+")
+    set(SEMVER_NUMBER_MAX 2147483647)
     if(
-        NOT XRPLD_VERSION MATCHES "${SEMVER_REGEX}"
+        NOT XRPLD_VERSION
+            MATCHES
+            "^${SEMVER_NUMBER}\\.${SEMVER_NUMBER}\\.${SEMVER_NUMBER}(-${SEMVER_PRE_RELEASE}(\\.${SEMVER_PRE_RELEASE})*)?(\\+${SEMVER_METADATA}(\\.${SEMVER_METADATA})*)?$"
         OR CMAKE_MATCH_1 GREATER SEMVER_NUMBER_MAX
         OR CMAKE_MATCH_2 GREATER SEMVER_NUMBER_MAX
         OR CMAKE_MATCH_3 GREATER SEMVER_NUMBER_MAX
     )
         message(
             FATAL_ERROR
-            "Version '${XRPLD_VERSION}' is not a semantic version xrpld accepts, see https://semver.org"
+            "FORCE_XRPLD_VERSION '${XRPLD_VERSION}' is not a semantic version xrpld accepts, see https://semver.org"
         )
     endif()
 else()

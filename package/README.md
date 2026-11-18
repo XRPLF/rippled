@@ -33,16 +33,16 @@ Packaging is declared on the build configs themselves, in
 [`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json):
 a config that is also packaged carries a `package` map, so its binaries and its
 packaging job cannot drift apart. Today only `linux/amd64` is emitted. The map
-pins the full container image in `image`, by tag and digest — edit that field
-to move to a new image and both CI and local builds pick it up — and names the format that image
+pins the full container image in `image` — edit that field to move to a new
+image and both CI and local builds pick it up — and names the format that image
 builds in `type`, which CI passes to `build_pkg.py` as `--package-type`; the two
 have to stay in step. An optional `variant` names a flavour of the package (see
 [Package variants](#package-variants)), and CI passes it as `--variant`.
 
-| Package type | Image (`configs.<distro>[].package.image` in `linux.json`)       | Tools required                                                 |
-| ------------ | ---------------------------------------------------------------- | -------------------------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>@sha256:<digest>`   | `rpmbuild`, `rpmsign`                                          |
-| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>@sha256:<digest>` | `dpkg-buildpackage`, debhelper with compat level 13, `lintian` |
+| Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                                 |
+| ------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`, `rpmsign`                                          |
+| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13, `lintian` |
 
 To print the full packaging matrix (artifact names, images and package names)
 for the current `linux.json`:
