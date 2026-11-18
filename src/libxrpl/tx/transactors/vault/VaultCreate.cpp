@@ -239,7 +239,7 @@ VaultCreate::doApply()
     if (!tx.isFlag(tfVaultShareNonTransferable))
     {
         mptFlags |= (lsfMPTCanTrade | lsfMPTCanTransfer);
-        // Shares are not escrowable, so VaultClawback can always reach them.
+        // fixVaultV1_1 makes shares non-escrowable, so VaultClawback can always reach them.
         if (!view().rules().enabled(fixVaultV1_1))
             mptFlags |= lsfMPTCanEscrow;
     }
