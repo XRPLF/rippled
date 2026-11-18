@@ -237,7 +237,12 @@ VaultCreate::doApply()
 
     std::uint32_t mptFlags = 0;
     if (!tx.isFlag(tfVaultShareNonTransferable))
-        mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
+    {
+        mptFlags |= (lsfMPTCanTrade | lsfMPTCanTransfer);
+        // Shares are not escrowable, so VaultClawback can always reach them.
+        if (!view().rules().enabled(fixVaultV1_1))
+            mptFlags |= lsfMPTCanEscrow;
+    }
     if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
