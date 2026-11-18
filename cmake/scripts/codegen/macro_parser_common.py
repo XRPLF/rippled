@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Common utilities for parsing XRP Ledger macro files.
 
@@ -7,8 +6,8 @@ and ledger_entries.macro files using pcpp and pyparsing.
 """
 
 import re
-import shutil
 from pathlib import Path
+
 import pyparsing as pp
 from pcpp import Preprocessor
 
@@ -47,7 +46,7 @@ class CppCleaner(Preprocessor):
             macro_name: The name of the macro to define so #if !defined() checks pass
                        (e.g., "TRANSACTION" or "LEDGER_ENTRY")
         """
-        super(CppCleaner, self).__init__()
+        super().__init__()
         # Define flags so #if blocks evaluate correctly
         # We set the include flag to 0 so includes are skipped
         self.define(f"{macro_include_name} 0")

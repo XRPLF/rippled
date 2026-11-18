@@ -33,7 +33,6 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -81,7 +80,7 @@ class MdBashBlock:
     body_indent: int
 
 
-RunItem = Union[BlockRun, InlineRun]
+RunItem = BlockRun | InlineRun
 
 
 def _scan_block_body(
@@ -239,6 +238,7 @@ def shfmt_via_hook(tmp_path: Path) -> tuple[bool, str]:
         cwd=REPO,
         capture_output=True,
         text=True,
+        check=False,
     )
     output = res.stdout + res.stderr
     # shfmt emits parse errors as "<path>:<line>:<col>: <message>".

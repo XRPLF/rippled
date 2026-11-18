@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import ClassVar
 
 from conan.tools.build import can_run
 from conan.tools.cmake import CMake, cmake_layout
@@ -13,13 +14,13 @@ class Example(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
 
-    requires = ["xrpl/head"]
+    requires: ClassVar[list[str]] = ["xrpl/head"]
 
-    default_options = {
+    default_options: ClassVar[dict[str, bool]] = {
         "xrpl/*:xrpld": False,
     }
 
-    generators = ["CMakeDeps", "CMakeToolchain"]
+    generators: ClassVar[list[str]] = ["CMakeDeps", "CMakeToolchain"]
 
     def set_version(self):
         if self.version is None:

@@ -6,20 +6,21 @@ and generate C++ classes for each transaction type.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
-import io
 import argparse
+import io
 import re
 from pathlib import Path
+
 import pyparsing as pp
 
 # Import common utilities
 from macro_parser_common import (
     CppCleaner,
-    parse_sfields_macro,
-    parse_field_list,
+    clear_output_directory,
     generate_cpp_class,
     generate_from_template,
-    clear_output_directory,
+    parse_field_list,
+    parse_sfields_macro,
 )
 
 
@@ -93,7 +94,7 @@ def parse_settings(settings_str):
     seen = set()
     # Each entry runs from '.key =' up to the next '.key =' or the end.
     for key, value in re.findall(
-        r"\.(\w+)\s*=\s*(.*?)(?=,\s*\.\w+\s*=|,?\s*$)", body, re.S
+        r"\.(\w+)\s*=\s*(.*?)(?=,\s*\.\w+\s*=|,?\s*$)", body, re.DOTALL
     ):
         if key not in SETTING_DEFAULTS:
             raise ValueError(f"Unknown TxSettings member '.{key}' in {settings_str!r}")
@@ -248,7 +249,7 @@ def main():
     # Clear existing generated files before regenerating
     clear_output_directory(header_dir)
 
-    print(f"\nGenerating header-only template classes...")
+    print("\nGenerating header-only template classes...")
     print(f"  Headers: {header_dir}\n")
 
     # Set up template directory

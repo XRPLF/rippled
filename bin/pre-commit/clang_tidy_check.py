@@ -27,7 +27,7 @@ def clang_tidy_major() -> str | None:
     if not (clang_tidy := shutil.which("clang-tidy")):
         return None
     output = subprocess.run(
-        [clang_tidy, "--version"], capture_output=True, text=True
+        [clang_tidy, "--version"], capture_output=True, text=True, check=False
     ).stdout
     m = re.search(r"LLVM version (\d+)", output)
     return m.group(1) if m else None
@@ -110,7 +110,8 @@ def main():
             "-format",
             "-allow-no-checks",
         ]
-        + files
+        + files,
+        check=False,
     )
     return result.returncode
 
