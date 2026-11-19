@@ -1478,30 +1478,28 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
     if (!isTesSuccess(resetResult))
         return {resetResult, resetFee, isTecClaim(resetResult)};
 
-    // The per-transaction limits on erasing entries again. Types not listed
-    // here have no limit.
-    std::size_t offers = 0;
-    std::size_t nftOffers = 0;
-    std::size_t trustLines = 0;
-
+    std::size_t erased = 0;
     auto const viewJ = ctx_.registry.get().getJournal("View");
     for (auto const& key : keys)
     {
+        // One limit covers all entry types.
+        if (erased == kMaxPersistentDeletes)
+            break;
+
         // A recorded entry can be missing from the reset view: the
         // transaction can create and then erase it.
         auto const sle = view().peek(keylet::unchecked(key));
         if (!sle)
             continue;
+        ++erased;
 
         switch (sle->getType())
         {
             case ltOFFER:
-                if (offers++ < kUnfundedOfferRemoveLimit)
-                    offerDelete(view(), sle, viewJ);
+                offerDelete(view(), sle, viewJ);
                 break;
             case ltNFTOKEN_OFFER:
-                if (nftOffers++ < kExpiredOfferRemoveLimit)
-                    nft::deleteTokenOffer(view(), sle);
+                nft::deleteTokenOffer(view(), sle);
                 break;
             case ltCREDENTIAL:
                 if (auto const ter = credentials::deleteSLE(view(), sle, viewJ); !isTesSuccess(ter))
@@ -1512,8 +1510,7 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
                 }
                 break;
             case ltRIPPLE_STATE:
-                if (trustLines++ < kMaxDeletableAmmTrustLines &&
-                    !isTesSuccess(deleteAMMTrustLine(view(), sle, std::nullopt, viewJ)))
+                if (!isTesSuccess(deleteAMMTrustLine(view(), sle, std::nullopt, viewJ)))
                 {
                     JLOG(viewJ.error())
                         << "replayPersistentDeletes: failed to delete AMM trustline";

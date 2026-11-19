@@ -36,6 +36,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -5294,6 +5295,50 @@ public:
     }
 
     void
+    testPersistentDeleteLimit(FeatureBitset features)
+    {
+        // With fixCleanup3_6_0, a tec keeps at most kMaxPersistentDeletes
+        // persistent deletes of any type. Before it, the offer limit is
+        // kUnfundedOfferRemoveLimit.
+        testcase("Persistent delete: limit");
+        using namespace jtx;
+
+        bool const fixEnabled = features[fixCleanup3_6_0];
+        std::uint32_t const offerCount = kMaxPersistentDeletes + 88;
+        static_assert(kMaxPersistentDeletes + 88 < kUnfundedOfferRemoveLimit);
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, bob);
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env(trust(bob, eur(1000)));
+        env(pay(gw, bob, eur(10)));
+        env.close();
+
+        for (std::uint32_t i = 0; i < offerCount; ++i)
+        {
+            env(offer(bob, usd(10), eur(10)));
+            if (i % 100 == 99)
+                env.close();
+        }
+        env(pay(bob, gw, eur(10)));
+        env.close();
+        env.require(Owners(bob, offerCount + 1));
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+
+        // Bob's trust line remains, plus the offers past the limit.
+        std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
+        env.require(Owners(bob, remaining + 1));
+    }
+
+    void
     testFillOrKill(FeatureBitset features)
     {
         testcase("fixFillOrKill");
@@ -5533,6 +5578,7 @@ public:
         {
             testPersistentDeleteFillOrKill(features);
             testPersistentDeleteInsufficientReserve(features);
+            testPersistentDeleteLimit(features);
         }
     }
 };
