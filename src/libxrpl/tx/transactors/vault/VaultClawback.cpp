@@ -260,28 +260,28 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
+    // clamping to assetsAvailable, allowing more assets to be recovered
+    // than available when there was an outstanding loan. Retained for
+    // ledger replay compatibility.
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
+    {
+        auto const sharesDestroyed = accountHolds(
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
+        auto const maybeAssets =
+            sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed, ctx_.view().rules());
+        if (!maybeAssets)
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+        return std::make_pair(*maybeAssets, sharesDestroyed);
+    }
+
     STAmount sharesDestroyed;
     STAmount assetsRecovered;
 
     // Number arithmetic can throw overflow_error when Scale and totals are large.
     try
     {
-        // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
-        // clamping to assetsAvailable, allowing more assets to be recovered
-        // than available when there was an outstanding loan. Retained for
-        // ledger replay compatibility.
-        if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
-        {
-            auto const legacyShares = accountHolds(
-                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-            auto const legacyAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, legacyShares, ctx_.view().rules());
-            if (!legacyAssets)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-
-            return std::make_pair(*legacyAssets, legacyShares);
-        }
-
         // Do not discount a sole holder's shares: clawing back AssetsAvailable at the discounted
         // rate can burn every share while loan assets remain.
         auto const waiveUnrealizedLoss =
