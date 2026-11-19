@@ -2173,15 +2173,19 @@ public:
     // One LoanPay offers four installments, each 5 * 10^12 plus a service fee of 2.3 * 10^13.
     // Three fit below 10^14 and the fourth would not, so under fixCleanup3_6_0 three are paid.
     // The rest of the amount is not used, even with the overpayment flag. Every amount fits in 16
-    // digits at 0.1, so the trust lines move exactly.
+    // digits at 0.1, so the trust lines move exactly. With partialOffer the amount lies between
+    // three and four installments, so the fourth is both too large and unaffordable, and the rest
+    // must still not be applied as an overpayment.
     void
-    testInstallmentLoopStop(VKind kind, bool overpayment, bool fix)
+    testInstallmentLoopStop(VKind kind, bool overpayment, bool fix, bool partialOffer = false)
     {
         using namespace test::jtx;
 
         testcase(
             "LoanPay installments stop at the size limit, " + kindName(kind) +
-            (overpayment ? ", rest as overpayment" : "") + (fix ? "" : ", amendment off"));
+            (overpayment ? ", rest as overpayment" : "") +
+            (partialOffer ? ", offer between three and four installments" : "") +
+            (fix ? "" : ", amendment off"));
 
         Env env(*this, conserveFeatures(kind, fix));
         LimitSetup s;
@@ -2201,7 +2205,7 @@ public:
         Number const installment = roundPeriodicPayment(
             s.asset.raw(), loanBefore->at(sfPeriodicPayment), loanBefore->at(sfLoanScale));
         BEAST_EXPECT((installment == Number{5, 12}));
-        Number const amount = (installment + fee) * 4;
+        Number const amount = partialOffer ? Number{110, 12} : (installment + fee) * 4;
         auto const vaultBefore = env.le(s.vault);
         if (!BEAST_EXPECT(vaultBefore))
             return;
@@ -2250,6 +2254,7 @@ public:
             for (bool const overpayment : {false, true})
             {
                 testInstallmentLoopStop(kind, overpayment, true);
+                testInstallmentLoopStop(kind, overpayment, true, true);
                 // A FixedPrecision vault is never built without the fix.
                 if (kind != VKind::Fixed)
                     testInstallmentLoopStop(kind, overpayment, false);

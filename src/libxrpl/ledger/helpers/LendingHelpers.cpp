@@ -1885,17 +1885,25 @@ makeRegularPayment(
     auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
     bool stoppedAtLimit = false;
-    while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
-           numPayments < kLoanMaximumPaymentsPerTransaction)
+    while (paymentRemainingProxy > 0 && numPayments < kLoanMaximumPaymentsPerTransaction)
     {
         // Under fixCleanup3_6_0, stop before an installment whose total passes the size limit.
         // The first is always paid, and the rest of the amount is not used, not even to overpay.
-        if (view.rules().enabled(fixCleanup3_6_0) && numPayments > 0 &&
-            !fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
+        // This is checked before the amount, so an amount too small for the next installment can
+        // not overpay past the limit either.
+        if (view.rules().enabled(fixCleanup3_6_0) && numPayments > 0)
         {
-            stoppedAtLimit = true;
-            break;
+            // Round up, so a total just past the MPT maximum is not rounded back down to it.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            if (!fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
+            {
+                stoppedAtLimit = true;
+                break;
+            }
         }
+
+        if (amount < totalPaid + periodic.totalDue)
+            break;
 
         // Try to make more payments
         XRPL_ASSERT_PARTS(
