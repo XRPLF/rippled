@@ -191,9 +191,12 @@ writes the store into `PT_INTERP` and `RUNPATH`. That is fine for the pinned
 glibc, whose path does not move, but not for the GCC runtime, which moves with
 every GCC update. So [`conan/profiles/default`](../../conan/profiles/default)
 links build-context packages, whose executables run during the build, with
-`-static-libstdc++ -static-libgcc -Wl,--as-needed`, and
+`-static-libstdc++ -Wl,--as-needed`. They still load `libgcc_s.so.1` from the
+store, but from the pinned glibc output, which bundles it and precedes the GCC
+runtime in `RUNPATH`. `-static-libgcc` is not an option: it makes an exception
+thrown from a `std::call_once` callable hang or crash.
 [`conan/profiles/sanitizers`](../../conan/profiles/sanitizers) does not
-instrument them. CI checks that they load nothing from the store but glibc, from
+instrument build-context packages. CI checks that they load nothing from the store but glibc, from
 the graph `conan install --format=json` writes:
 
 ```bash
