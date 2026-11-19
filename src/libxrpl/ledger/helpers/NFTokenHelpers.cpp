@@ -613,7 +613,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
 }
 
 bool
-deleteTokenOffer(ApplyView& view, SLE::Ref offer, EraseMode mode)
+deleteTokenOffer(ApplyView& view, SLE::Ref offer, DeleteTokenOfferOptions options)
 {
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
@@ -635,7 +635,7 @@ deleteTokenOffer(ApplyView& view, SLE::Ref offer, EraseMode mode)
 
     decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
-    if (mode == EraseMode::Persistent)
+    if (options.eraseMode == EraseMode::Persistent)
     {
         view.erasePersistent(offer);
     }

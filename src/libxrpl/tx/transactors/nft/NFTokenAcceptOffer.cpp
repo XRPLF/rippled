@@ -463,7 +463,7 @@ NFTokenAcceptOffer::doApply()
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
-                if (!nft::deleteTokenOffer(view(), offer, EraseMode::Persistent))
+                if (!nft::deleteTokenOffer(view(), offer, {.eraseMode = EraseMode::Persistent}))
                 {
                     // LCOV_EXCL_START
                     JLOG(j_.fatal())

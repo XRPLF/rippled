@@ -162,6 +162,14 @@ trustCreate(
     SLE::Ref sponsorSle,
     beast::Journal j);
 
+/**
+ * Options for trustDelete().
+ */
+struct TrustDeleteOptions
+{
+    EraseMode eraseMode = EraseMode::Normal;
+};
+
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
@@ -169,7 +177,7 @@ trustDelete(
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j,
-    EraseMode mode = EraseMode::Normal);
+    TrustDeleteOptions options = {});
 
 //------------------------------------------------------------------------------
 //
@@ -264,10 +272,17 @@ removeEmptyHolding(
     beast::Journal journal);
 
 /**
+ * Options for deleteAMMTrustLine().
+ */
+struct DeleteAMMTrustLineOptions
+{
+    EraseMode eraseMode = EraseMode::Normal;
+};
+
+/**
  * Delete trustline to AMM. The passed `sle` must be obtained from a prior
  * call to view.peek(). Fail if neither side of the trustline is AMM or
  * if ammAccountID is seated and is not one of the trustline's side.
- * `mode` says whether the erase must survive a `tec` reset.
  */
 [[nodiscard]] TER
 deleteAMMTrustLine(
@@ -275,7 +290,7 @@ deleteAMMTrustLine(
     SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j,
-    EraseMode mode = EraseMode::Normal);
+    DeleteAMMTrustLineOptions options = {});
 
 /**
  * Delete AMMs MPToken. The passed `sle` must be obtained from a prior

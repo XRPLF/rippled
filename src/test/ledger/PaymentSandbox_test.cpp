@@ -641,7 +641,8 @@ public:
         // A persistent erase in a discarded sandbox is not kept.
         {
             Sandbox sb(&av);
-            BEAST_EXPECT(isTesSuccess(offerDelete(sb, sb.peek(k), j, EraseMode::Persistent)));
+            BEAST_EXPECT(
+                isTesSuccess(offerDelete(sb, sb.peek(k), j, {.eraseMode = EraseMode::Persistent})));
             BEAST_EXPECT(sb.persistentKeys().contains(k.key));
         }
         BEAST_EXPECT(av.persistentKeys().empty());
@@ -653,8 +654,8 @@ public:
             PaymentSandbox outer(&av);
             {
                 PaymentSandbox inner(&outer);
-                BEAST_EXPECT(
-                    isTesSuccess(offerDelete(inner, inner.peek(k), j, EraseMode::Persistent)));
+                BEAST_EXPECT(isTesSuccess(
+                    offerDelete(inner, inner.peek(k), j, {.eraseMode = EraseMode::Persistent})));
                 inner.apply(outer);
             }
             BEAST_EXPECT(outer.persistentKeys().contains(k.key));

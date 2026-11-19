@@ -783,7 +783,7 @@ flow(
             {
                 if (auto const ok = sb.peek(keylet::offer(o)))
                 {
-                    offerDelete(sb, ok, j, EraseMode::Persistent);
+                    offerDelete(sb, ok, j, {.eraseMode = EraseMode::Persistent});
                 }
                 else
                 {

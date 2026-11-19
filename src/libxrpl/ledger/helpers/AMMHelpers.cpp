@@ -659,7 +659,8 @@ deleteAMMTrustLines(
                 }
 
                 return {
-                    deleteAMMTrustLine(sb, sleItem, ammAccountID, j, EraseMode::Persistent),
+                    deleteAMMTrustLine(
+                        sb, sleItem, ammAccountID, j, {.eraseMode = EraseMode::Persistent}),
                     SkipEntry::No};
             }
             // LCOV_EXCL_START

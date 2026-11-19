@@ -526,9 +526,9 @@ OfferCreate::flowCross(
         for (auto const& toRemove : result.removableOffers)
         {
             if (auto const otr = psb.peek(keylet::offer(toRemove)))
-                offerDelete(psb, otr, j_, EraseMode::Persistent);
+                offerDelete(psb, otr, j_, {.eraseMode = EraseMode::Persistent});
             if (auto const otr = psbCancel.peek(keylet::offer(toRemove)))
-                offerDelete(psbCancel, otr, j_, EraseMode::Persistent);
+                offerDelete(psbCancel, otr, j_, {.eraseMode = EraseMode::Persistent});
         }
 
         // Determine the size of the final offer after crossing.

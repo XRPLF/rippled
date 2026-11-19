@@ -1532,18 +1532,6 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
     return {result, resetFee, isTecClaim(result)};
 }
 
-bool
-Transactor::hasPersistentChanges(TER result) const
-{
-    // A tec with persistent changes is applied even when it could be retried,
-    // so that the changes are not lost.
-    if (view().rules().enabled(fixCleanup3_6_0))
-        return isTecClaim(result) && !ctx_.persistentKeys().empty();
-
-    return (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED);
-}
-
 std::tuple<TER, XRPAmount, bool>
 Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
@@ -1731,7 +1719,13 @@ Transactor::operator()()
             ctx_.discard();
             canApplyTmp = false;
         }
-        else if (hasPersistentChanges(result) || isTecClaimHardFail(result, view().flags()))
+        else if (
+            isTecClaimHardFail(result, view().flags()) ||
+            // Before fixCleanup3_6_0, these results are applied even when the
+            // transaction could be retried, so that their deletions are kept.
+            (!view().rules().enabled(fixCleanup3_6_0) &&
+             ((result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+              (result == tecEXPIRED))))
         {
             // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.

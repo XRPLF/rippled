@@ -561,9 +561,6 @@ private:
     TER
     payFee();
 
-    [[nodiscard]] bool
-    hasPersistentChanges(TER result) const;
-
     std::tuple<TER, XRPAmount, bool>
     processPersistentChanges(TER result, XRPAmount fee);
 

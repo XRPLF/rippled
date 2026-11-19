@@ -302,7 +302,7 @@ trustDelete(
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j,
-    EraseMode mode)
+    TrustDeleteOptions options)
 {
     // Detect legacy dirs.
     std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
@@ -326,7 +326,7 @@ trustDelete(
     removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    if (mode == EraseMode::Persistent)
+    if (options.eraseMode == EraseMode::Persistent)
     {
         view.erasePersistent(sleRippleState);
     }
@@ -808,7 +808,7 @@ deleteAMMTrustLine(
     SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j,
-    EraseMode mode)
+    DeleteAMMTrustLineOptions options)
 {
     if (!sleState || sleState->getType() != ltRIPPLE_STATE)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -839,7 +839,9 @@ deleteAMMTrustLine(
     auto const sponsorSle =
         getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j, mode); !isTesSuccess(ter))
+    if (auto const ter =
+            trustDelete(view, sleState, low, high, j, {.eraseMode = options.eraseMode});
+        !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;
