@@ -561,8 +561,14 @@ private:
     TER
     payFee();
 
+    [[nodiscard]] bool
+    hasPersistentChanges(TER result) const;
+
     std::tuple<TER, XRPAmount, bool>
     processPersistentChanges(TER result, XRPAmount fee);
+
+    std::tuple<TER, XRPAmount, bool>
+    replayPersistentDeletes(TER result, XRPAmount fee);
 
     void trapTransaction(UInt256) const;
 

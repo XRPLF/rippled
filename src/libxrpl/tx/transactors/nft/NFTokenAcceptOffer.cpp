@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -462,7 +463,7 @@ NFTokenAcceptOffer::doApply()
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
-                if (!nft::deleteTokenOffer(view(), offer))
+                if (!nft::deleteTokenOffer(view(), offer, EraseMode::Persistent))
                 {
                     // LCOV_EXCL_START
                     JLOG(j_.fatal())

@@ -168,7 +168,8 @@ trustDelete(
     SLE::Ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
-    beast::Journal j);
+    beast::Journal j,
+    EraseMode mode = EraseMode::Normal);
 
 //------------------------------------------------------------------------------
 //
@@ -266,13 +267,15 @@ removeEmptyHolding(
  * Delete trustline to AMM. The passed `sle` must be obtained from a prior
  * call to view.peek(). Fail if neither side of the trustline is AMM or
  * if ammAccountID is seated and is not one of the trustline's side.
+ * `mode` says whether the erase must survive a `tec` reset.
  */
 [[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
     SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
-    beast::Journal j);
+    beast::Journal j,
+    EraseMode mode = EraseMode::Normal);
 
 /**
  * Delete AMMs MPToken. The passed `sle` must be obtained from a prior

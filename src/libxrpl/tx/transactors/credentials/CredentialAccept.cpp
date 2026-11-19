@@ -117,7 +117,7 @@ CredentialAccept::doApply()
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
-        auto const err = credentials::deleteSLE(view(), sleCred, j_);
+        auto const err = credentials::deleteSLE(view(), sleCred, j_, EraseMode::Persistent);
         return isTesSuccess(err) ? tecEXPIRED : err;
     }
 

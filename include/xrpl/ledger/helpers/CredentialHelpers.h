@@ -29,9 +29,14 @@ namespace credentials {
 bool
 checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
 
-// Actually remove a credentials object from the ledger
+// Actually remove a credentials object from the ledger. `mode` says whether
+// the erase must survive a `tec` reset.
 [[nodiscard]] TER
-deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j);
+deleteSLE(
+    ApplyView& view,
+    SLE::Ref sleCredential,
+    beast::Journal j,
+    EraseMode mode = EraseMode::Normal);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC

@@ -17,11 +17,12 @@ namespace xrpl {
  * @param view The ApplyView to modify.
  * @param sle The offer to delete.
  * @param j Journal for logging.
+ * @param mode Whether the erase must survive a `tec` reset.
  *
  * @return tesSUCCESS on success, otherwise an error code.
  */
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
-offerDelete(ApplyView& view, SLE::Ref sle, beast::Journal j);
+offerDelete(ApplyView& view, SLE::Ref sle, beast::Journal j, EraseMode mode = EraseMode::Normal);
 
 }  // namespace xrpl

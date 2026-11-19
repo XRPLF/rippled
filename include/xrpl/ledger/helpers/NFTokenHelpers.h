@@ -79,9 +79,11 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
  *     - The owner directory of the account that placed the offer.
  *
  * The offer also consumes one incremental reserve.
+ *
+ * @param mode Whether the erase must survive a `tec` reset.
  */
 bool
-deleteTokenOffer(ApplyView& view, SLE::Ref offer);
+deleteTokenOffer(ApplyView& view, SLE::Ref offer, EraseMode mode = EraseMode::Normal);
 
 /**
  * Repairs the links in an NFTokenPage directory.

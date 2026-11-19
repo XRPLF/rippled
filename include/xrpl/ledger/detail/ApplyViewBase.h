@@ -14,6 +14,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 
 namespace xrpl::detail {
 
@@ -86,6 +87,9 @@ public:
     erase(SLE::Ref sle) override;
 
     void
+    erasePersistent(SLE::Ref sle) override;
+
+    void
     insert(SLE::Ref sle) override;
 
     void
@@ -105,10 +109,36 @@ public:
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
 
+    /**
+     * Record a key as a persistent delete without erasing anything.
+     *
+     * Use this when the entry was already erased in this view by a child
+     * view that was applied to it.
+     */
+    void
+    markPersistent(uint256 const& key);
+
+    /**
+     * Keys recorded as persistent deletes in this view.
+     */
+    [[nodiscard]] std::set<uint256> const&
+    persistentKeys() const
+    {
+        return persistent_;
+    }
+
 protected:
+    /**
+     * Add the persistent delete keys of this view to `to`, if `to` is
+     * also an ApplyViewBase. Call this from apply().
+     */
+    void
+    applyPersistent(RawView& to) const;
+
     ApplyFlags flags_;
     ReadView const* base_;
     detail::ApplyStateTable items_;
+    std::set<uint256> persistent_;
 };
 
 }  // namespace xrpl::detail

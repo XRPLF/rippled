@@ -658,7 +658,9 @@ deleteAMMTrustLines(
                     // LCOV_EXCL_STOP
                 }
 
-                return {deleteAMMTrustLine(sb, sleItem, ammAccountID, j), SkipEntry::No};
+                return {
+                    deleteAMMTrustLine(sb, sleItem, ammAccountID, j, EraseMode::Persistent),
+                    SkipEntry::No};
             }
             // LCOV_EXCL_START
             JLOG(j.error()) << "deleteAMMObjects: deleting non-trustline or non-MPT " << nodeType;

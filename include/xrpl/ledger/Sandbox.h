@@ -38,6 +38,7 @@ public:
     apply(RawView& to)
     {
         items_.apply(to);
+        applyPersistent(to);
     }
 };
 
