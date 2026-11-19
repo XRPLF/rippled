@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run pre-compiled sanitizer binaries and confirm each emits its expected diagnostic.
 # Binaries must already exist in <bins_dir> with the layout:
-# <name>-g++ and <name>-clang++ for name in {regular,asan,tsan,ubsan}
+# <name>-g++ and <name>-clang++ for name in {regular,call_once,asan,tsan,ubsan}
 
 set -eo pipefail
 
@@ -21,7 +21,8 @@ function run() {
 
     echo "=== Run ${binary} ==="
     set +e
-    "${binary}" >"${out_file}" 2>&1
+    # A broken std::call_once hangs rather than fails, so bound every run.
+    timeout 60 "${binary}" >"${out_file}" 2>&1
     local rc=$?
     set -e
 
@@ -52,6 +53,7 @@ function run() {
 
 declare -A expect=(
     [regular]="Hello from main thread"
+    [call_once]="call_once recovered after exception"
 
     [asan]="heap-use-after-free"
     [tsan]="data race"
@@ -59,7 +61,7 @@ declare -A expect=(
 )
 
 for compiler in g++ clang++; do
-    for name in regular asan tsan ubsan; do
+    for name in regular call_once asan tsan ubsan; do
         binary="${bins_dir}/${name}-${compiler}"
 
         if [ "${name}" = "tsan" ] && [ "${compiler}" = "g++" ] &&
@@ -70,7 +72,7 @@ for compiler in g++ clang++; do
             continue
         fi
 
-        if [ "${name}" = "regular" ]; then
+        if [ "${name}" = "regular" ] || [ "${name}" = "call_once" ]; then
             expected_rc=0
         else
             expected_rc=nonzero

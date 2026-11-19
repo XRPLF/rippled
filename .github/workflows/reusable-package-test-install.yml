@@ -67,18 +67,6 @@ jobs:
           }
           echo "package=${package}" >>"${GITHUB_OUTPUT}"
 
-      # Debian 11 went end-of-life on 2026-08-31
-      # (https://www.debian.org/News/2026/20260831) and its packages are
-      # already partly gone from deb.debian.org, so use archive.debian.org.
-      - name: Switch Debian 11 to archive.debian.org
-        if: ${{ matrix.image == 'debian:11' }}
-        run: |
-          sed -i 's|deb.debian.org|archive.debian.org|' /etc/apt/sources.list
-          printf '%s\n' \
-              'Acquire::Check-Valid-Until "false";' \
-              'Acquire::Retries "3";' \
-              >/etc/apt/apt.conf.d/99archive
-
       - name: Install the DEB
         if: ${{ inputs.package_type == 'deb' }}
         env:

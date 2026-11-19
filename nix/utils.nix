@@ -20,11 +20,11 @@ nixpkgs.lib.genAttrs
         inherit system;
         overlays = [ (import rust-overlay) ];
       };
-      # glibc 2.31 — matches the system libc on Ubuntu 20.04 LTS. Sourced
-      # from the nixpkgs snapshot pinned via the `nixpkgs-custom-glibc`
-      # flake input, so the build uses the compiler from that snapshot
-      # (gcc 9.3.0) along with the matching patches, configure flags, and
-      # hardening defaults.
+      # glibc 2.34 — matches the system libc on RHEL 9; the oldest supported
+      # Ubuntu is 22.04 LTS (glibc 2.35). Sourced from the
+      # nixpkgs snapshot pinned via the `nixpkgs-custom-glibc` flake input,
+      # so the build uses the compiler from that snapshot (gcc 11.3.0) along
+      # with the matching patches, configure flags, and hardening defaults.
       customGlibc = (import nixpkgs-custom-glibc { inherit system; }).glibc;
     }
   )

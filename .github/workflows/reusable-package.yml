@@ -182,10 +182,8 @@ jobs:
       package_names: ${{ needs.generate-matrix.outputs.deb_package_names }}
       images: |
         [
-          "debian:11",
           "debian:12",
           "debian:13",
-          "ubuntu:20.04",
           "ubuntu:22.04",
           "ubuntu:24.04",
           "ubuntu:26.04"

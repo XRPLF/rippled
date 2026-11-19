@@ -53,7 +53,7 @@ jobs:
           - name: nixos
             base_image: nixos/nix:latest
           - name: ubuntu
-            base_image: ubuntu:20.04
+            base_image: ubuntu:22.04
           - name: debian
             base_image: debian:bookworm
           - name: rhel

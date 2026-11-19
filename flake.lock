@@ -19,17 +19,17 @@
     "nixpkgs-custom-glibc": {
       "flake": false,
       "locked": {
-        "lastModified": 1593520194,
-        "narHash": "sha256-+TZW+2I7kLL9JglPNOagm1ywjf9ua0JYGoptq/dzVn0=",
+        "lastModified": 1685573264,
+        "narHash": "sha256-Zffu01pONhs/pqH07cjlF10NnMDLok8ix5Uk4rhOnZQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "9cd98386a38891d1074fc18036b842dc4416f562",
+        "rev": "380be19fbd2d9079f677978361792cb25e8a3635",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "9cd98386a38891d1074fc18036b842dc4416f562",
+        "rev": "380be19fbd2d9079f677978361792cb25e8a3635",
         "type": "github"
       }
     },
