@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -80,7 +81,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
+    LoanBrokerEntryR const sleBroker(brokerID, ctx.view);
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -112,7 +113,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         // CoverAvailable scale it uses would reject a re-fining withdrawal as
         // sub-ULP.
         roundedAmount = debitToPosteriorBrokerCoverScale(
-            vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
+            vault, sleBroker.rawSle(), amount, Number::RoundingMode::TowardsZero);
         if (roundedAmount == beast::kZero)
         {
             JLOG(ctx.j.warn()) << "LoanBrokerCoverWithdraw: withdraw amount: " << amount
@@ -241,7 +242,7 @@ LoanBrokerCoverWithdraw::doApply()
     auto const requestedAmount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto const broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW broker(brokerID, view());
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -252,14 +253,14 @@ LoanBrokerCoverWithdraw::doApply()
     auto const vaultAsset = vault->at(sfAsset);
     auto const amount = getVaultVersion(vault) == VaultVersion::FixedPrecision
         ? debitToPosteriorBrokerCoverScale(
-              vault, broker, requestedAmount, Number::RoundingMode::TowardsZero)
+              vault, broker.rawSle(), requestedAmount, Number::RoundingMode::TowardsZero)
         : requestedAmount;
 
     auto const brokerPseudoID = *broker->at(sfAccount);
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
-    view().update(broker);
+    broker.update();
 
     associateAsset(*broker, vaultAsset);
 

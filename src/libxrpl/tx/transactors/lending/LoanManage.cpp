@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -117,7 +118,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
+    LoanBrokerEntryR const loanBrokerSle(loanBrokerID, ctx.view);
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -187,7 +188,7 @@ namespace {
 defaultLoanFixedPrecision(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref brokerSle,
+    LoanBrokerEntryW& brokerSle,
     SLE::Ref vaultSle,
     beast::Journal j)
 {
@@ -195,7 +196,8 @@ defaultLoanFixedPrecision(
     Number const scheduledInterest = loanSle->at(sfTotalValueOutstanding) - principalOutstanding -
         loanSle->at(sfManagementFeeOutstanding);
 
-    STAmount const coverAmount = LoanManage::calculateDefaultCover(loanSle, brokerSle, vaultSle);
+    STAmount const coverAmount =
+        LoanManage::calculateDefaultCover(loanSle, brokerSle.mutableRawSle(), vaultSle);
 
     // The broker's CoverAvailable decrease and the broker-to-vault transfer
     // both use this amount. AssetsAvailable + cover is exact unless
@@ -220,7 +222,7 @@ defaultLoanFixedPrecision(
 
     brokerSle->at(sfDebtTotal) -= principalOutstanding;
     brokerSle->at(sfCoverAvailable) -= coverAmount;
-    view.update(brokerSle);
+    brokerSle.update();
 
     loanSle->setFlag(lsfLoanDefault);
     loanSle->at(sfTotalValueOutstanding) = 0;
@@ -249,7 +251,7 @@ TER
 LoanManage::defaultLoan(
     ApplyView& view,
     SLE::Ref loanSle,
-    SLE::Ref brokerSle,
+    LoanBrokerEntryW& brokerSle,
     SLE::Ref vaultSle,
     beast::Journal j)
 {
@@ -373,7 +375,7 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
         coverAvailableProxy -= defaultCovered;
-        view.update(brokerSle);
+        brokerSle.update();
     }
 
     // Update the Loan object:
@@ -544,7 +546,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntryW brokerSle(brokerID, view);
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

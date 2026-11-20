@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -157,7 +158,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         // Updating an existing Broker
 
-        auto const sleBroker = ctx.view.read(keylet::loanBroker(*brokerID));
+        LoanBrokerEntryR const sleBroker(*brokerID, ctx.view);
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -254,7 +255,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto const broker = view.peek(keylet::loanBroker(*brokerID));
+        LoanBrokerEntryW broker(*brokerID, view);
         if (!broker)
         {
             // This should be impossible
@@ -287,7 +288,7 @@ LoanBrokerSet::doApply()
             }
         }
 
-        view.update(broker);
+        broker.update();
 
         associateAsset(*broker, vaultAsset);
     }
@@ -317,11 +318,12 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto const broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
+        LoanBrokerEntryW broker(accountID_, sequence, view);
+        broker.newSLE();
 
-        if (auto const ter = dirLink(view, accountID_, broker))
+        if (auto const ter = dirLink(view, accountID_, broker.mutableRawSle()))
             return ter;  // LCOV_EXCL_LINE
-        if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
+        if (auto const ter = dirLink(view, vaultPseudoID, broker.mutableRawSle(), sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
         // Increases the owner count by two: one for the LoanBroker object, and
@@ -365,7 +367,7 @@ LoanBrokerSet::doApply()
                 broker->setFieldH256(sfDomainID, *domainID);
         }
 
-        view.insert(broker);
+        broker.insert();
 
         associateAsset(*broker, vaultAsset);
     }
