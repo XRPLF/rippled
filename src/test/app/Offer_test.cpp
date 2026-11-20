@@ -1,4 +1,5 @@
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
@@ -25,6 +26,7 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -53,6 +55,8 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -5307,39 +5311,83 @@ public:
         std::uint32_t const offerCount = kMaxPersistentDeletes + 88;
         static_assert(kMaxPersistentDeletes + 88 < kUnfundedOfferRemoveLimit);
 
-        Env env{*this, features};
-        Account const gw{"gw"};
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-        auto const usd = gw["USD"];
-        auto const eur = gw["EUR"];
-        env.fund(XRP(100000), gw, alice, bob);
-        env(trust(alice, usd(100)));
-        env(pay(gw, alice, usd(100)));
-        env(trust(bob, eur(1000)));
-        env(pay(gw, bob, eur(10)));
-        env.close();
-
-        for (std::uint32_t i = 0; i < offerCount; ++i)
-        {
-            env(offer(bob, usd(10), eur(10)));
-            if (i % 100 == 99)
-                env.close();
-        }
-        env(pay(bob, gw, eur(10)));
-        env.close();
-        env.require(Owners(bob, offerCount + 1));
-
-        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
-        env.close();
-
+        std::string logs;
+        std::uint32_t ownerCount = 0;
         // Bob's trust line remains, plus the offers past the limit.
         std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
-        auto const ownerCount = env.le(bob)->getFieldU32(sfOwnerCount);
+        {
+            Env env{*this, features, std::make_unique<CaptureLogs>(&logs)};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            auto const usd = gw["USD"];
+            auto const eur = gw["EUR"];
+            env.fund(XRP(100000), gw, alice, bob);
+            env(trust(alice, usd(100)));
+            env(pay(gw, alice, usd(100)));
+            env(trust(bob, eur(1000)));
+            env(pay(gw, bob, eur(10)));
+            env.close();
+
+            for (std::uint32_t i = 0; i < offerCount; ++i)
+            {
+                env(offer(bob, usd(10), eur(10)));
+                if (i % 100 == 99)
+                    env.close();
+            }
+            env(pay(bob, gw, eur(10)));
+            env.close();
+            env.require(Owners(bob, offerCount + 1));
+
+            env.app().getLogs().journal("Test").info() << "MARKER_START";
+            env.app().getLogs().threshold(beast::Severity::Trace);
+            env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+            env.app().getLogs().threshold(beast::Severity::Info);
+            env.app().getLogs().journal("Test").info() << "MARKER_END";
+            env.close();
+
+            ownerCount = env.le(bob)->getFieldU32(sfOwnerCount);
+        }
         BEAST_EXPECTS(
             ownerCount == remaining + 1,
             "fixEnabled=" + std::to_string(fixEnabled) + " actual=" + std::to_string(ownerCount) +
                 " expected=" + std::to_string(remaining + 1));
+        if (ownerCount != remaining + 1)
+        {
+            auto const start = logs.find("MARKER_START");
+            auto const end = logs.find("MARKER_END");
+            auto const body = logs.substr(start, end - start);
+            log << "LOGS size=" << body.size() << std::endl;
+            for (std::string const key : {
+                     "emoved",
+                     "strands dry",
+                     "Total flow",
+                     "Best path",
+                     "reapplying",
+                     "xceeded",
+                     "final result",
+                     "Fill or Kill",
+                     "New flow iter",
+                     "rejected",
+                     "dry",
+                     "Exception",
+                 })
+            {
+                std::size_t hits = 0;
+                std::size_t count = 0;
+                for (auto pos = body.find(key); pos != std::string::npos;
+                     pos = body.find(key, pos + 1))
+                {
+                    ++count;
+                    if (hits++ < 3)
+                    {
+                        log << "[" << key << "] " << body.substr(pos > 100 ? pos - 100 : 0, 300)
+                            << std::endl;
+                    }
+                }
+                log << "[" << key << "] total=" << count << std::endl;
+            }
+        }
     }
 
     void
