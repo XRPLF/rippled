@@ -280,13 +280,8 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *   2. The max of the "large" range, 10^19-1, is the largest 10^X-1 value that
  *      fits in an unsigned 64-bit number. (10^19-1 < 2^64-1 and
  *      10^20-1 > 2^64-1). This avoids under- and overflows.
- *   3. Do not store a Number in a static, inline, or global variable. A Number
- *      is normalized to the MantissaRange that is active when it is built, and
- *      operator< and operator== give wrong results when the two operands were
- *      built under different ranges. Store the mantissa and exponent instead,
- *      and build the Number where you use it. Changing a runtime Number into a
- *      stored constant changes transaction results, so gate that change behind
- *      an amendment.
+ *   3. A Number must not outlive a change of the active MantissaRange. See
+ *      "Usage With Different Ranges" below.
  *
  * ---- External Interface ----
  *
@@ -329,7 +324,18 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * ---- Usage With Different Ranges ----
  *
  * Outside of unit tests, and existing checks, code that uses Number should not
- * know or care which mantissa range is active.
+ * know or care which mantissa range is active, provided no Number lives across
+ * a range switch. That is why a non-zero Number must not be stored in a
+ * static, inline, or global variable. A Number is normalized to the
+ * MantissaRange that is active when it is built. If the range changes later,
+ * operator< and operator== give wrong results when the two operands were built
+ * under different ranges, and operator+= can fail an assert in debug builds or
+ * align exponents incorrectly. Multiplication is not affected, because it
+ * computes an exact 128-bit product and normalizes it once. Zero does not
+ * depend on the range, so a stored zero is safe. Store the mantissa and
+ * exponent instead, and build the Number where you use it. Changing a runtime
+ * Number into a stored constant changes transaction results, so gate that
+ * change behind an amendment.
  *
  * The results of computations using Numbers with a small mantissa may differ
  * from computations using Numbers with a large mantissa, specifically as it
