@@ -59,10 +59,11 @@ public:
         , parentBatchId(parentBatchId)
         , j(j)
     {
-        XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
+        XRPL_ASSERT(
+            (flags & ApplyFlags::Batch) == ApplyFlags::Batch, "Batch apply flag should be set");
         XRPL_ASSERT_IF(
-            (flags & TapProposal) != TapNone,
-            (flags & TapDryRun) != TapNone,
+            (flags & ApplyFlags::Proposal) != ApplyFlags::None,
+            (flags & ApplyFlags::DryRun) != ApplyFlags::None,
             "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
@@ -74,10 +75,11 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
-        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT(
+            (flags & ApplyFlags::Batch) == ApplyFlags::None, "Batch apply flag should not be set");
         XRPL_ASSERT_IF(
-            (flags & TapProposal) != TapNone,
-            (flags & TapDryRun) != TapNone,
+            (flags & ApplyFlags::Proposal) != ApplyFlags::None,
+            (flags & ApplyFlags::DryRun) != ApplyFlags::None,
             "xrpl::PreflightContext : proposal preflight implies dry run");
     }
 
@@ -116,7 +118,7 @@ public:
         , j(j)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags & TapBatch) == TapBatch),
+            parentBatchId.has_value() == ((flags & ApplyFlags::Batch) == ApplyFlags::Batch),
             "Parent Batch ID should be set if batch apply flag is set");
     }
 
@@ -129,7 +131,8 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : PreclaimContext(registry, view, preflightResult, tx, flags, std::nullopt, j)
     {
-        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT(
+            (flags & ApplyFlags::Batch) == ApplyFlags::None, "Batch apply flag should not be set");
     }
 
     PreclaimContext&

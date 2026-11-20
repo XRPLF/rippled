@@ -1131,7 +1131,13 @@ class InvariantsVault_test : public InvariantsBase
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1183,7 +1189,7 @@ class InvariantsVault_test : public InvariantsBase
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
-                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1360,7 +1366,13 @@ class InvariantsVault_test : public InvariantsBase
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1415,7 +1427,13 @@ class InvariantsVault_test : public InvariantsBase
                     test::StreamSink sink{beast::Severity::Warning};
                     beast::Journal const jlog{sink};
                     ApplyContext ac{
-                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                        env.app(),
+                        ov,
+                        tx,
+                        tesSUCCESS,
+                        env.current()->fees().base,
+                        ApplyFlags::None,
+                        jlog};
                     CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                     auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1519,7 +1537,7 @@ class InvariantsVault_test : public InvariantsBase
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
-                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             {
