@@ -181,37 +181,6 @@ template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s);
 
-enum class ECDSACanonicality { Canonical, FullyCanonical };
-
-/**
- * Determines the canonicality of a signature.
- *
- * A canonical signature is in its most reduced form.
- * For example the R and S components do not contain
- * additional leading zeroes. However, even in
- * canonical form, (R,S) and (R,G-S) are both
- * valid signatures for message M.
- *
- * Therefore, to prevent malleability attacks we
- * define a fully canonical signature as one where:
- *
- *     R < G - S
- *
- * where G is the curve order.
- *
- * This routine returns std::nullopt if the format
- * of the signature is invalid (for example, the
- * points are encoded incorrectly).
- *
- * @return std::nullopt if the signature fails
- *         validity checks.
- *
- * @note Only the format of the signature is checked,
- *       no verification cryptography is performed.
- */
-std::optional<ECDSACanonicality>
-ecdsaCanonicality(Slice const& sig);
-
 /**
  * Returns the type of public key.
  *
@@ -220,10 +189,10 @@ ecdsaCanonicality(Slice const& sig);
  */
 /** @{ */
 [[nodiscard]] std::optional<KeyType>
-publicKeyType(Slice const& slice);
+publicKeyType(Slice const& slice) noexcept;
 
 [[nodiscard]] inline std::optional<KeyType>
-publicKeyType(PublicKey const& publicKey)
+publicKeyType(PublicKey const& publicKey) noexcept
 {
     return publicKeyType(publicKey.slice());
 }
@@ -236,7 +205,7 @@ publicKeyType(PublicKey const& publicKey)
 verifyDigest(
     PublicKey const& publicKey,
     UInt256 const& digest,
-    Slice const& sig,
+    Slice sig,
     bool mustBeFullyCanonical = true) noexcept;
 
 /**
@@ -245,7 +214,7 @@ verifyDigest(
  * SHA512-Half, and the resulting digest is signed.
  */
 [[nodiscard]] bool
-verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
+verify(PublicKey const& publicKey, Slice m, Slice sig) noexcept;
 
 /**
  * Calculate the 160-bit node ID from a node public key.
