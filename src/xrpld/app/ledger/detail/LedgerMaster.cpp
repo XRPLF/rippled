@@ -868,11 +868,16 @@ LedgerMaster::setFullLedger(
             clearLedger(ledger->header().seq - 1);
     }
 
-    pendSaveValidated(app_, ledger, isSynchronous, isCurrent);
-
+    // Registered before the save, so the removal a failed save performs, on this thread or on a
+    // job that already ran, always comes after this insert and is never undone by it.
     {
         std::scoped_lock const ml(completeLock_);
         completeLedgers_.insert(ledger->header().seq);
+    }
+
+    if (!pendSaveValidated(app_, ledger, isSynchronous, isCurrent))
+    {
+        JLOG(journal_.warn()) << "Ledger " << ledger->header().seq << " was not saved";
     }
 
     {
