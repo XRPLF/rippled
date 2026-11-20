@@ -16,11 +16,13 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -922,7 +924,8 @@ struct Credentials_test : public beast::unit_test::Suite
                 testcase("deleteSLE fail, bad SLE.");
                 auto const view =
                     std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
-                auto const ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
+                CredentialEntryW sleCred(UInt256{}, *view);
+                auto const ter = xrpl::credentials::deleteSLE(*view, sleCred, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
         }
@@ -1138,7 +1141,9 @@ struct Credentials_test : public beast::unit_test::Suite
             auto const sleCred = env.current()->read(credKeylet);
             BEAST_EXPECT(
                 sleCred &&
-                xrpl::credentials::checkExpired(*sleCred, env.current()->header().parentCloseTime));
+                xrpl::credentials::checkExpired(
+                    CredentialEntryR(sleCred, *env.current()),
+                    env.current()->header().parentCloseTime));
         }
 
         // Create an ApplyViewImpl on top of the current closed ledger

@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -80,12 +81,12 @@ CredentialDelete::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    auto const sleCred = view().peek(keylet::credential(subject, issuer, credType));
+    CredentialEntryW sleCred(subject, issuer, credType, view(), j_);
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != accountID_) && (issuer != accountID_) &&
-        !checkExpired(*sleCred, ctx_.view().header().parentCloseTime))
+        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
