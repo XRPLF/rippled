@@ -4,6 +4,10 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
@@ -55,6 +59,73 @@ MPTokenIssuanceEntry<ViewT>::issuerSelfDebitHook(std::uint64_t amount)
     MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
     auto const available = availableAmount();
     this->applyView().issuerSelfDebitHookMPT(issue, amount, available);
+}
+
+template <typename ViewT>
+bool
+MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
+    AccountID const& account,
+    std::uint8_t depth) const
+{
+    auto const& view = this->readView();
+
+    if (!view.rules().enabled(featureSingleAssetVault))
+        return false;
+
+    if (depth >= kMaxAssetCheckDepth)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::View::checkVaultPseudoAccountFrozenPreconditions : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
+
+    if (!this->exists())
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    auto const issuer = (*this)->getAccountID(sfIssuer);
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying.
+    // Read it to derive the underlying asset and recurse, skipping the
+    // issuer-account-then-vault chain. Pre-amendment shares (no field)
+    // fall back to the chain lookup below.
+    if ((*this)->isFieldPresent(sfReferenceHolding))
+    {
+        auto const sleHolding =
+            view.read(keylet::unchecked((*this)->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+        return isAnyFrozen(view, {issuer, account}, assetOfHolding(*this, *sleHolding), depth + 1);
+    }
+
+    auto const mptIssuer = view.read(keylet::account(issuer));
+    if (mptIssuer == nullptr)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    if (!mptIssuer->isFieldPresent(sfVaultID))
+        return false;  // not a Vault pseudo-account, common case
+
+    auto const vault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
+    if (vault == nullptr)
+    {  // LCOV_EXCL_START
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null vault");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
 
 template class MPTokenIssuanceEntry<ReadView>;
