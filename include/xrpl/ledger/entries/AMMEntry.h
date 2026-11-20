@@ -71,6 +71,13 @@ public:
     void
     initializeFeeAuctionVote(AccountID const& account, Asset const& lptAsset, std::uint16_t tfee)
         requires Base::kIsWritable;
+
+    // Due to rounding, the LPTokenBalance of the last LP might not match the
+    // LP's trustline balance. If account is the only LP and lpTokens is within
+    // the tolerance, set LPTokenBalance to lpTokens.
+    [[nodiscard]] std::expected<bool, TER>
+    verifyAndAdjustLPTokenBalance(STAmount const& lpTokens, AccountID const& account)
+        requires Base::kIsWritable;
 };
 
 using AMMEntryR = AMMEntry<ReadView>;
