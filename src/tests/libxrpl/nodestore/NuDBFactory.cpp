@@ -1,3 +1,7 @@
+#include <tests/libxrpl/helpers/CaptureSink.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+#include <tests/libxrpl/nodestore/TestBase.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -6,9 +10,6 @@
 #include <xrpl/nodestore/Manager.h>
 
 #include <gtest/gtest.h>
-#include <helpers/CaptureSink.h>
-#include <helpers/TestSink.h>
-#include <nodestore/TestBase.h>
 
 #include <array>
 #include <cstddef>

@@ -1,6 +1,7 @@
 #include <xrpl/consensus/LedgerTrie.h>
 
-#include <csf/ledgers.h>
+#include <tests/libxrpl/csf/ledgers.h>
+
 #include <gtest/gtest.h>
 
 #include <cstdint>

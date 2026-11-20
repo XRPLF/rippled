@@ -1,9 +1,10 @@
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
 
+#include <tests/libxrpl/ledger/EntryTestHelpers.h>
+
 #include <xrpl/protocol/Indexes.h>
 
 #include <gtest/gtest.h>
-#include <ledger/EntryTestHelpers.h>
 
 namespace xrpl::test {
 

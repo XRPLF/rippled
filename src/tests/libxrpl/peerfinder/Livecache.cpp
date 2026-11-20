@@ -1,5 +1,7 @@
 #include <xrpl/peerfinder/detail/Livecache.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddressV4.h>
@@ -19,7 +21,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <algorithm>
 #include <array>

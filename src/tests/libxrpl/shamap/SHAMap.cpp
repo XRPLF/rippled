@@ -1,5 +1,8 @@
 #include <xrpl/shamap/SHAMap.h>
 
+#include <tests/libxrpl/helpers/TestNodeFamily.h>
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/SHAMapHash.h>
@@ -16,8 +19,6 @@
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
-#include <shamap/common.h>
 
 #include <algorithm>
 #include <array>

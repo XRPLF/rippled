@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include <protocol_autogen/TestHelpers.h>
+#include <tests/libxrpl/protocol_autogen/TestHelpers.h>
 
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>

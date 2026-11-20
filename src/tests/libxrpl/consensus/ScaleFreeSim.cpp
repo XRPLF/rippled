@@ -1,11 +1,12 @@
+#include <tests/libxrpl/csf/PeerGroup.h>
+#include <tests/libxrpl/csf/Sim.h>
+#include <tests/libxrpl/csf/collectors.h>
+#include <tests/libxrpl/csf/random.h>
+#include <tests/libxrpl/csf/submitters.h>
+#include <tests/libxrpl/csf/timers.h>
+
 #include <xrpl/consensus/ConsensusParms.h>
 
-#include <csf/PeerGroup.h>
-#include <csf/Sim.h>
-#include <csf/collectors.h>
-#include <csf/random.h>
-#include <csf/submitters.h>
-#include <csf/timers.h>
 #include <gtest/gtest.h>
 
 #include <chrono>

@@ -1,5 +1,8 @@
 #include <xrpl/nodestore/Backend.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+#include <tests/libxrpl/nodestore/TestBase.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -11,8 +14,6 @@
 #include <xrpl/nodestore/Types.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
-#include <nodestore/TestBase.h>
 
 #include <algorithm>
 #include <atomic>
