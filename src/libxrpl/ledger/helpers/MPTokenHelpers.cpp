@@ -580,51 +580,7 @@ canTransfer(
     WaiveMPTCanTransfer waive,
     std::uint8_t depth)
 {
-    MPTokenIssuanceEntryR const sleIssuance(mptIssue.getMptID(), view);
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    auto const issuer = (*sleIssuance)[sfIssuer];
-    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
-        return tesSUCCESS;
-
-    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
-        return TER{tecNO_AUTH};
-
-    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
-    // to the vault pseudo's MPToken or RippleState for the underlying asset.
-    // Third-party transfers inherit the underlying's transferability.
-    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
-    //
-    // The recursive call always passes WaiveMPTCanTransfer::No so that
-    // a waived outer caller does not transitively unlock the underlying.
-    if (view.rules().enabled(fixCleanup3_2_0) && sleIssuance->isFieldPresent(sfReferenceHolding))
-    {
-        // Defensive depth bound on the inheritance recursion. Unreachable
-        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
-        if (depth >= kMaxAssetCheckDepth)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-
-        auto const sleHolding =
-            view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
-        if (!sleHolding)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        return canTransfer(
-            view,
-            assetOfHolding(sleIssuance, *sleHolding),
-            from,
-            to,
-            WaiveMPTCanTransfer::No,
-            depth + 1);
-    }
-
-    return tesSUCCESS;
+    return MPTokenIssuanceEntryR(mptIssue.getMptID(), view).canTransfer(from, to, waive, depth);
 }
 
 TER
