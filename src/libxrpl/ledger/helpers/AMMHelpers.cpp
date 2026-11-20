@@ -442,67 +442,6 @@ checkAMMPrecisionLoss(
     return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
 }
 
-STAmount
-ammLPHolds(
-    ReadView const& view,
-    Asset const& asset1,
-    Asset const& asset2,
-    AccountID const& ammAccount,
-    AccountID const& lpAccount,
-    beast::Journal const j)
-{
-    // This function looks similar to `accountHolds`. However, it only checks if
-    // a LPToken holder has enough balance. On the other hand, `accountHolds`
-    // checks if the underlying assets of LPToken are frozen with the
-    // fixFrozenLPTokenTransfer amendment
-
-    auto const currency = ammLPTCurrency(asset1, asset2);
-    STAmount amount;
-
-    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
-    if (!sle)
-    {
-        amount.clear(Issue{currency, ammAccount});
-        JLOG(j.trace()) << "ammLPHolds: no SLE "
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
-    }
-    else if (isFrozen(view, lpAccount, currency, ammAccount))
-    {
-        amount.clear(Issue{currency, ammAccount});
-        JLOG(j.trace()) << "ammLPHolds: frozen currency "
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
-    }
-    else
-    {
-        amount = sle->getFieldAmount(sfBalance);
-        if (lpAccount > ammAccount)
-        {
-            // Put balance in account terms.
-            amount.negate();
-        }
-        amount.get<Issue>().account = ammAccount;
-
-        JLOG(j.trace()) << "ammLPHolds:"
-                        << " lpAccount=" << to_string(lpAccount)
-                        << " amount=" << amount.getFullText();
-    }
-
-    return view.balanceHookIOU(lpAccount, ammAccount, amount);
-}
-
-STAmount
-ammLPHolds(
-    ReadView const& view,
-    AMMEntryR const& ammSle,
-    AccountID const& lpAccount,
-    beast::Journal const j)
-{
-    return ammLPHolds(
-        view, (*ammSle)[sfAsset], (*ammSle)[sfAsset2], (*ammSle)[sfAccount], lpAccount, j);
-}
-
 std::uint16_t
 getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& account)
 {
