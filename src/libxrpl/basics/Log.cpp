@@ -123,8 +123,12 @@ beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
     std::scoped_lock const lock(mutex_);
-    auto const result = sinks_.emplace(name, makeSink(name, thresh_));
-    return *result.first->second;
+    // Look up first: emplace() would evaluate makeSink(), and so allocate a
+    // sink, on every call even when the partition already has one.
+    auto it = sinks_.find(name);
+    if (it == sinks_.end())
+        it = sinks_.emplace(name, makeSink(name, thresh_)).first;
+    return *it->second;
 }
 
 beast::Journal::Sink&
