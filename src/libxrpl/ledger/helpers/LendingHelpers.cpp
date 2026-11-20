@@ -1340,7 +1340,7 @@ computeFullPayment(
     auto const [roundedFullInterest, roundedFullManagementFee] = roundAndSplitInterest(
         asset, fullPaymentInterest, managementFeeRate, loanScale, Number::RoundingMode::Downward);
 
-    LoanState const loanState = constructLoanState(loan);
+    LoanState const loanState = loan.state();
     Number const principalOutstanding = loanState.principalOutstanding;
     Number const managementFeeOutstanding = loanState.managementFeeDue;
     Number const totalInterestOutstanding = loanState.interestDue;
@@ -2263,17 +2263,6 @@ constructLoanState(
         .interestDue = totalValueOutstanding - principalOutstanding - managementFeeOutstanding,
         .managementFeeDue = managementFeeOutstanding,
     };
-}
-
-LoanState
-constructLoanState(LoanEntryR const& loan)
-{
-    XRPL_ASSERT(loan && loan->getType() == ltLOAN, "xrpl::constructLoanState : valid loan SLE");
-
-    return constructLoanState(
-        loan->at(sfTotalValueOutstanding),
-        loan->at(sfPrincipalOutstanding),
-        loan->at(sfManagementFeeOutstanding));
 }
 
 /*
