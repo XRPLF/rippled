@@ -2132,6 +2132,7 @@ public:
         std::uint32_t paymentTotal = 10;
         Number serviceFee{0};
         Number lateFee{0};
+        Number closeFee{0};
         TenthBips32 lateInterestRate{0};
         std::uint32_t flags = 0;
         Number deposit{6, 13};
@@ -2152,6 +2153,7 @@ public:
             kInterestRate(TenthBips32(0)),
             kLoanServiceFee(l.serviceFee),
             kLatePaymentFee(l.lateFee),
+            kClosePaymentFee(l.closeFee),
             kLateInterestRate(l.lateInterestRate),
             kGracePeriod(60),
             kPaymentInterval(600),
@@ -2363,6 +2365,114 @@ public:
             return;
         BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == loanBefore->at(sfPaymentRemaining) - 1);
         BEAST_EXPECT(env.balance(depositor, asset).value() == borrowerBefore - (fee + Number{1}));
+    }
+
+    // Pays amount on loan with flags, expects tesSUCCESS, and checks that the borrower's debit is
+    // what the vault and the broker owner receive. Returns the borrower's debit.
+    Number
+    payLimitLoan(
+        test::jtx::Env& env,
+        LimitSetup const& s,
+        Keylet const& loan,
+        Number const& amount,
+        std::uint32_t flags = 0)
+    {
+        using namespace test::jtx;
+
+        Number const borrowerBefore = env.balance(s.borrower, s.asset).value();
+        Number const vaultLineBefore = env.balance(s.vaultAccount, s.asset).value();
+        Number const ownerBefore = env.balance(s.owner, s.asset).value();
+        env(loan::pay(s.borrower, loan.key, s.asset(amount).value(), flags), Ter(tesSUCCESS));
+        env.close();
+        Number const borrowerDebit = borrowerBefore - env.balance(s.borrower, s.asset).value();
+        Number const vaultGain = env.balance(s.vaultAccount, s.asset).value() - vaultLineBefore;
+        Number const ownerGain = env.balance(s.owner, s.asset).value() - ownerBefore;
+        BEAST_EXPECTS(
+            borrowerDebit == vaultGain + ownerGain,
+            to_string(borrowerDebit) + " " + to_string(vaultGain) + " " + to_string(ownerGain));
+        return borrowerDebit;
+    }
+
+    // Loans created before fixCleanup3_6_0 with fixed fees LoanSet now rejects stay repayable
+    // after it is enabled. Each fee is 10^14, the size limit at LoanScale -2, and each installment
+    // is 2 * 10^12, so one installment with its fees is already past the limit. The deposit stays
+    // below 10^14 so the vault does not raise the loans' scale.
+    //
+    // Loan A is paid by regular payments. A LoanPay offering three installments pays one, and
+    // nine more single installments pay it off. Loan B is paid in full. Loan C makes a late
+    // payment. Every amount is a multiple of 10^12, so the trust lines move exactly.
+    //
+    // A FixedPrecision vault can not exist without the fix. An MPT loan whose installment and fee
+    // pass the MPT maximum can not be paid with or without the fix, as no account can hold it.
+    void
+    testPreFixLoanRepayable(VKind kind)
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "Loans with oversized fees created before the fix stay repayable, " + kindName(kind));
+
+        Env env(*this, conserveFeatures(kind, false));
+        LimitSetup s;
+        Number const fee{1, 14};
+        Number const principal{2, 13};
+        Number const installment{2, 12};
+        setupLimitVault(env, s, kind, Number{9, 13}, Number{3, 15}, Number{1'000});
+
+        openLimitLoan(env, s, {.principal = principal, .serviceFee = fee});
+        Keylet const loanA = s.loan;
+        openLimitLoan(env, s, {.principal = principal, .closeFee = fee});
+        Keylet const loanB = s.loan;
+        openLimitLoan(env, s, {.principal = principal, .lateFee = fee});
+        Keylet const loanC = s.loan;
+        for (auto const& loan : {loanA, loanB, loanC})
+        {
+            auto const sle = env.le(loan);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->at(sfLoanScale) == -2);
+        }
+
+        env.enableFeature(fixCleanup3_6_0);
+        env.close();
+        BEAST_EXPECT(env.current()->rules().enabled(fixCleanup3_6_0));
+
+        // Loan A: the offer of three installments stops after the first.
+        Number const firstDebit = payLimitLoan(env, s, loanA, (installment + fee) * 3);
+        BEAST_EXPECTS(firstDebit == installment + fee, to_string(firstDebit));
+        auto loanSle = env.le(loanA);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        BEAST_EXPECTS(
+            loanSle->at(sfPaymentRemaining) == 9, std::to_string(loanSle->at(sfPaymentRemaining)));
+        for (int i = 0; i < 9; ++i)
+            BEAST_EXPECT(payLimitLoan(env, s, loanA, installment + fee) == installment + fee);
+        loanSle = env.le(loanA);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(loanSle->at(sfPrincipalOutstanding) == beast::kZero);
+
+        // Loan B: a full payment of the principal and the close fee.
+        Number const fullDebit = payLimitLoan(env, s, loanB, Number{2, 14}, tfLoanFullPayment);
+        BEAST_EXPECTS(fullDebit == principal + fee, to_string(fullDebit));
+        loanSle = env.le(loanB);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
+
+        // Loan C: a late payment of one installment and the late fee.
+        loanSle = env.le(loanC);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 20}});
+        Number const lateDebit = payLimitLoan(env, s, loanC, Number{2, 14}, tfLoanLatePayment);
+        BEAST_EXPECTS(lateDebit == installment + fee, to_string(lateDebit));
+        loanSle = env.le(loanC);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 9);
     }
 
     // The 16 digit unit of a balance, or 0 for a zero balance.
@@ -2731,6 +2841,8 @@ public:
         testOriginationRejectedOnAlreadyCoarsenedVault();
         testLoanSetSizeBounds();
         testInstallmentLoopStops();
+        testPreFixLoanRepayable(VKind::Legacy);
+        testPreFixLoanRepayable(VKind::CashBasis);
         testLateInterestPastLimits();
         testLastInstallmentBounds();
         for (bool const fix : {false, true})
