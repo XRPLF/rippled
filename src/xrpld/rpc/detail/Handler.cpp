@@ -12,8 +12,11 @@
 #include <xrpld/rpc/handlers/account/AccountNFTs.h>
 #include <xrpld/rpc/handlers/account/AccountOffers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
+#include <xrpld/rpc/handlers/orderbook/AMMInfo.h>
 #include <xrpld/rpc/handlers/orderbook/BookChanges.h>
+#include <xrpld/rpc/handlers/orderbook/BookOffers.h>
 #include <xrpld/rpc/handlers/orderbook/DepositAuthorized.h>
+#include <xrpld/rpc/handlers/orderbook/GetAggregatePrice.h>
 #include <xrpld/rpc/handlers/orderbook/NFTBuyOffers.h>
 #include <xrpld/rpc/handlers/orderbook/NFTSellOffers.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
@@ -172,7 +175,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAmmInfo,
-        .valueMethod = Method::of<&byRef<&doAMMInfo>>(),
+        .valueMethod = Method::of<&handle<AMMInfoHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -191,7 +194,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kBookOffers,
-        .valueMethod = Method::of<&byRef<&doBookOffers>>(),
+        .valueMethod = Method::of<&handle<BookOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -264,7 +267,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kGetAggregatePrice,
-        .valueMethod = Method::of<&byRef<&doGetAggregatePrice>>(),
+        .valueMethod = Method::of<&handle<GetAggregatePriceHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,

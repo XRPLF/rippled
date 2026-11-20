@@ -11,7 +11,10 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -19,6 +22,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -501,11 +505,128 @@ public:
     }
 
     void
+    testDeferredErrors()
+    {
+        testcase("Element errors carry the ledger fields");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const owner{"owner"};
+        env.fund(XRP(1'000), owner);
+        Oracle const oracle(
+            env,
+            {
+                .owner = owner,
+                .fee = static_cast<int>(env.current()->fees().base.drops()),
+            });
+        env.close();
+
+        auto const request = [&](json::Value const& oracles,
+                                 std::string const& base = "XRP",
+                                 std::string const& quote = "USD") {
+            json::Value params;
+            params[jss::base_asset] = base;
+            params[jss::quote_asset] = quote;
+            params[jss::oracles] = oracles;
+            return params;
+        };
+        auto const element = [&](json::Value const& documentID, json::Value const& account) {
+            json::Value oracles{json::ValueType::Array};
+            json::Value& entry = oracles.append(json::Value{json::ValueType::Object});
+            if (!documentID.isNull())
+                entry[jss::oracle_document_id] = documentID;
+            if (!account.isNull())
+                entry[jss::account] = account;
+            return oracles;
+        };
+        auto const call = [&](json::Value const& params) {
+            return env.rpc("json", "get_aggregate_price", to_string(params))[jss::result];
+        };
+        auto const expectError = [&](json::Value const& params, std::string const& error) {
+            static std::map<std::string, std::string> const kMessages = {
+                {"oracleMalformed", "Oracle request is malformed."},
+                {"invalidParams", "Invalid parameters."},
+                {"objectNotFound", "The requested object was not found."},
+            };
+            auto const jv = call(params);
+            BEAST_EXPECT(jv[jss::error] == error);
+            BEAST_EXPECT(jv[jss::error_message] == kMessages.at(error));
+            BEAST_EXPECT(jv.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(jv.isMember(jss::validated));
+        };
+        auto const expectPrice = [&](json::Value const& params) {
+            auto const jv = call(params);
+            BEAST_EXPECT(!jv.isMember(jss::error));
+            BEAST_EXPECT(jv[jss::median] == "74");
+        };
+
+        json::Value const documentID = oracle.documentID();
+        json::Value const account = owner.human();
+
+        expectError(request(element(json::Value{}, account)), "oracleMalformed");
+        expectError(request(element(documentID, json::Value{})), "oracleMalformed");
+        expectError(request(element("a", account)), "invalidParams");
+        expectError(request(element("-0", account)), "invalidParams");
+        expectError(request(element(documentID, json::ValueType::Array)), "invalidParams");
+        expectError(request(element(documentID, toBase58(xrpAccount()))), "invalidParams");
+        expectError(request(element(documentID, 5)), "invalidParams");
+
+        json::Value nonObject{json::ValueType::Array};
+        nonObject.append("x");
+        expectError(request(nonObject), "oracleMalformed");
+
+        auto const twoBad = [&](json::Value const& first, json::Value const& second) {
+            json::Value oracles{json::ValueType::Array};
+            oracles.append(element(documentID, account)[0u]);
+            oracles.append(first[0u]);
+            oracles.append(second[0u]);
+            return request(oracles);
+        };
+        expectError(
+            twoBad(element("a", account), element(documentID, json::Value{})), "invalidParams");
+        expectError(
+            twoBad(element(documentID, json::Value{}), element("a", account)), "oracleMalformed");
+        expectError(
+            request(element(json::Value{oracle.documentID() + 1}, account)), "objectNotFound");
+
+        auto const empty = call(request(json::ValueType::Array));
+        BEAST_EXPECT(empty[jss::error] == "oracleMalformed");
+        BEAST_EXPECT(!empty.isMember(jss::ledger_current_index));
+
+        expectPrice(request(element(documentID, account)));
+        expectPrice(request(element("+" + std::to_string(oracle.documentID()), account)));
+
+        auto withTrim = request(element(documentID, account));
+        withTrim[jss::trim] = "+5";
+        withTrim[jss::time_threshold] = "100";
+        expectPrice(withTrim);
+
+        expectError(
+            request(element(documentID, account), "0000000000000000000000000000000000000000"),
+            "objectNotFound");
+        expectError(
+            request(
+                element(documentID, account), "XRP", "0000000000000000000000005553440000000000"),
+            "objectNotFound");
+
+        for (auto const* special : {
+                 "0000000000000000000000000000000000000001",
+                 "0000000000000000000000005852500000000000",
+             })
+        {
+            auto const jv = call(request(element(documentID, account), special));
+            BEAST_EXPECT(jv[jss::error] == "invalidParams");
+            BEAST_EXPECT(!jv.isMember(jss::ledger_current_index));
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
         testRpc();
         testNullTxReadMeta();
+        testDeferredErrors();
     }
 };
 
