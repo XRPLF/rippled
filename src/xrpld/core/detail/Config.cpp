@@ -270,7 +270,9 @@ getEnvVar(char const* name)
 
 namespace {
 
-/** A config directory, paired with its data directory. */
+/**
+ * A config directory, paired with its data directory.
+ */
 struct Candidate
 {
     std::filesystem::path configDir;
