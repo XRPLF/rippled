@@ -450,31 +450,110 @@ ValidVault::checkTotalsAddUp(
         }
     }
 
-    auto const assetAvailableDelta = roundToAsset(
-        vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-    // FixedPrecision: AssetsAvailable is the exact, single writer
-    // (adjustVaultBalances)-managed balance, so its delta must match the real
-    // transfer exactly, with no rounding tolerance -- compare the exact
-    // deltas, not the values rounded to the posterior AssetsTotal scale.
-    bool const availableAddsUp = [&] {
-        if (afterVault.version == VaultVersion::FixedPrecision)
-        {
-            return (afterVault.assetsAvailable - beforeVault.assetsAvailable) == exactVaultDelta;
-        }
-        if (fix340Enabled)
-        {
-            return agreesWithinOneUnit(
-                assetAvailableDelta, roundedVaultDelta, vaultAsset, minScale);
-        }
-        return assetAvailableDelta == roundedVaultDelta;
-    }();
-    if (!availableAddsUp)
+    if (!assetsAvailableAddsUp(
+            afterVault,
+            beforeVault,
+            vaultAsset,
+            fix340Enabled,
+            minScale,
+            roundedVaultDelta,
+            exactVaultDelta))
     {
         JLOG(j.fatal()) << "Invariant failed: " << verb << " and assets available must add up";
         result = false;
     }
 
     return result;
+}
+
+bool
+ValidVault::assetsAvailableAddsUp(
+    Vault const& afterVault,
+    Vault const& beforeVault,
+    Asset const& vaultAsset,
+    bool tolerateOneUnit,
+    std::int32_t scale,
+    Number const& roundedVaultDelta,
+    Number const& exactVaultDelta)
+{
+    // FixedPrecision: AssetsAvailable is the exact, single writer
+    // (adjustVaultBalances)-managed balance, so its delta must match the real
+    // transfer exactly, with no rounding tolerance -- compare the exact
+    // deltas, not the values rounded to the posterior AssetsTotal scale.
+    if (afterVault.version == VaultVersion::FixedPrecision)
+        return (afterVault.assetsAvailable - beforeVault.assetsAvailable) == exactVaultDelta;
+
+    auto const assetAvailableDelta = roundToAsset(
+        vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, scale);
+    if (tolerateOneUnit)
+        return agreesWithinOneUnit(assetAvailableDelta, roundedVaultDelta, vaultAsset, scale);
+    return assetAvailableDelta == roundedVaultDelta;
+}
+
+bool
+ValidVault::checkAssetsAvailableFollowsBalance(Rules const& rules, beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !afterVault_.empty() && !beforeVault_.empty(),
+        "xrpl::ValidVault::checkAssetsAvailableFollowsBalance : vault updated");
+    auto const& afterVault = afterVault_[0];
+    auto const& beforeVault = beforeVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    // An untouched pseudo-account holding has a zero delta, so assets
+    // available must not move either.
+    DeltaInfo const vaultDeltaAssets = deltaAssets(afterVault.pseudoId)
+                                           .value_or(
+                                               DeltaInfo{
+                                                   .delta = kNumZero,
+                                                   .scale = std::nullopt,
+                                               });
+
+    // AssetsAvailable is quantized no coarser than the posterior AssetsTotal
+    // scale. An IOU holding is quantized at its own trust-line scale, the
+    // coarser of its before and after exponents. Round both deltas to the
+    // coarser of those two scales. For a lending transaction on a vault whose
+    // holding equals AssetsAvailable this is the AssetsTotal scale; the
+    // holding's scale is coarser only when an earlier difference has left the
+    // holding above AssetsTotal, or when a withdrawal or clawback shrinks the
+    // vault, and those keep their own check at the AssetsTotal scale.
+    auto const minScale = computeVaultMinScale(vaultDeltaAssets, rules);
+    auto const toleranceScale =
+        std::max<std::int32_t>(minScale, vaultDeltaAssets.scale.value_or(Number::kMinExponent));
+
+    // The one-unit IOU tolerance is applied unconditionally here, independent
+    // of the order in which fixCleanup3_4_0 and fixCleanup3_6_0 activate (their
+    // votes are independent). It is never stricter than the pre-fixCleanup3_4_0
+    // comparison, so deposit, withdrawal and clawback cannot regress if
+    // fixCleanup3_6_0 activates first.
+    bool addsUp = assetsAvailableAddsUp(
+        afterVault,
+        beforeVault,
+        vaultAsset,
+        /*tolerateOneUnit=*/true,
+        toleranceScale,
+        roundToAsset(vaultAsset, vaultDeltaAssets.delta, toleranceScale),
+        vaultDeltaAssets.delta);
+
+    // Rounding both deltas to the coarser holding scale and then allowing a
+    // unit would let up to two units through, so bound the exact difference
+    // to one unit as well. Both roundings together stay under that: half a
+    // unit of the holding's scale plus half a unit of the finer AssetsTotal
+    // scale.
+    if (addsUp && toleranceScale > minScale)
+    {
+        Number const difference =
+            (afterVault.assetsAvailable - beforeVault.assetsAvailable) - vaultDeltaAssets.delta;
+        addsUp = (difference < kZero ? -difference : difference) <= Number{1, toleranceScale};
+    }
+
+    if (!addsUp)
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault balance and assets available must add up";
+        return false;
+    }
+
+    return true;
 }
 
 bool
@@ -488,6 +567,7 @@ ValidVault::finalize(
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     bool const fix340Enabled = view.rules().enabled(fixCleanup3_4_0);
     bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
+    bool const fix360Enabled = view.rules().enabled(fixCleanup3_6_0);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -780,6 +860,15 @@ ValidVault::finalize(
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault creation invariant");
         return !enforce;  // That's all we can do here
     }
+
+    // From fixCleanup3_6_0, AssetsAvailable moves with the vault pseudo-account's
+    // holding for every transaction that modifies an existing vault. Deposit,
+    // withdrawal and clawback also check this, with their own gating, below; this
+    // covers LoanSet, LoanPay and LoanManage and any vault-modifying transaction
+    // added later.
+    if (fix360Enabled && !beforeVault_.empty() &&
+        !checkAssetsAvailableFollowsBalance(view.rules(), j))
+        result = false;
 
     // ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE are the only transactors allowed to
     // write AssetsDeployed and YieldUnrealized; any new transactor that writes
