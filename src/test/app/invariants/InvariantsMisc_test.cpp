@@ -2,6 +2,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/Oracle.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
@@ -720,7 +721,7 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
-    testNoModifiedUnmodifiableFields()
+    testNoModifiedImmutableFields()
     {
         testcase("no modified unmodifiable fields");
         using namespace jtx;
@@ -789,7 +790,7 @@ class InvariantsMisc_test : public InvariantsBase
                 createLoanBroker);
         }
 
-        // Loan flag immutability lives in NoModifiedUnmodifiableFields's
+        // Loan flag immutability lives in NoModifiedImmutableFields's
         // ltLOAN case: lsfLoanOverpayment must never toggle in either
         // direction, and lsfLoanDefault (gated on featureLendingProtocolV1_1)
         // may only transition from unset to set. Each case needs a loan that
@@ -1056,7 +1057,7 @@ class InvariantsMisc_test : public InvariantsBase
         }
 
         // VaultKind, SubscriptionDate and RedemptionDate are immutable once set at creation.
-        // Enforced by NoModifiedUnmodifiableFields on ltVAULT via kFieldChanged.
+        // Enforced by NoModifiedImmutableFields on ltVAULT via kFieldChanged.
         Keylet closedEndedVaultKeylet = keylet::amendments();
         Preclose const createClosedEndedVault = [&, this](
                                                     Account const& a, Account const&, Env& env) {
@@ -1104,10 +1105,12 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // Template-based checks: common constant fields on AccountRoot
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfAccount) = Account("other").id(); },
             });
 
             for (auto const& mod : mods)
@@ -1122,6 +1125,137 @@ class InvariantsMisc_test : public InvariantsBase
                         ac.view().update(sle);
                         return true;
                     });
+            }
+        }
+
+        // Template-based checks: SoeMutable field
+        // (sfPreviousTxnID) on AccountRoot should NOT fail when
+        // modified — no invariant checks this field.
+        {
+            doInvariantCheck(
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
+                    if (!sle)
+                        return false;
+                    sle->at(sfPreviousTxnID) = UInt256(42u);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Without fixCleanup3_5_0, old hardcoded path should
+        // still catch sfLedgerEntryType/sfLedgerIndex changes
+        {
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    makeEnv(all_ - fixCleanup3_5_0),
+                    {{"changed an unchangeable field"}},
+                    [&](Account const& a1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(keylet::account(a1.id()));
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    });
+            }
+        }
+
+        // Without fixCleanup3_5_0, modifying a SoeImmutable field
+        // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
+        // type should NOT fail (old code doesn't check it)
+        {
+            doInvariantCheck(
+                makeEnv(all_ - fixCleanup3_5_0),
+                {},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
+                    if (!sle)
+                        return false;
+                    sle->at(sfAccount) = a2.id();
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Template-based checks: SoeImmutableSetOnce field on Oracle.
+        {
+            Keylet oracleKeylet{ltANY, beast::kZero};
+            Preclose const createLegacyOracle = [this, &oracleKeylet](
+                                                    Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && !sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            doInvariantCheck(
+                makeEnv(all_ - fixIncludeKeyletFields),
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(oracleKeylet);
+                    if (!sle)
+                        return false;
+                    sle->at(sfOracleDocumentID) = std::uint32_t{1};
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLegacyOracle);
+        }
+
+        {
+            Keylet oracleKeylet{ltANY, beast::kZero};
+            Preclose const createOracle = [this, &oracleKeylet](
+                                              Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfOracleDocumentID) = std::uint32_t{2}; },
+                [](SLE::pointer& sle) { sle->makeFieldAbsent(sfOracleDocumentID); },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangeable field"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(oracleKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createOracle);
             }
         }
     }
@@ -1660,7 +1794,7 @@ class InvariantsMisc_test : public InvariantsBase
         testTransactionFeeCheck();
         testNoBadOffers();
         testValidNewAccountRoot();
-        testNoModifiedUnmodifiableFields();
+        testNoModifiedImmutableFields();
         testInvariantOverwrite(all_);
         testInvariantOverwrite(all_ - fixCleanup3_1_3);
         testObjectHasPseudoAccount();

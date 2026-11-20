@@ -421,7 +421,7 @@ AccountDelete::doApply()
         if (sponsoringAccountCount == 0)
         {
             // sanity check
-            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
+            // Since sfSponsoringAccountCount is set to SoeDefault, the field will not be
             // present with a value of 0.
             return tefINTERNAL;  // LCOV_EXCL_LINE
         }
