@@ -48,6 +48,17 @@ public:
         : Base(keylet::mptokenIssuance(issuanceKey), view, j)
     {
     }
+
+    /**
+     * Returns true if the issuance is locked (lsfMPTLocked).
+     *
+     * @return true if lsfMPTLocked is set, false otherwise.
+     */
+    [[nodiscard]] bool
+    isGlobalFrozen() const
+    {
+        return (*this)->isFlag(lsfMPTLocked);
+    }
 };
 
 using MPTokenIssuanceEntryR = MPTokenIssuanceEntry<ReadView>;

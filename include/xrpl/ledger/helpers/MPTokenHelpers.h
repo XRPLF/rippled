@@ -30,9 +30,6 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
-[[nodiscard]] bool
-isGlobalFrozen(MPTokenIssuanceEntryR const& issuanceSle);
-
 /**
  * Returns true if @p account's MPToken for @p mptIssue carries the
  * individual-lock flag (lsfMPTLocked).
