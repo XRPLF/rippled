@@ -201,6 +201,11 @@ struct ConsensusCloseTimes
  * even total whose halfway point falls between two bins resolves to the
  * earlier bin.
  *
+ * Robustness to outliers holds only under an honest majority (more than
+ * half of the total weight). Given one, no minority of extreme close-time
+ * reports can pull the median outside the honest bins. Without one -- e.g.
+ * self plus a single peer -- a lone outlier can move the median arbitrarily.
+ *
  * @param times Our own close time and the weighted close times of peers.
  * @return Weighted median of all close times minus our own, in whole seconds.
  */
