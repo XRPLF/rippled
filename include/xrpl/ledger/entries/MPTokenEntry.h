@@ -141,6 +141,19 @@ public:
     [[nodiscard]] TER
     lockEscrow(STAmount const& amount)
         requires Base::kIsWritable;
+
+    /**
+     * Removes @p grossAmount from this MPToken's LockedAmount when an escrow
+     * finishes or is canceled. Removes the field when it reaches zero. Does
+     * not change MPTAmount or the issuance.
+     *
+     * @param grossAmount The amount to remove from LockedAmount.
+     * @return tesSUCCESS, or tecINTERNAL if there is no LockedAmount or it
+     *         would underflow
+     */
+    [[nodiscard]] TER
+    unlockEscrow(STAmount const& grossAmount)
+        requires Base::kIsWritable;
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;
