@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -70,6 +71,24 @@ MPTokenEntry<ViewT>::create(
     mptoken.insert();
 
     return tesSUCCESS;
+}
+
+template <typename ViewT>
+bool
+MPTokenEntry<ViewT>::hasObligations() const
+{
+    auto const& sle = **this;
+
+    if (sle.at(sfMPTAmount) != 0 ||
+        (this->readView().rules().enabled(fixCleanup3_1_3) &&
+         sle[~sfLockedAmount].value_or(0) != 0))
+        return true;
+
+    // Don't delete if the token still has confidential balances
+    return sle.isFieldPresent(sfConfidentialBalanceInbox) ||
+        sle.isFieldPresent(sfConfidentialBalanceSpending) ||
+        sle.isFieldPresent(sfIssuerEncryptedBalance) ||
+        sle.isFieldPresent(sfAuditorEncryptedBalance);
 }
 
 template class MPTokenEntry<ReadView>;
