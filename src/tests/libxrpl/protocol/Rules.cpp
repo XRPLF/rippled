@@ -1,8 +1,9 @@
 #include <xrpl/protocol/Rules.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <gtest/gtest.h>
 
