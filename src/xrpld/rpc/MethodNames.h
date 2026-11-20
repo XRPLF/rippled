@@ -79,6 +79,7 @@ inline constexpr std::string_view kSubmit{"submit"};
 inline constexpr std::string_view kSubmitMultisigned{"submit_multisigned"};
 inline constexpr std::string_view kSubscribe{"subscribe"};
 inline constexpr std::string_view kTransactionEntry{"transaction_entry"};
+inline constexpr std::string_view kTransactionProposal{"transaction_proposal"};
 inline constexpr std::string_view kTx{"tx"};
 inline constexpr std::string_view kTxHistory{"tx_history"};
 inline constexpr std::string_view kTxReduceRelay{"tx_reduce_relay"};
