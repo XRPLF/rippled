@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/check.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -40,6 +41,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -2373,6 +2375,144 @@ public:
         env(noop(sponsee),
             sponsor::As(sponsor, spfSponsorFee),
             Sig(sfSponsorSignature, sponsor),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 6, 5, 3);
+    }
+
+    void
+    testSponsorReserveTxCanQueue()
+    {
+        using namespace jtx;
+        testcase("allow reserve-only sponsored transaction to be queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Only fee-sponsored transactions are barred from the queue. A
+        // reserve-only sponsored transaction may be held like any other.
+        auto const checkSeq = env.seq(sponsee);
+        env(check::create(sponsee, filler, XRP(10)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(terQUEUED));
+        checkMetrics(*this, env, 1, 6, 4, 3);
+
+        // Once the ledger closes, the queued transaction applies with the
+        // sponsorship intact.
+        env.close();
+        checkMetrics(*this, env, 0, 8, 1, 4);
+
+        auto const checkSle = env.le(keylet::check(sponsee, checkSeq));
+        if (BEAST_EXPECT(checkSle))
+            BEAST_EXPECT(checkSle->at(~sfSponsor) == sponsor.id());
+        auto const sponseeSle = env.le(keylet::account(sponsee));
+        if (BEAST_EXPECT(sponseeSle))
+            BEAST_EXPECT(sponseeSle->at(~sfSponsoredOwnerCount) == 1);
+        auto const sponsorSle = env.le(keylet::account(sponsor));
+        if (BEAST_EXPECT(sponsorSle))
+            BEAST_EXPECT(sponsorSle->at(~sfSponsoringOwnerCount) == 1);
+    }
+
+    void
+    testSponsorReserveQueueExhaustion()
+    {
+        using namespace jtx;
+        testcase("reserve-sponsored queue exhaustion across transactions");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        // Prefund the sponsor's reserve budget for exactly 2 sponsored
+        // objects.
+        env(sponsor::set_reserve(sponsor, 0, 2), sponsor::SponseeAcc(sponsee));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Queue 4 reserve-sponsored Check::create transactions from the same
+        // sponsee. Queuing only preclaims against the sponsorship's current
+        // (not-yet-consumed) budget, so all 4 queue successfully.
+        auto queued = Ter(terQUEUED);
+        auto const sponseeSeq = env.seq(sponsee);
+        for (int i = 0; i < 4; ++i)
+        {
+            env(check::create(sponsee, filler, XRP(10)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Seq(sponseeSeq + i),
+                queued);
+        }
+        checkMetrics(*this, env, 4, 6, 4, 3);
+
+        // Once the ledger closes, the queued transactions apply in order:
+        // only the first 2 succeed, since the sponsor's RemainingOwnerCount
+        // is exhausted by the time the 3rd and 4th are reached.
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet::check(sponsee, sponseeSeq)));
+        BEAST_EXPECT(env.le(keylet::check(sponsee, sponseeSeq + 1)));
+        BEAST_EXPECT(!env.le(keylet::check(sponsee, sponseeSeq + 2)));
+        BEAST_EXPECT(!env.le(keylet::check(sponsee, sponseeSeq + 3)));
+
+        auto const sponsorSle = env.le(keylet::account(sponsor));
+        if (BEAST_EXPECT(sponsorSle))
+            BEAST_EXPECT(sponsorSle->at(~sfSponsoringOwnerCount) == 2);
+    }
+
+    void
+    testSponsorPrefundedTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow pre-funded fee-sponsored transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        // Pre-funded fee sponsorship: the sponsor does not co-sign.
+        env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(sponsee));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // The TxQ::canBeHeld guard is on fee sponsorship (sfSponsor with
+        // spfSponsorFee), independent of whether a sponsor signature is
+        // present, so a pre-funded fee-sponsored transaction cannot be
+        // queued either.
+        env(noop(sponsee), sponsor::As(sponsor, spfSponsorFee), Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // It may still apply directly if it pays the open ledger fee.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
             Fee(openLedgerCost(env)),
             Ter(tesSUCCESS));
         checkMetrics(*this, env, 0, 6, 5, 3);
@@ -4773,6 +4913,9 @@ public:
         testBlockersTicket();
         testInFlightBalance();
         testSponsorTxCannotQueue();
+        testSponsorReserveTxCanQueue();
+        testSponsorReserveQueueExhaustion();
+        testSponsorPrefundedTxCannotQueue();
         testDelegateTxCannotQueue();
         testConsequences();
     }
