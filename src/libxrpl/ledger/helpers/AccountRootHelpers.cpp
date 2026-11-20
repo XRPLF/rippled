@@ -9,7 +9,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -121,23 +120,6 @@ accountCountImpl(SLE::ConstRef sle, std::int32_t accountCountAdj, beast::Journal
     return totalAccountCount;
 }
 
-std::uint32_t
-adjustOwnerCountImpl(
-    ApplyView& view,
-    SLE::Ref sle,
-    SF_UINT32 const& sfield,
-    AccountID const& accID,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    std::uint32_t const currentOwnerCount = sle->at(sfield);
-    std::uint32_t const totalOwnerCount =
-        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
-    sle->at(sfield) = totalOwnerCount;
-    view.update(sle);
-    return totalOwnerCount;
-}
-
 void
 adjustOwnerCountSigned(
     ApplyView& view,
@@ -224,6 +206,27 @@ adjustOwnerCountSigned(
 }
 
 }  // namespace
+
+namespace detail {
+
+std::uint32_t
+adjustOwnerCountImpl(
+    ApplyView& view,
+    SLE::Ref sle,
+    SF_UINT32 const& sfield,
+    AccountID const& accID,
+    std::int32_t ownerCountAdj,
+    beast::Journal j)
+{
+    std::uint32_t const currentOwnerCount = sle->at(sfield);
+    std::uint32_t const totalOwnerCount =
+        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
+    sle->at(sfield) = totalOwnerCount;
+    view.update(sle);
+    return totalOwnerCount;
+}
+
+}  // namespace detail
 
 std::uint32_t
 ownerCount(SLE::ConstRef sle, beast::Journal j, std::int32_t ownerCountAdj)
@@ -375,32 +378,6 @@ decreaseOwnerCountForObject(
 
     SLE::Ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
-}
-
-void
-adjustLoanBrokerOwnerCount(
-    ApplyView& view,
-    LoanBrokerEntryW& brokerSle,
-    std::int32_t delta,
-    beast::Journal j)
-{
-    XRPL_ASSERT(
-        brokerSle && brokerSle->getType() == ltLOAN_BROKER,
-        "xrpl::adjustLoanBrokerOwnerCount : valid loan broker sle");
-    if (!brokerSle || brokerSle->getType() != ltLOAN_BROKER)
-        return;  // LCOV_EXCL_LINE
-
-    XRPL_ASSERT(delta != 0, "xrpl::adjustLoanBrokerOwnerCount : nonzero delta input");
-    if (delta == 0)
-        return;  // LCOV_EXCL_LINE
-
-    adjustOwnerCountImpl(
-        view,
-        brokerSle.mutableRawSle(),
-        sfOwnerCount,
-        brokerSle->getAccountID(sfAccount),
-        delta,
-        j);
 }
 
 XRPAmount

@@ -778,7 +778,7 @@ LoanSet::doApply()
 
     // Update the balances in the loan broker
     adjustBrokerDebtTotal(brokerSle.mutableRawSle(), vaultSle, debtTotalDelta, vaultScale);
-    adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
+    brokerSle.adjustOwnerCount(1);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it
     // does
