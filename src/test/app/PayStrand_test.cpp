@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
@@ -864,7 +865,12 @@ struct PayStrand_test : public beast::unit_test::Suite
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::Auth));
             env(pay(gw, alice, usd(100)));
             env.require(Balance(alice, usd(100)));
-            test(env, usd, std::nullopt, STPath(), terNO_AUTH);
+            test(
+                env,
+                usd,
+                std::nullopt,
+                STPath(),
+                features[fixCleanup3_6_0] ? TER{tecNO_AUTH} : TER{terNO_AUTH});
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
@@ -882,6 +888,35 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env.app().getJournal("Flow"));
             BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
+        }
+
+        {
+            // A path can route through a pseudo-account, which is implicitly
+            // authorized: the AMM's trust line never carries the issuer's auth
+            // flag, yet the step must not fail with tecNO_AUTH. It still goes
+            // dry because the AMM extends no credit.
+            Env env(*this, features);
+            env.fund(XRP(10000), alice, gw);
+            env(fset(gw, asfRequireAuth));
+            env(trust(gw, alice["USD"](1000), tfSetfAuth));
+            env.trust(usd(1000), alice);
+            env(pay(gw, alice, usd(100)));
+            AMM const amm(env, alice, XRP(100), usd(100));
+
+            auto const [ter, strand] = toStrand(
+                *env.current(),
+                gw,
+                amm.ammAccount(),
+                usd,
+                std::nullopt,
+                std::nullopt,
+                STPath(),
+                true,
+                OfferCrossing::No,
+                ammContext,
+                std::nullopt,
+                env.app().getJournal("Flow"));
+            BEAST_EXPECT(ter == tecPATH_DRY);
         }
 
         {
@@ -1143,6 +1178,7 @@ struct PayStrand_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         auto const sa = testableAmendments();
+        testToStrand(sa - fixCleanup3_6_0);
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 
