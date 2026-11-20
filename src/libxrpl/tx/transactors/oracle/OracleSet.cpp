@@ -3,6 +3,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/OracleEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
@@ -26,7 +27,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <map>
-#include <memory>
 #include <set>
 #include <utility>
 
@@ -84,7 +84,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecINVALID_UPDATE_TIME;
 
     auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+        OracleEntryR(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view);
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -153,7 +153,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = calculateOracleReserve(sle);
+        auto const oldCount = sle.reserveCount();
         auto const newCount = calculateOracleReserve(pairs);
 
         adjustReserve = newCount - oldCount;
@@ -227,7 +227,7 @@ OracleSet::doApply()
             priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
     };
 
-    if (auto sle = ctx_.view().peek(oracleID))
+    if (auto sle = OracleEntryW(oracleID, ctx_.view()))
     {
         // update
         // the token pair that doesn't have their price updated will not
@@ -287,13 +287,13 @@ OracleSet::doApply()
         if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        ctx_.view().update(sle);
+        sle.update();
     }
     else
     {
         // create
 
-        sle = std::make_shared<SLE>(oracleID);
+        sle.newSLE();
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
@@ -337,7 +337,7 @@ OracleSet::doApply()
         if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        ctx_.view().insert(sle);
+        sle.insert();
     }
 
     return tesSUCCESS;

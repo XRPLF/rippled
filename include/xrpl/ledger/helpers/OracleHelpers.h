@@ -1,9 +1,5 @@
 #pragma once
 
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
-#include <xrpl/protocol/STLedgerEntry.h>
-
 #include <cstddef>
 #include <cstdint>
 
@@ -20,12 +16,6 @@ calculateOracleReserve(T const& priceDataSeries)
 {
     return priceDataSeries.size() > kOracleReserveCountThreshold ? kMaxOracleReserveCount
                                                                  : kMinOracleReserveCount;
-}
-
-inline std::uint32_t
-calculateOracleReserve(SLE::ConstRef oracleSle)
-{
-    return calculateOracleReserve(oracleSle->getFieldArray(sfPriceDataSeries));
 }
 
 }  // namespace xrpl
