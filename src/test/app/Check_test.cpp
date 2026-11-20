@@ -2491,6 +2491,33 @@ class Check_test : public beast::unit_test::Suite
     }
 
     void
+    testCashToIssuerDeliverMin(FeatureBitset features)
+    {
+        bool const withFix = features[fixCleanup3_4_0];
+        testcase(
+            std::string("Cash IOU check to issuer") +
+            (withFix ? " (fixCleanup3_4_0)" : " (pre-fix)"));
+        using namespace test::jtx;
+        Account const a1{"a1"};
+        Account const a2{"a2"};
+        Account const& gw = (a1.id() > a2.id()) ? a1 : a2;
+        Account const& alice = (gw.id() == a1.id()) ? a2 : a1;
+        auto const usd{gw["USD"]};
+        Env env{*this, features};
+        env.fund(XRP(1'000), gw, alice);
+        env.close();
+        env(trust(alice, usd(1'000)));
+        env(pay(gw, alice, usd(1)));
+        env.close();
+        uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, gw, usd(1'000)));
+        env(check::cash(gw, chkId, check::DeliverMin(usd(0.5))));
+        env.close();
+        auto const aliceExpected = withFix ? usd(0) : usd(-999);
+        BEAST_EXPECT(env.balance(alice, usd) == aliceExpected);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -2514,6 +2541,8 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testableAmendments();
+        testCashToIssuerDeliverMin(sa);
+        testCashToIssuerDeliverMin(sa - fixCleanup3_4_0);
         testWithFeats(sa);
         testTrustLineCreation(sa);
     }
