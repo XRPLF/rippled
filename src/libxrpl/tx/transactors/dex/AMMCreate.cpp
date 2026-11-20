@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -269,7 +270,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
-    if (sb.read(keylet::trustLine(accountId, lptIss)))
+    if (RippleStateEntryR(accountId, lptIss, sb))
     {
         JLOG(j.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
@@ -352,8 +353,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState =
-                        sb.peek(keylet::trustLine(accountId, issue));
+                    RippleStateEntryW sleRippleState(accountId, issue, sb, j);
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -361,7 +361,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
                     auto const flags = sleRippleState->getFlags();
                     sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
-                    sb.update(sleRippleState);
+                    sleRippleState.update();
                 }
                 return tesSUCCESS;
             });
