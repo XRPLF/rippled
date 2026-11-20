@@ -13,9 +13,11 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <array>
+#include <exception>
 #include <mutex>
 #include <sstream>
 #include <stack>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -283,21 +285,36 @@ bool
 SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const
 {
     if (!root_->isInner())  // root_ is only node, and we have it
-        return false;
+        return true;
+
+    // Only the nodes this call records count towards the result, so remember what the
+    // caller already had.
+    auto const initialMissing = missingNodes.size();
 
     using StackEntry = intr_ptr::SharedPtr<SHAMapInnerNode>;
     std::array<SHAMapTreeNodePtr, SHAMapInnerNode::kBranchFactor> topChildren;
     {
+        // This loop runs before the workers start, so it needs no lock.
         auto const& innerRoot = intr_ptr::staticPointerCast<SHAMapInnerNode>(root_);
         for (auto i = 0u; i < SHAMapInnerNode::kBranchFactor; ++i)
         {
-            if (!innerRoot->isEmptyBranch(i))
-                topChildren[i] = descendNoStore(*innerRoot, i);
+            if (innerRoot->isEmptyBranch(i))
+                continue;
+
+            topChildren[i] = descendNoStore(*innerRoot, i);
+            if (!topChildren[i])
+            {
+                // A root child that cannot be read hides its whole subtree. Record it here,
+                // because the loop below skips a null child without visiting it.
+                missingNodes.emplace_back(type_, innerRoot->getChildHash(i));
+                if (--maxMissing <= 0)
+                    return false;
+            }
         }
     }
     std::vector<std::thread> workers;
     workers.reserve(SHAMapInnerNode::kBranchFactor);
-    std::vector<SHAMapMissingNode> exceptions;
+    std::vector<std::string> exceptions;
     exceptions.reserve(SHAMapInnerNode::kBranchFactor);
 
     std::array<std::stack<StackEntry, std::vector<StackEntry>>, SHAMapInnerNode::kBranchFactor>
@@ -346,6 +363,14 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                             else
                             {
                                 std::scoped_lock const l{m};
+
+                                // Another worker may have spent the budget while this one
+                                // was walking, so test it before adding to the list and not
+                                // only after. Testing only after lets every worker still
+                                // running add one more node than the caller asked for.
+                                if (maxMissing <= 0)
+                                    return;
+
                                 missingNodes.emplace_back(type_, node->getChildHash(i));
                                 if (--maxMissing <= 0)
                                     return;
@@ -353,10 +378,14 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                         }
                     }
                 }
-                catch (SHAMapMissingNode const& e)
+                catch (std::exception const& e)
                 {
+                    // LCOV_EXCL_START
+                    // A worker must not let an exception leave its thread, so record it
+                    // and let the join below report it.
                     std::scoped_lock const l(m);
-                    exceptions.push_back(e);
+                    exceptions.emplace_back(e.what());
+                    // LCOV_EXCL_STOP
                 }
             },
             std::move(nodeStacks[rootChildIndex]));
@@ -366,14 +395,29 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
         worker.join();
 
     std::scoped_lock const l(m);
-    if (exceptions.empty())
-        return true;
-    std::stringstream ss;
-    ss << "Exception(s) in ledger load: ";
-    for (auto const& e : exceptions)
-        ss << e.what() << ", ";
-    JLOG(journal_.error()) << ss.str();
-    return false;
+    if (!exceptions.empty())
+    {
+        // LCOV_EXCL_START
+        std::stringstream ss;
+        ss << "Exception(s) in ledger load: ";
+        for (auto const& e : exceptions)
+            ss << e << ", ";
+        JLOG(journal_.error()) << ss.str();
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
+    // A node the workers could not read is recorded in `missingNodes` rather than thrown,
+    // so the result has to consult it too.
+    auto const found = missingNodes.size() - initialMissing;
+    if (found != 0)
+    {
+        JLOG(journal_.error()) << "Missing node(s) in ledger load: " << found
+                               << ", first: " << missingNodes[initialMissing].what();
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace xrpl
