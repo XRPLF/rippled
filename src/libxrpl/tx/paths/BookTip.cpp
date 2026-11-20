@@ -2,10 +2,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
@@ -22,7 +24,7 @@ BookTip::step(beast::Journal j)
     {
         if (entry_)
         {
-            offerDelete(view_, entry_, j);
+            OfferEntryW(Keylet(ltOFFER, entry_->key()), view_, j).removeFromLedger();
             entry_ = nullptr;
         }
     }
