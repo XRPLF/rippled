@@ -236,19 +236,23 @@ Ledger::Ledger(
         JLOG(j.warn()) << "Don't have state data root for ledger" << header_.seq;
     }
 
-    // Loaded locally. See Ledger::setImmutable().
-    if (setMapsImmutable())
+    // Freeze only when both roots are fetched. The caller discards a ledger that is not loaded.
+    if (loaded)
     {
-        immutable_ = true;
-    }
-    else
-    {
-        // LCOV_EXCL_START
-        JLOG(j.error()) << "Invalid map for ledger " << header_.seq;
-        UNREACHABLE("xrpl::Ledger::Ledger(LedgerHeader const&, ...) : map is invalid");
-        // Treat it as a damaged ledger: the code below recomputes the hash and re-acquires.
-        loaded = false;
-        // LCOV_EXCL_STOP
+        // Loaded locally. See Ledger::setImmutable().
+        if (setMapsImmutable())
+        {
+            immutable_ = true;
+        }
+        else
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "Invalid map for ledger " << header_.seq;
+            UNREACHABLE("xrpl::Ledger::Ledger(LedgerHeader const&, ...) : map is invalid");
+            // Treat it as a damaged ledger: the code below recomputes the hash and re-acquires.
+            loaded = false;
+            // LCOV_EXCL_STOP
+        }
     }
 
     if (!setup())
