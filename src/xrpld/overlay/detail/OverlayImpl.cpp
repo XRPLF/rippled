@@ -79,7 +79,6 @@
 #include <cstdint>
 #include <exception>
 #include <format>
-#include <functional>
 #include <iomanip>
 #include <memory>
 #include <mutex>
@@ -1316,17 +1315,16 @@ OverlayImpl::getManifestsMessage()
 void
 OverlayImpl::relay(
     UInt256 const& hash,
-    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
+    protocol::TMTransaction const* tx,
     std::set<Peer::ID> const& toSkip)
 {
-    if (tx)
+    if (tx != nullptr)
     {
-        auto const& txn = tx->get();
-        SerialIter sit(makeSlice(txn.rawtransaction()));
+        SerialIter sit(makeSlice(tx->rawtransaction()));
         try
         {
             if (isPseudoTx(STTx{sit}))
-                tx.reset();
+                tx = nullptr;
         }
         catch (std::exception const&)
         {
@@ -1347,21 +1345,21 @@ OverlayImpl::relay(
 {
     if (isPseudoTx(tx))
     {
-        relayChecked(tx.getTransactionID(), std::nullopt, toSkip);
+        relayChecked(tx.getTransactionID(), nullptr, toSkip);
     }
     else
     {
-        relayChecked(tx.getTransactionID(), m, toSkip);
+        relayChecked(tx.getTransactionID(), &m, toSkip);
     }
 }
 
 void
 OverlayImpl::relayChecked(
     UInt256 const& hash,
-    std::optional<std::reference_wrapper<protocol::TMTransaction const>> tx,
+    protocol::TMTransaction const* tx,
     std::set<Peer::ID> const& toSkip)
 {
-    bool const relay = tx.has_value();
+    bool const relay = tx != nullptr;
 
     Overlay::PeerSequence peers = {};
     std::size_t total = 0;
@@ -1383,8 +1381,7 @@ OverlayImpl::relayChecked(
         return;
     }
 
-    auto const& txn = tx->get();
-    auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
+    auto const sm = std::make_shared<Message>(*tx, protocol::mtTRANSACTION);
     peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
     auto const minRelay = app_.config().txReduceRelayMinPeers + disabled;
 

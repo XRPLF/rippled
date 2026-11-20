@@ -215,7 +215,7 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         static std::set<Peer::ID> const kSkip{};
-        app_.getOverlay().relay(tx.id(), msg, kSkip);
+        app_.getOverlay().relay(tx.id(), &msg, kSkip);
     }
     else
     {
