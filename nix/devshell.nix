@@ -9,6 +9,7 @@ let
     llvmPackages
     mkVersionedToolLinks
     mkGcov
+    leanGithash
     ;
 
   # Plain nixpkgs stdenvs — no custom glibc.
@@ -106,6 +107,7 @@ let
       # retargeting binaries to the system loader (the plain toolchain links a
       # newer glibc, so it must not be patched).
       plain ? false,
+      extraEnv ? { },
     }:
     let
       compilerVersionHook =
@@ -140,6 +142,7 @@ let
         '';
       }
       // pkgs.lib.optionalAttrs plain { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
+      // extraEnv
     );
 in
 rec {
@@ -176,6 +179,7 @@ rec {
       customGccGcov
       pkgs.lean4
     ];
+    extraEnv = pkgs.lib.optionalAttrs (leanGithash != null) { LEAN_GITHASH = leanGithash; };
   };
 
   # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
