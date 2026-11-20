@@ -1,5 +1,10 @@
 # The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
 
+# Patterns match substrings of the reported source path.
+# Conan names package folders after the first five letters of the package name plus a hash
+# (e.g. rocks<hash>, secp2<hash>),
+# so libraries whose own paths don't contain their name are matched with a `<prefix>*` wildcard on that folder.
+
 # Suppress UBSan errors in external code by source file path
 # This matches any source file under the external/ directory
 alignment:external
@@ -111,6 +116,33 @@ unsigned-integer-overflow:fast_float
 # across many absl files (hash mixing, raw_hash_set probing, duration math,
 # int128, uniform_int_distribution), so listing individual files just churns.
 unsigned-integer-overflow:absl
+
+# C libraries' hashing and bignum arithmetic wraps by design.
+unsigned-integer-overflow:secp2*/src/src/
+# mpt-crypto compiles secp256k1's private scalar headers from the package folder.
+unsigned-integer-overflow:secp2*/p/include/private/
+unsigned-integer-overflow:mpt-c*/b/src/
+unsigned-integer-overflow:ed255*/b/src/
+unsigned-integer-overflow:c-are*/b/src/
+unsigned-integer-overflow:zlib*/b/src/
+unsigned-integer-overflow:xxhash.h
+unsigned-integer-overflow:xxhash.c
+unsigned-integer-overflow:lz4.c
+unsigned-integer-overflow:sqlite3.c
+# OpenSSL builds from its source root, so its paths are relative;
+# the anchor keeps these from matching xrpl's own crypto/ directories.
+unsigned-integer-overflow:^crypto/
+unsigned-integer-overflow:^include/crypto/
+unsigned-integer-overflow:^include/internal/
+# OpenSSL's generic containers (OBJ_bsearch, OPENSSL_sk_*) and provider
+# dispatch tables call typed callbacks through void-pointer function types.
+function:^crypto/
+function:^providers/
+function:^ssl/
+# SQLite stores callbacks of differing signatures behind generic function pointers.
+function:sqlite3.c
+# ed25519-donna reads uint64_t limbs from unaligned byte buffers on x86_64.
+alignment:ed255*/b/src/
 
 # Standard library intentional overflows
 unsigned-integer-overflow:basic_string.h
