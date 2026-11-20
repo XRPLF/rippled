@@ -5335,7 +5335,11 @@ public:
 
         // Bob's trust line remains, plus the offers past the limit.
         std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
-        env.require(Owners(bob, remaining + 1));
+        auto const ownerCount = env.le(bob)->getFieldU32(sfOwnerCount);
+        BEAST_EXPECTS(
+            ownerCount == remaining + 1,
+            "fixEnabled=" + std::to_string(fixEnabled) + " actual=" + std::to_string(ownerCount) +
+                " expected=" + std::to_string(remaining + 1));
     }
 
     void
