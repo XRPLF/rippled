@@ -128,9 +128,10 @@ unsigned-integer-overflow:sqlite3.c
 # the anchor keeps these from matching xrpl's own crypto/ directories.
 unsigned-integer-overflow:^crypto/
 unsigned-integer-overflow:^include/crypto/
-# OpenSSL's generic containers (OBJ_bsearch, OPENSSL_sk_*) call typed callbacks
-# through void-pointer function types.
+# OpenSSL's generic containers (OBJ_bsearch, OPENSSL_sk_*) and provider
+# dispatch tables call typed callbacks through void-pointer function types.
 function:^crypto/
+function:^providers/
 function:^ssl/
 # ed25519-donna reads uint64_t limbs from unaligned byte buffers on x86_64.
 alignment:ed255*/b/src/
