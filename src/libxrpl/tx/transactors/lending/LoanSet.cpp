@@ -43,11 +43,13 @@
 
 namespace xrpl {
 
-// StartDate is strictly after SubscriptionDate. A min-gap vault must still
-// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
-// buffer constants are independent; only their sum (plus the +1 for a
-// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
-static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
+// The floor before fixCleanup3_6_0 is a fixed number. It has to fit a
+// minimum-interval loan plus kLegacyLoanRedemptionBuffer after a StartDate
+// that is strictly after SubscriptionDate. kMinInvestmentPeriod, which replaces
+// it, is calculated from the limits it depends on and needs no check.
+static_assert(
+    kLegacyMinInvestmentPeriod >=
+    lending::kMinLoanPaymentInterval + kLegacyLoanRedemptionBuffer + 1);
 
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -134,12 +136,13 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     auto const paymentInterval = tx[~sfPaymentInterval];
-    if (!validNumericMinimum(paymentInterval, LoanSet::kMinPaymentInterval))
-        return temINVALID;  // Grace period is between min default value and payment interval
+    if (!validNumericMinimum(paymentInterval, kMinLoanPaymentInterval))
+        return temINVALID;
+    // The grace period is between its minimum and the payment interval.
     if (auto const gracePeriod = tx[~sfGracePeriod]; !validNumericRange(
             gracePeriod,
             paymentInterval.value_or(LoanSet::kDefaultPaymentInterval),
-            kDefaultGracePeriod))
+            kMinLoanGracePeriod))
     {
         return temINVALID;
     }
@@ -240,6 +243,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const& tx = ctx.tx;
     auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
     auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
+    auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -253,7 +257,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
-        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
         // mostly so that unit tests can test that specific case.
@@ -339,13 +342,16 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
         if (phase == VaultPhase::Investment)
         {
-            auto const finalPayment =
-                std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
-            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
+            if (!isValidClosedEndedLoanSchedule(
+                    ctx.view.rules(),
+                    getStartDate(ctx.view),
+                    interval,
+                    total,
+                    grace,
+                    vault->at(sfRedemptionDate)))
             {
                 JLOG(ctx.j.warn())
-                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
-                    << " seconds before the vault's redemption date.";
+                    << "Loan schedule ends too close to the vault's redemption date.";
                 return tecNO_PERMISSION;
             }
         }

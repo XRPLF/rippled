@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -11,6 +12,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -543,17 +546,121 @@ getVaultKind(STTx const& tx);
 isValidVaultKind(STTx const& tx);
 
 /**
+ * Minimum gap between a closed-ended loan's final scheduled payment and the
+ * vault's RedemptionDate before fixCleanup3_6_0. The gap ignores the loan's
+ * GracePeriod and is shorter than the coarsest ledger close time resolution,
+ * so the ledger clock can step from the final due date straight into
+ * Redemption.
+ */
+constexpr std::uint32_t kLegacyLoanRedemptionBuffer = std::chrono::seconds{60}.count();
+
+/**
+ * Minimum gap between the end of a closed-ended loan's final grace period and
+ * the vault's RedemptionDate. With fixCleanup3_6_0, LoanSet rejects a schedule
+ * unless StartDate + PaymentInterval * PaymentTotal + GracePeriod plus this
+ * many seconds is at or before RedemptionDate.
+ *
+ * The buffer is one second longer than the coarsest ledger close time
+ * resolution. A ledger clock that advances by no more than one resolution per
+ * ledger cannot step over the gap, so at least one ledger exists in which the
+ * loan can be defaulted while withdrawals are still locked. Impairment becomes
+ * possible a full grace period earlier.
+ */
+constexpr std::uint32_t kLoanRedemptionBuffer =
+    (std::ranges::max(kLedgerPossibleTimeResolutions) + std::chrono::seconds{1}).count();
+
+/**
+ * Lower bound on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate) before fixCleanup3_6_0. 180s fits a loan
+ * that uses the minimum payment interval and kLegacyLoanRedemptionBuffer
+ * after StartDate.
+ */
+constexpr std::uint32_t kLegacyMinInvestmentPeriod = std::chrono::seconds{180}.count();
+
+/**
+ * Lower bound on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod. Before fixCleanup3_6_0
+ * the lower bound is kLegacyMinInvestmentPeriod.
+ *
+ * The bound is the shortest period in which the vault can still fund the
+ * shortest loan that isValidClosedEndedLoanSchedule accepts. It is the sum of:
+ *
+ * 1. The latest StartDate of a loan originated in the first Investment ledger.
+ *    LoanSet needs the parent close time to be past SubscriptionDate, which
+ *    takes up to one close time resolution. StartDate is then one more
+ *    resolution after the parent close time. Both are counted at the coarsest
+ *    resolution.
+ * 2. lending::kMinLoanPaymentInterval.
+ * 3. lending::kMinLoanGracePeriod.
+ * 4. kLoanRedemptionBuffer.
+ */
+constexpr std::uint32_t kMinInvestmentPeriod =
+    (2 * std::ranges::max(kLedgerPossibleTimeResolutions) +
+     std::chrono::seconds{
+         lending::kMinLoanPaymentInterval + lending::kMinLoanGracePeriod + kLoanRedemptionBuffer})
+        .count();
+
+// Transaction validity depends on these two values. A change to
+// kLedgerPossibleTimeResolutions must not move them without an amendment.
+static_assert(kLoanRedemptionBuffer == 121);
+static_assert(kMinInvestmentPeriod == 481);
+
+/**
+ * Upper bound on the length of a closed-ended vault's Investment phase. This
+ * is 946708560 seconds, which is 30 x 365.2425 days (the average length of a
+ * Gregorian year).
+ */
+constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
+
+/**
  * Returns true iff the (SubscriptionDate, RedemptionDate) gap of a
  * closed-ended vault satisfies
- * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. The arithmetic
- * is performed in std::int64_t so that @p sub near UINT32_MAX does not
- * overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
+ * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. Before
+ * fixCleanup3_6_0 the lower bound is kLegacyMinInvestmentPeriod. The
+ * arithmetic is performed in std::int64_t so that @p sub near UINT32_MAX does
+ * not overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
  *
+ * @param rules The rules that select the lower bound.
  * @param sub The value of sfSubscriptionDate.
  * @param red The value of sfRedemptionDate.
  */
 [[nodiscard]] bool
-isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
+isValidClosedEndedGap(Rules const& rules, std::uint32_t sub, std::uint32_t red);
+
+/**
+ * Returns true iff a closed-ended vault with the given RedemptionDate may fund
+ * a loan with the given schedule. Shared by LoanSet::preclaim and the
+ * ValidLoan invariant.
+ *
+ * With fixCleanup3_6_0 the final grace period must end at least
+ * kLoanRedemptionBuffer seconds before RedemptionDate:
+ * startDate + paymentInterval * paymentTotal + gracePeriod +
+ * kLoanRedemptionBuffer <= redemptionDate. The loan can then be impaired and
+ * defaulted in a ledger that still locks withdrawals.
+ *
+ * Before fixCleanup3_6_0 the grace period is ignored and only the final due
+ * date must precede RedemptionDate by kLegacyLoanRedemptionBuffer seconds.
+ *
+ * The final due date is computed in std::uint64_t, where it cannot overflow.
+ * The grace period and the buffer are then compared against the time left
+ * before RedemptionDate, so no input can wrap the check.
+ *
+ * @param rules The rules that select the bound.
+ * @param startDate The value of sfStartDate.
+ * @param paymentInterval The value of sfPaymentInterval.
+ * @param paymentTotal The number of scheduled payments.
+ * @param gracePeriod The value of sfGracePeriod.
+ * @param redemptionDate The value of sfRedemptionDate.
+ */
+[[nodiscard]] bool
+isValidClosedEndedLoanSchedule(
+    Rules const& rules,
+    std::uint32_t startDate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentTotal,
+    std::uint32_t gracePeriod,
+    std::uint32_t redemptionDate);
 
 /**
  * Returns the current lifecycle phase of a vault. Open-ended

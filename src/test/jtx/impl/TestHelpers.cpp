@@ -25,6 +25,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -32,6 +33,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Quality.h>
@@ -87,6 +89,17 @@ std::uint32_t
 ownerCount(Env const& env, Account const& account)
 {
     return env.ownerCount(account);
+}
+
+NetClock::time_point
+getClosingLedgerTime(Env& env)
+{
+    // Mirrors how Ledger sets the close time of a ledger that follows a closed one.
+    auto const parent = env.closed();
+    auto const& header = parent->header();
+    auto const resolution = getNextLedgerTimeResolution(
+        header.closeTimeResolution, getCloseAgree(header), header.seq + 1);
+    return header.closeTime + resolution;
 }
 
 /* Token (IOU/MPT) Locking */

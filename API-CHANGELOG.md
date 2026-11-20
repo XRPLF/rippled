@@ -29,6 +29,8 @@ Version 3.6.0 is not yet released.
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))
+- `VaultCreate` transaction: With `fixCleanup3_6_0` enabled, the Investment phase of a closed-ended vault (`RedemptionDate` minus `SubscriptionDate`) must last at least 481 seconds, up from 180. A vault with a phase of 180 to 480 seconds was previously accepted and now returns `temMALFORMED`. ([#8735](https://github.com/XRPLF/rippled/pull/8735))
+- `LoanSet` transaction: With `fixCleanup3_6_0` enabled, a loan funded by a closed-ended vault must reach the end of its final grace period at least 121 seconds before the vault's `RedemptionDate`, so `StartDate + PaymentInterval × PaymentTotal + GracePeriod + 121` must be at or before `RedemptionDate`. Previously the grace period was not counted and the final payment only had to be due 60 seconds before `RedemptionDate`. A schedule that passes the old check but not the new one now returns `tecNO_PERMISSION`. ([#8735](https://github.com/XRPLF/rippled/pull/8735))
 
 ## XRP Ledger server version 3.5.0
 

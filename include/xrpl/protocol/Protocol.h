@@ -9,7 +9,6 @@
 #include <mpt_protocol.h>
 #include <secp256k1_mpt.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -203,6 +202,22 @@ constexpr TenthBips32 kMaxOverpaymentInterestRate = percentageToTenthBips(100);
 static_assert(kMaxOverpaymentInterestRate == TenthBips32(100'000u));
 
 /**
+ * The shortest PaymentInterval a loan may have, in seconds.
+ *
+ * The shortest Investment phase of a closed-ended vault is calculated from
+ * this value, so it should not be changed without an amendment.
+ */
+constexpr std::uint32_t kMinLoanPaymentInterval = 60;
+
+/**
+ * The shortest GracePeriod a loan may have, in seconds.
+ *
+ * The shortest Investment phase of a closed-ended vault is calculated from
+ * this value, so it should not be changed without an amendment.
+ */
+constexpr std::uint32_t kMinLoanGracePeriod = 60;
+
+/**
  * LoanPay transaction cost will be one base fee per X combined payments
  *
  * The number of payments is estimated based on the Amount paid and the Loan's
@@ -370,27 +385,6 @@ enum class VaultPhase : std::uint8_t {
     Investment,
     Redemption,
 };
-
-/**
- * Minimum gap between a closed-ended loan's final scheduled payment and the
- * vault's RedemptionDate. LoanSet rejects a schedule whose final payment is
- * fewer than this many seconds before RedemptionDate.
- */
-constexpr std::uint32_t kLoanRedemptionBuffer = std::chrono::seconds{60}.count();
-
-/**
- * Bounds on the length of a closed-ended vault's Investment phase
- * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
- * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
- *
- * 180s is enough to originate a loan that uses the minimum payment interval
- * and kLoanRedemptionBuffer after StartDate, which is strictly after
- * SubscriptionDate. The interval and buffer need not be equal; only their
- * sum plus one second must fit in this floor.
- */
-constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{180}.count();
-// This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
-constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
 /**
  * Maximum recursion depth for vault shares being put as an asset inside
