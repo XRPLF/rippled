@@ -32,10 +32,10 @@ class PeerGroup
     PeersType peers_;
 
 public:
-    using iterator = PeersType::iterator;
-    using const_iterator = PeersType::const_iterator;
-    using reference = PeersType::reference;
-    using const_reference = PeersType::const_reference;
+    using Iterator = PeersType::iterator;
+    using ConstIterator = PeersType::const_iterator;
+    using Reference = PeersType::reference;
+    using ConstReference = PeersType::const_reference;
 
     PeerGroup() = default;
     PeerGroup(Peer* peer) : peers_{1, peer}
@@ -54,31 +54,31 @@ public:
     {
     }
 
-    iterator
+    Iterator
     begin()
     {
         return peers_.begin();
     }
 
-    iterator
+    Iterator
     end()
     {
         return peers_.end();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return peers_.begin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return peers_.end();
     }
 
-    const_reference
+    ConstReference
     operator[](std::size_t i) const
     {
         return peers_[i];

@@ -26,9 +26,9 @@ create(
     AccountID const& account,
     AccountID const& to,
     STAmount const& amount,
-    NetClock::duration const& settleDelay,
+    NetClock::Duration const& settleDelay,
     PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
+    std::optional<NetClock::TimePoint> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt);
 
 inline json::Value
@@ -36,9 +36,9 @@ create(
     Account const& account,
     Account const& to,
     STAmount const& amount,
-    NetClock::duration const& settleDelay,
+    NetClock::Duration const& settleDelay,
     PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
+    std::optional<NetClock::TimePoint> const& cancelAfter = std::nullopt,
     std::optional<std::uint32_t> const& dstTag = std::nullopt)
 {
     return create(account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
@@ -49,7 +49,7 @@ fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
-    std::optional<NetClock::time_point> const& expiration = std::nullopt);
+    std::optional<NetClock::TimePoint> const& expiration = std::nullopt);
 
 json::Value
 claim(

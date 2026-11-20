@@ -44,7 +44,7 @@ doRipplePathFind(rpc::JsonContext& context)
             return rpcError(RpcNotSynced);
         }
 
-        PathRequest::pointer request;
+        PathRequest::Pointer request;
         lpLedger = context.ledgerMaster.getClosedLedger();
 
         // It doesn't look like there's much odd happening here, but you should

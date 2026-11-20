@@ -148,7 +148,7 @@ public:
         auto const node = randomNode();
         auto const name = toBase58(TokenType::NodePublic, node);
         std::uint32_t const load = 0;
-        NetClock::time_point tick = {};
+        NetClock::TimePoint tick = {};
 
         // Initial update
         BEAST_EXPECT(c->update(node, "", load, tick));

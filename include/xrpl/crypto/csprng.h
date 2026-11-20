@@ -22,7 +22,11 @@ private:
     std::mutex mutex_;
 
 public:
-    using result_type = std::uint64_t;
+    using ResultType = std::uint64_t;
+
+    // Required by UniformRandomBitGenerator.
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    using result_type = ResultType;
 
     CsprngEngine(CsprngEngine const&) = delete;
     CsprngEngine&

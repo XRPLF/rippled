@@ -73,12 +73,12 @@ private:
         TxSetType txs;
 
         // Resolution used to determine close time
-        NetClock::duration closeTimeResolution = kLedgerDefaultTimeResolution;
+        NetClock::Duration closeTimeResolution = kLedgerDefaultTimeResolution;
 
         /**
          * When the ledger closed (up to closeTimeResolution)
          */
-        NetClock::time_point closeTime;
+        NetClock::TimePoint closeTime;
 
         /**
          * Whether consensus agreed on the close time
@@ -93,7 +93,7 @@ private:
         /**
          * Parent ledger close time
          */
-        NetClock::time_point parentCloseTime;
+        NetClock::TimePoint parentCloseTime;
 
         /**
          * IDs of this ledgers ancestors. Since each ledger already has unique
@@ -174,7 +174,7 @@ public:
         return instance_->seq;
     }
 
-    [[nodiscard]] NetClock::duration
+    [[nodiscard]] NetClock::Duration
     closeTimeResolution() const
     {
         return instance_->closeTimeResolution;
@@ -186,13 +186,13 @@ public:
         return instance_->closeTimeAgree;
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     closeTime() const
     {
         return instance_->closeTime;
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     parentCloseTime() const
     {
         return instance_->parentCloseTime;
@@ -281,8 +281,8 @@ public:
     accept(
         Ledger const& curr,
         TxSetType const& txs,
-        NetClock::duration closeTimeResolution,
-        NetClock::time_point const& consensusCloseTime);
+        NetClock::Duration closeTimeResolution,
+        NetClock::TimePoint const& consensusCloseTime);
 
     Ledger
     accept(Ledger const& curr, Tx tx)

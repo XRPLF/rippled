@@ -39,7 +39,7 @@ public:
         std::optional<ErrorCodeI> error;         ///< An error written with the ledger fields.
         AccountID account;                       ///< The account whose offers are listed.
         std::uint32_t limit = 0;                 ///< The limit used; written only with a marker.
-        std::vector<SLE::const_pointer> offers;  ///< The offers on this page.
+        std::vector<SLE::ConstPointer> offers;   ///< The offers on this page.
         std::optional<uint256> marker;           ///< Where the next page starts, if there is one.
         std::uint64_t nextHint = 0;  ///< The directory page hint written with the marker.
     };

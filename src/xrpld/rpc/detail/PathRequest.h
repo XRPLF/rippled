@@ -45,8 +45,8 @@ class PathRequest final : public InfoSubRequest,
 {
 public:
     using Wptr = std::weak_ptr<PathRequest>;
-    using pointer = std::shared_ptr<PathRequest>;
-    using Ref = pointer const&;
+    using Pointer = std::shared_ptr<PathRequest>;
+    using Ref = Pointer const&;
     using Wref = Wptr const&;
 
 public:
@@ -96,7 +96,7 @@ public:
         std::shared_ptr<AssetCache> const&,
         bool fast,
         std::function<bool()> const& continueCallback = {});
-    InfoSub::pointer
+    InfoSub::Pointer
     getSubscriber() const;
     bool
     hasCompletion();

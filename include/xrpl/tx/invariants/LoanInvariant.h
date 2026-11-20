@@ -50,10 +50,10 @@ class ValidLoan
 {
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+    std::vector<std::pair<SLE::ConstPointer, SLE::ConstPointer>> loans_;
     // Loans removed from the ledger, in the same <before, after> form as loans_.
     // Note that `after` holds the erased entry, so it is not null.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> deletedLoans_;
+    std::vector<std::pair<SLE::ConstPointer, SLE::ConstPointer>> deletedLoans_;
 
 public:
     void

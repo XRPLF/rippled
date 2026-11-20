@@ -18,7 +18,7 @@ class STVector256 : public STBase, public CountedObject<STVector256>
     std::vector<UInt256> value_;
 
 public:
-    using value_type = std::vector<UInt256> const&;
+    using ValueType = std::vector<UInt256> const&;
 
     STVector256() = default;
 

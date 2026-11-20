@@ -138,7 +138,7 @@ proposalUniqueId(
     UInt256 const& proposeHash,
     UInt256 const& previousLedger,
     std::uint32_t proposeSeq,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     Slice const& publicKey,
     Slice const& signature);
 

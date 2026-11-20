@@ -87,7 +87,7 @@ private:
     destroySignerList();
 
     void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
+    writeSignersToSLE(SLE::Pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 }  // namespace xrpl

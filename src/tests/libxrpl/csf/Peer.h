@@ -157,7 +157,7 @@ struct Peer
         {
         }
 
-        [[nodiscard]] NetClock::time_point
+        [[nodiscard]] NetClock::TimePoint
         now() const
         {
             return p_.now();
@@ -557,7 +557,7 @@ struct Peer
     }
 
     Result
-    onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
+    onClose(Ledger const& prevLedger, NetClock::TimePoint closeTime, ConsensusMode mode)
     {
         issue(CloseLedger{.prevLedger = prevLedger, .txs = openTxs});
 
@@ -571,7 +571,7 @@ struct Peer
     onForceAccept(
         Result const& result,
         Ledger const& prevLedger,
-        NetClock::duration const& closeResolution,
+        NetClock::Duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
         json::Value const& consensusJson)
@@ -584,7 +584,7 @@ struct Peer
     onAccept(
         Result const& result,
         Ledger const& prevLedger,
-        NetClock::duration const& closeResolution,
+        NetClock::Duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
         json::Value const& consensusJson,
@@ -967,17 +967,17 @@ struct Peer
         startRound();
     }
 
-    NetClock::time_point
+    NetClock::TimePoint
     now() const
     {
         // We don't care about the actual epochs, but do want the
         // generated NetClock time to be well past its epoch to ensure
-        // any subtractions of two NetClock::time_point in the consensus
+        // any subtractions of two NetClock::TimePoint in the consensus
         // code are positive. (e.g. proposeFRESHNESS)
         using namespace std::chrono;
         using namespace std::chrono_literals;
-        return NetClock::time_point(
-            duration_cast<NetClock::duration>(
+        return NetClock::TimePoint(
+            duration_cast<NetClock::Duration>(
                 scheduler.now().time_since_epoch() + 86400s + clockSkew));
     }
 

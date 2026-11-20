@@ -27,7 +27,7 @@ class TransactionAcquire : public TimeoutCounter,
                            public CountedObject<TransactionAcquire>
 {
 public:
-    using pointer = std::shared_ptr<TransactionAcquire>;
+    using Pointer = std::shared_ptr<TransactionAcquire>;
 
     /**
      * How long to wait between retries, and so how long one timeout takes.

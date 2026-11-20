@@ -31,7 +31,7 @@ ReadView::SlesType::end() const -> Iterator
 }
 
 auto
-ReadView::SlesType::upperBound(key_type const& key) const -> Iterator
+ReadView::SlesType::upperBound(Key const& key) const -> Iterator
 {
     return Iterator(view_, view_->slesUpperBound(key));
 }

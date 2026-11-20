@@ -29,7 +29,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         testcase("Change validation trusted status");
         auto const keys = randomKeyPair(KeyType::Secp256k1);
         auto const v = std::make_shared<STValidation>(
-            xrpl::NetClock::time_point{},
+            xrpl::NetClock::TimePoint{},
             keys.first,
             keys.second,
             calcNodeID(keys.first),

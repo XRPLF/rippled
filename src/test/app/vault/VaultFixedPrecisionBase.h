@@ -242,7 +242,7 @@ protected:
 
     // Asserts the fields set in expected, plus stored AssetsTotal == derived
     // getAssetsTotal. Returns the vault SLE (null if missing).
-    SLE::const_pointer
+    SLE::ConstPointer
     expectVault(test::jtx::Env const& env, Keylet const& vaultKeylet, VaultExpect const& expected)
     {
         auto const sle = env.le(vaultKeylet);

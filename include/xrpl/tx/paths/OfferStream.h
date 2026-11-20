@@ -57,7 +57,7 @@ protected:
     ApplyView& cancelView_;
     Book book_;
     bool validBook_;
-    NetClock::time_point const expire_;
+    NetClock::TimePoint const expire_;
     BookTip tip_;
     TOffer<TIn, TOut> offer_;
     std::optional<TOut> ownerFunds_;
@@ -79,7 +79,7 @@ public:
         ApplyView& view,
         ApplyView& cancelView,
         Book const& book,
-        NetClock::time_point when,
+        NetClock::TimePoint when,
         StepCounter& counter,
         beast::Journal journal);
 

@@ -324,7 +324,7 @@ RCLConsensus::Adaptor::getPrevLedger(
 auto
 RCLConsensus::Adaptor::onClose(
     RCLCxLedger const& ledger,
-    NetClock::time_point const& closeTime,
+    NetClock::TimePoint const& closeTime,
     ConsensusMode mode) -> Result
 {
     bool const wrongLCL = mode == ConsensusMode::WrongLedger;
@@ -422,7 +422,7 @@ void
 RCLConsensus::Adaptor::onForceAccept(
     Result const& result,
     RCLCxLedger const& prevLedger,
-    NetClock::duration const& closeResolution,
+    NetClock::Duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
     json::Value&& consensusJson)
@@ -434,7 +434,7 @@ void
 RCLConsensus::Adaptor::onAccept(
     Result const& result,
     RCLCxLedger const& prevLedger,
-    NetClock::duration const& closeResolution,
+    NetClock::Duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
     json::Value&& consensusJson,
@@ -460,7 +460,7 @@ void
 RCLConsensus::Adaptor::doAccept(
     Result const& result,
     RCLCxLedger const& prevLedger,
-    NetClock::duration closeResolution,
+    NetClock::Duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
     json::Value&& consensusJson)
@@ -476,7 +476,7 @@ RCLConsensus::Adaptor::doAccept(
 
     auto consensusCloseTime = result.position.closeTime();
 
-    if (consensusCloseTime == NetClock::time_point{})
+    if (consensusCloseTime == NetClock::TimePoint{})
     {
         // We agreed to disagree on the close time
         using namespace std::chrono_literals;
@@ -753,9 +753,9 @@ RCLCxLedger
 RCLConsensus::Adaptor::buildLCL(
     RCLCxLedger const& previousLedger,
     CanonicalTXSet& retriableTxs,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     bool closeTimeCorrect,
-    NetClock::duration closeResolution,
+    NetClock::Duration closeResolution,
     std::chrono::milliseconds roundTime,
     std::set<TxID>& failedTxs)
 {
@@ -914,7 +914,7 @@ RCLConsensus::getJson(bool full) const
 
 void
 RCLConsensus::timerEntry(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     std::unique_ptr<std::stringstream> const& clog)
 {
     try
@@ -934,7 +934,7 @@ RCLConsensus::timerEntry(
 }
 
 void
-RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
+RCLConsensus::gotTxSet(NetClock::TimePoint const& now, RCLTxSet const& txSet)
 {
     try
     {
@@ -955,7 +955,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 
 void
 RCLConsensus::simulate(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::scoped_lock const _{mutex_};
@@ -963,7 +963,7 @@ RCLConsensus::simulate(
 }
 
 bool
-RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
+RCLConsensus::peerProposal(NetClock::TimePoint const& now, RCLCxPeerPos const& newProposal)
 {
     std::scoped_lock const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
@@ -1057,7 +1057,7 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 
 void
 RCLConsensus::startRound(
-    NetClock::time_point const& now,
+    NetClock::TimePoint const& now,
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
     HashSet<NodeID> const& nowUntrusted,

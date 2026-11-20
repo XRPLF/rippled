@@ -33,7 +33,7 @@ public:
      * @brief Construct a SignerList ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit SignerList(SLE::const_pointer sle)
+    explicit SignerList(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getOwner() const
     {
         if (hasOwner())
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -85,7 +85,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSignerQuorum() const
     {
         return this->sle_->at(sfSignerQuorum);
@@ -108,7 +108,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSignerListID() const
     {
         return this->sle_->at(sfSignerListID);
@@ -119,7 +119,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -130,7 +130,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -156,7 +156,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    SignerListBuilder(std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,STArray const& signerEntries,std::decay_t<typename SF_UINT32::type::value_type> const& signerListID,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    SignerListBuilder(std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT32::Type::ValueType> const& signerQuorum,STArray const& signerEntries,std::decay_t<typename SF_UINT32::Type::ValueType> const& signerListID,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<SignerListBuilder>(ltSIGNER_LIST)
     {
         setOwnerNode(ownerNode);
@@ -172,7 +172,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    SignerListBuilder(SLE::const_pointer sle)
+    SignerListBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltSIGNER_LIST)
         {
@@ -190,7 +190,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -201,7 +201,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -212,7 +212,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setSignerQuorum(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSignerQuorum(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSignerQuorum] = value;
         return *this;
@@ -234,7 +234,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setSignerListID(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSignerListID(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSignerListID] = value;
         return *this;
@@ -245,7 +245,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -256,7 +256,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

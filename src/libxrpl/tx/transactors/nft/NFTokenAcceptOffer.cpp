@@ -63,8 +63,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const checkOffer =
-        [&ctx](std::optional<UInt256> id) -> std::pair<SLE::const_pointer, TER> {
+    auto const checkOffer = [&ctx](std::optional<UInt256> id) -> std::pair<SLE::ConstPointer, TER> {
         if (id)
         {
             if (id->isZero())
@@ -443,7 +442,7 @@ TER
 NFTokenAcceptOffer::doApply()
 {
     auto const loadToken = [this](std::optional<UInt256> const& id) {
-        SLE::pointer sle;
+        SLE::Pointer sle;
         if (id)
             sle = view().peek(keylet::nftokenOffer(*id));
         return sle;

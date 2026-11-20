@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getVaultID() const
     {
         return this->tx_->at(sfVaultID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMemoData() const
     {
         if (hasMemoData())
@@ -102,9 +102,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    VaultDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    VaultDeleteBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& vaultID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultDeleteBuilder>(ttVAULT_DELETE, account, sequence, fee)
     {
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&
-    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setVaultID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfVaultID] = value;
         return *this;
@@ -145,7 +145,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&
-    setMemoData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMemoData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMemoData] = value;
         return *this;

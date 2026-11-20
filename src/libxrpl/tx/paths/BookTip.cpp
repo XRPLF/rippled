@@ -38,7 +38,7 @@ BookTip::step(beast::Journal j)
             return false;
 
         unsigned int di = 0;
-        SLE::pointer dir;
+        SLE::Pointer dir;
 
         if (dirFirst(view_, *firstPage, dir, di, index_))
         {

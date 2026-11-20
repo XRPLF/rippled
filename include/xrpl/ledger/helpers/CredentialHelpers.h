@@ -27,7 +27,7 @@ namespace credentials {
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
 bool
-checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
+checkExpired(SLE const& sleCredential, NetClock::TimePoint const& closed);
 
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER

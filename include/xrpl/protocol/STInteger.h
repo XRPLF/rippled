@@ -17,7 +17,7 @@ template <typename Integer>
 class STInteger : public STBase, public CountedObject<STInteger<Integer>>
 {
 public:
-    using value_type = Integer;
+    using ValueType = Integer;
 
 private:
     Integer value_;
@@ -45,9 +45,9 @@ public:
     isEquivalent(STBase const& t) const override;
 
     STInteger&
-    operator=(value_type const& v);
+    operator=(ValueType const& v);
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     value() const noexcept;
 
     void
@@ -121,14 +121,14 @@ STInteger<Integer>::isEquivalent(STBase const& t) const
 
 template <typename Integer>
 inline STInteger<Integer>&
-STInteger<Integer>::operator=(value_type const& v)
+STInteger<Integer>::operator=(ValueType const& v)
 {
     value_ = v;
     return *this;
 }
 
 template <typename Integer>
-inline STInteger<Integer>::value_type
+inline STInteger<Integer>::ValueType
 STInteger<Integer>::value() const noexcept
 {
     return value_;

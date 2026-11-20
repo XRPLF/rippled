@@ -100,7 +100,7 @@ isTerminal(
 }
 
 TER
-deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j)
+deleteProposal(ApplyView& view, SLE::Pointer const& sleProposal, beast::Journal j)
 {
     if (!sleProposal || sleProposal->getType() != ltTRANSACTION_PROPOSAL ||
         !view.exists(Keylet{ltTRANSACTION_PROPOSAL, sleProposal->key()}))

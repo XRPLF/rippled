@@ -23,7 +23,7 @@ private:
     bool default_;
 
 public:
-    using value_type = AccountID;
+    using ValueType = AccountID;
 
     STAccount();
 

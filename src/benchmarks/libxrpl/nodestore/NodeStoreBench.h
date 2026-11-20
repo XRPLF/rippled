@@ -40,11 +40,11 @@ template <class Generator>
 inline void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using ResultType = typename Generator::result_type;
     while (bytes > 0)
     {
         auto const v = g();
-        auto const chunk = std::min(bytes, sizeof(result_type));
+        auto const chunk = std::min(bytes, sizeof(ResultType));
         std::memcpy(buffer, &v, chunk);
         buffer = reinterpret_cast<std::uint8_t*>(buffer) + chunk;
         bytes -= chunk;

@@ -147,7 +147,7 @@ private:
     }
 
     static Number
-    scheduledInterest(SLE::const_pointer const& loan)
+    scheduledInterest(SLE::ConstPointer const& loan)
     {
         return loan->at(sfTotalValueOutstanding) - loan->at(sfPrincipalOutstanding) -
             loan->at(sfManagementFeeOutstanding);
@@ -155,7 +155,7 @@ private:
 
     // In FixedPrecision the vault's unpaid balance is exactly the debt owed.
     void
-    expectPrincipalIsVaultDebt(SLE::const_pointer const& vault, SLE::const_pointer const& loan)
+    expectPrincipalIsVaultDebt(SLE::ConstPointer const& vault, SLE::ConstPointer const& loan)
     {
         BEAST_EXPECT(
             vault->at(sfAssetsTotal) - vault->at(sfAssetsAvailable) ==
@@ -221,8 +221,8 @@ private:
         if (!BEAST_EXPECT(state1.paymentRemaining > 1))
             return;
 
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
         auto const overdueClose = Tp{D{state1.nextPaymentDate + state1.paymentInterval}};
         env.close(overdueClose);
 
@@ -643,7 +643,7 @@ private:
 
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
 
-        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        using TimeType = decltype(sfNextPaymentDueDate)::Type::ValueType;
         static_assert(std::is_same_v<TimeType, std::uint32_t>);
         constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);

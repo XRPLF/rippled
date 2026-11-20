@@ -22,10 +22,10 @@ class MPTAmount : private boost::totally_ordered<MPTAmount>,
                   private boost::additive<MPTAmount, std::int64_t>
 {
 public:
-    using value_type = std::int64_t;
+    using ValueType = std::int64_t;
 
 protected:
-    value_type value_{};
+    ValueType value_{};
 
 public:
     MPTAmount() = default;
@@ -35,11 +35,11 @@ public:
     operator=(MPTAmount const& other) = default;
 
     // Round to nearest, even on tie.
-    explicit MPTAmount(Number const& x) : MPTAmount(static_cast<value_type>(x))
+    explicit MPTAmount(Number const& x) : MPTAmount(static_cast<ValueType>(x))
     {
     }
 
-    constexpr explicit MPTAmount(value_type value);
+    constexpr explicit MPTAmount(ValueType value);
 
     constexpr MPTAmount& operator=(beast::Zero);
 
@@ -56,7 +56,7 @@ public:
     operator==(MPTAmount const& other) const;
 
     bool
-    operator==(value_type other) const;
+    operator==(ValueType other) const;
 
     bool
     operator<(MPTAmount const& other) const;
@@ -83,14 +83,14 @@ public:
      * function unless the type has been abstracted away,
      * e.g. in a templated function.
      */
-    [[nodiscard]] constexpr value_type
+    [[nodiscard]] constexpr ValueType
     value() const;
 
     static MPTAmount
     minPositiveAmount();
 };
 
-constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
+constexpr MPTAmount::MPTAmount(ValueType value) : value_(value)
 {
 }
 
@@ -131,7 +131,7 @@ MPTAmount::signum() const noexcept
  * function unless the type has been abstracted away,
  * e.g. in a templated function.
  */
-constexpr MPTAmount::value_type
+constexpr MPTAmount::ValueType
 MPTAmount::value() const
 {
     return value_;
@@ -170,9 +170,9 @@ mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         if (neg && !roundUp)
             r -= 1;
     }
-    if (r > std::numeric_limits<MPTAmount::value_type>::max())
+    if (r > std::numeric_limits<MPTAmount::ValueType>::max())
         Throw<std::overflow_error>("MPT mulRatio overflow");
-    return MPTAmount(r.convert_to<MPTAmount::value_type>());
+    return MPTAmount(r.convert_to<MPTAmount::ValueType>());
 }
 
 inline std::optional<MPTAmount>

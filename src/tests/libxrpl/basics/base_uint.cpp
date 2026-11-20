@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <format>
 #include <iterator>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -26,7 +27,14 @@
 
 namespace xrpl::test {
 
-// a non-hashing Hasher that just copies the bytes.
+// Pin observable behaviour
+static_assert(std::ranges::contiguous_range<UInt256>);
+static_assert(std::ranges::sized_range<UInt256>);
+static_assert(std::is_same_v<std::ranges::range_size_t<UInt256>, std::size_t>);
+static_assert(std::is_same_v<std::ranges::range_value_t<UInt256>, unsigned char>);
+static_assert(std::is_same_v<decltype(std::declval<UInt256>().size()), std::size_t>);
+
+// A non-hashing Hasher that just copies the bytes.
 // Used to test hash_append in base_uint
 template <std::size_t Bits>
 struct Nonhash

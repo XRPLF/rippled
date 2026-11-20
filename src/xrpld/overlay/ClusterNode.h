@@ -18,7 +18,7 @@ public:
         PublicKey const& identity,
         std::string name,
         std::uint32_t fee = 0,
-        NetClock::time_point rtime = NetClock::time_point{})
+        NetClock::TimePoint rtime = NetClock::TimePoint{})
         : identity_(identity), name_(std::move(name)), loadFee_(fee), reportTime_(rtime)
     {
     }
@@ -35,7 +35,7 @@ public:
         return loadFee_;
     }
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     getReportTime() const
     {
         return reportTime_;
@@ -51,7 +51,7 @@ private:
     PublicKey const identity_;
     std::string name_;
     std::uint32_t loadFee_ = 0;
-    NetClock::time_point reportTime_;
+    NetClock::TimePoint reportTime_;
 };
 
 }  // namespace xrpl

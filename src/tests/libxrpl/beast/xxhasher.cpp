@@ -41,7 +41,7 @@ TEST(XXHasher, without_seed)
     Xxhasher hasher{};
     hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 16042857369214894119ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 16042857369214894119ULL);
 }
 
 TEST(XXHasher, with_seed)
@@ -49,7 +49,7 @@ TEST(XXHasher, with_seed)
     Xxhasher hasher{kSeed};
     hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 14440132435660934800ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 14440132435660934800ULL);
 }
 
 TEST(XXHasher, with_two_seeds)
@@ -58,7 +58,7 @@ TEST(XXHasher, with_two_seeds)
     hasher(kInput.data(), kInput.size());
 
     // The second seed is ignored, so this matches the single-seed result.
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 14440132435660934800ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 14440132435660934800ULL);
 }
 
 // Feeds the bytes in as kRepeatCount small updates, never materializing the full object.
@@ -70,7 +70,7 @@ TEST(XXHasher, big_object_with_multiple_small_updates_without_seed)
     for (std::size_t i = 0; i < kRepeatCount; ++i)
         hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 15296278154063476002ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 15296278154063476002ULL);
 }
 
 TEST(XXHasher, big_object_with_multiple_small_updates_with_seed)
@@ -79,7 +79,7 @@ TEST(XXHasher, big_object_with_multiple_small_updates_with_seed)
     for (std::size_t i = 0; i < kRepeatCount; ++i)
         hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 17285302196561698791ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 17285302196561698791ULL);
 }
 
 TEST(XXHasher, big_object_with_small_and_big_updates_without_seed)
@@ -91,7 +91,7 @@ TEST(XXHasher, big_object_with_small_and_big_updates_without_seed)
     hasher(bigObject.data(), bigObject.size());
     hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 1865045178324729219ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 1865045178324729219ULL);
 }
 
 TEST(XXHasher, big_object_with_small_and_big_updates_with_seed)
@@ -103,7 +103,7 @@ TEST(XXHasher, big_object_with_small_and_big_updates_with_seed)
     hasher(bigObject.data(), bigObject.size());
     hasher(kInput.data(), kInput.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 16189862915636005281ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 16189862915636005281ULL);
 }
 
 TEST(XXHasher, big_object_with_one_update_without_seed)
@@ -113,7 +113,7 @@ TEST(XXHasher, big_object_with_one_update_without_seed)
     hasher(object.data(), object.size());
 
     // Hashing the whole object at once must match hashing it in kRepeatCount pieces.
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 15296278154063476002ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 15296278154063476002ULL);
 }
 
 TEST(XXHasher, big_object_with_one_update_with_seed)
@@ -122,7 +122,7 @@ TEST(XXHasher, big_object_with_one_update_with_seed)
     std::string const object = repeat(kInput, kRepeatCount);
     hasher(object.data(), object.size());
 
-    EXPECT_EQ(static_cast<Xxhasher::result_type>(hasher), 17285302196561698791ULL);
+    EXPECT_EQ(static_cast<Xxhasher::ResultType>(hasher), 17285302196561698791ULL);
 }
 
 TEST(XXHasher, operator_result_type_does_not_change_internal_state)
@@ -133,14 +133,14 @@ TEST(XXHasher, operator_result_type_does_not_change_internal_state)
         hasher(object.data(), object.size());
 
         EXPECT_EQ(
-            static_cast<Xxhasher::result_type>(hasher), static_cast<Xxhasher::result_type>(hasher));
+            static_cast<Xxhasher::ResultType>(hasher), static_cast<Xxhasher::ResultType>(hasher));
     }
     {
         Xxhasher hasher;
         std::string const object = repeat(kInput, kRepeatCount);
         hasher(object.data(), object.size());
 
-        EXPECT_EQ(hasher.operator Xxhasher::result_type(), hasher.operator Xxhasher::result_type());
+        EXPECT_EQ(hasher.operator Xxhasher::ResultType(), hasher.operator Xxhasher::ResultType());
     }
 }
 

@@ -34,11 +34,11 @@ public:
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;    ///< The ledger the request selected.
-        AccountID account;                         ///< The account whose channels are listed.
-        std::uint32_t limit = 0;                   ///< The limit used; written only with a marker.
-        std::vector<SLE::const_pointer> channels;  ///< The channels on this page.
-        std::optional<uint256> marker;             ///< Where the next page starts, if there is one.
+        std::shared_ptr<ReadView const> ledger;   ///< The ledger the request selected.
+        AccountID account;                        ///< The account whose channels are listed.
+        std::uint32_t limit = 0;                  ///< The limit used; written only with a marker.
+        std::vector<SLE::ConstPointer> channels;  ///< The channels on this page.
+        std::optional<uint256> marker;            ///< Where the next page starts, if there is one.
         std::uint64_t nextHint = 0;  ///< The directory page hint written with the marker.
     };
 

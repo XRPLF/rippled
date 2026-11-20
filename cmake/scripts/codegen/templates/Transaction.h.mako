@@ -157,12 +157,12 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ${name}Builder(SF_ACCOUNT::type::value_type account,
+    ${name}Builder(SF_ACCOUNT::Type::ValueType account,
 % for i, field in enumerate(required_fields):
                      ${field['typeData']['setter_type']} ${field['paramName']},\
 % endfor
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<${name}Builder>(${tag}, account, sequence, fee)
     {

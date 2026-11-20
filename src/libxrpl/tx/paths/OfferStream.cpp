@@ -54,7 +54,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     ApplyView& view,
     ApplyView& cancelView,
     Book const& book,
-    NetClock::time_point when,
+    NetClock::TimePoint when,
     StepCounter& counter,
     beast::Journal journal)
     : j_(journal)
@@ -217,7 +217,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        SLE::pointer const entry = tip_.entry();
+        SLE::Pointer const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
@@ -232,8 +232,8 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         // Remove if expired
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
         if (entry->isFieldPresent(sfExpiration) && Tp{D{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) << "Removing expired offer " << entry->key();

@@ -33,7 +33,7 @@ private:
     std::vector<std::string> values_;
     bool hadTrailingComments_ = false;
 
-    using const_iterator = decltype(lookup_)::const_iterator;
+    using ConstIterator = decltype(lookup_)::const_iterator;
 
 public:
     /**
@@ -183,28 +183,28 @@ public:
     }
 
     // For iteration of key/value pairs.
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return lookup_.cend();
     }
 
     // For iteration of key/value pairs.
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const
     {
         return lookup_.cend();

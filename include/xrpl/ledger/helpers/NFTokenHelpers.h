@@ -46,9 +46,9 @@ findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID
 struct TokenAndPage
 {
     STObject token;
-    SLE::pointer page;
+    SLE::Pointer page;
 
-    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
+    TokenAndPage(STObject token, SLE::Pointer page) : token(std::move(token)), page(std::move(page))
     {
     }
 };

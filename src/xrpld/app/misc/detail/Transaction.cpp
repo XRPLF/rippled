@@ -96,7 +96,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
     return TransStatus::INVALID;
 }
 
-Transaction::pointer
+Transaction::Pointer
 Transaction::transactionFromSQL(
     boost::optional<std::uint64_t> const& ledgerSeq,
     boost::optional<std::string> const& status,

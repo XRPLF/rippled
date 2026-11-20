@@ -93,7 +93,7 @@ public:
         PublicKey const& identity,
         std::string name,
         std::uint32_t loadFee = 0,
-        NetClock::time_point reportTime = NetClock::time_point{});
+        NetClock::TimePoint reportTime = NetClock::TimePoint{});
 
     /**
      * Invokes the callback once for every cluster node.

@@ -33,7 +33,7 @@ public:
      * @brief Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit LedgerHashes(SLE::const_pointer sle)
+    explicit LedgerHashes(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getFirstLedgerSequence() const
     {
         if (hasFirstLedgerSequence())
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getLastLedgerSequence() const
     {
         if (hasLastLedgerSequence())
@@ -98,7 +98,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VECTOR256::type::value_type
+    SF_VECTOR256::Type::ValueType
     getHashes() const
     {
         return this->sle_->at(sfHashes);
@@ -119,7 +119,7 @@ public:
      * @brief Construct a new LedgerHashesBuilder with required fields.
      * @param hashes The sfHashes field value.
      */
-    LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes)
+    LedgerHashesBuilder(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& hashes)
         : LedgerEntryBuilderBase<LedgerHashesBuilder>(ltLEDGER_HASHES)
     {
         setHashes(hashes);
@@ -130,7 +130,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    LedgerHashesBuilder(SLE::const_pointer sle)
+    LedgerHashesBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLEDGER_HASHES)
         {
@@ -148,7 +148,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
-    setFirstLedgerSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setFirstLedgerSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfFirstLedgerSequence] = value;
         return *this;
@@ -159,7 +159,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
-    setLastLedgerSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLastLedgerSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLastLedgerSequence] = value;
         return *this;
@@ -170,7 +170,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
-    setHashes(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setHashes(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfHashes] = value;
         return *this;

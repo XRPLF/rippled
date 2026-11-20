@@ -10,14 +10,14 @@ class Gauge;
 class GaugeImpl : public std::enable_shared_from_this<GaugeImpl>
 {
 public:
-    using value_type = std::uint64_t;
-    using difference_type = std::int64_t;
+    using ValueType = std::uint64_t;
+    using DifferenceType = std::int64_t;
 
     virtual ~GaugeImpl() = 0;
     virtual void
-    set(value_type value) = 0;
+    set(ValueType value) = 0;
     virtual void
-    increment(difference_type amount) = 0;
+    increment(DifferenceType amount) = 0;
 };
 
 }  // namespace beast::insight

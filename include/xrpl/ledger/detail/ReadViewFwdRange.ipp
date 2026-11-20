@@ -2,29 +2,27 @@
 
 namespace xrpl::detail {
 
-template <class ValueType>
-ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator const& other)
+template <class T>
+ReadViewFwdRange<T>::Iterator::Iterator(Iterator const& other)
     : view_(other.view_), impl_(other.impl_ ? other.impl_->copy() : nullptr), cache_(other.cache_)
 {
 }
 
-template <class ValueType>
-ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator&& other) noexcept
+template <class T>
+ReadViewFwdRange<T>::Iterator::Iterator(Iterator&& other) noexcept
     : view_(other.view_), impl_(std::move(other.impl_)), cache_(std::move(other.cache_))
 {
 }
 
-template <class ValueType>
-ReadViewFwdRange<ValueType>::Iterator::Iterator(
-    ReadView const* view,
-    std::unique_ptr<IterBase> impl)
+template <class T>
+ReadViewFwdRange<T>::Iterator::Iterator(ReadView const* view, std::unique_ptr<IterBase> impl)
     : view_(view), impl_(std::move(impl))
 {
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator const& other) -> Iterator&
+ReadViewFwdRange<T>::Iterator::operator=(Iterator const& other) -> Iterator&
 {
     if (this != &other)
     {
@@ -35,9 +33,9 @@ ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator const& other) -> Itera
     return *this;
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator&& other) noexcept -> Iterator&
+ReadViewFwdRange<T>::Iterator::operator=(Iterator&& other) noexcept -> Iterator&
 {
     if (this != &other)
     {
@@ -49,9 +47,9 @@ ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator&& other) noexcept -> I
     return *this;
 }
 
-template <class ValueType>
+template <class T>
 bool
-ReadViewFwdRange<ValueType>::Iterator::operator==(Iterator const& other) const
+ReadViewFwdRange<T>::Iterator::operator==(Iterator const& other) const
 {
     XRPL_ASSERT(
         view_ == other.view_,
@@ -64,34 +62,34 @@ ReadViewFwdRange<ValueType>::Iterator::operator==(Iterator const& other) const
     return impl_ == other.impl_;
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator*() const -> reference
+ReadViewFwdRange<T>::Iterator::operator*() const -> Reference
 {
     if (!cache_)
         cache_ = impl_->dereference();
     return *cache_;
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator->() const -> pointer
+ReadViewFwdRange<T>::Iterator::operator->() const -> Pointer
 {
     return &**this;
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator++() -> Iterator&
+ReadViewFwdRange<T>::Iterator::operator++() -> Iterator&
 {
     impl_->increment();
     cache_.reset();
     return *this;
 }
 
-template <class ValueType>
+template <class T>
 auto
-ReadViewFwdRange<ValueType>::Iterator::operator++(int) -> Iterator
+ReadViewFwdRange<T>::Iterator::operator++(int) -> Iterator
 {
     Iterator prev(view_, impl_->copy());
     prev.cache_ = std::move(cache_);

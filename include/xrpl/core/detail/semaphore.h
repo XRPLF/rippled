@@ -43,13 +43,13 @@ private:
     std::size_t count_;
 
 public:
-    using size_type = std::size_t;
+    using SizeType = std::size_t;
 
     /**
      * Create the semaphore, with an optional initial count.
      * If unspecified, the initial count is zero.
      */
-    explicit BasicSemaphore(size_type count = 0) : count_(count)
+    explicit BasicSemaphore(SizeType count = 0) : count_(count)
     {
     }
 

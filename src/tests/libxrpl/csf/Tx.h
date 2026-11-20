@@ -70,7 +70,7 @@ using TxSetType = boost::container::flat_set<Tx>;
 class TxSet
 {
 public:
-    using ID = beast::Uhash<>::result_type;
+    using ID = beast::Uhash<>::ResultType;
     using Tx = csf::Tx;
 
     static ID

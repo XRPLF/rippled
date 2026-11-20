@@ -30,7 +30,7 @@ public:
     deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
 
     static TER
-    deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j);
+    deleteSLE(ApplyView& view, SLE::Pointer sle, AccountID const owner, beast::Journal j);
 
     TER
     doApply() override;

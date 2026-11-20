@@ -116,7 +116,7 @@ public:
     {
         return accountSend(
             std::forward<Args>(args)...,
-            SLE::pointer(),
+            SLE::Pointer(),
             WaiveTransferFee::Yes,
             AllowMPTOverflow::Yes);
     }

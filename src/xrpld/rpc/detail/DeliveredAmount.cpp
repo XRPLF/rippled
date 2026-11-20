@@ -26,7 +26,7 @@ namespace xrpl::rpc {
 
   GetLedgerIndex is a callable that returns a LedgerIndex
   GetCloseTime is a callable that returns a
-               std::optional<NetClock::time_point>
+               std::optional<NetClock::TimePoint>
  */
 template <class GetLedgerIndex, class GetCloseTime>
 std::optional<STAmount>
@@ -57,7 +57,7 @@ getDeliveredAmount(
         // then its absence indicates that the amount delivered is listed in the
         // Amount field. DeliveredAmount went live January 24, 2014.
         // 446000000 is in Feb 2014, well after DeliveredAmount went live
-        if (getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s})
+        if (getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::TimePoint{446000000s})
         {
             return serializedTx->getFieldAmount(sfAmount);
         }
@@ -122,7 +122,7 @@ getDeliveredAmount(
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getCloseTime = [&context,
-                                   &getLedgerIndex] -> std::optional<NetClock::time_point> {
+                                   &getLedgerIndex] -> std::optional<NetClock::TimePoint> {
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
         return getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);

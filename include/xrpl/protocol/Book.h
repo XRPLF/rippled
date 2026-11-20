@@ -113,13 +113,13 @@ private:
 public:
     hash() = default;
 
-    using value_type = std::size_t;
-    using argument_type = xrpl::Issue;
+    using ValueType = std::size_t;
+    using ArgumentType = xrpl::Issue;
 
-    value_type
-    operator()(argument_type const& value) const
+    ValueType
+    operator()(ArgumentType const& value) const
     {
-        value_type result(CurrencyHashType::member(value.currency));
+        ValueType result(CurrencyHashType::member(value.currency));
         if (!isXRP(value.currency))
             boost::hash_combine(result, IssuerHashType::member(value.account));
         return result;
@@ -135,13 +135,13 @@ private:
 public:
     hash() = default;
 
-    using value_type = std::size_t;
-    using argument_type = xrpl::MPTIssue;
+    using ValueType = std::size_t;
+    using ArgumentType = xrpl::MPTIssue;
 
-    value_type
-    operator()(argument_type const& value) const
+    ValueType
+    operator()(ArgumentType const& value) const
     {
-        value_type const result(IdHashType::member(value.getMptID()));
+        ValueType const result(IdHashType::member(value.getMptID()));
         return result;
     }
 };
@@ -150,8 +150,8 @@ template <>
 struct hash<xrpl::Asset>
 {
 private:
-    using value_type = std::size_t;
-    using argument_type = xrpl::Asset;
+    using ValueType = std::size_t;
+    using ArgumentType = xrpl::Asset;
 
     using IssueHasher = std::hash<xrpl::Issue>;
     using MptissueHasher = std::hash<xrpl::MPTIssue>;
@@ -162,16 +162,16 @@ private:
 public:
     hash() = default;
 
-    value_type
-    operator()(argument_type const& asset) const
+    ValueType
+    operator()(ArgumentType const& asset) const
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(mIssueHasher_(issue));
+                ValueType const result(mIssueHasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(mMptissueHasher_(issue));
+                ValueType const result(mMptissueHasher_(issue));
                 return result;
             });
     }
@@ -184,7 +184,7 @@ struct hash<xrpl::Book>
 {
 private:
     using AssetHasher = std::hash<xrpl::Asset>;
-    using UInt256Hasher = xrpl::UInt256::hasher;
+    using UInt256Hasher = xrpl::UInt256::Hasher;
 
     AssetHasher issueHasher_;
     UInt256Hasher uint256Hasher_;
@@ -192,13 +192,13 @@ private:
 public:
     hash() = default;
 
-    using value_type = std::size_t;
-    using argument_type = xrpl::Book;
+    using ValueType = std::size_t;
+    using ArgumentType = xrpl::Book;
 
-    value_type
-    operator()(argument_type const& value) const
+    ValueType
+    operator()(ArgumentType const& value) const
     {
-        value_type result(issueHasher_(value.in));
+        ValueType result(issueHasher_(value.in));
         boost::hash_combine(result, issueHasher_(value.out));
 
         if (value.domain)

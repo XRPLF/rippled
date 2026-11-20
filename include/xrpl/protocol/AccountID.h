@@ -141,7 +141,7 @@ namespace std {
 // DEPRECATED
 // VFALCO Use beast::uhash or a hardened container
 template <>
-struct hash<xrpl::AccountID> : xrpl::AccountID::hasher
+struct hash<xrpl::AccountID> : xrpl::AccountID::Hasher
 {
     hash() = default;
 };

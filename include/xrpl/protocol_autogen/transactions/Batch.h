@@ -100,9 +100,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    BatchBuilder(SF_ACCOUNT::type::value_type account,
-                     STArray const& rawTransactions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    BatchBuilder(SF_ACCOUNT::Type::ValueType account,
+                     STArray const& rawTransactions,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<BatchBuilder>(ttBATCH, account, sequence, fee)
     {

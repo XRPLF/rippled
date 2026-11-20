@@ -11,15 +11,23 @@ template <bool IsConst, class Iterator>
 class AgedContainerIterator
 {
 public:
-    using iterator_category = std::iterator_traits<Iterator>::iterator_category;
-    using value_type = std::conditional_t<
+    using IteratorCategory = std::iterator_traits<Iterator>::iterator_category;
+    using ValueType = std::conditional_t<
         IsConst,
-        typename Iterator::value_type::Stashed::value_type const,
-        typename Iterator::value_type::Stashed::value_type>;
-    using difference_type = std::iterator_traits<Iterator>::difference_type;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using time_point = Iterator::value_type::Stashed::time_point;
+        typename Iterator::value_type::Stashed::ValueType const,
+        typename Iterator::value_type::Stashed::ValueType>;
+    using DifferenceType = std::iterator_traits<Iterator>::difference_type;
+    using Pointer = ValueType*;
+    using Reference = ValueType&;
+
+    // Required by std::iterator_traits.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using iterator_category = IteratorCategory;
+    using value_type = ValueType;
+    using difference_type = DifferenceType;
+    // NOLINTEND(readability-identifier-naming)
+
+    using TimePoint = Iterator::value_type::Stashed::TimePoint;
 
     AgedContainerIterator() = default;
 
@@ -97,19 +105,19 @@ public:
         return prev;
     }
 
-    reference
+    Reference
     operator*() const
     {
         return iter_->value;
     }
 
-    pointer
+    Pointer
     operator->() const
     {
         return &iter_->value;
     }
 
-    [[nodiscard]] time_point const&
+    [[nodiscard]] TimePoint const&
     when() const
     {
         return iter_->when;

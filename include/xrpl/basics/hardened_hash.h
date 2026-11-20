@@ -74,17 +74,17 @@ private:
     detail::SeedPair seeds_{detail::makeSeedPair<>()};
 
 public:
-    using result_type = HashAlgorithm::result_type;
+    using ResultType = HashAlgorithm::ResultType;
 
     HardenedHash() = default;
 
     template <class T>
-    result_type
+    ResultType
     operator()(T const& t) const noexcept
     {
         HashAlgorithm h(seeds_.first, seeds_.second);
         hash_append(h, t);
-        return static_cast<result_type>(h);
+        return static_cast<ResultType>(h);
     }
 };
 

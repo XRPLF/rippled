@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->tx_->at(sfDestination);
@@ -64,7 +64,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getSendMax() const
     {
         return this->tx_->at(sfSendMax);
@@ -75,7 +75,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -101,7 +101,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -127,7 +127,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getInvoiceID() const
     {
         if (hasInvoiceID())
@@ -167,9 +167,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    CheckCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    CheckCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& sendMax,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<CheckCreateBuilder>(ttCHECK_CREATE, account, sequence, fee)
     {
@@ -200,7 +200,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -212,7 +212,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
-    setSendMax(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setSendMax(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfSendMax] = value;
         return *this;
@@ -223,7 +223,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -234,7 +234,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -245,7 +245,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCreateBuilder&
-    setInvoiceID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setInvoiceID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfInvoiceID] = value;
         return *this;

@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getLoanBrokerID() const
     {
         return this->tx_->at(sfLoanBrokerID);
@@ -64,7 +64,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->tx_->at(sfAmount);
@@ -89,9 +89,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LoanBrokerCoverDepositBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    LoanBrokerCoverDepositBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& loanBrokerID,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<LoanBrokerCoverDepositBuilder>(ttLOAN_BROKER_COVER_DEPOSIT, account, sequence, fee)
     {
@@ -122,7 +122,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverDepositBuilder&
-    setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setLoanBrokerID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfLoanBrokerID] = value;
         return *this;
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverDepositBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;

@@ -36,7 +36,7 @@ namespace xrpl {
 namespace credentials {
 
 bool
-checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
+checkExpired(SLE const& sleCredential, NetClock::TimePoint const& closed)
 {
     std::uint32_t const exp =
         sleCredential[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
@@ -250,7 +250,7 @@ TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<SLE::const_pointer> lifeExtender;
+    std::vector<SLE::ConstPointer> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {

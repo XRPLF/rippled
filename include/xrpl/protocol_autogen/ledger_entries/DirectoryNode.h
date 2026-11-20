@@ -33,7 +33,7 @@ public:
      * @brief Construct a DirectoryNode ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit DirectoryNode(SLE::const_pointer sle)
+    explicit DirectoryNode(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getOwner() const
     {
         if (hasOwner())
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT160::type::value_type>
+    protocol_autogen::Optional<SF_UINT160::Type::ValueType>
     getTakerPaysCurrency() const
     {
         if (hasTakerPaysCurrency())
@@ -98,7 +98,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT160::type::value_type>
+    protocol_autogen::Optional<SF_UINT160::Type::ValueType>
     getTakerPaysIssuer() const
     {
         if (hasTakerPaysIssuer())
@@ -122,7 +122,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    protocol_autogen::Optional<SF_UINT192::Type::ValueType>
     getTakerPaysMPT() const
     {
         if (hasTakerPaysMPT())
@@ -146,7 +146,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT160::type::value_type>
+    protocol_autogen::Optional<SF_UINT160::Type::ValueType>
     getTakerGetsCurrency() const
     {
         if (hasTakerGetsCurrency())
@@ -170,7 +170,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT160::type::value_type>
+    protocol_autogen::Optional<SF_UINT160::Type::ValueType>
     getTakerGetsIssuer() const
     {
         if (hasTakerGetsIssuer())
@@ -194,7 +194,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    protocol_autogen::Optional<SF_UINT192::Type::ValueType>
     getTakerGetsMPT() const
     {
         if (hasTakerGetsMPT())
@@ -218,7 +218,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getExchangeRate() const
     {
         if (hasExchangeRate())
@@ -242,7 +242,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VECTOR256::type::value_type
+    SF_VECTOR256::Type::ValueType
     getIndexes() const
     {
         return this->sle_->at(sfIndexes);
@@ -253,7 +253,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getRootIndex() const
     {
         return this->sle_->at(sfRootIndex);
@@ -264,7 +264,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getIndexNext() const
     {
         if (hasIndexNext())
@@ -288,7 +288,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getIndexPrevious() const
     {
         if (hasIndexPrevious())
@@ -312,7 +312,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getNFTokenID() const
     {
         if (hasNFTokenID())
@@ -336,7 +336,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousTxnID() const
     {
         if (hasPreviousTxnID())
@@ -360,7 +360,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousTxnLgrSeq() const
     {
         if (hasPreviousTxnLgrSeq())
@@ -384,7 +384,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -419,7 +419,7 @@ public:
      * @param indexes The sfIndexes field value.
      * @param rootIndex The sfRootIndex field value.
      */
-    DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes,std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex)
+    DirectoryNodeBuilder(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& indexes,std::decay_t<typename SF_UINT256::Type::ValueType> const& rootIndex)
         : LedgerEntryBuilderBase<DirectoryNodeBuilder>(ltDIR_NODE)
     {
         setIndexes(indexes);
@@ -431,7 +431,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    DirectoryNodeBuilder(SLE::const_pointer sle)
+    DirectoryNodeBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDIR_NODE)
         {
@@ -449,7 +449,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -460,7 +460,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerPaysCurrency(std::decay_t<typename SF_UINT160::type::value_type> const& value)
+    setTakerPaysCurrency(std::decay_t<typename SF_UINT160::Type::ValueType> const& value)
     {
         object_[sfTakerPaysCurrency] = value;
         return *this;
@@ -471,7 +471,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerPaysIssuer(std::decay_t<typename SF_UINT160::type::value_type> const& value)
+    setTakerPaysIssuer(std::decay_t<typename SF_UINT160::Type::ValueType> const& value)
     {
         object_[sfTakerPaysIssuer] = value;
         return *this;
@@ -482,7 +482,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerPaysMPT(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setTakerPaysMPT(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfTakerPaysMPT] = value;
         return *this;
@@ -493,7 +493,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerGetsCurrency(std::decay_t<typename SF_UINT160::type::value_type> const& value)
+    setTakerGetsCurrency(std::decay_t<typename SF_UINT160::Type::ValueType> const& value)
     {
         object_[sfTakerGetsCurrency] = value;
         return *this;
@@ -504,7 +504,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerGetsIssuer(std::decay_t<typename SF_UINT160::type::value_type> const& value)
+    setTakerGetsIssuer(std::decay_t<typename SF_UINT160::Type::ValueType> const& value)
     {
         object_[sfTakerGetsIssuer] = value;
         return *this;
@@ -515,7 +515,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setTakerGetsMPT(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setTakerGetsMPT(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfTakerGetsMPT] = value;
         return *this;
@@ -526,7 +526,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setExchangeRate(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setExchangeRate(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfExchangeRate] = value;
         return *this;
@@ -537,7 +537,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setIndexes(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setIndexes(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfIndexes] = value;
         return *this;
@@ -548,7 +548,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setRootIndex(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setRootIndex(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfRootIndex] = value;
         return *this;
@@ -559,7 +559,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setIndexNext(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setIndexNext(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfIndexNext] = value;
         return *this;
@@ -570,7 +570,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setIndexPrevious(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setIndexPrevious(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfIndexPrevious] = value;
         return *this;
@@ -581,7 +581,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setNFTokenID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenID] = value;
         return *this;
@@ -592,7 +592,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -603,7 +603,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -614,7 +614,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DirectoryNodeBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;

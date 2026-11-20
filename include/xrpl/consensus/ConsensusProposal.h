@@ -63,8 +63,8 @@ public:
         LedgerId const& prevLedger,
         std::uint32_t seq,
         Position const& position,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
+        NetClock::TimePoint closeTime,
+        NetClock::TimePoint now,
         NodeId const& nodeID)
         : previousLedger_(prevLedger)
         , position_(position)
@@ -119,7 +119,7 @@ public:
     /**
      * The current position on the consensus close time.
      */
-    NetClock::time_point const&
+    NetClock::TimePoint const&
     closeTime() const
     {
         return closeTime_;
@@ -128,7 +128,7 @@ public:
     /**
      * Get when this position was taken.
      */
-    NetClock::time_point const&
+    NetClock::TimePoint const&
     seenTime() const
     {
         return time_;
@@ -157,7 +157,7 @@ public:
      * Get whether this position is stale relative to the provided cutoff
      */
     bool
-    isStale(NetClock::time_point cutoff) const
+    isStale(NetClock::TimePoint cutoff) const
     {
         return time_ <= cutoff;
     }
@@ -173,8 +173,8 @@ public:
     void
     changePosition(
         Position const& newPosition,
-        NetClock::time_point newCloseTime,
-        NetClock::time_point now)
+        NetClock::TimePoint newCloseTime,
+        NetClock::TimePoint now)
     {
         signingHash_.reset();
         position_ = newPosition;
@@ -192,7 +192,7 @@ public:
      * @param now Time when this node left consensus.
      */
     void
-    bowOut(NetClock::time_point now)
+    bowOut(NetClock::TimePoint now)
     {
         signingHash_.reset();
         time_ = now;
@@ -265,10 +265,10 @@ private:
     /**
      * The ledger close time this position is taking
      */
-    NetClock::time_point closeTime_;
+    NetClock::TimePoint closeTime_;
 
     // !The time this position was last updated
-    NetClock::time_point time_;
+    NetClock::TimePoint time_;
 
     /**
      * The sequence number of these positions taken by this node

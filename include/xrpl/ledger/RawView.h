@@ -91,7 +91,7 @@ public:
      */
     virtual void
     rawTxInsert(
-        ReadView::key_type const& key,
+        ReadView::Key const& key,
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) = 0;
 };

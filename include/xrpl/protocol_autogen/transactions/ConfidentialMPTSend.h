@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->tx_->at(sfMPTokenIssuanceID);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->tx_->at(sfDestination);
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -100,7 +100,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getSenderEncryptedAmount() const
     {
         return this->tx_->at(sfSenderEncryptedAmount);
@@ -111,7 +111,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getDestinationEncryptedAmount() const
     {
         return this->tx_->at(sfDestinationEncryptedAmount);
@@ -122,7 +122,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getIssuerEncryptedAmount() const
     {
         return this->tx_->at(sfIssuerEncryptedAmount);
@@ -133,7 +133,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptedAmount() const
     {
         if (hasAuditorEncryptedAmount())
@@ -159,7 +159,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getZKProof() const
     {
         return this->tx_->at(sfZKProof);
@@ -170,7 +170,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getAmountCommitment() const
     {
         return this->tx_->at(sfAmountCommitment);
@@ -181,7 +181,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getBalanceCommitment() const
     {
         return this->tx_->at(sfBalanceCommitment);
@@ -192,7 +192,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    protocol_autogen::Optional<SF_VECTOR256::Type::ValueType>
     getCredentialIDs() const
     {
         if (hasCredentialIDs())
@@ -238,9 +238,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTSendBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_VL::type::value_type> const& senderEncryptedAmount,                     std::decay_t<typename SF_VL::type::value_type> const& destinationEncryptedAmount,                     std::decay_t<typename SF_VL::type::value_type> const& issuerEncryptedAmount,                     std::decay_t<typename SF_VL::type::value_type> const& zKProof,                     std::decay_t<typename SF_VL::type::value_type> const& amountCommitment,                     std::decay_t<typename SF_VL::type::value_type> const& balanceCommitment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    ConfidentialMPTSendBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,                     std::decay_t<typename SF_VL::Type::ValueType> const& senderEncryptedAmount,                     std::decay_t<typename SF_VL::Type::ValueType> const& destinationEncryptedAmount,                     std::decay_t<typename SF_VL::Type::ValueType> const& issuerEncryptedAmount,                     std::decay_t<typename SF_VL::Type::ValueType> const& zKProof,                     std::decay_t<typename SF_VL::Type::ValueType> const& amountCommitment,                     std::decay_t<typename SF_VL::Type::ValueType> const& balanceCommitment,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<ConfidentialMPTSendBuilder>(ttCONFIDENTIAL_MPT_SEND, account, sequence, fee)
     {
@@ -277,7 +277,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;
@@ -288,7 +288,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -299,7 +299,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -310,7 +310,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setSenderEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setSenderEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfSenderEncryptedAmount] = value;
         return *this;
@@ -321,7 +321,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setDestinationEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setDestinationEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfDestinationEncryptedAmount] = value;
         return *this;
@@ -332,7 +332,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptedAmount] = value;
         return *this;
@@ -343,7 +343,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptedAmount] = value;
         return *this;
@@ -354,7 +354,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setZKProof(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setZKProof(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfZKProof] = value;
         return *this;
@@ -365,7 +365,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setAmountCommitment(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAmountCommitment(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAmountCommitment] = value;
         return *this;
@@ -376,7 +376,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setBalanceCommitment(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBalanceCommitment(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfBalanceCommitment] = value;
         return *this;
@@ -387,7 +387,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
-    setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setCredentialIDs(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfCredentialIDs] = value;
         return *this;

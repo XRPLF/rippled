@@ -108,7 +108,7 @@ private:
     TER
     applyHybrid(
         Sandbox& sb,
-        STLedgerEntry::pointer sleOffer,
+        STLedgerEntry::Pointer sleOffer,
         Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,

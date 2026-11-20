@@ -66,7 +66,7 @@ using InlineSet =
 std::optional<XRPAmount>
 Batch::calculateBaseFeeImpl(ReadView const& view, STTx const& tx)
 {
-    XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
+    XRPAmount const maxAmount{std::numeric_limits<XRPAmount::ValueType>::max()};
 
     // batchBase: view.fees().base for batch processing + default base fee
     XRPAmount const baseFee = Transactor::calculateBaseFee(view, tx);

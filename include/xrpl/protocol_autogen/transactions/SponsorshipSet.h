@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getCounterpartySponsor() const
     {
         if (hasCounterpartySponsor())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getSponsee() const
     {
         if (hasSponsee())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getFeeAmountDelta() const
     {
         if (hasFeeAmountDelta())
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getMaxFee() const
     {
         if (hasMaxFee())
@@ -156,7 +156,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_INT32::type::value_type>
+    protocol_autogen::Optional<SF_INT32::Type::ValueType>
     getRemainingOwnerCountDelta() const
     {
         if (hasRemainingOwnerCountDelta())
@@ -194,9 +194,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    SponsorshipSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    SponsorshipSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<SponsorshipSetBuilder>(ttSPONSORSHIP_SET, account, sequence, fee)
     {
@@ -225,7 +225,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setCounterpartySponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setCounterpartySponsor(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfCounterpartySponsor] = value;
         return *this;
@@ -236,7 +236,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setSponsee(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setSponsee(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfSponsee] = value;
         return *this;
@@ -247,7 +247,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setFeeAmountDelta(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setFeeAmountDelta(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfFeeAmountDelta] = value;
         return *this;
@@ -258,7 +258,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setMaxFee(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setMaxFee(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfMaxFee] = value;
         return *this;
@@ -269,7 +269,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setRemainingOwnerCountDelta(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    setRemainingOwnerCountDelta(std::decay_t<typename SF_INT32::Type::ValueType> const& value)
     {
         object_[sfRemainingOwnerCountDelta] = value;
         return *this;

@@ -68,12 +68,12 @@ private:
         unordered_set_of<beast::ip::Endpoint, boost::hash<beast::ip::Endpoint>, std::equal_to<>>;
     using RightT = boost::bimaps::multiset_of<Entry, std::less<>>;
     using MapType = boost::bimap<LeftT, RightT>;
-    using value_type = MapType::value_type;
+    using ValueType = MapType::value_type;
 
     struct Transform
     {
-        using first_argument_type = MapType::right_map::const_iterator::value_type const&;
-        using result_type = beast::ip::Endpoint const&;
+        using FirstArgumentType = MapType::right_map::const_iterator::value_type const&;
+        using ResultType = beast::ip::Endpoint const&;
 
         explicit Transform() = default;
 
@@ -100,9 +100,9 @@ private:
 public:
     static constexpr int kStaticValence = 32;
 
-    using iterator = boost::transform_iterator<Transform, MapType::right_map::const_iterator>;
+    using Iterator = boost::transform_iterator<Transform, MapType::right_map::const_iterator>;
 
-    using const_iterator = iterator;
+    using ConstIterator = Iterator;
 
     Bootcache(Store& store, ClockType& clock, beast::Journal journal);
 
@@ -124,13 +124,13 @@ public:
      * ip::Endpoint iterators that traverse in decreasing valence.
      */
     /** @{ */
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const;
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const;
     void
     clear();
