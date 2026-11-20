@@ -352,7 +352,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
         return {res.error(), false};  // LCOV_EXCL_LINE
 
-    auto const tfee = getTradingFee(ctx_.view(), ammSle, accountID_);
+    auto const tfee = ammSle.tradingFee(accountID_);
 
     auto const freezeHandling = issuerFreezeHandling();
 
