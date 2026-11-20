@@ -17,6 +17,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
@@ -62,7 +63,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if ((hasIssuerElGamalKey || hasAuditorElGamalKey || enablePrivacy ||
          setConfidentialBalanceImmutable) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
+    {
         return temDISABLED;
+    }
 
     if (hasDomain && hasHolder)
         return temMALFORMED;
@@ -85,7 +88,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         // Is this transaction actually changing anything ?
         if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey &&
             !isMutate)
+        {
             return temMALFORMED;
+        }
     }
 
     if (ctx.rules.enabled(featureDynamicMPT))
@@ -113,7 +118,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (immutableFlags &&
             ((*immutableFlags == 0u) ||
              ((*immutableFlags & tifMPTokenIssuanceImmutableMask) != 0u)))
+        {
             return temINVALID_FLAG;
+        }
     }
 
     if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
@@ -128,7 +135,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     // registered after the issuer key has already been registered.
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey &&
         !ctx.rules.enabled(featureConfidentialMPTKeyRotation))
+    {
         return temMALFORMED;
+    }
 
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
         return temMALFORMED;
@@ -155,10 +164,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         {
             return tecNO_PERMISSION;
         }
+
         if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
-        {
             return tecNO_PERMISSION;
-        }
     }
 
     // ensure it is issued by the tx submitter
@@ -202,7 +210,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (std::ranges::any_of(flagMapping, [&](auto const& f) {
                 return isImmutable(f.immutableFlag) && ctx.tx.isFlag(f.setFlag);
             }))
+        {
             return tecNO_PERMISSION;
+        }
     }
 
     if (isImmutable(lsifMPTMetadata) && ctx.tx.isFieldPresent(sfMPTokenMetadata))
@@ -250,11 +260,15 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // increment must always correspond to an actual key change.
         if (txHasIssuerKey && sleHasIssuerKey &&
             ctx.tx[sfIssuerEncryptionKey] == (*sleMptIssuance)[sfIssuerEncryptionKey])
+        {
             return tecDUPLICATE;
+        }
 
         if (txHasAuditorKey && sleHasAuditorKey &&
             ctx.tx[sfAuditorEncryptionKey] == (*sleMptIssuance)[sfAuditorEncryptionKey])
+        {
             return tecDUPLICATE;
+        }
 
         // Key epochs must never wrap. Epoch 0 serves as the sentinel for "never
         // rotated." Holders' mirror epochs are checked against it for equality,
@@ -262,11 +276,15 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // of failing loudly.
         if (txHasIssuerKey && sleHasIssuerKey &&
             (*sleMptIssuance)[~sfIssuerKeyEpoch].value_or(0) == kMaxKeyEpoch)
+        {
             return tecNO_PERMISSION;
+        }
 
         if (txHasAuditorKey && sleHasAuditorKey &&
             (*sleMptIssuance)[~sfAuditorKeyEpoch].value_or(0) == kMaxKeyEpoch)
+        {
             return tecNO_PERMISSION;
+        }
     }
     else
     {
@@ -284,7 +302,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         (enableFlags & tfMPTSetCanHoldConfidentialBalance) != 0u;
     if (enablesConfidentialBalance && sleMptIssuance->isFieldPresent(sfTransferFee) &&
         (*sleMptIssuance)[sfTransferFee] > 0u)
+    {
         return tecNO_PERMISSION;
+    }
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
@@ -316,6 +336,74 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+// Sets an encryption key on the issuance. Overwriting an existing key
+// (a rotation) increments the corresponding key epoch; a first-time
+// registration leaves the epoch absent (epoch 0), matching issuances
+// whose keys were registered before the ConfidentialMPTKeyRotation
+// amendment.
+static TER
+setEncryptionKey(
+    SLE& sle,
+    ApplyContext const& ctx,
+    bool canRotateKey,
+    SF_VL const& keyField,
+    SF_UINT32 const& epochField)
+{
+    auto const pubKey = ctx.tx[~keyField];
+    if (!pubKey)
+        return tesSUCCESS;
+
+    // This is enforced in preflight, which rejects a transaction carrying
+    // both sfHolder and an encryption key.
+    if (sle.getType() != ltMPTOKEN_ISSUANCE)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        if (canRotateKey)  // amendment gate
+            return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // NOTE: presence must be checked before the key is overwritten below.
+    if (sle.isFieldPresent(keyField))
+    {
+        // Preclaim rejects overwriting an existing key unless the amendment is
+        // enabled.
+        if (!canRotateKey)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : rotation without amendment");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const epoch = sle[~epochField].valueOr(0);
+        // Preclaim rejects a rotation that would wrap the epoch. So this should never happen.
+        if (epoch >= kMaxKeyEpoch)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : key epoch overflow");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
+        // that encrypted the mirror balance.
+        //
+        // - Mirrors migrated after an issuer key rotation store their new key in
+        //   MPToken's sfIssuerMirrorEncryptionKey.
+        // - Mirrors that were never migrated carry no record and remain under the original key.
+        //
+        // Save the original key here in MPTokenIssuance object during the first key rotation
+        if (keyField == sfIssuerEncryptionKey && !sle.isFieldPresent(epochField))
+            sle[sfInitialIssuerEncryptionKey] = sle[keyField];
+
+        sle[epochField] = epoch + 1;
+    }
+    sle[keyField] = *pubKey;
+    return tesSUCCESS;
+};
+
 TER
 MPTokenIssuanceSet::doApply()
 {
@@ -323,6 +411,7 @@ MPTokenIssuanceSet::doApply()
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
     SLE::pointer sle;
+    bool const canRotateKey = view().rules().enabled(featureConfidentialMPTKeyRotation);
 
     if (holderID)
     {
@@ -336,7 +425,7 @@ MPTokenIssuanceSet::doApply()
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
+    std::uint32_t const flagsIn = (*sle)[sfFlags];
     std::uint32_t flagsOut = flagsIn;
 
     if (ctx_.tx.isFlag(tfMPTLock))
@@ -351,17 +440,14 @@ MPTokenIssuanceSet::doApply()
     if (auto const enableFlags = (ctx_.tx.getFlags() & tfMPTokenIssuanceSetEnableFlagMask);
         enableFlags != 0u)
     {
-        for (auto const& f : flagMapping)
-        {
+        std::ranges::for_each(flagMapping, [&, this](auto const& f) {
             if (ctx_.tx.isFlag(f.setFlag))
-            {
                 flagsOut |= f.ledgerFlag;
-            }
-        }
+        });
     }
 
     if (flagsIn != flagsOut)
-        sle->setFieldU32(sfFlags, flagsOut);
+        (*sle)[sfFlags] = flagsOut;
 
     if (auto const immutableFlags = ctx_.tx[~sfImmutableFlags])
     {
@@ -373,12 +459,14 @@ MPTokenIssuanceSet::doApply()
         // In doApply, the absence of sfHolder causes the MPTokenIssuance keylet
         // to be peeked. The runtime check below is a defensive fallback in case
         // this invariant is ever broken by a future change.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
         if (sle->getType() != ltMPTOKEN_ISSUANCE)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sle)[sfImmutableFlags] = (*sle)[sfImmutableFlags] | *immutableFlags;
     }
@@ -388,118 +476,72 @@ MPTokenIssuanceSet::doApply()
         // TransferFee uses soeDEFAULT style:
         // - If the field is absent, it is interpreted as 0.
         // - If the field is present, it must be non-zero.
-        // Therefore, when TransferFee is 0, the field should be removed.
-        if (transferFee == 0)
+        // operator[] deals with it.
+        if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
         {
-            sle->makeFieldAbsent(sfTransferFee);
+            // LCOV_EXCL_START
+            UNREACHABLE("MPTokenIssuanceSet::doApply : transfer fee target is not issuance");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
-        else
-        {
-            sle->setFieldU16(sfTransferFee, *transferFee);
-        }
+        (*sle)[sfTransferFee] = *transferFee;
     }
 
     if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
     {
+        if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("MPTokenIssuanceSet::doApply : metadata target is not issuance");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
         if (metadata->empty())
         {
             sle->makeFieldAbsent(sfMPTokenMetadata);
         }
         else
         {
-            sle->setFieldVL(sfMPTokenMetadata, *metadata);
+            (*sle)[sfMPTokenMetadata] = *metadata;
         }
     }
 
     if (domainID)
     {
         // This is enforced in preflight.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+        if (sle->getType() != ltMPTOKEN_ISSUANCE)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+            if (canRotateKey)
+                return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         if (*domainID != beast::kZero)
         {
-            sle->setFieldH256(sfDomainID, *domainID);
+            (*sle)[sfDomainID] = *domainID;
         }
         else
         {
-            if (sle->isFieldPresent(sfDomainID))
-                sle->makeFieldAbsent(sfDomainID);
+            sle->makeFieldAbsent(sfDomainID);
         }
     }
 
-    // Sets an encryption key on the issuance. Overwriting an existing key
-    // (a rotation) increments the corresponding key epoch; a first-time
-    // registration leaves the epoch absent (epoch 0), matching issuances
-    // whose keys were registered before the ConfidentialMPTKeyRotation
-    // amendment.
-    bool const canRotateKey = view().rules().enabled(featureConfidentialMPTKeyRotation);
-    auto const setEncryptionKey = [&](SF_VL const& keyField, SF_UINT32 const& epochField) -> TER {
-        auto const pubKey = ctx_.tx[~keyField];
-        if (!pubKey)
-            return tesSUCCESS;
-
-        // This is enforced in preflight, which rejects a transaction carrying
-        // both sfHolder and an encryption key.
-        XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
-            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
-
-        // Add sanity check under the amendment ConfidentialMPTKeyRotation.
-        // Pre-confidentialMPTKeyRotation did not return tecINTERNAL so
-        // this should be under the amendment guard.
-        if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        // NOTE: presence must be checked before the key is overwritten below.
-        if (sle->isFieldPresent(keyField))
-        {
-            // Preclaim rejects overwriting an existing key unless the amendment is
-            // enabled.
-            if (!canRotateKey)
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : rotation without amendment");
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-
-            auto const epoch = (*sle)[~epochField].valueOr(0);
-
-            // Preclaim rejects a rotation that would wrap the epoch. So this should never happen.
-            if (epoch >= kMaxKeyEpoch)
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE("xrpl::MPTokenIssuanceSet::doApply : key epoch overflow");
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-
-            // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
-            // that encrypted the mirror balance.
-            //
-            // - Mirrors migrated after an issuer key rotation store their new key in
-            //   MPToken's sfIssuerMirrorEncryptionKey.
-            // - Mirrors that were never migrated carry no record and remain under the original key.
-            //
-            // Save the original key here in MPTokenIssuance object during the first key rotation
-            if (keyField == sfIssuerEncryptionKey && !sle->isFieldPresent(epochField))
-                (*sle)[sfInitialIssuerEncryptionKey] = (*sle)[keyField];
-
-            (*sle)[epochField] = epoch + 1;
-        }
-        (*sle)[keyField] = *pubKey;
-        return tesSUCCESS;
-    };
-
-    if (auto const ter = setEncryptionKey(sfIssuerEncryptionKey, sfIssuerKeyEpoch);
+    if (auto const ter =
+            setEncryptionKey(*sle, ctx_, canRotateKey, sfIssuerEncryptionKey, sfIssuerKeyEpoch);
         !isTesSuccess(ter))
+    {
         return ter;  // LCOV_EXCL_LINE
+    }
 
-    if (auto const ter = setEncryptionKey(sfAuditorEncryptionKey, sfAuditorKeyEpoch);
+    if (auto const ter =
+            setEncryptionKey(*sle, ctx_, canRotateKey, sfAuditorEncryptionKey, sfAuditorKeyEpoch);
         !isTesSuccess(ter))
+    {
         return ter;  // LCOV_EXCL_LINE
+    }
 
     view().update(sle);
 
