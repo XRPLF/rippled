@@ -594,7 +594,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
         {
             if (NFTokenOfferEntryW offer(offerIndexes[i], view); offer)
             {
-                if (deleteTokenOffer(view, offer))
+                if (offer.removeFromLedger())
                 {
                     ++deletedOffersCount;
                 }
@@ -611,33 +611,6 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
     } while ((pageIndex.value_or(0) != 0u) && maxDeletableOffers != deletedOffersCount);
 
     return deletedOffersCount;
-}
-
-bool
-deleteTokenOffer(ApplyView& view, NFTokenOfferEntryW& offer)
-{
-    if (offer->getType() != ltNFTOKEN_OFFER)
-        return false;
-
-    auto const owner = (*offer)[sfOwner];
-
-    if (!view.dirRemove(keylet::ownerDir(owner), (*offer)[sfOwnerNode], offer->key(), false))
-        return false;
-
-    auto const nftokenID = (*offer)[sfNFTokenID];
-
-    if (!view.dirRemove(
-            offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
-                                          : keylet::nftBuys(nftokenID),
-            (*offer)[sfNFTokenOfferNode],
-            offer->key(),
-            false))
-        return false;
-
-    decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
-
-    offer.erase();
-    return true;
 }
 
 bool
