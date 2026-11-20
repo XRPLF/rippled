@@ -4,6 +4,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -30,6 +31,7 @@
 #include <streambuf>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -641,8 +643,14 @@ port_wss_admin
 
         // Empty working and home directories, with both XDG variables pointing
         // at their own temporary directories. The guards are declared after
-        // the directories, so they restore before those are removed.
+        // the directories, so they restore before those are removed. The
+        // working directory is restored even when a call below throws, so that
+        // td never deletes the directory the process is in.
         TempDir const td;
+        ScopeExit const restoreCwd{[&cwd] {
+            std::error_code ec;
+            current_path(cwd, ec);
+        }};
         current_path(td.path());
         TempDir const home;
         TempDir const xdgConfig;
@@ -693,9 +701,6 @@ port_wss_admin
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == homeDataDir.string());
             BEAST_EXPECT(is_directory(homeDataDir));
         }
-
-        // Restore the current working directory.
-        current_path(cwd);
 #else
         pass();
 #endif  // _MSC_VER
