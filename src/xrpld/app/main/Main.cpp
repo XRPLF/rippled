@@ -1,3 +1,5 @@
+#include <xrpld/app/main/Main.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -574,11 +576,19 @@ run(int argc, char* const* argv)
 
     auto const configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
-    // Reading the config file throws for a value the server rejects.
+    // A positional argument selects the RPC client, which needs no config
+    // file. --vacuum returns before that branch and does need one.
+    bool const rpcClientMode = vm.contains("parameters") && !vm.contains("vacuum");
+
+    // Setup returns false when the search found no config file, and throws for
+    // one it cannot read or whose contents are invalid. It reports the reason.
     try
     {
-        config->setup(
+        bool const configRead = config->setup(
             configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
+
+        if (missingConfigIsFatal(configRead, rpcClientMode))
+            return 1;
     }
     catch (std::exception const& e)
     {
