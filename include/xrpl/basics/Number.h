@@ -331,11 +331,13 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * operator< and operator== give wrong results when the two operands were built
  * under different ranges, and operator+= can fail an assert in debug builds or
  * align exponents incorrectly. Multiplication is not affected, because it
- * computes an exact 128-bit product and normalizes it once. Zero does not
- * depend on the range, so a stored zero is safe. Store the mantissa and
- * exponent instead, and build the Number where you use it. Changing a runtime
- * Number into a stored constant changes transaction results, so gate that
- * change behind an amendment.
+ * computes an exact 128-bit product and normalizes it once. Division by a
+ * stored Number can lose precision: under the Small range, operator/= runs
+ * only the first division stage, so a 19-digit divisor leaves a quotient of
+ * about 14 or 15 digits. Zero does not depend on the range, so a stored zero
+ * is safe. Store the mantissa and exponent instead, and build the Number where
+ * you use it. Changing a runtime Number into a stored constant changes
+ * transaction results, so gate that change behind an amendment.
  *
  * The results of computations using Numbers with a small mantissa may differ
  * from computations using Numbers with a large mantissa, specifically as it
