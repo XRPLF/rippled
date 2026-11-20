@@ -2912,8 +2912,10 @@ protected:
                         broker.params.managementFeeRate);
 
                     BEAST_EXPECTS(
-                        paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::Final ||
-                            paymentComponents.trackedValueDelta <= roundedPeriodicPayment,
+                        paymentComponents.trackedValueDelta == roundedPeriodicPayment ||
+                            (paymentComponents.specialCase ==
+                                 xrpl::detail::PaymentSpecialCase::Final &&
+                             paymentComponents.trackedValueDelta < roundedPeriodicPayment),
                         "Delta: " + to_string(paymentComponents.trackedValueDelta) +
                             ", periodic payment: " + to_string(roundedPeriodicPayment));
 
