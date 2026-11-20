@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -440,7 +441,7 @@ accountHolds(
         return view.balanceHookMPT(issuer, mptIssue, available);
     }
 
-    auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
+    MPTokenEntryR const sleMpt(mptIssue.getMptID(), account, view, j);
 
     if (!sleMpt ||
         (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, *sleMpt)))
@@ -1254,15 +1255,14 @@ directSendNoFeeMPT(
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
-        if (auto const sle = view.peek(mptokenID))
+        if (auto sle = MPTokenEntryW(mptID.key, uSenderID, view, j))
         {
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
                 return tecINSUFFICIENT_FUNDS;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] = senderBalance - amt;
-            view.update(sle);
+            sle.update();
         }
         else
         {
@@ -1284,8 +1284,7 @@ directSendNoFeeMPT(
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
-        if (auto const sle = view.peek(mptokenID))
+        if (auto sle = MPTokenEntryW(mptID.key, uReceiverID, view, j))
         {
             if (view.rules().enabled(featureMPTokensV2))
             {
@@ -1296,7 +1295,7 @@ directSendNoFeeMPT(
             }
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
-            view.update(sle);
+            sle.update();
         }
         else
         {

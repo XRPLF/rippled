@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -275,13 +276,12 @@ deleteAMMTrustLine(
     beast::Journal j);
 
 /**
- * Delete AMMs MPToken. The passed `sle` must be obtained from a prior
- * call to view.peek().
+ * Delete AMMs MPToken.
  */
 [[nodiscard]] TER
 deleteAMMMPToken(
     ApplyView& view,
-    SLE::pointer sleMPT,
+    MPTokenEntryW& sleMPT,
     AccountID const& ammAccountID,
     beast::Journal j);
 
