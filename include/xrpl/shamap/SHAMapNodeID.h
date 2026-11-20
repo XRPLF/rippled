@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
 #include <compare>
@@ -16,7 +15,7 @@ namespace xrpl {
 /**
  * Identifies a node inside a SHAMap
  */
-class SHAMapNodeID : public CountedObject<SHAMapNodeID>
+class SHAMapNodeID
 {
 private:
     UInt256 id_;
@@ -97,15 +96,10 @@ public:
      * Equality, which the spaceship above does not provide.
      *
      * Only a *defaulted* operator<=> implicitly declares a defaulted
-     * operator==; the one above is user-provided, so == has to be written.
-     * It cannot be defaulted either, because a defaulted == would also compare
-     * the CountedObject base, which is not equality comparable.
+     * operator==; the one above is user-provided, so == is declared here.
      */
     bool
-    operator==(SHAMapNodeID const& n) const
-    {
-        return (depth_ == n.depth_) && (id_ == n.id_);
-    }
+    operator==(SHAMapNodeID const& n) const = default;
 };
 
 inline std::string
