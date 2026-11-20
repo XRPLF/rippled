@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -136,7 +137,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
                     !sleIssuer->isFlag(lsfNoFreeze);
             },
             [&](MPTIssue const& issue) {
-                auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
+                MPTokenIssuanceEntryR const sleIssuance(issue.getMptID(), ctx.view);
 
                 return sleIssuance && sleIssuance->isFlag(lsfMPTCanClawback) &&
                     sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount];

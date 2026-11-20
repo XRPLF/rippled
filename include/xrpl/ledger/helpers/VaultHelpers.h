@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Protocol.h>
@@ -259,7 +260,10 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    MPTokenIssuanceEntryR const& issuance,
+    STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -273,7 +277,10 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    SLE::ConstRef vault,
+    MPTokenIssuanceEntryR const& issuance,
+    STAmount const& shares);
 
 /**
  * Adjusts a requested asset change (delta) to match the decimal scale of the
@@ -427,7 +434,7 @@ checkDebitNotDust(
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     SLE::ConstRef vault,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -448,7 +455,7 @@ assetsToSharesWithdraw(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     SLE::ConstRef vault,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -463,7 +470,10 @@ sharesToAssetsWithdraw(
  *                 both the share MPTID and the outstanding-amount total.
  */
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
+isSoleShareholder(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntryR const& issuance);
 
 /**
  * Resolves a Vault's LEVersion.
@@ -620,7 +630,7 @@ enum class SuppressExpired : bool { No = false, Yes = true };
 [[nodiscard]] TER
 checkVaultDomain(
     ReadView const& view,
-    SLE::ConstRef issuance,
+    MPTokenIssuanceEntryR const& issuance,
     AccountID const& subject,
     SuppressExpired suppressExpired);
 
