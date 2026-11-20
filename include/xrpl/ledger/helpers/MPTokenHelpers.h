@@ -55,8 +55,8 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
  * vault pseudo-account check (if @p mptIssue is a vault share, the underlying
  * asset is checked, and so on recursively up to @c maxAssetCheckDepth).
  *
- * The @c SLE overload takes an already-loaded ltMPTOKEN or ltMPTOKEN_ISSUANCE
- * ledger entry; for ltMPTOKEN it can skip the per-holder individual-lock lookup.
+ * The @c SLE overload takes an already-loaded ltMPTOKEN_ISSUANCE ledger entry.
+ * For an ltMPTOKEN, use MPTokenEntry::isFrozen().
  * @ref isAnyFrozen answers the same question for a set of accounts and returns true
  * if the freeze applies to any of them.
  *
@@ -71,13 +71,10 @@ isFrozen(
     std::uint8_t depth = 0);
 
 /**
- * SLE overload: pass an already-loaded ltMPTOKEN (holder row) or
- * ltMPTOKEN_ISSUANCE to reuse it for the freeze checks and avoid re-reading
- * the same object. For an ltMPTOKEN, @p sle is used directly for the
- * individual-lock check and the issuance is read once for global-freeze and
- * vault-pseudo-account. For an ltMPTOKEN_ISSUANCE, @p sle is used directly
- * for global-freeze and vault-pseudo-account, and the caller's holder row is
- * read for the individual-lock check.
+ * SLE overload: pass an already-loaded ltMPTOKEN_ISSUANCE to reuse it for the
+ * freeze checks and avoid re-reading it. @p sle is used directly for
+ * global-freeze and vault-pseudo-account, and the caller's holder row is read
+ * for the individual-lock check.
  */
 [[nodiscard]] bool
 isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::uint8_t depth = 0);
