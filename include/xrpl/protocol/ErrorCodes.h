@@ -156,7 +156,7 @@ enum ErrorCodeI {
     RpcNotYetImplemented = 105,
     RpcTransactionNotFound = 106,
 
-    // transaction_entry
+    // transaction_entry + ledger_entry
     RpcMalformedRequest = 107,
 
     // ledger_accept
