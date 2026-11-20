@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -130,38 +129,6 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Issue const& iss
 {
     return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
 }
-
-//------------------------------------------------------------------------------
-//
-// Trust line operations
-//
-//------------------------------------------------------------------------------
-
-/**
- * Create a trust line
- *
- * This can set an initial balance.
- */
-[[nodiscard]] TER
-trustCreate(
-    ApplyView& view,
-    bool const bSrcHigh,
-    AccountID const& uSrcAccountID,
-    AccountID const& uDstAccountID,
-    UInt256 const& uIndex,      // --> ripple state entry
-    SLE::Ref sleAccount,        // --> the account being set.
-    bool const bAuth,           // --> authorize account.
-    bool const bNoRipple,       // --> others cannot ripple through
-    bool const bFreeze,         // --> funds cannot leave
-    bool bDeepFreeze,           // --> can neither receive nor send funds
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
-    std::uint32_t uQualityIn,
-    std::uint32_t uQualityOut,
-    SLE::Ref sponsorSle,
-    beast::Journal j);
 
 //------------------------------------------------------------------------------
 //
