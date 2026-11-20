@@ -565,7 +565,7 @@ LoanSet::doApply()
         }
     }
 
-    if (view.rules().enabled(fixCleanup3_6_0))
+    if (isPaymentSizeBounded(view.rules(), vaultSle))
     {
         // A fixed fee must not push one payment past the size limit. Only fixed amounts are
         // bounded here. Interest that depends on time, such as the accrued interest of a full

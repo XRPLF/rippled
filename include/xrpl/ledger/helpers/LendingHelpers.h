@@ -754,6 +754,20 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 [[nodiscard]] bool
 fitsAtLoanScale(Asset const& asset, Number const& total, std::int32_t loanScale);
 
+/**
+ * @brief Checks whether loans in a vault are held to the payment size limit.
+ *
+ * Every loan is held to it under fixCleanup3_6_0. A FixedPrecision vault exists only under
+ * LendingProtocolV1_2, and its loans are held to it whether or not fixCleanup3_6_0 is enabled, so
+ * none of them was created without the limit.
+ *
+ * @param rules The rules of the ledger.
+ * @param vault The vault the loans draw from.
+ * @return true if LoanSet and LoanPay apply fitsAtLoanScale.
+ */
+[[nodiscard]] bool
+isPaymentSizeBounded(Rules const& rules, SLE::ConstRef vault);
+
 // Indicates what type of payment is being made.
 // regular, late, and full are mutually exclusive.
 // overpayment is an "add on" to a regular payment, and follows that path with
@@ -768,6 +782,7 @@ loanMakePayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    bool paymentSizeBounded,
     beast::Journal j);
 
 }  // namespace xrpl

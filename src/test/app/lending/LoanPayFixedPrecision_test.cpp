@@ -1623,8 +1623,8 @@ public:
         return "";
     }
 
-    // The amendments for a vault of kind, with fixCleanup3_6_0 on or off. A FixedPrecision vault
-    // needs LendingProtocolV1_2, so it is never built with the fix off.
+    // The amendments for a vault of kind, with fixCleanup3_6_0 on or off. Loans in a
+    // FixedPrecision vault are held to the size limit either way.
     static FeatureBitset
     conserveFeatures(VKind kind, bool fix = true)
     {
@@ -1858,9 +1858,9 @@ public:
         }
     }
 
-    // LoanSet bounds each payment's fixed fees under fixCleanup3_6_0: a regular or late
-    // payment's largest installment plus the service and late fees, and a full payment's principal,
-    // close interest and close fee, must fit the size limit.
+    // LoanSet bounds each payment's fixed fees under fixCleanup3_6_0 or in a FixedPrecision vault:
+    // a regular or late payment's largest installment plus the service and late fees, and a full
+    // payment's principal, close interest and close fee, must fit the size limit.
     struct BoundCase
     {
         std::string name;
@@ -2041,9 +2041,7 @@ public:
         {
             for (bool const fix : {true, false})
             {
-                // A FixedPrecision vault is never built without the fix.
-                if (!fix && fixed)
-                    continue;
+                bool const bounded = fix || fixed;
                 testcase(
                     "LoanSet size bound, " + kindName(kind) + (mpt ? " MPT: " : " IOU: ") + b.name +
                     (fix ? "" : ", amendment off"));
@@ -2104,10 +2102,10 @@ public:
                     kPaymentTotal(b.paymentTotal),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
-                    Ter(fix ? b.ter : TER{tesSUCCESS}));
+                    Ter(bounded ? b.ter : TER{tesSUCCESS}));
                 env.close();
                 auto const loan = env.le(loanKeylet);
-                BEAST_EXPECT(static_cast<bool>(loan) == (!fix || isTesSuccess(b.ter)));
+                BEAST_EXPECT(static_cast<bool>(loan) == (!bounded || isTesSuccess(b.ter)));
                 if (loan)
                 {
                     BEAST_EXPECT(loan->at(sfLoanScale) == (mpt ? 0 : -2));
@@ -2173,7 +2171,8 @@ public:
     }
 
     // One LoanPay offers four installments, each 5 * 10^12 plus a service fee of 2.3 * 10^13.
-    // Three fit below 10^14 and the fourth would not, so under fixCleanup3_6_0 three are paid.
+    // Three fit below 10^14 and the fourth would not, so under fixCleanup3_6_0, or in a
+    // FixedPrecision vault, three are paid.
     // The rest of the amount is not used, even with the overpayment flag. Every amount fits in 16
     // digits at 0.1, so the trust lines move exactly. With partialOffer the amount lies between
     // three and four installments, so the fourth is both too large and unaffordable, and the rest
@@ -2223,7 +2222,9 @@ public:
         auto const vaultAfter = env.le(s.vault);
         if (!BEAST_EXPECT(loanAfter) || !BEAST_EXPECT(vaultAfter))
             return;
-        std::uint32_t const paid = fix ? 3 : 4;
+        // A FixedPrecision vault is held to the limit with or without the fix.
+        bool const bounded = fix || kind == VKind::Fixed;
+        std::uint32_t const paid = bounded ? 3 : 4;
         Number const borrowerDebit = borrowerBefore - env.balance(s.borrower, s.asset).value();
         Number const vaultGain = env.balance(s.vaultAccount, s.asset).value() - vaultLineBefore;
         Number const ownerGain = env.balance(s.owner, s.asset).value() - ownerBefore;
@@ -2235,7 +2236,7 @@ public:
         BEAST_EXPECT(ownerGain == fee * paid);
         // No overpayment: the rest of the amount is not charged.
         BEAST_EXPECT(principalPaid == installment * paid);
-        if (fix)
+        if (bounded)
         {
             BEAST_EXPECT((borrowerDebit == Number{84, 12}));
             BEAST_EXPECT((vaultGain == Number{15, 12}));
@@ -2257,9 +2258,7 @@ public:
             {
                 testInstallmentLoopStop(kind, overpayment, true);
                 testInstallmentLoopStop(kind, overpayment, true, true);
-                // A FixedPrecision vault is never built without the fix.
-                if (kind != VKind::Fixed)
-                    testInstallmentLoopStop(kind, overpayment, false);
+                testInstallmentLoopStop(kind, overpayment, false);
             }
             testOverpaymentWithinLimit(kind);
             testMptMaxPaymentStops(kind);
@@ -2402,8 +2401,9 @@ public:
     // nine more single installments pay it off. Loan B is paid in full. Loan C makes a late
     // payment. Every amount is a multiple of 10^12, so the trust lines move exactly.
     //
-    // A FixedPrecision vault can not exist without the fix. An MPT loan whose installment and fee
-    // pass the MPT maximum can not be paid with or without the fix, as no account can hold it.
+    // A FixedPrecision vault is held to the limit from its first loan, so it never has such a
+    // loan. An MPT loan whose installment and fee pass the MPT maximum can not be paid with or
+    // without the fix, as no account can hold it.
     void
     testPreFixLoanRepayable(VKind kind)
     {

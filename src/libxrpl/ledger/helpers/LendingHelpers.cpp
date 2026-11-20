@@ -337,6 +337,12 @@ fitsAtLoanScale(Asset const& asset, Number const& total, std::int32_t loanScale)
     return total < Number{1, 16 + loanScale};
 }
 
+bool
+isPaymentSizeBounded(Rules const& rules, SLE::ConstRef vault)
+{
+    return rules.enabled(fixCleanup3_6_0) || getVaultVersion(vault) == VaultVersion::FixedPrecision;
+}
+
 namespace detail {
 // A whole number of the loan's units. Unlike isRounded this works on the Number itself, so it
 // also holds for a total too large to show at 16 digits. Multiplying by a power of ten only moves
@@ -1852,6 +1858,7 @@ makeRegularPayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    bool paymentSizeBounded,
     beast::Journal j)
 {
     using namespace lending;
@@ -1884,16 +1891,15 @@ makeRegularPayment(
     // mutations each iteration.
     auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
-    bool const fix360Enabled = view.rules().enabled(fixCleanup3_6_0);
     while (paymentRemainingProxy > 0 && numPayments < kLoanMaximumPaymentsPerTransaction)
     {
         if (amount < totalPaid + periodic.totalDue)
             break;
 
-        // Under fixCleanup3_6_0, stop before an installment whose total passes the size limit.
+        // If the payment size is bounded, stop before an installment whose total passes the limit.
         // The first is always paid. Round up, so a total just past the MPT maximum is not rounded
         // back down to it. The overpayment below has its own check against the same limit.
-        if (fix360Enabled && numPayments > 0)
+        if (paymentSizeBounded && numPayments > 0)
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             if (!fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
@@ -1975,10 +1981,10 @@ makeRegularPayment(
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
             : overpaymentRaw;
 
-        // Under fixCleanup3_6_0 the overpayment must not take the total past the size limit.
+        // When the payment size is bounded, the overpayment must not take the total past the limit.
         // Round up, as in the loop above.
         bool fitsLimit = true;
-        if (fix360Enabled)
+        if (paymentSizeBounded)
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             fitsLimit = fitsAtLoanScale(asset, totalPaid + overpayment, loanScale);
@@ -2468,6 +2474,7 @@ loanMakePayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    bool paymentSizeBounded,
     beast::Journal j)
 {
     if (loan->at(sfPaymentRemaining) == 0 || loan->at(sfPrincipalOutstanding) == 0)
@@ -2515,7 +2522,8 @@ loanMakePayment(
             return detail::makeLatePayment(asset, view, loan, brokerSle, amount, j);
         case LoanPaymentType::Regular:
         case LoanPaymentType::Overpayment:
-            return detail::makeRegularPayment(asset, view, loan, brokerSle, amount, paymentType, j);
+            return detail::makeRegularPayment(
+                asset, view, loan, brokerSle, amount, paymentType, paymentSizeBounded, j);
     }
 
     // LCOV_EXCL_START
