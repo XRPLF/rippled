@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -22,6 +23,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <ranges>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -499,6 +501,96 @@ public:
     }
 
     void
+    testCanonicalOrder()
+    {
+        testcase("canonical field order");
+
+        // A template with several fields whose canonical serialization order
+        // (ascending field code) is well defined.
+        auto const& sf1 = sfSequence;
+        auto const& sf2 = sfExpiration;
+        auto const& sf3 = sfQualityIn;
+        SOTemplate const sot{
+            {sf1, SoeRequired},
+            {sf2, SoeRequired},
+            {sf3, SoeRequired},
+        };
+
+        // A populated object; add() always emits fields in canonical order.
+        STObject obj(sot, sfGeneric);
+        obj.setFieldU32(sf1, 1);
+        obj.setFieldU32(sf2, 2);
+        obj.setFieldU32(sf3, 3);
+
+        Serializer cs;
+        obj.add(cs);
+        Blob const canonical = cs.peekData();
+
+        // The same fields emitted in reverse (i.e. non-canonical) order.
+        Blob const reordered = [&] {
+            std::vector<STBase const*> fields;
+            for (std::size_t i = 0; i < obj.getCount(); ++i)
+            {
+                STBase const& f = obj.peekAtIndex(i);
+                if (f.getSType() != STI_NOTPRESENT && f.getFName().shouldInclude(true))
+                    fields.push_back(&f);
+            }
+            std::ranges::sort(fields, [](STBase const* a, STBase const* b) {
+                return a->getFName().fieldCodeMem < b->getFName().fieldCodeMem;
+            });
+
+            Serializer s;
+            for (STBase const* f : std::views::reverse(fields))
+            {
+                f->addFieldID(s);
+                f->add(s);
+            }
+            return s.peekData();
+        }();
+
+        // Sanity: the two encodings are genuinely different bytes.
+        BEAST_EXPECT(canonical != reordered);
+
+        // A canonically ordered encoding is accepted whether or not the caller
+        // requires canonical order.
+        for (bool const requireCanonicalOrder : {false, true})
+        {
+            SerialIter sit(makeSlice(canonical));
+            STObject const parsed(sot, sit, sfGeneric, requireCanonicalOrder);
+            BEAST_EXPECT(parsed.getFieldU32(sf1) == 1);
+            BEAST_EXPECT(parsed.getFieldU32(sf2) == 2);
+            BEAST_EXPECT(parsed.getFieldU32(sf3) == 3);
+        }
+
+        // A non-canonical encoding is accepted when canonical order is not
+        // required (the default, permissive behaviour).
+        {
+            SerialIter sit(makeSlice(reordered));
+            STObject const parsed(sot, sit, sfGeneric, false);
+            BEAST_EXPECT(parsed.getFieldU32(sf1) == 1);
+            BEAST_EXPECT(parsed.getFieldU32(sf2) == 2);
+            BEAST_EXPECT(parsed.getFieldU32(sf3) == 3);
+        }
+
+        // The same non-canonical encoding is rejected when canonical order is
+        // required.
+        {
+            SerialIter sit(makeSlice(reordered));
+            bool threw = false;
+            try
+            {
+                STObject{sot, sit, sfGeneric, true};
+            }
+            catch (std::runtime_error const& e)
+            {
+                threw = true;
+                BEAST_EXPECT(strcmp(e.what(), "Fields in object are not in canonical order") == 0);
+            }
+            BEAST_EXPECT(threw);
+        }
+    }
+
+    void
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
@@ -507,6 +599,7 @@ public:
         testFields();
         testSerialization();
         testMalformed();
+        testCanonicalOrder();
     }
 };
 
