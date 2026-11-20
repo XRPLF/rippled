@@ -584,6 +584,341 @@ private:
         runCases(iou, cases, fixedScale, /* viaClampVaultOutflow */ true);
     }
 
+    // Builds the minimal vault + share-issuance pair that the share<->asset
+    // conversions read: they only touch sfAsset, sfAssetsTotal, sfShareMPTID,
+    // sfScale and sfLossUnrealized on the vault, plus sfOutstandingAmount on
+    // the issuance. No ledger view and no Rules are involved.
+    static std::pair<std::shared_ptr<SLE>, std::shared_ptr<SLE>>
+    makeVaultAndIssuance(
+        Asset const& asset,
+        MPTID const& shareMPT,
+        Number const& assetsTotal,
+        std::uint64_t sharesTotal,
+        Number const& lossUnrealized = Number(0))
+    {
+        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
+        vault->at(sfShareMPTID) = shareMPT;
+        vault->at(sfScale) = std::uint8_t(0);
+        vault->at(sfAssetsTotal) = assetsTotal;
+        vault->at(sfLossUnrealized) = lossUnrealized;
+        associateAsset(*vault, asset);
+
+        auto issuance = std::make_shared<SLE>(keylet::mptokenIssuance(shareMPT));
+        issuance->at(sfOutstandingAmount) = sharesTotal;
+        return {vault, issuance};
+    }
+
+    // Common Prefix formal-verification finding: VaultDeposit charges the
+    // depositor via sharesToAssetsDeposit, which quantized the exchange to
+    // nearest. When the vault holds an integral asset (XRP/MPT) at a non-unit
+    // exchange rate, the charge for freshly minted shares can be rounded
+    // *down* below their fair value. The depositor then receives shares worth
+    // more than the assets they pay in, diluting the existing shareholders.
+    //
+    // With VaultRounding::FavorVault (post-fixCleanup3_6_0) the charge is the
+    // exact fair value rounded up, so a depositor always pays at least what
+    // the minted shares are worth. For an integral asset the difference is a
+    // full unit, so the undercharge is unambiguous.
+    void
+    testDepositRoundingFavorsVault(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Deposit: share-to-asset rounding favors the vault (" + to_string(asset) + ")");
+
+        // Charge for `minted` shares against a vault holding `assetsTotal`
+        // integral assets backed by `sharesTotal` shares.
+        auto const charge = [&](std::int64_t assetsTotal,
+                                std::uint64_t sharesTotal,
+                                std::uint64_t minted,
+                                VaultRounding rounding) -> std::uint64_t {
+            auto const [vault, issuance] =
+                makeVaultAndIssuance(asset, shareMPT, Number(assetsTotal), sharesTotal);
+            STAmount const shares{MPTIssue{shareMPT}, Number(minted)};
+            auto const assets = sharesToAssetsDeposit(vault, issuance, shares, rounding);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+
+        // rate 100/3: charging 1 share is worth 33.33 assets.
+        //   Legacy     -> 33 (undercharges: 33 * 3 = 99 < 100 -> dilution)
+        //   FavorVault -> 34 (34 * 3 = 102 >= 100)
+        {
+            std::uint64_t const legacy = charge(100, 3, 1, VaultRounding::Legacy);
+            std::uint64_t const favor = charge(100, 3, 1, VaultRounding::FavorVault);
+            BEAST_EXPECT(legacy == 33);
+            BEAST_EXPECT(favor == 34);
+            BEAST_EXPECT(legacy * 3 < 100 * 1);
+            BEAST_EXPECT(favor * 3 >= 100 * 1);
+        }
+
+        // rate 100/3, 2 shares -> 66.67. Round-to-nearest already rounds up
+        // here, so both agree: the fix only ever raises the charge.
+        {
+            BEAST_EXPECT(charge(100, 3, 2, VaultRounding::Legacy) == 67);
+            BEAST_EXPECT(charge(100, 3, 2, VaultRounding::FavorVault) == 67);
+        }
+
+        // Exact rate: no rounding, the fix is a no-op.
+        {
+            BEAST_EXPECT(charge(100, 4, 2, VaultRounding::Legacy) == 50);
+            BEAST_EXPECT(charge(100, 4, 2, VaultRounding::FavorVault) == 50);
+        }
+
+        // A large, awkward rate: FavorVault is always the ceiling of the exact
+        // fair value, so the vault is never shortchanged.
+        //   fair = 1'000'003 * 7 / 999'983 = 7'000'021 / 999'983 = 7.00014...
+        //   Legacy     -> 7 (7 * 999'983 = 6'999'881 < 7'000'021 -> dilution)
+        //   FavorVault -> 8 (8 * 999'983 = 7'999'864 >= 7'000'021)
+        {
+            std::int64_t const assetsTotal = 1'000'003;
+            std::uint64_t const sharesTotal = 999'983;
+            std::uint64_t const minted = 7;
+            std::uint64_t const favor =
+                charge(assetsTotal, sharesTotal, minted, VaultRounding::FavorVault);
+            std::uint64_t const legacy =
+                charge(assetsTotal, sharesTotal, minted, VaultRounding::Legacy);
+            std::uint64_t const num = assetsTotal * minted;
+            BEAST_EXPECT(favor == (num + sharesTotal - 1) / sharesTotal);
+            BEAST_EXPECT(favor * sharesTotal >= num);
+            BEAST_EXPECT(legacy * sharesTotal < num);
+        }
+    }
+
+    // Mirror of the deposit case: VaultWithdraw pays the withdrawing
+    // shareholder via sharesToAssetsWithdraw, which quantized the exchange to
+    // nearest. At a non-unit exchange rate the payout for burned shares can be
+    // rounded *up* above their fair value, diluting the remaining shareholders.
+    //
+    // With VaultRounding::FavorVault the payout is the exact fair value
+    // rounded down, so a withdrawer always receives at most what the burned
+    // shares are worth.
+    void
+    testWithdrawRoundingFavorsVault(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Withdraw: share-to-asset rounding favors the vault (" + to_string(asset) + ")");
+
+        // Pay out for burning `burned` shares against a vault holding
+        // `assetsTotal` integral assets backed by `sharesTotal` shares. The
+        // vault carries no unrealized loss, so the waive flag is irrelevant.
+        auto const payout = [&](std::int64_t assetsTotal,
+                                std::uint64_t sharesTotal,
+                                std::uint64_t burned,
+                                VaultRounding rounding) -> std::uint64_t {
+            auto const [vault, issuance] =
+                makeVaultAndIssuance(asset, shareMPT, Number(assetsTotal), sharesTotal);
+            STAmount const shares{MPTIssue{shareMPT}, Number(burned)};
+            auto const assets =
+                sharesToAssetsWithdraw(vault, issuance, shares, WaiveUnrealizedLoss::No, rounding);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+
+        // rate 100/3: burning 1 share is worth 33.33 assets. Round-to-nearest
+        // already rounds down here, so both agree.
+        {
+            BEAST_EXPECT(payout(100, 3, 1, VaultRounding::Legacy) == 33);
+            BEAST_EXPECT(payout(100, 3, 1, VaultRounding::FavorVault) == 33);
+        }
+
+        // rate 100/3, 2 shares -> 66.67.
+        //   Legacy     -> 67 (overpays: 67 * 3 = 201 > 200 -> dilution)
+        //   FavorVault -> 66 (66 * 3 = 198 <= 200)
+        {
+            std::uint64_t const legacy = payout(100, 3, 2, VaultRounding::Legacy);
+            std::uint64_t const favor = payout(100, 3, 2, VaultRounding::FavorVault);
+            BEAST_EXPECT(legacy == 67);
+            BEAST_EXPECT(favor == 66);
+            BEAST_EXPECT(legacy * 3 > 100 * 2);
+            BEAST_EXPECT(favor * 3 <= 100 * 2);
+        }
+
+        // Exact rate: no rounding, the fix is a no-op.
+        {
+            BEAST_EXPECT(payout(100, 4, 2, VaultRounding::Legacy) == 50);
+            BEAST_EXPECT(payout(100, 4, 2, VaultRounding::FavorVault) == 50);
+        }
+
+        // A large, awkward rate whose fair value has a fractional part above
+        // 0.5, so round-to-nearest overpays.
+        //   fair = 1'000'003 * 3 / 7 = 3'000'009 / 7 = 428'572.71...
+        //   Legacy     -> 428'573 (428'573 * 7 = 3'000'011 > 3'000'009)
+        //   FavorVault -> 428'572 (428'572 * 7 = 3'000'004 <= 3'000'009)
+        {
+            std::int64_t const assetsTotal = 1'000'003;
+            std::uint64_t const sharesTotal = 7;
+            std::uint64_t const burned = 3;
+            std::uint64_t const favor =
+                payout(assetsTotal, sharesTotal, burned, VaultRounding::FavorVault);
+            std::uint64_t const legacy =
+                payout(assetsTotal, sharesTotal, burned, VaultRounding::Legacy);
+            std::uint64_t const num = assetsTotal * burned;
+            BEAST_EXPECT(favor == num / sharesTotal);
+            BEAST_EXPECT(favor * sharesTotal <= num);
+            BEAST_EXPECT(legacy * sharesTotal > num);
+        }
+
+        // A share worth less than one unit: the exact payout floors to zero.
+        // VaultWithdraw rejects such a non-final withdrawal with
+        // tecPRECISION_LOSS rather than burn the shares for nothing.
+        {
+            BEAST_EXPECT(payout(7, 30, 4, VaultRounding::Legacy) == 1);
+            BEAST_EXPECT(payout(7, 30, 4, VaultRounding::FavorVault) == 0);
+        }
+    }
+
+    // The edge case that rules out directed Number rounding: with
+    // AssetsTotal = SharesTotal = 1'000'000'000'000'007 the price is exactly
+    // one, so a deposit of 123'456'789 must mint 123'456'789 shares and charge
+    // 123'456'789. AssetsTotal * shares needs 24 digits, more than Number's
+    // 19, so rounding every Number step up lands one unit above the offer and
+    // VaultDeposit fails with tecINTERNAL ("would take more than offered").
+    // FavorVault computes the integral conversions exactly instead.
+    void
+    testLargeTotalsAreExact(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Large totals convert exactly (" + to_string(asset) + ")");
+
+        std::int64_t const total = 1'000'000'000'000'007;
+        std::int64_t const offered = 123'456'789;
+        auto const [vault, issuance] =
+            makeVaultAndIssuance(asset, shareMPT, Number(total), static_cast<std::uint64_t>(total));
+        STAmount const assets{asset, Number(offered)};
+        STAmount const shares{MPTIssue{shareMPT}, Number(offered)};
+
+        // Directed Number arithmetic overshoots the exact result by one unit.
+        {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
+            STAmount const chargedUp{asset, (Number(total) * shares) / Number(total)};
+            BEAST_EXPECT(chargedUp == STAmount(asset, Number(offered + 1)));
+        }
+
+        auto const minted =
+            assetsToSharesDeposit(vault, issuance, assets, VaultRounding::FavorVault);
+        BEAST_EXPECT(minted && *minted == shares);
+
+        auto const charged =
+            sharesToAssetsDeposit(vault, issuance, shares, VaultRounding::FavorVault);
+        BEAST_EXPECT(charged && *charged == assets);
+
+        auto const burned = assetsToSharesWithdraw(
+            vault,
+            issuance,
+            assets,
+            TruncateShares::Yes,
+            WaiveUnrealizedLoss::No,
+            VaultRounding::FavorVault);
+        BEAST_EXPECT(burned && *burned == shares);
+
+        auto const paid = sharesToAssetsWithdraw(
+            vault, issuance, shares, WaiveUnrealizedLoss::No, VaultRounding::FavorVault);
+        BEAST_EXPECT(paid && *paid == assets);
+
+        // One share more than the offer is worth more than the offer: the
+        // charge rounds up past it, and the payout rounds down to it.
+        STAmount const sharesPlusOne{MPTIssue{shareMPT}, Number(offered + 1)};
+        auto const payoutPlusOne = sharesToAssetsWithdraw(
+            vault, issuance, sharesPlusOne, WaiveUnrealizedLoss::No, VaultRounding::FavorVault);
+        BEAST_EXPECT(payoutPlusOne && *payoutPlusOne == STAmount(asset, Number(offered + 1)));
+    }
+
+    // An impaired loan leaves LossUnrealized on the vault. Unless it is
+    // waived, both withdraw conversions value the vault at AssetsTotal -
+    // LossUnrealized, and FavorVault feeds that difference to the exact
+    // integer path. These cases check it picks the right total for each
+    // WaiveUnrealizedLoss value, and still rounds in the vault's favor.
+    void
+    testWithdrawWithUnrealizedLoss(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Withdraw with unrealized loss (" + to_string(asset) + ")");
+
+        // AssetsTotal 100 with 9 unrealized: 91 if the loss counts, 100 if
+        // it is waived. 3 shares outstanding.
+        auto const [vault, issuance] =
+            makeVaultAndIssuance(asset, shareMPT, Number(100), 3, Number(9));
+
+        auto const payout = [&](std::uint64_t shares,
+                                WaiveUnrealizedLoss waive,
+                                VaultRounding rounding) -> std::uint64_t {
+            STAmount const amount{MPTIssue{shareMPT}, Number(shares)};
+            auto const assets = sharesToAssetsWithdraw(vault, issuance, amount, waive, rounding);
+            BEAST_EXPECT(assets.has_value());
+            return assets ? assets->mantissa() : 0;
+        };
+        auto const burned = [&](std::int64_t assets,
+                                WaiveUnrealizedLoss waive,
+                                VaultRounding rounding) -> std::uint64_t {
+            STAmount const amount{asset, Number(assets)};
+            auto const shares = assetsToSharesWithdraw(
+                vault, issuance, amount, TruncateShares::Yes, waive, rounding);
+            BEAST_EXPECT(shares.has_value());
+            return shares ? shares->mantissa() : 0;
+        };
+
+        // Loss counts: 2 shares are worth 91 * 2 / 3 = 60.67.
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::No, VaultRounding::Legacy) == 61);
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::No, VaultRounding::FavorVault) == 60);
+
+        // Loss waived: 2 shares are worth 100 * 2 / 3 = 66.67.
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::Yes, VaultRounding::Legacy) == 67);
+        BEAST_EXPECT(payout(2, WaiveUnrealizedLoss::Yes, VaultRounding::FavorVault) == 66);
+
+        // Withdrawing 64 assets: 3 * 64 / 91 = 2.11 shares if the loss
+        // counts, 3 * 64 / 100 = 1.92 if it is waived. Both truncate.
+        BEAST_EXPECT(burned(64, WaiveUnrealizedLoss::No, VaultRounding::FavorVault) == 2);
+        BEAST_EXPECT(burned(64, WaiveUnrealizedLoss::Yes, VaultRounding::FavorVault) == 1);
+
+        // Large totals stay exact with a loss: 1'000'000'000'000'016 - 9 =
+        // 1'000'000'000'000'007 = SharesTotal, so the price is exactly 1 and
+        // 123'456'789 shares pay exactly 123'456'789. Waiving the loss values
+        // them at 123'456'789.0000000011, which still floors to 123'456'789.
+        {
+            std::int64_t const offered = 123'456'789;
+            auto const [bigVault, bigIssuance] = makeVaultAndIssuance(
+                asset, shareMPT, Number(1'000'000'000'000'016), 1'000'000'000'000'007, Number(9));
+            STAmount const shares{MPTIssue{shareMPT}, Number(offered)};
+            STAmount const exact{asset, Number(offered)};
+            for (auto const waive : {WaiveUnrealizedLoss::No, WaiveUnrealizedLoss::Yes})
+            {
+                auto const paid = sharesToAssetsWithdraw(
+                    bigVault, bigIssuance, shares, waive, VaultRounding::FavorVault);
+                BEAST_EXPECT(paid && *paid == exact);
+            }
+            auto const burnedShares = assetsToSharesWithdraw(
+                bigVault,
+                bigIssuance,
+                exact,
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::No,
+                VaultRounding::FavorVault);
+            BEAST_EXPECT(burnedShares && *burnedShares == shares);
+        }
+    }
+
+    // IOU conversions are deliberately left on the Legacy arithmetic: an IOU
+    // result is not exact anyway, and the callers' scale clamps already round
+    // IOU amounts in the vault's favor.
+    void
+    testIouConversionsUnchanged(Asset const& iou, MPTID const& shareMPT)
+    {
+        testcase("IOU conversions ignore FavorVault");
+
+        auto const [vault, issuance] = makeVaultAndIssuance(iou, shareMPT, Number(100), 3);
+        STAmount const shares{MPTIssue{shareMPT}, Number(2)};
+        STAmount const assets{iou, Number(50)};
+
+        BEAST_EXPECT(
+            sharesToAssetsDeposit(vault, issuance, shares, VaultRounding::FavorVault) ==
+            sharesToAssetsDeposit(vault, issuance, shares, VaultRounding::Legacy));
+        BEAST_EXPECT(
+            sharesToAssetsWithdraw(
+                vault, issuance, shares, WaiveUnrealizedLoss::No, VaultRounding::FavorVault) ==
+            sharesToAssetsWithdraw(
+                vault, issuance, shares, WaiveUnrealizedLoss::No, VaultRounding::Legacy));
+        BEAST_EXPECT(
+            assetsToSharesDeposit(vault, issuance, assets, VaultRounding::FavorVault) ==
+            assetsToSharesDeposit(vault, issuance, assets, VaultRounding::Legacy));
+    }
+
 public:
     void
     run() override
@@ -600,6 +935,16 @@ public:
         testIntegralAssets(mpt, xrp);
         testFixedPrecisionCredit(iou);
         testFixedPrecisionDebit(iou);
+
+        MPTID const shareMPT = makeMptID(2, issuer.id());
+        for (Asset const asset : {Asset{mpt}, Asset{xrp}})
+        {
+            testDepositRoundingFavorsVault(asset, shareMPT);
+            testWithdrawRoundingFavorsVault(asset, shareMPT);
+            testLargeTotalsAreExact(asset, shareMPT);
+            testWithdrawWithUnrealizedLoss(asset, shareMPT);
+        }
+        testIouConversionsUnchanged(iou, shareMPT);
     }
 };
 
