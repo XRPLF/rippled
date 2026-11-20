@@ -223,21 +223,29 @@ TransactionAcquire::takeNodes(
     return san;
 }
 
+bool
+TransactionAcquire::wantsReplyFrom(std::shared_ptr<Peer> const& peer)
+{
+    ScopedLockType sl(mtx_);
+
+    if (!isDone())
+        return true;
+
+    JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
+    chargeLateReply(peer, sl);
+    return false;
+}
+
 SHAMapAddNode
 TransactionAcquire::takeNodesLocked(
     std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer,
     ScopedLockType& sl)
 {
-    // A reply that arrives after the set is settled - by completing it, or by a different packet
-    // failing it. trigger() sends to every peer it was given, so any of their replies, including
-    // another packet from the same peer whose data failed the set, can already be in flight and
-    // could not have known the outcome. Those are solicited, and free: one per peer we asked,
-    // which is what bounds the honest case.
-    //
-    // Past that bound, further data for this hash is a replay - a resend of data already
-    // accepted or now known worthless, not a first-time reply - and serving it is not free
-    // work, so it is charged.
+    // A reply that arrives after the set is settled, either from a caller that reached
+    // takeNodes() directly or from one whose set settled after wantsReplyFrom() answered.
+    // wantsReplyFrom() returns early for the replies it charges, so this one's allowance is
+    // still unspent.
     if (isDone())
     {
         JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
