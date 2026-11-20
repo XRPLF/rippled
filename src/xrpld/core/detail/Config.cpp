@@ -115,23 +115,32 @@ namespace xrpl {
 inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
 kSizedItems
 {{
-    // FIXME: We should document each of these items, explaining exactly
-    //        what they control and whether there exists an explicit
-    //        config option that can be used to override the default.
-
     //                                   tiny    small   medium    large     huge
+    // The sweep timer uses seconds. [sweep_interval] accepts 10 to 600 seconds.
     {SizedItem::SweepInterval,      {{     10,      30,      60,      90,     120 }}},
+    // NodeFamily uses this tree-node count. It also defaults [node_db] cache_size.
     {SizedItem::TreeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    // NodeFamily uses this tree-node age in seconds. It also defaults [node_db] cache_age.
     {SizedItem::TreeCacheAge,       {{     30,      60,      90,     120,     900 }}},
+    // LedgerHistory targets this many entries in its ledger hash cache.
     {SizedItem::LedgerSize,         {{     32,      32,      64,     256,     384 }}},
+    // LedgerHistory targets this age in seconds for its ledger hash cache.
     {SizedItem::LedgerAge,          {{     30,      60,     180,     300,     600 }}},
+    // LedgerMaster uses this many ledgers as its fetch width.
     {SizedItem::LedgerFetch,        {{      2,       3,       4,       5,       8 }}},
+    // RocksDB uses this cache size in MiB unless [node_db] sets cache_mb.
     {SizedItem::HashNodeDbCache,    {{      4,      12,      24,      64,     128 }}},
+    // SQLite uses this transaction cache size in MiB, expressed as negative KiB in PRAGMA cache_size.
     {SizedItem::TxnDbCache,         {{      4,      12,      24,      64,     128 }}},
+    // SQLite uses this ledger cache size in MiB, expressed as negative KiB in PRAGMA cache_size.
     {SizedItem::LgrDbCache,         {{      4,       8,      16,      32,     128 }}},
+    // No production caller uses this row. The static_assert below requires it to match the enum order.
     {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
+    // The rotating, non-rotating, and import node stores use this burst size in MiB.
     {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
+    // Autodetection uses exclusive RAM limits in GiB. Zero means no upper bound.
     {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
+    // This capacity sets the number of entries in the account ID cache.
     {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}},
 },};
 // clang-format on
