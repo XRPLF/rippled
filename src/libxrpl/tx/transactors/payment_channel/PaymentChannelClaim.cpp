@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/PayChannelEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -109,8 +110,8 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelClaim::doApply()
 {
-    Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    PayChannelEntryW slep(
+        Keylet(ltPAYCHAN, ctx_.tx[sfChannel]), ctx_.view(), ctx_.registry.get().getJournal("View"));
     if (!slep)
         return tecNO_TARGET;
 
@@ -119,10 +120,9 @@ PaymentChannelClaim::doApply()
     AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
-    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
-        isChannelExpired(ctx_.view(), curExpiration))
+    if (slep.isExpired((*slep)[~sfCancelAfter]) || slep.isExpired(curExpiration))
     {
-        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return slep.removeFromLedger();
     }
 
     if (txAccount != src && txAccount != dst)
@@ -174,7 +174,7 @@ PaymentChannelClaim::doApply()
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
-        ctx_.view().update(slep);
+        slep.update();
     }
 
     if (ctx_.tx.isFlag(tfRenew))
@@ -182,14 +182,14 @@ PaymentChannelClaim::doApply()
         if (src != txAccount)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
-        ctx_.view().update(slep);
+        slep.update();
     }
 
     if (ctx_.tx.isFlag(tfClose))
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+            return slep.removeFromLedger();
 
         auto const settleExpiration = saturatingAdd(
             ctx_.view().rules(),
@@ -199,7 +199,7 @@ PaymentChannelClaim::doApply()
         if (!curExpiration || *curExpiration > settleExpiration)
         {
             (*slep)[~sfExpiration] = settleExpiration;
-            ctx_.view().update(slep);
+            slep.update();
         }
     }
 
