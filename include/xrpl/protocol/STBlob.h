@@ -24,6 +24,11 @@ public:
 
     STBlob() = default;
     STBlob(STBlob const& rhs);
+    STBlob(STBlob&&) noexcept = default;
+    STBlob&
+    operator=(STBlob const&) = default;
+    STBlob&
+    operator=(STBlob&&) noexcept = default;
 
     STBlob(SField const& f, void const* data, std::size_t size);
     STBlob(SField const& f, Buffer&& b);
