@@ -144,6 +144,14 @@ escrowLockPreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    // Vault shares are never escrowable, so VaultClawback can always reach them.
+    if (view.rules().enabled(fixVaultV1_1))
+    {
+        auto const sleIssuer = view.read(keylet::account(issuer));
+        if (sleIssuer && sleIssuer->isFieldPresent(sfVaultID))
+            return tecNO_PERMISSION;
+    }
+
     // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
     if (!sleIssuance->isFlag(lsfMPTCanEscrow))
         return tecNO_PERMISSION;
