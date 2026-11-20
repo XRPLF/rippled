@@ -162,7 +162,7 @@ isDeepFrozen(
         return false;
     }
 
-    return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
+    return sle.isDeepFrozen();
 }
 
 //------------------------------------------------------------------------------
