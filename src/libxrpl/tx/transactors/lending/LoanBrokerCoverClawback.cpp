@@ -200,7 +200,7 @@ determineClawAmount(
         return STAmount{vaultAsset, magnitude};
     }();
 
-    if (getVaultVersion(vaultSle) != VaultVersion::FixedPrecision)
+    if (vaultSle.version() != VaultVersion::FixedPrecision)
         return requested;
 
     STAmount rounded = debitToPosteriorBrokerCoverScale(
@@ -322,7 +322,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // FixedPrecision outflows already rounded at the posterior exponent; the
     // live CoverAvailable scale used by canApplyToBrokerCover would reject a
     // re-fining clawback as sub-ULP.
-    if (getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    if (vault.version() != VaultVersion::FixedPrecision)
     {
         if (auto const ret = canApplyToBrokerCover(
                 ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))

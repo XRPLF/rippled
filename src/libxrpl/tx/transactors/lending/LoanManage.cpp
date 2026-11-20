@@ -254,7 +254,7 @@ LoanManage::defaultLoan(
     VaultEntryW& vaultSle,
     beast::Journal j)
 {
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    if (vaultSle.version() == VaultVersion::FixedPrecision)
         return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle.mutableRawSle(), j);
 
     auto const vaultAsset = *vaultSle->at(sfAsset);
@@ -417,7 +417,7 @@ LoanManage::impairLoan(
         return tecTOO_SOON;
     }
 
-    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
+    bool const fixedPrecision = vaultSle.version() == VaultVersion::FixedPrecision;
     Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
     // Update the Vault object (set "paper loss")
@@ -480,7 +480,7 @@ LoanManage::unimpairLoan(
     beast::Journal j)
 {
     // Update the Vault object (clear "paper loss")
-    bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
+    bool const fixedPrecision = vaultSle.version() == VaultVersion::FixedPrecision;
     Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (fixedPrecision)
     {
@@ -573,7 +573,7 @@ LoanManage::doApply()
     // path. Post-amendment, we call associateAsset on all successful paths.
     if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
-        bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
+        bool const fixedPrecision = vaultSle.version() == VaultVersion::FixedPrecision;
         [[maybe_unused]] bool const assetsEqualBeforeStore =
             fixedPrecision && vaultSle->at(sfAssetsAvailable) == vaultSle->at(sfAssetsTotal);
 

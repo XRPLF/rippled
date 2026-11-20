@@ -467,25 +467,8 @@ sharesToAssetsWithdraw(
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef issuance);
 
 /**
- * Resolves a Vault's LEVersion.
- *
- * LEVersion is the single point every accounting and rounding helper
- * should call to decide which protocol a Vault follows. It is written
- * at VaultCreate and is not updated afterwards, so a Vault created
- * under an older amendment keeps that behaviour after later amendments
- * activate. Absent sfLEVersion resolves to VaultVersion::Legacy.
- *
- * @param vault The vault SLE.
- *
- * @return The Vault's LEVersion, or VaultVersion::Legacy if the field is
- * absent.
- */
-[[nodiscard]] VaultVersion
-getVaultVersion(VaultEntryR const& vault);
-
-/**
  * Decodes an already-extracted sfLEVersion value with the same range check as
- * getVaultVersion. Usable from contexts, such as an invariant's ledger-entry
+ * VaultEntry::version. Usable from contexts, such as an invariant's ledger-entry
  * snapshot, that keep the field value but not the owning SLE.
  *
  * @param leVersion The value of sfLEVersion, or nullopt if absent.

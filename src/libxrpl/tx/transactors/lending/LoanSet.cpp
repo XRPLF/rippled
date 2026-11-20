@@ -323,7 +323,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    auto const vaultVersion = getVaultVersion(vault);
+    auto const vaultVersion = vault.version();
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
@@ -472,7 +472,7 @@ LoanSet::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto const vaultVersion = getVaultVersion(vaultSle);
+    auto const vaultVersion = vaultSle.version();
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;

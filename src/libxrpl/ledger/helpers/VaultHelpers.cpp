@@ -750,13 +750,6 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion)
 }
 
 [[nodiscard]] VaultVersion
-getVaultVersion(VaultEntryR const& vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultVersion : valid Vault sle");
-    return decodeVaultVersion(vault->at(~sfLEVersion));
-}
-
-[[nodiscard]] VaultVersion
 getVaultDefaultVersion(Rules const& rules)
 {
     // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and

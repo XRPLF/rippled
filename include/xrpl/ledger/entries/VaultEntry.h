@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
@@ -38,6 +39,21 @@ public:
         : Base(keylet::vault(vaultID), view, j)
     {
     }
+
+    /**
+     * Resolves the Vault's LEVersion.
+     *
+     * LEVersion is the single point every accounting and rounding helper
+     * should call to decide which protocol a Vault follows. It is written
+     * at VaultCreate and is not updated afterwards, so a Vault created
+     * under an older amendment keeps that behaviour after later amendments
+     * activate. Absent sfLEVersion resolves to VaultVersion::Legacy.
+     *
+     * @return The Vault's LEVersion, or VaultVersion::Legacy if the field is
+     * absent.
+     */
+    [[nodiscard]] VaultVersion
+    version() const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;

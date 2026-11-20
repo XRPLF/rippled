@@ -93,7 +93,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             if (!BEAST_EXPECT(sle))
                 return;
             BEAST_EXPECT(!sle->isFieldPresent(sfLEVersion));
-            BEAST_EXPECT(getVaultVersion(VaultEntryR(sle, *env.current())) == VaultVersion::Legacy);
+            BEAST_EXPECT(VaultEntryR(sle, *env.current()).version() == VaultVersion::Legacy);
         }
 
         // Without fixCleanup3_4_0, V1_2 alone leaves a vault on the CashBasis rules,
@@ -645,8 +645,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             if (auto const sle = legacyEnv.le(keylet); BEAST_EXPECT(sle))
             {
                 BEAST_EXPECT(
-                    getVaultVersion(VaultEntryR(sle, *legacyEnv.current())) ==
-                    VaultVersion::Legacy);
+                    VaultEntryR(sle, *legacyEnv.current()).version() == VaultVersion::Legacy);
             }
         }
     }
@@ -902,8 +901,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         if (!BEAST_EXPECT(before))
             return;
         BEAST_EXPECT(Number(before->at(sfAssetsMaximum)) == offGrid);
-        BEAST_EXPECT(
-            getVaultVersion(VaultEntryR(before, *env.current())) == VaultVersion::CashBasis);
+        BEAST_EXPECT(VaultEntryR(before, *env.current()).version() == VaultVersion::CashBasis);
 
         // A VaultSet that does not touch AssetsMaximum is not affected by the
         // stored off-grid cap.
