@@ -10,11 +10,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <tests/libxrpl/shamap/DeepChain.h>
+#include <tests/libxrpl/shamap/Tally.h>
 
 #include <xrpl.pb.h>
 
@@ -34,33 +34,34 @@
 
 namespace xrpl::test {
 
-// The chain builder needs only libxrpl, so it is shared with the gtest suites; see the header for
-// what keeps the protobuf reply builder below in this tree.
+// Both need only libxrpl, so the gtest suites share them.
 using tests::DeepChain;
+using tests::tallyIs;
 
-// A smallest-possible leaf plus its 4-byte HashPrefix lands one byte short of the floor
-// ConsensusTransSetSF::gotNode() parses at, so a chain's leaf stays below the parse threshold.
+// A smallest-possible leaf plus its 4-byte HashPrefix stays below the floor
+// ConsensusTransSetSF::gotNode() parses at.
 static_assert(
     sizeof(std::uint32_t) + DeepChain::kLeafItemBytes < ConsensusTransSetSF::kMinTxNodeBytesToParse,
     "a smallest-possible leaf must stay below the resubmission floor");
 
 /**
+ * A retry interval short enough that a whole timeout chain costs a fraction of
+ * a second. TimeoutCounter refuses anything at or below 10ms.
+ */
+inline constexpr auto kFastRetry = std::chrono::milliseconds{20};
+
+/**
  * A peer that records what it was charged. Every other method comes from
- * PeerStub.
- *
- * One instance per packet keeps charges() unambiguous about which packet was
- * charged what.
- *
- * charges_ is unguarded: charging happens on the packet path, so every charge
- * lands on the thread that fed the packet in.
+ * PeerStub. Use one instance per packet: that is what keeps charges()
+ * unambiguous about which packet was charged what. charges_ is also unguarded,
+ * and every charge lands on the thread that fed the packet in.
  */
 class ChargeRecordingPeer : public PeerStub
 {
 public:
     /**
      * @param hasTxSet What hasTxSet() reports, which is how an acquisition
-     *        decides whether this peer is worth asking. Defaults to true, so a
-     *        peer handed straight to takeNodes() needs no argument.
+     *        decides whether this peer is worth asking. Defaults to true.
      */
     explicit ChargeRecordingPeer(bool hasTxSet = true) : PeerStub(nextId()), hasTxSet_(hasTxSet)
     {
@@ -341,25 +342,6 @@ waitFor(
         std::this_thread::sleep_for(std::chrono::milliseconds{10});
     }
     return condition();
-}
-
-/**
- * Whether a batch verdict carries exactly the given counts.
- *
- * The counts, since get() is a log format. It is pinned once, in the
- * SHAMapAddNode tests, and is what to pass BEAST_EXPECTS() as the reason a
- * check here failed.
- *
- * @param san The verdict to check.
- * @param good How many nodes the batch should have hooked in.
- * @param bad How many it should have rejected.
- * @param duplicate How many it should have already held.
- * @return Whether the verdict matches.
- */
-[[nodiscard]] inline bool
-tallyIs(SHAMapAddNode const& san, int good, int bad, int duplicate)
-{
-    return san.getGood() == good && san.getBad() == bad && san.getDuplicate() == duplicate;
 }
 
 }  // namespace xrpl::test

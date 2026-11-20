@@ -72,24 +72,10 @@ struct TestableTransactionAcquire final : TransactionAcquire
 struct TransactionAcquire_test : public beast::unit_test::Suite
 {
     /**
-     * A retry interval short enough that a whole timeout chain costs a fraction
-     * of a second.
-     *
-     * TimeoutCounter refuses anything at or below 10ms. At this interval the
-     * window between the first retry (four timeouts in) and giving up (twenty)
-     * is still a third of a second, which is what the one case that watches
-     * both needs.
-     */
-    static constexpr auto kFastRetry = std::chrono::milliseconds{20};
-
-    /**
      * A seed no other chain in this suite has used.
      *
-     * The Env below is shared, and ConsensusTransSetSF::gotNode() puts
-     * every node it accepts into the application-wide NodeCache while
-     * InboundTransactions keys its acquisitions by set hash. A fresh seed
-     * per chain gives every chain distinct hashes, so each case resolves
-     * and revives only its own.
+     * The suite shares one Env, and so one NodeCache holding every node
+     * gotNode() accepts, so every chain needs distinct hashes.
      *
      * @return The seed.
      */
