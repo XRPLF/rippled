@@ -435,7 +435,7 @@ accountHolds(
         {
             return amount;
         }
-        auto const available = availableMPTAmount(issuance);
+        auto const available = issuance.availableAmount();
         if (!mptokensV2)
             return STAmount{mptIssue, available};
         return view.balanceHookMPT(issuer, mptIssue, available);
@@ -1240,7 +1240,7 @@ directSendNoFeeMPT(
 
     auto const maxAmount = sleIssuance.maxAmount();
     auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
-    auto const available = availableMPTAmount(sleIssuance);
+    auto const available = sleIssuance.availableAmount();
     auto const amt = saAmount.mpt().value();
 
     if (uSenderID == issuer)
