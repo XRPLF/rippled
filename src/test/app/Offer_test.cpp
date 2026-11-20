@@ -5357,36 +5357,9 @@ public:
             auto const start = logs.find("MARKER_START");
             auto const end = logs.find("MARKER_END");
             auto const body = logs.substr(start, end - start);
-            log << "LOGS size=" << body.size() << std::endl;
-            for (std::string const key : {
-                     "emoved",
-                     "strands dry",
-                     "Total flow",
-                     "Best path",
-                     "reapplying",
-                     "xceeded",
-                     "final result",
-                     "Fill or Kill",
-                     "New flow iter",
-                     "rejected",
-                     "dry",
-                     "Exception",
-                 })
-            {
-                std::size_t hits = 0;
-                std::size_t count = 0;
-                for (auto pos = body.find(key); pos != std::string::npos;
-                     pos = body.find(key, pos + 1))
-                {
-                    ++count;
-                    if (hits++ < 3)
-                    {
-                        log << "[" << key << "] " << body.substr(pos > 100 ? pos - 100 : 0, 300)
-                            << std::endl;
-                    }
-                }
-                log << "[" << key << "] total=" << count << std::endl;
-            }
+            log << "LOGS size=" << body.size() << "\n"
+                << body.substr(0, 15000) << "\n...\n"
+                << body.substr(body.size() > 5000 ? body.size() - 5000 : 0) << std::endl;
         }
     }
 
