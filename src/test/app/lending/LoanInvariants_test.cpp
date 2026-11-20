@@ -111,11 +111,17 @@ private:
             env.close();
         }
 
-        // From FIND-010
+        // From FIND-010. The fees are small enough for the size bound of fixCleanup3_6_0. The
+        // original fees are far past it, so they run without the amendment, and without
+        // LendingProtocolV1_2 so no FixedPrecision vault is built.
+        for (bool const largeFees : {false, true})
         {
-            testcase << "xrpl::loanComputePaymentParts : valid total interest";
+            testcase << "xrpl::loanComputePaymentParts : valid total interest"
+                     << (largeFees ? ", large fees without fixCleanup3_6_0" : "");
 
-            Env env(*this, features);
+            Env env(
+                *this,
+                largeFees ? features - featureLendingProtocolV1_2 - fixCleanup3_6_0 : features);
 
             Account const issuer{"issuer"};
             Account const lender{"lender"};
@@ -136,11 +142,11 @@ private:
                 Json(sfCounterpartySignature, json::ValueType::Object));
 
             createJson["CloseInterestRate"] = 47299;
-            createJson["ClosePaymentFee"] = "3985819770";
+            createJson["ClosePaymentFee"] = largeFees ? "3985819770" : "0.000004";
             createJson["InterestRate"] = 92;
-            createJson["LatePaymentFee"] = "3866894865";
+            createJson["LatePaymentFee"] = largeFees ? "3866894865" : "0.000004";
             createJson["LoanOriginationFee"] = "0";
-            createJson["LoanServiceFee"] = "2348810240";
+            createJson["LoanServiceFee"] = largeFees ? "2348810240" : "0.000002";
             createJson["OverpaymentFee"] = 58545;
             createJson["PaymentInterval"] = 60;
             createJson["PaymentTotal"] = 1;

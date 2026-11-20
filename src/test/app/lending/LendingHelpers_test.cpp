@@ -12,16 +12,19 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -2042,6 +2045,35 @@ public:
         }
     }
 
+    // fitsAtLoanScale at each asset's limit. An XRP loan that large would need the whole XRP
+    // supply, so the XRP limit is only checked here.
+    void
+    testFitsAtLoanScale()
+    {
+        testcase("fitsAtLoanScale");
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Asset const xrp{xrpIssue()};
+        Asset const iou{issuer["USD"].asset()};
+        Asset const mpt{MPTIssue{makeMptID(1, issuer.id())}};
+
+        Number const xrpMax{kInitialXrp.drops()};
+        BEAST_EXPECT(fitsAtLoanScale(xrp, xrpMax, 0));
+        BEAST_EXPECT(!fitsAtLoanScale(xrp, xrpMax + Number{1}, 0));
+
+        // A Number mantissa holds at most kMaxMpTokenAmount, so the next value it can show above
+        // it is 10 more.
+        Number const mptMax{static_cast<std::int64_t>(kMaxMpTokenAmount)};
+        BEAST_EXPECT(fitsAtLoanScale(mpt, mptMax, 0));
+        BEAST_EXPECT(!fitsAtLoanScale(mpt, mptMax + Number{10}, 0));
+
+        BEAST_EXPECT(fitsAtLoanScale(iou, Number{99'999'999'999'999'99LL, -2}, -2));
+        BEAST_EXPECT(!fitsAtLoanScale(iou, Number{1, 14}, -2));
+        BEAST_EXPECT(fitsAtLoanScale(iou, Number{9'999'999'999'999'999LL, 0}, 0));
+        BEAST_EXPECT(!fitsAtLoanScale(iou, Number{1, 16}, 0));
+    }
+
     void
     run() override
     {
@@ -2079,6 +2111,7 @@ public:
         testLoanPaymentDeltasDispatcher();
 
         testLoanDefaultFreezeExemptAccounts();
+        testFitsAtLoanScale();
     }
 };
 
