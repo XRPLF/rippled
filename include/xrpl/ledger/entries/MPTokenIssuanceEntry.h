@@ -158,6 +158,19 @@ public:
     isVaultPseudoAccountFrozen(AccountID const& account, std::uint8_t depth) const;
 
     /**
+     * Returns true if @p account is frozen for this MPT: the issuance is
+     * locked, @p account's MPToken is locked, or @p account is frozen through
+     * the vault behind this issuance (see isVaultPseudoAccountFrozen()).
+     *
+     * @param account the account to check for freeze.
+     * @param depth Current recursion depth; callers outside the freeze
+     *              checks should pass 0.
+     * @return true if @p account is frozen for this MPT, false otherwise.
+     */
+    [[nodiscard]] bool
+    isFrozen(AccountID const& account, std::uint8_t depth = 0) const;
+
+    /**
      * Returns true iff @p account holds all of this vault share issuance's
      * outstanding shares, i.e. is the sole remaining shareholder. Returns
      * false if the account holds no shares or fewer than the total
