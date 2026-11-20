@@ -12,7 +12,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -714,29 +713,6 @@ sharesToAssetsWithdraw(
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
-}
-
-[[nodiscard]] bool
-isSoleShareholder(
-    ReadView const& view,
-    AccountID const& account,
-    MPTokenIssuanceEntryR const& issuance)
-{
-    XRPL_ASSERT(
-        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::isSoleShareholder : valid issuance SLE");
-
-    std::uint64_t const outstanding = issuance->at(sfOutstandingAmount);
-    if (outstanding == 0)
-        return false;
-
-    auto const shareMPTID =
-        makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
-    auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
-    if (!sleToken)
-        return false;  // LCOV_EXCL_LINE
-
-    return sleToken->getFieldU64(sfMPTAmount) == outstanding;
 }
 
 [[nodiscard]] VaultVersion

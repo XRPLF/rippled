@@ -128,6 +128,23 @@ MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
 
+template <typename ViewT>
+bool
+MPTokenIssuanceEntry<ViewT>::isSoleShareholder(AccountID const& account) const
+{
+    std::uint64_t const outstanding = (*this)->at(sfOutstandingAmount);
+    if (outstanding == 0)
+        return false;
+
+    auto const shareMPTID =
+        makeMptID((*this)->getFieldU32(sfSequence), (*this)->getAccountID(sfIssuer));
+    auto const sleToken = this->readView().read(keylet::mptoken(shareMPTID, account));
+    if (!sleToken)
+        return false;  // LCOV_EXCL_LINE
+
+    return sleToken->getFieldU64(sfMPTAmount) == outstanding;
+}
+
 template class MPTokenIssuanceEntry<ReadView>;
 template class MPTokenIssuanceEntry<ApplyView>;
 
