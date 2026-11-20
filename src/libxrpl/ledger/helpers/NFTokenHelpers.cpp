@@ -241,26 +241,7 @@ changeTokenURI(
     if (!page)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // Locate the NFT in the page
-    STArray& arr = page->peekFieldArray(sfNFTokens);
-
-    auto const nftIter = std::ranges::find_if(
-        arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
-
-    if (nftIter == arr.end())
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (uri)
-    {
-        nftIter->setFieldVL(sfURI, *uri);
-    }
-    else if (nftIter->isFieldPresent(sfURI))
-    {
-        nftIter->makeFieldAbsent(sfURI);
-    }
-
-    page.update();
-    return tesSUCCESS;
+    return page.changeTokenURI(nftokenID, uri);
 }
 
 /**
