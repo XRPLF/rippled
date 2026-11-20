@@ -112,10 +112,11 @@ jobs:
       # header files are copied into separate directories by CMake, which will
       # otherwise result in cache misses.
       CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
-      # Determine if coverage, voidstar and validator-keys should be enabled.
+      # Determine if coverage, voidstar, validator-keys and formal verification should be enabled.
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
+      FORMAL_VERIFICATION_ENABLED: ${{ contains(inputs.cmake_args, '-Dformal_verification=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
       # The binaries reusable-package.yml consumes. A private repository skips
       # them except on a tag push, which is what produces its release packages.
@@ -187,6 +188,7 @@ jobs:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
           sanitizers: ${{ inputs.sanitizers }}
+          formal_verification: ${{ env.FORMAL_VERIFICATION_ENABLED }}
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
@@ -286,6 +288,11 @@ jobs:
           path: ${{ env.BUILD_DIR }}/xrpld
           retention-days: 3
           if-no-files-found: error
+
+      - name: Check the Lean proofs
+        if: ${{ env.FORMAL_VERIFICATION_ENABLED == 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: cmake --build . --target lean4_proofs
 
       - name: Run the validator-keys tests
         if: ${{ env.VALIDATOR_KEYS_ENABLED == 'true' }}

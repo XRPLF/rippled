@@ -1,0 +1,9 @@
+# The part linked into xrpld: the model and its FFI exports, with no mathlib
+# (`lake -f lakefile-model.toml build XRPLModel:static`). The name must stay
+# "XRPL", as it is part of the exported initializer's symbol.
+name = "XRPL"
+
+[[lean_lib]]
+name = "XRPLModel"
+roots = ["XRPL.FFI.FFI"]
+globs = ["XRPL.Model.+", "XRPL.FFI.+"]
