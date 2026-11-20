@@ -53,6 +53,14 @@ transfer(
     uint32_t flags,
     std::optional<UInt256> const& index = std::nullopt);
 
+json::Value
+sponsoredAccountCreate(
+    jtx::Account const& account,
+    jtx::Account const& destination,
+    std::optional<STAmount> const& feeAmount = std::nullopt,
+    std::optional<STAmount> const& maxFee = std::nullopt,
+    std::optional<std::uint32_t> const& remainingOwnerCount = std::nullopt);
+
 struct CounterpartySponsor
 {
 private:
