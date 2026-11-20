@@ -265,14 +265,14 @@ private:
     }
 
     /**
-     * Fill in inner nodes, each with one real child (and, under Decoy::Yes, an
-     * additional unresolvable second child), from the root down to the given depth,
-     * and record the root hash.
+     * Fill in inner nodes from the root down to the given depth and record the
+     * root hash. Each carries one real child and, under Decoy::Yes, an
+     * unresolvable second one.
      *
      * Bottom-up, since each node's hash covers the child hash below it.
      *
      * @param deepest The depth of the deepest inner node to build. May be
-     *        SHAMap::kLeafDepth, which is the fabricated chain's whole point.
+     *        SHAMap::kLeafDepth.
      * @param childHash What that deepest inner node points at.
      * @param decoy Whether to add an unresolvable second child at every level.
      */
@@ -287,10 +287,9 @@ private:
             --depth;
 
             // A key has 64 nibbles, so SHAMap::kLeafDepth is one past the last nibble
-            // selectBranch() reads from a 32-byte key. A fabricated chain's pathKey is zero, so
-            // branch 0 is the position such a node claims.
-            auto const branch =
-                depth == SHAMap::kLeafDepth ? 0u : selectBranch(idAt(depth), pathKey);
+            // selectBranch() reads from a 32-byte key. Such a chain has a zero pathKey, so branch
+            // 0 is the position it claims.
+            auto const branch = depth == SHAMap::kLeafDepth ? 0u : selectBranch(depth, pathKey);
 
             Serializer s;
             s.addBitString(childHash.asUInt256());

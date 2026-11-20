@@ -86,12 +86,15 @@ public:
         requires std::convertible_to<TT*, T*>
     SharedIntrusive(SharedIntrusive<TT> const& rhs);
 
-    SharedIntrusive(SharedIntrusive&& rhs);
+    // noexcept so move_if_noexcept moves rather than copies, which NodePathStack's path_ vector
+    // relies on when it relocates. The body is a std::exchange on a raw pointer, which is what
+    // makes the noexcept honest.
+    SharedIntrusive(SharedIntrusive&& rhs) noexcept;
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedIntrusive(
-        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    SharedIntrusive(SharedIntrusive<TT>&& rhs) noexcept;
 
     SharedIntrusive&
     operator=(SharedIntrusive const& rhs);
