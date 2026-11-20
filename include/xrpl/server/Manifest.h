@@ -446,6 +446,51 @@ public:
     }
 
     /**
+     * Returns the number of cached master keys counted against the untrusted
+     * cap.
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
+    [[nodiscard]] std::size_t
+    untrustedKeyCount() const
+    {
+        std::shared_lock const sl{mutex_};
+        return untrustedKeys_.size();
+    }
+
+    /**
+     * Returns the number of cached master keys exempt from the untrusted cap.
+     *
+     * A key becomes exempt when it is listed (see `promoteToTrusted`) or when an
+     * uncapped manifest arrives for it, and stays exempt afterwards. Every key
+     * in `untrustedKeys_` is also in `map_`, so this never underflows.
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
+    [[nodiscard]] std::size_t
+    uncappedKeyCount() const
+    {
+        std::shared_lock const sl{mutex_};
+        return map_.size() - untrustedKeys_.size();
+    }
+
+    /**
+     * Returns the cap on untrusted master keys this cache enforces.
+     *
+     * Equals `kMaxUntrustedCount` unless a smaller value was passed to the
+     * constructor (used in tests).
+     */
+    [[nodiscard]] std::size_t
+    maxUntrustedCount() const
+    {
+        return maxUntrustedCount_;
+    }
+
+    /**
      * Returns master key's current signing key.
      *
      * @param pk Master public key
