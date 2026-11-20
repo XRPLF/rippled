@@ -71,6 +71,22 @@ hasSignatureField(STObject const& proposedTx)
 }
 
 /**
+ * Whether every signature slot of a proposed transaction holds an approval
+ * and nothing else (On-Chain Cosigner approval model §4.2.2, §9.2).
+ *
+ * The top-level slot, and CounterpartySignature, SponsorSignature, and each
+ * BatchSigners entry when present, must each hold either a non-empty
+ * SigningPubKey or a non-empty Signers array, not both. Every TxnSignature
+ * anywhere must be empty, and every Signer entry must name a key.
+ *
+ * PoC limit: an empty SigningPubKey in a Signer entry (the approver used its
+ * own SignerList) is rejected, because Transactor::checkMultiSign has no path
+ * for it outside of simulation.
+ */
+bool
+hasOnlyApprovals(STObject const& proposedTx);
+
+/**
  * Whether the proposed transaction's SigningPubKey is present and empty, as
  * unsigned canonical form requires. An absent field is not the same as an
  * empty one, and a populated one means the payload was already signed.

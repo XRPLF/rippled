@@ -51,6 +51,12 @@ enum ApplyFlags : std::uint32_t {
     // are skipped at proposal-creation time (On-Chain Cosigner spec
     // §5.3.1.2).
     TapProposal = 0x2000,
+
+    // Transaction is the proposed transaction of a TransactionProposal, being
+    // applied by TransactionProposalExecute. Its slots hold approvals (keys
+    // with empty signatures), so the cryptographic signature step is skipped;
+    // the key-to-account authorization checks in preclaim still run.
+    TapProposalExecute = 0x4000,
 };
 
 constexpr ApplyFlags

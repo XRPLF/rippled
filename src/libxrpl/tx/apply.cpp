@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -72,6 +73,14 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     {
         router.setFlags(id, kSfSigbad);
         return {Validity::SigBad, "Batch inner transactions are never considered validly signed."};
+    }
+
+    // Likewise a proposed transaction: it carries approvals, not signatures,
+    // and is applied only by TransactionProposalExecute.
+    if (tx.isFlag(tfProposedTxn))
+    {
+        router.setFlags(id, kSfSigbad);
+        return {Validity::SigBad, "Proposed transactions are never considered validly signed."};
     }
 
     // Pick the cache slot for this call's era; see kSfSiggoodOldPrefix above.
@@ -263,6 +272,54 @@ applyBatchTransactions(
     return applied != 0;
 }
 
+// Apply the proposed transaction of the proposal a successful
+// TransactionProposalExecute names, as an inner transaction of the Execute. A
+// proposed Batch then applies its own inner transactions, so the carrier chain
+// is Execute -> Batch -> inners. A Batch cannot hold a Batch, so it stops at
+// depth 2.
+static void
+applyProposedTransaction(
+    ServiceRegistry& registry,
+    OpenView& view,
+    STTx const& executeTxn,
+    beast::Journal j)
+{
+    auto const sleProposal = view.read(keylet::txProposal(executeTxn[sfProposalID]));
+    if (!sleProposal)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::applyProposedTransaction : proposal checked in preclaim");
+        return;
+        // LCOV_EXCL_STOP
+    }
+
+    // The ID is computed over the slots as recorded, so it commits to the
+    // exact set of approvals that authorized the transaction.
+    STTx const proposedTxn{STObject{sleProposal->getFieldObject(sfProposedTransaction)}};
+
+    OpenView proposalView(kBatchView, view);
+    auto const ret = apply(registry, proposalView, proposedTxn, TapProposalExecute, j);
+
+    JLOG(j.debug()) << "ProposalTrace[" << executeTxn.getTransactionID()
+                    << "]: " << proposedTxn.getTransactionID() << " "
+                    << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);
+
+    // A proposed transaction that is not applied leaves the proposal in place.
+    // One that fails with a tec has still spent its Ticket, which deleted the
+    // proposal.
+    if (!ret.applied)
+        return;
+
+    if (isTesSuccess(ret.ter) && proposedTxn.getTxnType() == ttBATCH)
+    {
+        OpenView wholeBatchView(kBatchView, proposalView);
+        if (applyBatchTransactions(registry, wholeBatchView, proposedTxn, j))
+            wholeBatchView.apply(proposalView);
+    }
+
+    proposalView.apply(view);
+}
+
 ApplyTransactionResult
 applyTransaction(
     ServiceRegistry& registry,
@@ -295,6 +352,9 @@ applyTransaction(
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);
             }
+
+            if (isTesSuccess(result.ter) && txn.getTxnType() == ttTRANSACTION_PROPOSAL_EXECUTE)
+                applyProposedTransaction(registry, view, txn, j);
 
             return ApplyTransactionResult::Success;
         }

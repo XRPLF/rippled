@@ -253,7 +253,9 @@ buildLedger(
                 // Batch transaction, never on their own. Skip them here so they
                 // are not re-applied a second time outside of the batch during
                 // replay.
-                if (tx.second->isFlag(tfInnerBatchTxn))
+                // The same holds for a proposed transaction and its
+                // TransactionProposalExecute.
+                if (tx.second->isFlag(tfInnerBatchTxn) || tx.second->isFlag(tfProposedTxn))
                     continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
             }
