@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -25,6 +24,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstdint>
 #include <memory>
@@ -67,7 +67,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::kZero)
+        if (isZeroId(tx[sfLoanBrokerID]))
             return temINVALID;
 
         // Cannot change private flag on existing broker
@@ -96,7 +96,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::kZero)
+        if (isZeroId(*vaultID))
             return temINVALID;
     }
 
