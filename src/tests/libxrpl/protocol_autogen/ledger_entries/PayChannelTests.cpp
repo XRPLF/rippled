@@ -35,6 +35,8 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const destinationNodeValue = canonical_UINT64();
+    auto const transferRateValue = canonical_UINT32();
+    auto const issuerNodeValue = canonical_UINT64();
 
     PayChannelBuilder builder{
         accountValue,
@@ -54,6 +56,8 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setDestinationNode(destinationNodeValue);
+    builder.setTransferRate(transferRateValue);
+    builder.setIssuerNode(issuerNodeValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -166,6 +170,22 @@ TEST(PayChannelTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasDestinationNode());
     }
 
+    {
+        auto const& expected = transferRateValue;
+        auto const actualOpt = entry.getTransferRate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTransferRate");
+        EXPECT_TRUE(entry.hasTransferRate());
+    }
+
+    {
+        auto const& expected = issuerNodeValue;
+        auto const actualOpt = entry.getIssuerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuerNode");
+        EXPECT_TRUE(entry.hasIssuerNode());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -194,6 +214,8 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const destinationNodeValue = canonical_UINT64();
+    auto const transferRateValue = canonical_UINT32();
+    auto const issuerNodeValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(PayChannel::entryType, index);
 
@@ -212,6 +234,8 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDestinationNode) = destinationNodeValue;
+    sle->at(sfTransferRate) = transferRateValue;
+    sle->at(sfIssuerNode) = issuerNodeValue;
 
     PayChannelBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -390,6 +414,32 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfDestinationNode");
     }
 
+    {
+        auto const& expected = transferRateValue;
+
+        auto const fromSleOpt = entryFromSle.getTransferRate();
+        auto const fromBuilderOpt = entryFromBuilder.getTransferRate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTransferRate");
+        expectEqualField(expected, *fromBuilderOpt, "sfTransferRate");
+    }
+
+    {
+        auto const& expected = issuerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getIssuerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuerNode");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -472,5 +522,9 @@ TEST(PayChannelTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getDestinationTag().has_value());
     EXPECT_FALSE(entry.hasDestinationNode());
     EXPECT_FALSE(entry.getDestinationNode().has_value());
+    EXPECT_FALSE(entry.hasTransferRate());
+    EXPECT_FALSE(entry.getTransferRate().has_value());
+    EXPECT_FALSE(entry.hasIssuerNode());
+    EXPECT_FALSE(entry.getIssuerNode().has_value());
 }
 }

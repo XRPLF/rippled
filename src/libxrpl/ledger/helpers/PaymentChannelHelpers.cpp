@@ -3,16 +3,26 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -21,9 +31,76 @@
 
 namespace xrpl {
 
-TER
-closeChannel(SLE::Ref slep, ApplyView& view, UInt256 const& key, beast::Journal j)
+NotTEC
+checkTokenPayChanRules(Rules const& rules)
 {
+    if (!rules.enabled(featureTokenPaychan))
+        return temBAD_AMOUNT;
+
+    if (!rules.enabled(fixCleanup3_2_0) || !rules.enabled(fixTokenEscrowV1))
+        return temDISABLED;
+
+    return tesSUCCESS;
+}
+
+template <>
+NotTEC
+payChanAmountPreflightHelper<Issue>(STAmount const& amount)
+{
+    if (amount.native() || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    if (badCurrency() == amount.get<Issue>().currency)
+        return temBAD_CURRENCY;
+
+    return tesSUCCESS;
+}
+
+template <>
+NotTEC
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount)
+{
+    if (amount.native() || amount <= beast::kZero)
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
+TER
+payChanLockPrecisionHelper(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (!amount.holds<Issue>())
+        return tesSUCCESS;
+
+    // The trust line debit rounds to the mantissa, so require an exact
+    // difference rather than canAdd's relative tolerance.
+    STAmount const spendable = accountHolds(
+        view,
+        account,
+        amount.get<Issue>().currency,
+        amount.getIssuer(),
+        FreezeHandling::IgnoreFreeze,
+        j);
+    if (!isExactDifference(spendable, amount))
+        return tecPRECISION_LOSS;
+
+    return tesSUCCESS;
+}
+
+TER
+closeChannel(
+    SLE::Ref slep,
+    ApplyViewContext ctx,
+    UInt256 const& key,
+    AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
+    beast::Journal j)
+{
+    ApplyView& view = ctx.view;
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
     {
@@ -38,9 +115,9 @@ closeChannel(SLE::Ref slep, ApplyView& view, UInt256 const& key, beast::Journal 
     }
 
     // Remove PayChan from recipient's owner directory, if present.
+    AccountID const dst = (*slep)[sfDestination];
     if (auto const page = (*slep)[~sfDestinationNode])
     {
-        auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
         {
             // LCOV_EXCL_START
@@ -50,15 +127,69 @@ closeChannel(SLE::Ref slep, ApplyView& view, UInt256 const& key, beast::Journal 
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek(keylet::account(src));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    // Release the channel's reserve first: a token refund can re-create a
+    // holding the owner deleted while the channel was open.
+    decreaseOwnerCountForObject(view, sle, slep, 1, j);
+
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    decreaseOwnerCountForObject(view, sle, slep, 1, j);
+    XRPL_ASSERT(
+        isExactDifference((*slep)[sfAmount], (*slep)[sfBalance]),
+        "xrpl::closeChannel : exact refund");
+
+    auto const reqDelta = (*slep)[sfAmount] - (*slep)[sfBalance];
+    auto const& issuer = reqDelta.getIssuer();
+
+    // Only update the balance if there is a positive delta.
+    if (reqDelta > beast::kZero)
+    {
+        if (isXRP(reqDelta))
+        {
+            (*sle)[sfBalance] = (*sle)[sfBalance] + reqDelta;
+        }
+        else
+        {
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(view, src, reqDelta, false);
+                });
+                !isTesSuccess(ret))
+                return ret;
+
+            bool const createAsset = src == txAccount;
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockApplyHelper<T>(
+                        ctx,
+                        kParityRate,
+                        sle,
+                        submitterPreFeeBalance,
+                        reqDelta,
+                        issuer,
+                        src,
+                        src,
+                        createAsset,
+                        j);
+                });
+                !isTesSuccess(ret))
+                return ret;
+        }
+    }
+
+    // Remove PayChan from issuer's owner directory, if present.
+    if (auto const optPage = (*slep)[~sfIssuerNode])
+    {
+        if (!view.dirRemove(keylet::ownerDir(issuer), *optPage, key, true))
+        {
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Could not remove paychan from issuer owner directory";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
     view.update(sle);
 
     // Remove PayChan from ledger
