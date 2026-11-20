@@ -145,7 +145,7 @@ More details [here](https://clang.llvm.org/docs/undefinedbehaviorSanitizer.html)
 
 - **Purpose**: Suppress undefinedbehaviorSanitizer errors
 - **Format**: `<error_type>:<pattern>` (e.g., `unsigned-integer-overflow:protobuf`)
-- **Covers**: Intentional overflows in third-party libraries (protobuf, gRPC, abseil, stdlib, and C libraries such as secp256k1, ed25519, xxHash, lz4, sqlite3)
+- **Covers**: Intentional overflows in third-party libraries (protobuf, gRPC, abseil, stdlib, and C libraries such as OpenSSL, secp256k1, ed25519, xxHash, lz4, sqlite3)
 - More info [UBSan suppressions](https://clang.llvm.org/docs/SanitizerSpecialCaseList.html).
 
 ### [`tsan.supp`](../../sanitizers/suppressions/tsan.supp)
