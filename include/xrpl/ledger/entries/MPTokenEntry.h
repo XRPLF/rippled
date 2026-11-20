@@ -47,6 +47,22 @@ public:
         : Base(keylet::mptoken(mptokenKey), view, j)
     {
     }
+
+    /**
+     * Returns true if this MPToken carries the individual-lock flag
+     * (lsfMPTLocked).
+     *
+     * @warning This checks only the raw per-holder lock bit. It does not
+     * perform the transitive vault pseudo-account check. Use isFrozen() to
+     * decide whether the holder may send or receive tokens.
+     *
+     * @return true if lsfMPTLocked is set on this MPToken
+     */
+    [[nodiscard]] bool
+    isIndividualFrozen() const
+    {
+        return (*this)->isFlag(lsfMPTLocked);
+    }
 };
 
 using MPTokenEntryR = MPTokenEntry<ReadView>;

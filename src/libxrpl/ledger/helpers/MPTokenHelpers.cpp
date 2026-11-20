@@ -60,14 +60,8 @@ bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
     if (auto const sle = MPTokenEntryR(mptIssue.getMptID(), account, view))
-        return isIndividualFrozen(sle);
+        return sle.isIndividualFrozen();
     return false;
-}
-
-bool
-isIndividualFrozen(MPTokenEntryR const& mptSle)
-{
-    return mptSle->isFlag(lsfMPTLocked);
 }
 
 bool
