@@ -128,6 +128,7 @@ unsigned-integer-overflow:sqlite3.c
 # the anchor keeps these from matching xrpl's own crypto/ directories.
 unsigned-integer-overflow:^crypto/
 unsigned-integer-overflow:^include/crypto/
+unsigned-integer-overflow:^include/internal/
 # OpenSSL's generic containers (OBJ_bsearch, OPENSSL_sk_*) and provider
 # dispatch tables call typed callbacks through void-pointer function types.
 function:^crypto/
