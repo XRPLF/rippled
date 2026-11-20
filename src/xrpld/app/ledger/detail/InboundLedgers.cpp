@@ -20,6 +20,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
@@ -286,11 +287,14 @@ public:
         return 60 * fetchRate_.value(clock_.now());
     }
 
-    // Should only be called with an inboundledger that has
-    // a reason of history
+    // Should only be called with an inbound ledger that has a reason of
+    // history. countFetch is false for a local-store hit.
     void
-    onLedgerFetched() override
+    onLedgerFetched(bool countFetch) override
     {
+        if (!countFetch)
+            return;
+
         std::scoped_lock const lock(fetchRateMutex_);
         fetchRate_.add(1, clock_.now());
     }
