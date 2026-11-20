@@ -268,6 +268,62 @@ getEnvVar(char const* name)
     return value;
 }
 
+namespace {
+
+/** A config directory, paired with its data directory. */
+struct Candidate
+{
+    std::filesystem::path configDir;
+    std::filesystem::path dataDir;
+};
+
+/**
+ * List the directories to search for a config file, in order.
+ *
+ * These are the current working directory, then the XDG directories when the
+ * home directory is set, then the system directory.
+ *
+ * @return The candidates, in search order.
+ */
+[[nodiscard]] std::vector<Candidate>
+configCandidates()
+{
+    std::vector<Candidate> candidates;
+
+    // The current working directory, with the databases in a subdirectory.
+    auto const cwd = std::filesystem::current_path();
+    candidates.emplace_back(cwd, cwd / Config::kDatabaseDirName);
+
+    // The XDG config and data directories, which only apply when the home
+    // directory is set. See
+    // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+    if (std::filesystem::path const home = getEnvVar("HOME"); !home.empty())
+    {
+        std::filesystem::path xdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+        if (xdgConfigHome.empty())
+        {
+            // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+            xdgConfigHome = home / ".config";
+        }
+        std::filesystem::path xdgDataHome = getEnvVar("XDG_DATA_HOME");
+        if (xdgDataHome.empty())
+        {
+            // $XDG_DATA_HOME was not set, use default based on $HOME.
+            xdgDataHome = home / ".local" / "share";
+        }
+        candidates.emplace_back(xdgConfigHome / systemName(), xdgDataHome / systemName());
+    }
+
+    // The system config directory, as a last resort.
+    candidates.emplace_back(
+        std::filesystem::path("/etc") / systemName(),
+        std::filesystem::path("/var/lib") / systemName());
+
+    return candidates;
+}
+
+}  // namespace
+
 Config::Config()
     : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
 {
@@ -330,45 +386,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     }
     else
     {
-        // A config directory, paired with its data directory.
-        struct Candidate
-        {
-            std::filesystem::path configDir;
-            std::filesystem::path dataDir;
-        };
-
-        // The candidates to search, in order.
-        std::vector<Candidate> candidates;
-        candidates.reserve(3);
-
-        // The current working directory, with the databases in a subdirectory.
-        auto const cwd = std::filesystem::current_path();
-        candidates.emplace_back(cwd, cwd / kDatabaseDirName);
-
-        // The XDG config and data directories, which only apply when the home
-        // directory is set. See
-        // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
-        if (std::filesystem::path const home = getEnvVar("HOME"); !home.empty())
-        {
-            std::filesystem::path xdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-            if (xdgConfigHome.empty())
-            {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                xdgConfigHome = home / ".config";
-            }
-            std::filesystem::path xdgDataHome = getEnvVar("XDG_DATA_HOME");
-            if (xdgDataHome.empty())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                xdgDataHome = home / ".local" / "share";
-            }
-            candidates.emplace_back(xdgConfigHome / systemName(), xdgDataHome / systemName());
-        }
-
-        // The system config directory, as a last resort.
-        candidates.emplace_back(
-            std::filesystem::path("/etc") / systemName(),
-            std::filesystem::path("/var/lib") / systemName());
+        auto const candidates = configCandidates();
 
         // Take the first candidate holding a config file under either name.
         // When none does, the last candidate's values stand.
