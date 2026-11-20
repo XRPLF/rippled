@@ -567,8 +567,10 @@ LoanSet::doApply()
 
     if (view.rules().enabled(fixCleanup3_6_0))
     {
-        // A fixed fee must not push one payment past the size limit. Only amounts known now are
-        // checked: percentage fees and late interest are handled when the payment is made.
+        // A fixed fee must not push one payment past the size limit. Only fixed amounts are
+        // bounded here. Interest that depends on time, such as the accrued interest of a full
+        // payment or late interest, is not, and can push a payment slightly past the limit. That
+        // only costs rounding.
         auto const serviceFee = tx[~sfLoanServiceFee].value_or(Number{});
         auto const lateFee = tx[~sfLatePaymentFee].value_or(Number{});
         auto const closeFee = tx[~sfClosePaymentFee].value_or(Number{});

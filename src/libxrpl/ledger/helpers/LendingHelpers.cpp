@@ -1285,7 +1285,7 @@ computeLatePayment(
     XRPL_ASSERT_PARTS(
         detail::isOnLoanGrid(late.totalDue, loanScale),
         "xrpl::detail::computeLatePayment",
-        "total due is rounded");
+        "total due is on the loan grid");
 
     // Check that the borrower provided enough funds to cover the late payment.
     // The late payment is more expensive than a regular payment due to the
@@ -1405,7 +1405,7 @@ computeFullPayment(
     XRPL_ASSERT_PARTS(
         detail::isOnLoanGrid(full.totalDue, loanScale),
         "xrpl::detail::computeFullPayment",
-        "total due is rounded");
+        "total due is on the loan grid");
 
     JLOG(j.trace()) << "computeFullPayment result: periodicRate: " << periodicRate
                     << ", paymentRemaining: " << paymentRemaining
@@ -1884,26 +1884,21 @@ makeRegularPayment(
     // mutations each iteration.
     auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
-    bool stoppedAtLimit = false;
+    bool const fix360Enabled = view.rules().enabled(fixCleanup3_6_0);
     while (paymentRemainingProxy > 0 && numPayments < kLoanMaximumPaymentsPerTransaction)
     {
-        // Under fixCleanup3_6_0, stop before an installment whose total passes the size limit.
-        // The first is always paid, and the rest of the amount is not used, not even to overpay.
-        // This is checked before the amount, so an amount too small for the next installment can
-        // not overpay past the limit either.
-        if (view.rules().enabled(fixCleanup3_6_0) && numPayments > 0)
-        {
-            // Round up, so a total just past the MPT maximum is not rounded back down to it.
-            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-            if (!fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
-            {
-                stoppedAtLimit = true;
-                break;
-            }
-        }
-
         if (amount < totalPaid + periodic.totalDue)
             break;
+
+        // Under fixCleanup3_6_0, stop before an installment whose total passes the size limit.
+        // The first is always paid. Round up, so a total just past the MPT maximum is not rounded
+        // back down to it. The overpayment below has its own check against the same limit.
+        if (fix360Enabled && numPayments > 0)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            if (!fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
+                break;
+        }
 
         // Try to make more payments
         XRPL_ASSERT_PARTS(
@@ -1960,7 +1955,6 @@ makeRegularPayment(
         paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment);
 
     bool const overpaymentAllowed =   //
-        !stoppedAtLimit &&            //
         paymentRemainingProxy > 0 &&  //
         totalPaid < roundedAmount &&  //
         numPayments < kLoanMaximumPaymentsPerTransaction;
@@ -1981,9 +1975,18 @@ makeRegularPayment(
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
             : overpaymentRaw;
 
+        // Under fixCleanup3_6_0 the overpayment must not take the total past the size limit.
+        // Round up, as in the loop above.
+        bool fitsLimit = true;
+        if (fix360Enabled)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            fitsLimit = fitsAtLoanScale(asset, totalPaid + overpayment, loanScale);
+        }
+
         // Post-amendment, the rounded overpayment can be zero; pre-amendment
         // it's always positive given the surrounding guards.
-        if (!fixEnabled || overpayment > 0)
+        if ((!fixEnabled || overpayment > 0) && fitsLimit)
         {
             ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
                 view.rules(),

@@ -2175,7 +2175,7 @@ public:
     // The rest of the amount is not used, even with the overpayment flag. Every amount fits in 16
     // digits at 0.1, so the trust lines move exactly. With partialOffer the amount lies between
     // three and four installments, so the fourth is both too large and unaffordable, and the rest
-    // must still not be applied as an overpayment.
+    // must still not be applied as an overpayment, as it would take the total past the limit.
     void
     testInstallmentLoopStop(VKind kind, bool overpayment, bool fix, bool partialOffer = false)
     {
@@ -2259,7 +2259,110 @@ public:
                 if (kind != VKind::Fixed)
                     testInstallmentLoopStop(kind, overpayment, false);
             }
+            testOverpaymentWithinLimit(kind);
+            testMptMaxPaymentStops(kind);
         }
+    }
+
+    // Three installments of 2.8 * 10^13 are paid and the rest of the amount is a small
+    // overpayment. The total stays below 10^14, so under fixCleanup3_6_0 the overpayment applies.
+    void
+    testOverpaymentWithinLimit(VKind kind)
+    {
+        using namespace test::jtx;
+
+        testcase("LoanPay overpayment that fits the size limit, " + kindName(kind));
+
+        Env env(*this, conserveFeatures(kind));
+        LimitSetup s;
+        Number const fee{23, 12};
+        setupLimitLoan(
+            env,
+            s,
+            kind,
+            {
+                .principal = Number{5, 13},
+                .serviceFee = fee,
+                .flags = tfLoanOverpayment,
+            });
+        auto const loanBefore = env.le(s.loan);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+        Number const borrowerBefore = env.balance(s.borrower, s.asset).value();
+
+        env(loan::pay(s.borrower, s.loan.key, s.asset(Number{85, 12}).value(), tfLoanOverpayment));
+        env.close();
+
+        auto const loanAfter = env.le(s.loan);
+        if (!BEAST_EXPECT(loanAfter))
+            return;
+        BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == loanBefore->at(sfPaymentRemaining) - 3);
+        Number const principalPaid =
+            Number{loanBefore->at(sfPrincipalOutstanding)} - loanAfter->at(sfPrincipalOutstanding);
+        BEAST_EXPECT((principalPaid == Number{16, 12}));
+        BEAST_EXPECT((borrowerBefore - env.balance(s.borrower, s.asset).value() == Number{85, 12}));
+    }
+
+    // Two installments, each with a service fee of 4611686018427387903, so the second would take
+    // the total to one more than the MPT maximum. Paying the maximum pays only the first.
+    void
+    testMptMaxPaymentStops(VKind kind)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase("LoanPay stops at the MPT maximum, " + kindName(kind));
+
+        Env env(*this, conserveFeatures(kind));
+        Number const max{static_cast<std::int64_t>(kMaxMpTokenAmount)};
+        Number const fee{4'611'686'018'427'387'903LL};
+        BEAST_EXPECT((fee + Number{1}) * 2 == max + Number{1});
+
+        AssetAccounts accounts;
+        // Not setupMpt: it sets MaximumAmount, and this keeps the default.
+        env.fund(XRP(1'000'000), accounts.issuer, accounts.owner, accounts.depositor);
+        env.close();
+        MPTTester token{env, accounts.issuer, kMptInitNoFund};
+        token.create({.flags = tfMPTCanTransfer});
+        accounts.asset = token.issuanceID();
+        token.authorize({.account = accounts.owner});
+        token.authorize({.account = accounts.depositor});
+        // The depositor deposits 2 and borrows them back, then holds the maximum.
+        env(pay(accounts.issuer, accounts.depositor, accounts.asset(max)));
+        env.close();
+
+        auto const& owner = accounts.owner;
+        auto const& depositor = accounts.depositor;
+        auto const [vaultKeylet, brokerKeylet] =
+            vaultAndBroker(env, kind, owner, depositor, accounts.asset, Number{2}, std::nullopt);
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+        env(set(depositor, brokerKeylet.key, Number{2}),
+            kInterestRate(TenthBips32(0)),
+            kLoanServiceFee(fee),
+            kGracePeriod(60),
+            kPaymentInterval(600),
+            kPaymentTotal(2),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto const loanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanBefore))
+            return;
+
+        Asset const asset = accounts.asset.raw();
+        Number const borrowerBefore = env.balance(depositor, asset).value();
+        env(loan::pay(depositor, loanKeylet.key, accounts.asset(max).value()));
+        env.close();
+
+        auto const loanAfter = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanAfter))
+            return;
+        BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == loanBefore->at(sfPaymentRemaining) - 1);
+        BEAST_EXPECT(env.balance(depositor, asset).value() == borrowerBefore - (fee + Number{1}));
     }
 
     // The 16 digit unit of a balance, or 0 for a zero balance.
