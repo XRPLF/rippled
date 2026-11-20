@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
@@ -112,7 +113,8 @@ setCurrentTransactionRules(std::optional<Rules> r);
 class CurrentTransactionRulesGuard
 {
 public:
-    explicit CurrentTransactionRulesGuard(Rules r) : saved_(getCurrentTransactionRules())
+    explicit CurrentTransactionRulesGuard(Rules r)
+        : saved_(getCurrentTransactionRules()), savedScale_(Number::getMantissaScale())
     {
         setCurrentTransactionRules(std::move(r));
     }
@@ -120,6 +122,9 @@ public:
     ~CurrentTransactionRulesGuard()
     {
         setCurrentTransactionRules(saved_);
+        // Setting the rules also sets the mantissa scale. Restore the scale that was active
+        // before this guard, which an outer NumberMantissaScaleGuard may have chosen.
+        Number::setMantissaScale(savedScale_);
     }
 
     CurrentTransactionRulesGuard() = delete;
@@ -129,6 +134,7 @@ public:
 
 private:
     std::optional<Rules> saved_;
+    MantissaRange::MantissaScale savedScale_;
 };
 
 class NumberMantissaScaleGuard;
