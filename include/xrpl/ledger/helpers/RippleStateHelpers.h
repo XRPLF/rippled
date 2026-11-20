@@ -163,14 +163,6 @@ trustCreate(
     SLE::Ref sponsorSle,
     beast::Journal j);
 
-[[nodiscard]] TER
-trustDelete(
-    ApplyView& view,
-    RippleStateEntryW& sleRippleState,
-    AccountID const& uLowAccountID,
-    AccountID const& uHighAccountID,
-    beast::Journal j);
-
 //------------------------------------------------------------------------------
 //
 // IOU issuance/redemption
