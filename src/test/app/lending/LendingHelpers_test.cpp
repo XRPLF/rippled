@@ -1650,8 +1650,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         jtx::Env const env{*this};
         auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
         BEAST_EXPECT(
-            xrpl::instant_recognition::loanVaultExposure(LoanEntryR(sle, *env.current())) ==
-            Number{950});
+            LoanEntryR(sle, *env.current()).vaultExposureInstantRecognition() == Number{950});
     }
 
     void
@@ -1661,8 +1660,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         jtx::Env const env{*this};
         auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-        BEAST_EXPECT(
-            xrpl::cash_basis::loanVaultExposure(LoanEntryR(sle, *env.current())) == Number{800});
+        BEAST_EXPECT(LoanEntryR(sle, *env.current()).vaultExposureCashBasis() == Number{800});
     }
 
     void
@@ -1786,7 +1784,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
                 loanVaultExposure(legacyVault, LoanEntryR(sle, *env.current())) ==
-                xrpl::instant_recognition::loanVaultExposure(LoanEntryR(sle, *env.current())));
+                LoanEntryR(sle, *env.current()).vaultExposureInstantRecognition());
         }
 
         {
@@ -1799,7 +1797,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(
                     loanVaultExposure(makeVaultSle(version), LoanEntryR(sle, *env.current())) ==
-                    xrpl::cash_basis::loanVaultExposure(LoanEntryR(sle, *env.current())));
+                    LoanEntryR(sle, *env.current()).vaultExposureCashBasis());
             }
         }
     }

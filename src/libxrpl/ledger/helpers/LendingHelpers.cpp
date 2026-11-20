@@ -342,19 +342,6 @@ loanOriginationExceedsVaultMaximum(
     return vaultMaximum != 0 && interestDue > vaultMaximum - vaultTotal;
 }
 
-/*
-XLS-66 section 3.2.3.2, defines the default amount as
-
-DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
-
-Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
-*/
-Number
-loanVaultExposure(LoanEntryR const& loanSle)
-{
-    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
-}
-
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts)
 {
@@ -372,17 +359,6 @@ AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested)
 {
     return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
-}
-
-/*
- * Under CashBasis accounting, Loan default amount is:
- *
- * DefaultAmount = Loan.PrincipalOutstanding
- */
-Number
-loanVaultExposure(LoanEntryR const& loanSle)
-{
-    return loanSle->at(sfPrincipalOutstanding);
 }
 
 AccountingDeltas
@@ -436,8 +412,8 @@ loanOriginationExceedsVaultMaximum(
 Number
 loanVaultExposure(SLE::ConstRef vaultSle, LoanEntryR const& loanSle)
 {
-    return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
-                                      : instant_recognition::loanVaultExposure(loanSle);
+    return cashBasisEnabled(vaultSle) ? loanSle.vaultExposureCashBasis()
+                                      : loanSle.vaultExposureInstantRecognition();
 }
 
 AccountingDeltas
