@@ -120,7 +120,8 @@ kSizedItems
     {SizedItem::SweepInterval,      {{     10,      30,      60,      90,     120 }}},
     // NodeFamily uses this tree-node count. It also defaults [node_db] cache_size.
     {SizedItem::TreeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
-    // NodeFamily uses this tree-node age in seconds. It also defaults [node_db] cache_age.
+    // NodeFamily uses this tree-node age in seconds. It also defaults [node_db] cache_age,
+    // which DatabaseNodeImp reads as minutes, so medium means 90 s here and 90 min there.
     {SizedItem::TreeCacheAge,       {{     30,      60,      90,     120,     900 }}},
     // LedgerHistory targets this many entries in its ledger hash cache.
     {SizedItem::LedgerSize,         {{     32,      32,      64,     256,     384 }}},
