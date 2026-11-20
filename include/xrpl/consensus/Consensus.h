@@ -1581,11 +1581,12 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         CLOG(clog) << ss.str();
 
         // Walk the votes highest-time first so that, among close times tied
-        // for the most votes, the earliest wins. The smaller value is the
-        // safer choice: without close-time consensus this round, the winner
-        // only updates our position for the next proposal, and a too-early
-        // time is bounded below by the prior ledger's close time. Only the
-        // tie-break changes; the bin with the most votes still wins.
+        // for the most votes, the earliest wins. Walking lowest-time first
+        // would break ties toward the later time, and a peer that reports a
+        // far-future close time could then win a tie when the honest vote is
+        // thin. A too-early winner is bounded below by the prior ledger's close
+        // time. Only the tie-break changes; the bin with the most votes still
+        // wins.
         for (auto const& [t, v] : std::views::reverse(closeTimeVotes))
         {
             JLOG(j_.debug()) << "CCTime: seq "

@@ -700,7 +700,8 @@ RCLConsensus::Adaptor::doAccept(
             closeCount += v;
         }
 
-        // Median handles outliers better than mean.
+        // Median is robust to a bounded fraction of outliers, so a peer
+        // reporting an extreme close time cannot drag the local clock offset.
         auto const offset = medianCloseOffset(rawCloseTimes);
         JLOG(j_.info()) << "Our close offset is estimated at " << offset.count() << " ("
                         << closeCount << ")";
