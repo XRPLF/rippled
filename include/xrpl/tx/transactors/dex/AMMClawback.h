@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -71,7 +72,7 @@ private:
     std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     equalWithdrawMatchingOneAmount(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& holder,
         AccountID const& ammAccount,
         STAmount const& amountBalance,

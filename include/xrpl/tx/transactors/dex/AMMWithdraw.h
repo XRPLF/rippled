@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -121,7 +122,7 @@ public:
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     equalWithdrawTokens(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const account,
         std::optional<AccountID> const& clawbackIssuer,
         AccountID const& ammAccount,
@@ -168,7 +169,7 @@ public:
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     withdraw(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         std::optional<AccountID> const& clawbackIssuer,
         AccountID const& account,
@@ -188,7 +189,7 @@ public:
     static std::pair<TER, bool>
     deleteAMMAccountIfEmpty(
         Sandbox& sb,
-        SLE::pointer const ammSle,
+        AMMEntryW& ammSle,
         STAmount const& lpTokenBalance,
         Asset const& asset1,
         Asset const& asset2,
@@ -221,7 +222,7 @@ private:
     std::pair<TER, STAmount>
     withdraw(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
@@ -247,7 +248,7 @@ private:
     std::pair<TER, STAmount>
     equalWithdrawTokens(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -273,7 +274,7 @@ private:
     std::pair<TER, STAmount>
     equalWithdrawLimit(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -296,7 +297,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdraw(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
@@ -318,7 +319,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawTokens(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
@@ -341,7 +342,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawEPrice(
         Sandbox& view,
-        SLE const& ammSle,
+        AMMEntryR const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,

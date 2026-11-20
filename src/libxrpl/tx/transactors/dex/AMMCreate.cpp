@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -92,7 +93,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     // Check if AMM already exists for the token pair
     if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
-        ctx.view.read(ammKeylet))
+        AMMEntryR(ammKeylet, ctx.view))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
         return tecDUPLICATE;
@@ -285,7 +286,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
-    auto const ammSle = std::make_shared<SLE>(ammKeylet);
+    AMMEntryW ammSle(ammKeylet, sb, j);
+    ammSle.newSLE();
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
@@ -295,12 +297,13 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto const ter = dirLink(sb, accountId, ammSle); ter)
+    auto const ammRawSle = ammSle.mutableRawSle();
+    if (auto const ter = dirLink(sb, accountId, ammRawSle); ter)
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
     }
-    sb.insert(ammSle);
+    ammSle.insert();
 
     // Send LPT to LP.
     auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
