@@ -4,7 +4,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/entries/AMMEntry.h>
@@ -744,17 +743,6 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
  */
 TER
 deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
-
-/**
- * Initialize Auction and Voting slots and set the trading/discounted fee.
- */
-void
-initializeFeeAuctionVote(
-    ApplyView const& view,
-    AMMEntryW& ammSle,
-    AccountID const& account,
-    Asset const& lptAsset,
-    std::uint16_t tfee);
 
 /**
  * Return true if the Liquidity Provider is the only AMM provider, false
