@@ -32,6 +32,12 @@ endif()
 
 option(benchmark "Build benchmarks" ON)
 
+option(
+    fuzzing
+    "Build the libFuzzer fuzz targets in src/test/fuzz (Clang/Linux only)"
+    OFF
+)
+
 # When OFF, the crates directory is not added to the build at all: no Rust
 # toolchain is required, no cxxbridge bindings are generated, and the C++ tests
 # that consume those bindings are left out of the build tree.
