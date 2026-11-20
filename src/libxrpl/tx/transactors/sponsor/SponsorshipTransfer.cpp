@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SponsorshipEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -65,29 +66,6 @@ decrementSponsorCount(
 
     sle->at(field) = currentValue - delta;
     view.update(sle);
-    return tesSUCCESS;
-}
-
-// Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
-// object's RemainingOwnerCount.
-static TER
-decrementPrefundedReserveCount(ApplyView& view, SLE::Ref sponsorshipSle, std::uint32_t const delta)
-{
-    if (delta == 0)
-        return tesSUCCESS;  // LCOV_EXCL_LINE
-
-    auto const currentReserveCount = sponsorshipSle->getFieldU32(sfRemainingOwnerCount);
-    if (currentReserveCount < delta)
-    {
-        // LCOV_EXCL_START
-        // Already verified by checkReserve (sufficient RemainingOwnerCount)
-        UNREACHABLE("xrpl::decrementPrefundedReserveCount : invalid reserve count");
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    sponsorshipSle->at(sfRemainingOwnerCount) = currentReserveCount - delta;
-    view.update(sponsorshipSle);
     return tesSUCCESS;
 }
 
@@ -405,12 +383,11 @@ SponsorshipTransfer::doApply()
             objectSle->setAccountID(sponsorField, newSponsorID);
             view().update(objectSle);
 
-            auto const sponsorshipSle = view().peek(keylet::sponsorship(newSponsorID, sponseeID));
-            if (sponsorshipSle)
+            SponsorshipEntryW sponsorship(newSponsorID, sponseeID, view(), ctx_.journal);
+            if (sponsorship)
             {
                 // Update ReserveCount for sponsorship object if it exists
-                if (auto const ter =
-                        decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
+                if (auto const ter = sponsorship.decrementPrefundedReserveCount(ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;  // LCOV_EXCL_LINE
             }
