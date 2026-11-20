@@ -2038,9 +2038,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 {
                 }
 
-                env(acctdelete(toRm, dst),
-                    Fee(drops(env.current()->fees().increment)),
-                    Ter(expectedTer));
+                env(acctdelete(toRm, dst), Ter(expectedTer));
                 env.close();
                 this->BEAST_EXPECT(
                     isTesSuccess(expectedTer) == !env.closed()->exists(keylet::account(toRm.id())));

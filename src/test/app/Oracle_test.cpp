@@ -562,7 +562,6 @@ private:
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             auto const alice = Account("alice");
-            auto const acctDelFee{drops(env.current()->fees().increment)};
             env.fund(XRP(1'000), owner);
             env.fund(XRP(1'000), alice);
             Oracle const oracle(
@@ -582,7 +581,7 @@ private:
             auto const hash = env.closed()->header().hash;
             for (int i = 0; i < 256; ++i)
                 env.close();
-            env(acctdelete(owner, alice), Fee(acctDelFee));
+            env(acctdelete(owner, alice));
             env.close();
             BEAST_EXPECT(!oracle.exists());
             BEAST_EXPECT(!oracle1.exists());

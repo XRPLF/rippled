@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
@@ -53,6 +54,12 @@ AMM::initialTokens()
 {
     if (!env_.enabled(fixAMMv1_3))
     {
+        // Applying a transaction resets the Number mantissa scale, so match
+        // the scale the ledger uses when it computes the LP tokens.
+        std::optional<NumberMantissaScaleGuard> scaleGuard;
+        if (!env_.enabled(featureSingleAssetVault) && !env_.enabled(featureLendingProtocol) &&
+            !env_.enabled(featureMPTokensV2))
+            scaleGuard.emplace(MantissaRange::MantissaScale::Small);
         auto const product = number(asset1_) * number(asset2_);
         return (IOUAmount)(product.mantissa() >= 0 ? root2(product) : root2(-product));
     }
@@ -160,13 +167,7 @@ AMM::create(
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
-    {
         jv[sfFee] = std::to_string(fee_);
-    }
-    else
-    {
-        jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
-    }
     submit(jv, seq, ter);
 
     if (!ter || env_.ter() == tesSUCCESS)

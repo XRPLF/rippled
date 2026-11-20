@@ -60,7 +60,10 @@ private:
     // NOTE: the function _infers_ the transaction to operate on by calling
     // env.tx(), which returns the result from the most recent transaction.
     void
-    verifyDeliveredAmount(jtx::Env& env, STAmount const& amount)
+    verifyDeliveredAmount(
+        jtx::Env& env,
+        STAmount const& amount,
+        std::source_location const loc = std::source_location::current())
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
@@ -81,8 +84,8 @@ private:
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
         json::Value const jsonExpect{amount.getJson(JsonOptions::Values::None)};
-        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
-        BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
+        BEAST_EXPECTS(meta[sfDeliveredAmount.jsonName] == jsonExpect, std::to_string(loc.line()));
+        BEAST_EXPECTS(meta[jss::delivered_amount] == jsonExpect, std::to_string(loc.line()));
 
         // The `ledger` RPC (with expanded transactions) should also report
         // delivered_amount for this transaction, matching the `tx` RPC.
@@ -150,13 +153,13 @@ public:
         // Account deletion has a high fee.  Make sure the fee requirement
         // behaves as we expect.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), Ter(telINSUF_FEE_P));
+        env(acctdelete(alice, becky), Fee(drops(env.current()->fees().base)), Ter(telINSUF_FEE_P));
 
         // Try a fee one drop less than the required amount.
         env(acctdelete(alice, becky), Fee(acctDelFee - drops(1)), Ter(telINSUF_FEE_P));
 
         // alice's account is created too recently to be deleted.
-        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Ter(tecTOO_SOON));
 
         // Give becky a trustline.  She is no longer deletable.
         env(trust(becky, gw["USD"](1000)));
@@ -174,13 +177,13 @@ public:
 
         // Deleting should fail with TOO_SOON, which is a relatively
         // cheap check compared to validating the contents of her directory.
-        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Ter(tecTOO_SOON));
 
         // Close enough ledgers to almost be able to delete alice's account.
         incLgrSeqForAccDel(env, alice, 1);
 
         // alice's account is still created too recently to be deleted.
-        env(acctdelete(alice, becky), Fee(acctDelFee), Ter(tecTOO_SOON));
+        env(acctdelete(alice, becky), Ter(tecTOO_SOON));
 
         // The most recent delete attempt advanced alice's sequence.  So
         // close two ledgers and her account should be deletable.
@@ -208,7 +211,7 @@ public:
         }
 
         // Attempt to delete becky's account but get stopped by the trust line.
-        env(acctdelete(becky, carol), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, carol), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Verify that becky's account is still there by giving her a regular
@@ -245,7 +248,7 @@ public:
 
             // Delete carol's account even with stuff in her directory.  Show
             // that multisigning for the delete does not increase carol's fee.
-            env(acctdelete(carol, becky), Fee(acctDelFee), Msig(alice));
+            env(acctdelete(carol, becky), Msig(alice), Fee(acctDelFee));
             verifyDeliveredAmount(env, carolOldBalance - acctDelFee);
             env.close();
 
@@ -305,7 +308,7 @@ public:
         // Delete alice's account.
         auto const acctDelFee{drops(env.current()->fees().increment)};
         auto const aliceBalance{env.balance(alice)};
-        env(acctdelete(alice, gw), Fee(acctDelFee));
+        env(acctdelete(alice, gw));
         verifyDeliveredAmount(env, aliceBalance - acctDelFee);
         env.close();
 
@@ -355,8 +358,8 @@ public:
         env.close();
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Cancel the check, but add an escrow.  Again, with the escrow
@@ -374,8 +377,8 @@ public:
 
         // alice and becky should be unable to delete their accounts because
         // of the escrow.
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Now cancel the escrow, but create a payment channel between
@@ -403,7 +406,7 @@ public:
 
             incLgrSeqForAccDel(env, gw1);
 
-            env(acctdelete(gw1, becky), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(gw1, becky), Ter(tecHAS_OBLIGATIONS));
             env.close();
 
             env(escrow::cancel(becky, carol, escrowSeq));
@@ -423,8 +426,8 @@ public:
         // With the PayChannel in place becky and alice should not be
         // able to delete her account
         auto const beckyBalance{env.balance(becky)};
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(becky, gw), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // Alice cancels her PayChannel, which will leave her with only offers
@@ -454,7 +457,7 @@ public:
         env.close();
 
         // alice can't delete her account because of the PayChannel.
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // alice closes the PayChannel which should (finally) allow her to
@@ -464,7 +467,7 @@ public:
 
         // Now alice can successfully delete her account.
         auto const aliceBalance{env.balance(alice)};
-        env(acctdelete(alice, gw), Fee(acctDelFee));
+        env(acctdelete(alice, gw));
         verifyDeliveredAmount(env, aliceBalance - acctDelFee);
         env.close();
     }
@@ -544,7 +547,7 @@ public:
         // offers in her directory.
         auto const acctDelFee{drops(env.current()->fees().increment)};
 
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tefTOO_BIG));
+        env(acctdelete(alice, gw), Ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
         env.require(Offers(alice, kOfferCount));
@@ -554,7 +557,7 @@ public:
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};
-        env(acctdelete(alice, gw), Fee(acctDelFee));
+        env(acctdelete(alice, gw));
         verifyDeliveredAmount(env, alicePreDelBal - acctDelFee);
         env.close();
 
@@ -611,10 +614,10 @@ public:
         // alice and gw can't delete their accounts because of the implicitly
         // created trust line.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, gw), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, gw), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
-        env(acctdelete(gw, alice), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(gw, alice), Ter(tecHAS_OBLIGATIONS));
         env.close();
         {
             std::shared_ptr<ReadView const> const closed{env.closed()};
@@ -654,7 +657,7 @@ public:
         //
         // The balance of env.master should not change.
         auto const masterBalance{env.balance(env.master)};
-        env(acctdelete(alice, env.master), Fee(acctDelFee), Ter(terINSUF_FEE_B));
+        env(acctdelete(alice, env.master), Ter(terINSUF_FEE_B));
         env.close();
         {
             std::shared_ptr<ReadView const> const closed{env.closed()};
@@ -711,7 +714,7 @@ public:
         // of his tickets should be removed from the ledger.
         auto const acctDelFee{drops(env.current()->fees().increment)};
         auto const bobOldBalance{env.balance(bob)};
-        env(acctdelete(bob, alice), ticket::Use(ticketSeq), Fee(acctDelFee));
+        env(acctdelete(bob, alice), ticket::Use(ticketSeq));
         verifyDeliveredAmount(env, bobOldBalance - acctDelFee);
         env.close();
         {
@@ -766,22 +769,22 @@ public:
         // becky attempts to delete her account using daria as the destination.
         // Since daria is not in the ledger the delete attempt fails.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, daria), Fee(acctDelFee), Ter(tecNO_DST));
+        env(acctdelete(becky, daria), Ter(tecNO_DST));
         env.close();
 
         // becky attempts to delete her account, but carol requires a
         // destination tag which becky has omitted.
-        env(acctdelete(becky, carol), Fee(acctDelFee), Ter(tecDST_TAG_NEEDED));
+        env(acctdelete(becky, carol), Ter(tecDST_TAG_NEEDED));
         env.close();
 
         // becky attempts to delete her account, but alice won't take her XRP,
         // so the delete is blocked.
-        env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
+        env(acctdelete(becky, alice), Ter(tecNO_PERMISSION));
         env.close();
 
         // becky attempts to delete her account using a pseudo-account as the
         // destination, which fails since pseudo-accounts have deposit auth enabled.
-        env(acctdelete(becky, vaultPseudo), Fee(acctDelFee), Ter(tecNO_PERMISSION));
+        env(acctdelete(becky, vaultPseudo), Ter(tecNO_PERMISSION));
 
         // alice preauthorizes deposits from becky.  Now becky can delete her
         // account and forward the leftovers to alice.
@@ -789,7 +792,7 @@ public:
         env.close();
 
         auto const beckyOldBalance{env.balance(becky)};
-        env(acctdelete(becky, alice), Fee(acctDelFee));
+        env(acctdelete(becky, alice));
         verifyDeliveredAmount(env, beckyOldBalance - acctDelFee);
         env.close();
     }
@@ -827,10 +830,7 @@ public:
             auto const acctDelFee{drops(env.current()->fees().increment)};
 
             // becky use credentials but they aren't accepted
-            env(acctdelete(becky, alice),
-                credentials::Ids({credIdx}),
-                Fee(acctDelFee),
-                Ter(tecBAD_CREDENTIALS));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Ter(tecBAD_CREDENTIALS));
             env.close();
 
             {
@@ -842,10 +842,7 @@ public:
             }
 
             // Fail, credentials still not accepted
-            env(acctdelete(becky, alice),
-                credentials::Ids({credIdx}),
-                Fee(acctDelFee),
-                Ter(tecBAD_CREDENTIALS));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Ter(tecBAD_CREDENTIALS));
             env.close();
 
             // becky accept the credentials
@@ -853,16 +850,10 @@ public:
             env.close();
 
             // Fail, credentials doesn’t belong to carol
-            env(acctdelete(carol, alice),
-                credentials::Ids({credIdx}),
-                Fee(acctDelFee),
-                Ter(tecBAD_CREDENTIALS));
+            env(acctdelete(carol, alice), credentials::Ids({credIdx}), Ter(tecBAD_CREDENTIALS));
 
             // Fail, no depositPreauth for provided credentials
-            env(acctdelete(becky, alice),
-                credentials::Ids({credIdx}),
-                Fee(acctDelFee),
-                Ter(tecNO_PERMISSION));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Ter(tecNO_PERMISSION));
             env.close();
 
             // alice create DepositPreauth Object
@@ -871,10 +862,10 @@ public:
 
             // becky attempts to delete her account, but alice won't take her
             // XRP, so the delete is blocked.
-            env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
+            env(acctdelete(becky, alice), Ter(tecNO_PERMISSION));
 
             // becky use empty credentials and can't delete account
-            env(acctdelete(becky, alice), Fee(acctDelFee), credentials::Ids({}), Ter(temMALFORMED));
+            env(acctdelete(becky, alice), credentials::Ids({}), Ter(temMALFORMED));
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),
@@ -882,12 +873,11 @@ public:
                     "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
                     "A288BE4",
                 }),
-                Fee(acctDelFee),
                 Ter(tecBAD_CREDENTIALS));
             env.close();
 
             // becky use credentials and can delete account
-            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Fee(acctDelFee));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}));
             env.close();
 
             {
@@ -912,7 +902,7 @@ public:
 
                 // daria use valid credentials, which aren't required and can
                 // delete her account
-                env(acctdelete(daria, carol), credentials::Ids({credDaria}), Fee(acctDelFee));
+                env(acctdelete(daria, carol), credentials::Ids({credDaria}));
                 env.close();
 
                 // check that credential object deleted too
@@ -952,7 +942,7 @@ public:
 
                 // eaton use valid credentials, but he already authorized
                 // through "Authorized" field.
-                env(acctdelete(eaton, fred), credentials::Ids({credEaton}), Fee(acctDelFee));
+                env(acctdelete(eaton, fred), credentials::Ids({credEaton}));
                 env.close();
 
                 // check that credential object deleted too
@@ -1036,10 +1026,7 @@ public:
             env(deposit::auth(alice, becky));
             env.close();
 
-            env(acctdelete(becky, alice),
-                credentials::Ids({credIdx}),
-                Fee(acctDelFee),
-                Ter(temDISABLED));
+            env(acctdelete(becky, alice), credentials::Ids({credIdx}), Ter(temDISABLED));
             env.close();
         }
     }
@@ -1076,7 +1063,7 @@ public:
             incLgrSeqForAccDel(env, carol);
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(carol, alice), Fee(acctDelFee));
+            env(acctdelete(carol, alice));
             env.close();
 
             {  // check that credential object deleted too
@@ -1119,7 +1106,7 @@ public:
             incLgrSeqForAccDel(env, becky);
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
-            env(acctdelete(becky, alice), Fee(acctDelFee));
+            env(acctdelete(becky, alice));
             env.close();
 
             {  // check that credential object deleted too

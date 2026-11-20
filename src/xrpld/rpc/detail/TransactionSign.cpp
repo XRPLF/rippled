@@ -821,12 +821,50 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-[[nodiscard]] static XRPAmount
-getTxFee(Application const& app, Config const& config, json::Value tx)
+json::Value
+getCurrentNetworkFee(
+    Role const role,
+    Config const& config,
+    LoadFeeTrack const& feeTrack,
+    TxQ const& txQ,
+    Application const& app,
+    json::Value const& tx,
+    int mult,
+    int div)
 {
-    auto const& ledger = app.getOpenLedger().current();
+    auto const ledger = app.getOpenLedger().current();
+    XRPAmount const feeDefault = getTxFee(*ledger, tx);
+    // Administrative and identified endpoints are exempt from local fees.
+    XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
+    XRPAmount fee = loadFee;
+    {
+        auto const metrics = txQ.getMetrics(*ledger);
+        auto const baseFee = ledger->fees().base;
+        auto const escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        fee = std::max(fee, escalatedFee);
+    }
+
+    auto const limit = mulDiv(feeDefault, mult, div);
+    if (!limit)
+        Throw<std::overflow_error>("mulDiv");
+
+    if (fee > *limit)
+    {
+        std::stringstream ss;
+        ss << "Fee of " << fee << " exceeds the requested tx limit of " << *limit;
+        return rpc::makeError(RpcHighFee, ss.str());
+    }
+
+    return fee.jsonClipped();
+}
+
+[[nodiscard]] XRPAmount
+// this is purposefully a copy
+getTxFee(ReadView const& view, json::Value tx)
+{
     // autofilling only needed in this function so that the `STParsedJSONObject`
-    // parsing works properly it should not be modifying the actual `tx` object
+    // parsing works properly
+    // it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
     {
         tx[jss::Fee] = "0";
@@ -850,16 +888,16 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
-            return config.fees.referenceFee;
+            return view.fees().base;
 
         if (tx[jss::Signers].size() > STTx::kMaxMultiSigners)
-            return config.fees.referenceFee;
+            return view.fees().base;
 
         // check multi-signed signers
         for (auto& signer : tx[jss::Signers])
         {
             if (!signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
-                return config.fees.referenceFee;
+                return view.fees().base;
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
                 // autofill SigningPubKey
@@ -876,7 +914,7 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
     if (!parsed.object.has_value())
     {
-        return config.fees.referenceFee;
+        return view.fees().base;
     }
 
     try
@@ -884,55 +922,16 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         STTx const& stTx = STTx(std::move(parsed.object.value()));
         std::string reason;
         if (!passesLocalChecks(stTx, reason))
-            return config.fees.referenceFee;
+            return view.fees().base;
 
         // This fee is only a suggestion returned to the caller, so fall back to
         // the reference fee as the other failure paths in this function do.
-        return calculateBaseFee(*app.getOpenLedger().current(), stTx)
-            .value_or(config.fees.referenceFee);
+        return calculateBaseFee(view, stTx).value_or(view.fees().base);
     }
     catch (std::exception& e)
     {
-        return config.fees.referenceFee;
+        return view.fees().base;
     }
-}
-
-json::Value
-getCurrentNetworkFee(
-    Role const role,
-    Config const& config,
-    LoadFeeTrack const& feeTrack,
-    TxQ const& txQ,
-    Application const& app,
-    json::Value const& tx,
-    int mult,
-    int div)
-{
-    XRPAmount const feeDefault = getTxFee(app, config, tx);
-
-    auto const ledger = app.getOpenLedger().current();
-    // Administrative and identified endpoints are exempt from local fees.
-    XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
-    XRPAmount fee = loadFee;
-    {
-        auto const metrics = txQ.getMetrics(*ledger);
-        auto const baseFee = ledger->fees().base;
-        auto const escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
-        fee = std::max(fee, escalatedFee);
-    }
-
-    auto const limit = mulDiv(feeDefault, mult, div);
-    if (!limit)
-        Throw<std::overflow_error>("mulDiv");
-
-    if (fee > *limit)
-    {
-        std::stringstream ss;
-        ss << "Fee of " << fee << " exceeds the requested tx limit of " << *limit;
-        return rpc::makeError(RpcHighFee, ss.str());
-    }
-
-    return fee.jsonClipped();
 }
 
 json::Value

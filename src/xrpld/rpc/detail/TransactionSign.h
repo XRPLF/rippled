@@ -71,6 +71,9 @@ checkFee(
     TxQ const& txQ,
     Application const& app);
 
+[[nodiscard]] XRPAmount
+getTxFee(ReadView const& view, json::Value tx);
+
 // Return a std::function<> that calls NetworkOPs::processTransaction.
 using ProcessTransactionFn = std::function<void(
     std::shared_ptr<Transaction>& transaction,

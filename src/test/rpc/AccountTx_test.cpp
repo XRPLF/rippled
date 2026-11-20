@@ -791,8 +791,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         auto const beckyPreDelBalance{env.balance(becky)};
 
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, alice), Fee(acctDelFee));
+        env(acctdelete(becky, alice));
         env.close();
 
         // Verify that becky's account root is gone.
