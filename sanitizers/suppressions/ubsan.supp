@@ -121,8 +121,10 @@ unsigned-integer-overflow:absl
 unsigned-integer-overflow:secp2*/src/src/
 # mpt-crypto compiles secp256k1's private scalar headers from the package folder.
 unsigned-integer-overflow:secp2*/p/include/private/
+unsigned-integer-overflow:mpt-c*/b/src/
 unsigned-integer-overflow:ed255*/b/src/
 unsigned-integer-overflow:c-are*/b/src/
+unsigned-integer-overflow:zlib*/b/src/
 unsigned-integer-overflow:xxhash.h
 unsigned-integer-overflow:xxhash.c
 unsigned-integer-overflow:lz4.c
