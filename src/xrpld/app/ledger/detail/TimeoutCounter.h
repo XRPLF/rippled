@@ -51,6 +51,9 @@ namespace xrpl {
  * whether to postpone failure and reset the timeout. However, if it can
  * complete all its work in one synchronous step (while it holds the lock), then
  * it can ignore `progress_`.
+ *
+ * `isDone` is not terminal for every subtype: TransactionAcquire::stillNeed()
+ * clears `failed_` and calls `setTimer` again.
  */
 class TimeoutCounter
 {
