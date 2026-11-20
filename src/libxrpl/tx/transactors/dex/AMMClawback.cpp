@@ -195,14 +195,8 @@ AMMClawback::applyGuts(Sandbox& sb)
             return res.error();  // LCOV_EXCL_LINE
     }
 
-    auto const expected = ammHolds(
-        sb,
-        ammSle,
-        asset,
-        asset2,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        ctx_.journal);
+    auto const expected =
+        ammSle.holds(asset, asset2, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth);
 
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
