@@ -57,8 +57,8 @@ CredentialCreate::preflight(PreflightContext const& ctx)
 
     if (!tx[sfSubject])
     {
-        JLOG(j.trace()) << "Malformed transaction: Invalid Subject";
-        return temMALFORMED;
+        JLOG(j.trace()) << "Malformed transaction: Subject field zeroed.";
+        return temINVALID_ACCOUNT_ID;
     }
 
     auto const uri = tx[~sfURI];
