@@ -1,0 +1,244 @@
+#include <xrpl/tx/transactors/lending/LoanAccept.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+namespace xrpl {
+
+NotTEC
+LoanAccept::preflight(PreflightContext const& ctx)
+{
+    if (ctx.tx[sfLoanID] == beast::kZero)
+        return temINVALID;
+
+    return tesSUCCESS;
+}
+
+TER
+LoanAccept::preclaim(PreclaimContext const& ctx)
+{
+    auto const& tx = ctx.tx;
+    auto const account = tx[sfAccount];
+    auto const loanID = tx[sfLoanID];
+
+    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    if (!loanSle)
+    {
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    if (!loanSle->isFlag(lsfLoanPending))
+    {
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan is not pending acceptance.";
+        return tecNO_PERMISSION;
+    }
+
+    if (loanSle->at(sfBorrower) != account)
+    {
+        JLOG(ctx.j.warn())
+            << "xrpl::LoanAccept::preclaim: LoanAccept can only be submitted by the Borrower.";
+        return tecNO_PERMISSION;
+    }
+
+    if (hasExpired(ctx.view, loanSle->at(sfStartDate)))
+    {
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan proposal has expired.";
+        return tecEXPIRED;
+    }
+
+    auto const brokerSle = ctx.view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    if (!brokerSle)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "xrpl::LoanAccept::preclaim: LoanAccept: LoanBroker does not exist.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    auto const brokerPseudo = brokerSle->at(sfAccount);
+
+    auto const vaultSle = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "xrpl::LoanAccept::preclaim: LoanAccept: Vault does not exist.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    Asset const asset = vaultSle->at(sfAsset);
+    auto const vaultPseudo = vaultSle->at(sfAccount);
+
+    // Closed-ended vault gate: acceptance is only meaningful during the
+    // Investment phase.
+    switch (getVaultPhase(ctx.view, vaultSle))
+    {
+        case VaultPhase::Redemption:
+            JLOG(ctx.j.warn())
+                << "xrpl::LoanAccept::preclaim: Vault has entered the redemption phase.";
+            return tecEXPIRED;
+        case VaultPhase::Subscription:
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        case VaultPhase::NoPhase:
+        case VaultPhase::Investment:
+            break;
+    }
+
+    // A pending loan only exists on a FixedPrecision vault (see
+    // LoanSet::preclaim), so the vault is never older than that here.
+    XRPL_ASSERT_PARTS(
+        getVaultVersion(vaultSle) == VaultVersion::FixedPrecision,
+        "xrpl::LoanAccept::preclaim",
+        "pending loan only on a FixedPrecision vault");
+
+    // The proposal booked no interest (see LoanSet::createLoan): it only
+    // lands in YieldUnrealized here. LoanSet's Open zone guard passed at
+    // proposal time, but loans originated since then do not see the pending
+    // interest and may have used up the headroom it relied on, so re-run the
+    // guard against the vault as it stands now. A coarsened vault fails this
+    // check too: its AssetsTotal is at least 10^(16 + baseScale), above the
+    // Open limit of 9 * 10^(15 + baseScale).
+    auto const state = constructLoanState(loanSle);
+    if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+    {
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan interest would exceed the "
+                              "FixedPrecision Vault's Open zone.";
+        return tecLIMIT_EXCEEDED;
+    }
+
+    if (auto const ter = checkLoanFreeze(
+            ctx.view,
+            asset,
+            loanSle->at(sfLoanOriginationFee),
+            vaultPseudo,
+            brokerPseudo,
+            account,
+            brokerOwner,
+            ctx.j))
+        return ter;
+
+    // Re-verify the disbursement recipients: LoanSet checked them when the
+    // pending loan was created, but authorisation can be revoked in between.
+    if (auto const ter = checkLoanRecipientAuth(ctx.view, asset, account, brokerOwner))
+        return ter;
+
+    return tesSUCCESS;
+}
+
+TER
+LoanAccept::doApply()
+{
+    auto const& tx = ctx_.tx;
+    auto& view = ctx_.view();
+
+    auto const loanID = tx[sfLoanID];
+    auto const loanSle = view.peek(keylet::loan(loanID));
+    if (!loanSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
+    if (!brokerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+    if (!brokerOwnerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+
+    auto const borrower = loanSle->at(sfBorrower);
+    auto const borrowerSle = view.peek(keylet::account(borrower));
+    if (!borrowerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Re-verify domain membership: LoanSet checked it when the pending loan
+    // was created, but the borrower's credentials can be revoked or expire in
+    // between.
+    if (auto const ter = checkLoanBrokerDomain(view, brokerSle, borrower, j_))
+        return ter;
+
+    Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+    Number const originationFee = loanSle->at(sfLoanOriginationFee);
+    auto const loanAssetsToBorrower = principalOutstanding - originationFee;
+    auto const state = constructLoanState(loanSle);
+
+    loanSle->clearFlag(lsfLoanPending);
+
+    decreaseOwnerCount(view, brokerOwnerSle, {}, 1, j_);
+
+    if (auto const ter =
+            reserveLoanOwner(view, borrower, borrowerSle, accountID_, preFeeBalance_, j_))
+        return ter;
+
+    auto applyViewContext = ctx_.getApplyViewContext();
+    if (auto const ter = disburseLoan(
+            applyViewContext,
+            borrowerSle,
+            brokerOwnerSle,
+            vaultSle,
+            loanAssetsToBorrower,
+            originationFee,
+            j_))
+        return ter;
+
+    if (auto ter = adjustVaultBalances(
+            vaultSle,
+            {
+                .yield = state.interestDue,
+                .reserved = -principalOutstanding,
+            },
+            j_);
+        !isTesSuccess(ter))
+    {
+        return ter;
+    }
+
+    view.update(vaultSle);
+
+    if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))
+        return ter;  // LCOV_EXCL_LINE
+    view.update(loanSle);
+
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
+
+    return tesSUCCESS;
+}
+
+void
+LoanAccept::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanAccept::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+}  // namespace xrpl

@@ -51,7 +51,6 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     LoanBuilder builder{
         previousTxnIDValue,
         previousTxnLgrSeqValue,
-        ownerNodeValue,
         loanBrokerNodeValue,
         loanBrokerIDValue,
         loanSequenceValue,
@@ -61,6 +60,7 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         periodicPaymentValue
     };
 
+    builder.setOwnerNode(ownerNodeValue);
     builder.setLoanOriginationFee(loanOriginationFeeValue);
     builder.setLoanServiceFee(loanServiceFeeValue);
     builder.setLatePaymentFee(latePaymentFeeValue);
@@ -98,12 +98,6 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         auto const& expected = previousTxnLgrSeqValue;
         auto const actual = entry.getPreviousTxnLgrSeq();
         expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
-    }
-
-    {
-        auto const& expected = ownerNodeValue;
-        auto const actual = entry.getOwnerNode();
-        expectEqualField(expected, actual, "sfOwnerNode");
     }
 
     {
@@ -146,6 +140,14 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         auto const& expected = periodicPaymentValue;
         auto const actual = entry.getPeriodicPayment();
         expectEqualField(expected, actual, "sfPeriodicPayment");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+        auto const actualOpt = entry.getOwnerNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfOwnerNode");
+        EXPECT_TRUE(entry.hasOwnerNode());
     }
 
     {
@@ -385,16 +387,6 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = ownerNodeValue;
-
-        auto const fromSle = entryFromSle.getOwnerNode();
-        auto const fromBuilder = entryFromBuilder.getOwnerNode();
-
-        expectEqualField(expected, fromSle, "sfOwnerNode");
-        expectEqualField(expected, fromBuilder, "sfOwnerNode");
-    }
-
-    {
         auto const& expected = loanBrokerNodeValue;
 
         auto const fromSle = entryFromSle.getLoanBrokerNode();
@@ -462,6 +454,19 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, fromSle, "sfPeriodicPayment");
         expectEqualField(expected, fromBuilder, "sfPeriodicPayment");
+    }
+
+    {
+        auto const& expected = ownerNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getOwnerNode();
+        auto const fromBuilderOpt = entryFromBuilder.getOwnerNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfOwnerNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfOwnerNode");
     }
 
     {
@@ -732,7 +737,6 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
-    auto const ownerNodeValue = canonical_UINT64();
     auto const loanBrokerNodeValue = canonical_UINT64();
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const loanSequenceValue = canonical_UINT32();
@@ -744,7 +748,6 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     LoanBuilder builder{
         previousTxnIDValue,
         previousTxnLgrSeqValue,
-        ownerNodeValue,
         loanBrokerNodeValue,
         loanBrokerIDValue,
         loanSequenceValue,
@@ -757,6 +760,8 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasOwnerNode());
+    EXPECT_FALSE(entry.getOwnerNode().has_value());
     EXPECT_FALSE(entry.hasLoanOriginationFee());
     EXPECT_FALSE(entry.getLoanOriginationFee().has_value());
     EXPECT_FALSE(entry.hasLoanServiceFee());
