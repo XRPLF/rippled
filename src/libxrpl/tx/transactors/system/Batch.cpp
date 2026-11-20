@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
@@ -194,6 +195,7 @@ Batch::getFlagsMask(PreflightContext const& ctx)
  * - The batch must contain at least two and no more than the maximum allowed
  * inner transactions.
  * - Each inner transaction must:
+ *   - Be wrapped in a RawTransaction object (with fixBatchV1_2).
  *   - Be unique within the batch.
  *   - Not itself be a Batch transaction.
  *   - Have the tfInnerBatchTxn flag set.
@@ -287,6 +289,14 @@ Batch::preflight(PreflightContext const& ctx)
     for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
         STTx const& stx = *stxPtr;
+
+        if (ctx.rules.enabled(fixBatchV1_2) && stx.getFName() != sfRawTransaction)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "txns array may contain only RawTransaction objects.";
+            return temMALFORMED;
+        }
+
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {
