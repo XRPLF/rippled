@@ -25,9 +25,11 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {
@@ -222,6 +224,11 @@ public:
     //
     //--------------------------------------------------------------------------
 private:
+    /**
+     * The cleaner thread's body. Parks until clean() or stop() wakes it, then
+     * runs one cleaning pass. A pass that throws is logged and abandoned, and
+     * the thread parks again, so no exception leaves this thread.
+     */
     void
     run()
     {
@@ -238,7 +245,29 @@ private:
                     break;
                 XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
-            doLedgerCleaner();
+
+            // The thread's only exception boundary. The loop above then parks the thread.
+            auto const abandon = [this](std::string const& reason) {
+                JLOG(j_.error()) << "Ledger cleaner pass stopped by " << reason;
+
+                // Nothing is running any more, so the status must not report a range.
+                std::scoped_lock const lock(mutex_);
+                minRange_ = maxRange_ = 0;
+            };
+            try
+            {
+                doLedgerCleaner();
+            }
+            catch (std::exception const& e)
+            {
+                abandon(std::string("exception: ") + e.what());
+            }
+            catch (...)
+            {
+                // An exception that is not a std::exception has no message, but it must not leave
+                // the thread either.
+                abandon("an unknown exception");
+            }
         }
     }
 
