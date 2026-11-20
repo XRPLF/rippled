@@ -54,6 +54,10 @@ function(patch_nix_binary target)
         return()
     endif()
 
+    # patchelf --remove-rpath leaves the removed string in .dynstr, where it
+    # carries the Conan home, so do not write the build rpath in the first place.
+    set_property(TARGET ${target} PROPERTY SKIP_BUILD_RPATH TRUE)
+
     set(patch_command
         "${PATCHELF_COMMAND}"
         --set-interpreter

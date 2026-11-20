@@ -4,6 +4,16 @@
 
 include(CompilationEnv)
 
+# Map the checkout and build directory out of __FILE__ and debug information,
+# so the bytes do not depend on where the build runs. GCC applies the last
+# matching map, so the build directory, usually inside the checkout, comes last.
+if(NOT is_msvc)
+    add_compile_options(
+        "-ffile-prefix-map=${CMAKE_SOURCE_DIR}=."
+        "-ffile-prefix-map=${CMAKE_BINARY_DIR}=build"
+    )
+endif()
+
 #[=========================================================[
    TODO some/most of these common settings belong in a
    toolchain file, especially the ABI-impacting ones
