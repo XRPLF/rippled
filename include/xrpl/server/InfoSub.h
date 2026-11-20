@@ -312,8 +312,7 @@ public:
     };
 
 public:
-    InfoSub(Source& source);
-    InfoSub(Source& source, Consumer consumer);
+    InfoSub(Source& source, Consumer consumer = {});
 
     virtual ~InfoSub();
 
@@ -465,6 +464,15 @@ protected:
     mutable std::mutex lock_;
 
 private:
+    /**
+     * Source of `seq_` values for every `InfoSub` in the process.
+     *
+     * Incremented once per construction and never decremented, so no two
+     * connections ever share a sequence, including a new connection and a
+     * destroyed one whose `unsub*` calls may still be in flight.
+     */
+    static inline std::atomic<std::uint64_t> nextId_{0};
+
     // The lock type guarding this instance's subscription sets.
     using ScopedLock = std::scoped_lock<decltype(lock_)>;
 
@@ -476,23 +484,27 @@ private:
     [[nodiscard]] std::size_t
     subscriptionCount(ScopedLock const& lock) const;
 
+    /**
+     * This connection's immutable identity in every subscription map.
+     *
+     * The `Source` keys its subscriber maps on this value: `subAccount`,
+     * `subBook`, `subMPT` and the stream subscriptions all record it, and
+     * `~InfoSub` passes it back to the matching `unsub*` calls so that the
+     * entries this connection created can be found and removed. If the value
+     * could change between subscribe and unsubscribe, those entries would be
+     * orphaned and would keep delivering to a dead connection.
+     */
+    std::uint64_t const seq_;
+
     Consumer consumer_;
     Source& source_;
     HashSet<AccountID> realTimeSubscriptions_;
     HashSet<AccountID> normalSubscriptions_;
     std::shared_ptr<InfoSubRequest> request_;
-    std::uint64_t seq_;
     HashSet<AccountID> accountHistorySubscriptions_;
     HashSet<Book> bookSubscriptions_;
     HashSet<MPTID> mptSubscriptions_;
     unsigned int apiVersion_ = 0;
-
-    static int
-    assignId()
-    {
-        static std::atomic<std::uint64_t> kID(0);
-        return ++kID;
-    }
 };
 
 }  // namespace xrpl
