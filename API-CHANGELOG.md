@@ -22,6 +22,12 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Bugfixes
+
+- `print`: The `category` for `GetFetchPack` in the aggregate `peers.traffic` section now reads `getobject_Fetch_Pack_get` instead of `getobject_Fetch Pack_get`, matching the paired `getobject_Fetch_Pack_share`. [#8720](https://github.com/XRPLF/rippled/pull/8720)
+
 ## XRP Ledger server version 3.6.0
 
 Version 3.6.0 is not yet released.
