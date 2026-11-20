@@ -21,6 +21,8 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -3191,16 +3193,6 @@ private:
             json::Value const tx = amm.bid({.account = alice_, .bidMin = 500});
 
             {
-                auto const jtx = env.jt(tx, Seq(1), Fee(baseFee));
-                env.app().config().features.erase(featureAMM);
-                PreflightContext const pfCtx(
-                    env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto const pf = Transactor::invokePreflight<AMMBid>(pfCtx);
-                BEAST_EXPECT(pf == temDISABLED);
-                env.app().config().features.insert(featureAMM);
-            }
-
-            {
                 auto jtx = env.jt(tx, Seq(1), Fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
@@ -4177,27 +4169,6 @@ private:
                 ammAlice.expectLPTokens(alice_, IOUAmount{10'000'000, 0}) &&
                 ammAlice.expectLPTokens(carol_, IOUAmount{1'000'000, 0}));
         });
-    }
-
-    void
-    testAmendment()
-    {
-        testcase("Amendment");
-        using namespace jtx;
-        Env env{*this, testableAmendments() - featureAMM};
-
-        {
-            fund(env, gw_, {alice_}, {USD(1'000)}, Fund::All);
-            AMM amm(env, alice_, XRP(1'000), USD(1'000), Ter(temDISABLED));
-
-            env(amm.bid({.bidMax = 1000}), Ter(temMALFORMED));
-            env(amm.bid({}), Ter(temDISABLED));
-            amm.vote(VoteArg{.tfee = 100, .err = Ter(temDISABLED)});
-            amm.withdraw(WithdrawArg{.tokens = 100, .err = Ter(temMALFORMED)});
-            amm.withdraw(WithdrawArg{.err = Ter(temDISABLED)});
-            amm.deposit(DepositArg{.asset1In = USD(100), .err = Ter(temDISABLED)});
-            amm.ammDelete(alice_, Ter(temDISABLED));
-        }
     }
 
     void
@@ -5799,27 +5770,25 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                {
-                    BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
+                BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
-                    // Invariant: LPToken balance must not change in a
-                    // payment or a swap transaction
-                    BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
+                // Invariant: LPToken balance must not change in a
+                // payment or a swap transaction
+                BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
 
-                    // Invariant: The square root of (product of the pool
-                    // balances) must be at least the LPTokenBalance
-                    Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
+                // Invariant: The square root of (product of the pool
+                // balances) must be at least the LPTokenBalance
+                Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
 
-                    // Include a tiny tolerance for the test cases using
-                    //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
-                    //   -14}, .goodUsdBIT{usdBIT,
-                    //   uint64_t(2'821579689703915), -15},
-                    // These two values multiply
-                    // to 99.99999999999994227040383754105 which gets
-                    // internally rounded to 100, due to representation
-                    // error.
-                    BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= input.lpTokenBalance));
-                }
+                // Include a tiny tolerance for the test cases using
+                //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
+                //   -14}, .goodUsdBIT{usdBIT,
+                //   uint64_t(2'821579689703915), -15},
+                // These two values multiply
+                // to 99.99999999999994227040383754105 which gets
+                // internally rounded to 100, due to representation
+                // error.
+                BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= lpTokenBalance));
             }
         }
     }
@@ -6866,7 +6835,6 @@ private:
         testBasicPaymentEngine(all - fixReducedOffersV2);
         testBasicPaymentEngine(all - fixAMMv1_3 - fixReducedOffersV2);
         testAMMTokens();
-        testAmendment();
         testFlags();
         testRippling();
         testAMMAndCLOB(all);

@@ -1357,6 +1357,51 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // A proposer may pay for the Create with one of its own Tickets. The
+    // Ticket's reserve goes as the proposal's arrives, so the proposer's owner
+    // count moves by the difference.
+    void
+    testTicketedCreate(FeatureBitset features)
+    {
+        testcase("create paid for with the proposer's own ticket");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+
+        Account const alice{"alice"};    // the proposer
+        Account const target{"target"};  // the account the proposal is for
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, target, bob);
+        env.close();
+        proposal::authorizeProposer(env, target, alice);
+
+        std::uint32_t const targetTicketSeq = proposal::createTicket(env, target);
+        std::uint32_t const aliceTicketSeq = proposal::createTicket(env, alice);
+        std::uint32_t const aliceSeq = env.seq(alice);
+        std::uint32_t const targetOwnerCount = ownerCount(env, target);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // The proposal's reserve lands on alice less the Ticket she paid with,
+        // and her Sequence is untouched.
+        env(proposal::create(
+                alice,
+                proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq),
+                proposal::expiration(env, 100s)),
+            ticket::Use(aliceTicketSeq),
+            proposal::verify::create());
+        env.close();
+
+        BEAST_EXPECT(proposal::entry(env, target, targetTicketSeq));
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicketSeq))));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
+
+        // The target's Ticket, the one the proposal is keyed to, stays.
+        BEAST_EXPECT(ownerCount(env, target) == targetOwnerCount);
+    }
+
     // The proposal's reserve can instead be sponsored: the reserve is charged
     // to the sponsor's account, and the ledger object records the sponsor, the
     // same as any other reserve-sponsorable object (TransactionProposalCreate
@@ -1728,6 +1773,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         testOtherTransactionTypes(all);
         testAuxiliaryCoSignatureTypes(all);
         testReserve(all);
+        testTicketedCreate(all);
         testSponsoredReserve(all);
         testSponsorshipTransfer(all);
         testFeeSponsored(all);

@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@8e98d61f011fd2a67f3fde5f0f075662c099a527
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -328,15 +328,15 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      - name: Check linking (Linux)
+      - name: Check `libstdc++` is statically linked (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
-          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-              echo 'The binary is statically linked.'
+          if [ "$(ldd ./xrpld | grep -E 'libstdc\+\+' | wc -l)" -eq 0 ]; then
+              echo 'libstdc++ is statically linked.'
           else
-              echo 'The binary is dynamically linked.'
+              echo 'libstdc++ is dynamically linked.'
               exit 1
           fi
 

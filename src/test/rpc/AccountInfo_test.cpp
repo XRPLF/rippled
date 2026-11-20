@@ -1,6 +1,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
@@ -35,6 +36,7 @@ public:
         {
             // account_info with no account.
             auto const info = env.rpc("json", "account_info", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'account'.");
         }
@@ -45,6 +47,7 @@ public:
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
             BEAST_EXPECT(info[jss::result].isMember(jss::ledger_current_index));
@@ -56,6 +59,7 @@ public:
             json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
+            BEAST_EXPECT(info[jss::result][jss::error] == "actNotFound");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account not found.");
             BEAST_EXPECT(info[jss::result][jss::account] == bogie.human());
@@ -65,6 +69,7 @@ public:
         {
             // Cannot use a seed as account
             auto const info = env.rpc("json", "account_info", R"JSON({"account": "foo"})JSON");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
@@ -334,6 +339,7 @@ public:
             BEAST_EXPECT(info[jss::status] == "error");
             BEAST_EXPECT(info[jss::error] == "invalidParams");
             BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(info[jss::error_message] == "Invalid parameters.");
             BEAST_EXPECT(info.isMember(jss::account_data));
             BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(info.isMember(jss::ledger_current_index));
@@ -421,8 +427,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -435,8 +440,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
         {
@@ -446,8 +450,7 @@ public:
                 info[0u].isMember(jss::result) &&
                 info[0u][jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[0u][jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info[0u].isMember(jss::jsonrpc) && info[0u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[0u].isMember(jss::ripplerpc) && info[0u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[0u]));
             BEAST_EXPECT(info[0u].isMember(jss::id) && info[0u][jss::id] == 5);
 
             BEAST_EXPECT(
@@ -458,8 +461,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info[1u].isMember(jss::jsonrpc) && info[1u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[1u].isMember(jss::ripplerpc) && info[1u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[1u]));
             BEAST_EXPECT(info[1u].isMember(jss::id) && info[1u][jss::id] == 6);
         }
 
@@ -474,8 +476,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -495,8 +496,7 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
 
@@ -545,8 +545,7 @@ public:
                 BEAST_EXPECT(entry.isMember(sfAccount.jsonName));
                 BEAST_EXPECT(entry[sfSignerWeight.jsonName] == 1);
             }
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
     }

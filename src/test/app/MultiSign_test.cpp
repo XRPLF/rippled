@@ -31,6 +31,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -586,6 +587,7 @@ public:
             auto jrr = env.rpc("json", "sign_for", to_string(jvOne))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 jrr[jss::error_message] ==
                 "When multi-signing 'tx_json.SigningPubKey' must be empty.");
@@ -613,6 +615,7 @@ public:
             jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 jrr[jss::error_message] == "Invalid Fee field.  Fees must be greater than zero.");
         }
@@ -639,6 +642,7 @@ public:
             jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "internal");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInternal);
             BEAST_EXPECT(jrr[jss::error_message] == "Internal error.");
         }
 
@@ -651,6 +655,8 @@ public:
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "masterDisabled");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcMasterDisabled);
+            BEAST_EXPECT(jrr[jss::error_message] == "Master key is disabled.");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
         }
@@ -690,12 +696,16 @@ public:
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "srcActMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcSrcActMalformed);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'tx_json.Account'.");
 
             Account const jimmy{"jimmy"};
             jv[jss::tx_json][jss::Account] = jimmy.human();
             jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "srcActNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcSrcActNotFound);
+            BEAST_EXPECT(jrr[jss::error_message] == "Source account not found.");
         }
 
         {
@@ -706,6 +716,7 @@ public:
             auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "tx_json.Signers array may not be empty.");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -1068,6 +1079,9 @@ public:
             STTx local = *tx.stx;
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Empty SigningPubKey.");
@@ -1082,6 +1096,9 @@ public:
             local.setFieldVL(sfTxnSignature, badSig);
             // Signature should fail.
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid signature.");
@@ -1095,6 +1112,9 @@ public:
             local.setFieldU32(sfSequence, seq + 1);
             // Signature should fail.
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid signature.");
@@ -1105,6 +1125,9 @@ public:
             STTx local = *tx.stx;
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Cannot both single- and multi-sign.");
@@ -1116,6 +1139,9 @@ public:
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Cannot both single- and multi-sign.");
@@ -1131,6 +1157,9 @@ public:
             signer.setFieldVL(sfTxnSignature, badSig);
             // Signature should fail.
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception].asString().contains(
                     "Invalid signature on account r"));
@@ -1141,6 +1170,9 @@ public:
             STTx local = *tx.stx;
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid Signers array size.");
@@ -1186,6 +1218,9 @@ public:
                     bogie_));
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid Signers array size.");
@@ -1195,6 +1230,9 @@ public:
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(alice));
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Invalid multisigner.");
@@ -1204,6 +1242,9 @@ public:
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, bogie_));
             STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Duplicate Signers not allowed.");
@@ -1217,6 +1258,9 @@ public:
             std::ranges::reverse(signers);
             // Signature should fail.
             auto const info = submitSTTx(local);
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!info[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(info[jss::result][jss::error_message].isNull());
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
                 "fails local checks: Unsorted Signers array.");

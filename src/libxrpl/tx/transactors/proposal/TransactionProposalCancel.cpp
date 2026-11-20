@@ -37,7 +37,7 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 
     // Never read the zero keylet. Preflight already rejected a zero
     // ProposalID, and no real proposal can have one (every ProposalID is a
-    // hash), so reaching here with zero is an internal error. (and a mathematical rarity. )
+    // hash), so reaching here with zero is an internal error (and a mathematical rarity).
     if (proposalID == beast::kZero)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
