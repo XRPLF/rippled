@@ -43,6 +43,7 @@ Version 3.5.0 is not yet released.
 
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive the same `transaction` message as the `transactions` stream for each validated transaction whose metadata affects a subscribed issuance. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 - `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
+- `ledger_entry`, `account_objects`: With the `LendingProtocolV1_2` amendment, the `Loan` ledger entry includes an optional `Data` field holding the `Data` of the `LoanSet` that created it. ([#8684](https://github.com/XRPLF/rippled/pull/8684))
 
 ### Bugfixes in 3.5.0
 
