@@ -495,8 +495,26 @@ checkDebitNotDust(
     return tesSUCCESS;
 }
 
+namespace {
+
+// The grid a fixCleanup3_6_0 conversion rounds its result to. FixedPrecision rounds straight to
+// the Vault's base scale; Legacy and CashBasis round to what the asset can represent.
+std::optional<int>
+conversionGrid(SLE::ConstRef vault)
+{
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+        return getVaultBaseScale(vault);
+    return std::nullopt;
+}
+
+}  // namespace
+
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& assets,
+    Rules const& rules)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -515,12 +533,22 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Exact, rounded once: shares to the depositor round down.
+    if (rules.enabled(fixCleanup3_6_0))
+    {
+        return detail::mulDivRound(
+            shareTotal, assets, assetTotal, shares.asset(), Number::RoundingMode::Downward);
+    }
     shares = ((shareTotal * assets) / assetTotal).truncate();
     return shares;
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
+sharesToAssetsDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& shares,
+    Rules const& rules)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -538,6 +566,17 @@ sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Exact, rounded once: assets taken for shares round up.
+    if (rules.enabled(fixCleanup3_6_0))
+    {
+        return detail::mulDivRound(
+            assetTotal,
+            shares,
+            shareTotal,
+            assets.asset(),
+            Number::RoundingMode::Upward,
+            conversionGrid(vault));
+    }
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
@@ -664,6 +703,7 @@ assetsToSharesWithdraw(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
+    Rules const& rules,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
 {
@@ -679,6 +719,12 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Exact, rounded once and always down, so truncate is ignored.
+    if (rules.enabled(fixCleanup3_6_0))
+    {
+        return detail::mulDivRound(
+            shareTotal, assets, assetTotal, shares.asset(), Number::RoundingMode::Downward);
+    }
     Number result = (shareTotal * assets) / assetTotal;
     if (truncate == TruncateShares::Yes)
         result = result.truncate();
@@ -691,6 +737,7 @@ sharesToAssetsWithdraw(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
+    Rules const& rules,
     WaiveUnrealizedLoss waive)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
@@ -705,6 +752,17 @@ sharesToAssetsWithdraw(
     if (assetTotal == 0)
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Exact, rounded once: assets paid out round down.
+    if (rules.enabled(fixCleanup3_6_0))
+    {
+        return detail::mulDivRound(
+            assetTotal,
+            shares,
+            shareTotal,
+            assets.asset(),
+            Number::RoundingMode::Downward,
+            conversionGrid(vault));
+    }
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
@@ -755,10 +813,11 @@ getVaultVersion(SLE::ConstRef vault)
 getVaultDefaultVersion(Rules const& rules)
 {
     // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
-    // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
-    // sees both enabled. fixCleanup3_2_0 is already enabled on the network.
+    // cash-basis accounting), fixCleanup3_4_0 and fixCleanup3_6_0 (exact share
+    // conversions), so a FixedPrecision Vault always sees all three enabled.
+    // fixCleanup3_2_0 is already enabled on the network.
     if (rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
-        rules.enabled(fixCleanup3_4_0))
+        rules.enabled(fixCleanup3_4_0) && rules.enabled(fixCleanup3_6_0))
         return VaultVersion::FixedPrecision;
     if (rules.enabled(featureLendingProtocolV1_1))
         return VaultVersion::CashBasis;

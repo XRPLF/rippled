@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -705,6 +706,37 @@ divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool 
  */
 [[nodiscard]] STAmount
 mulRatio(STAmount const& amt, std::uint32_t num, std::uint32_t den, Number::RoundingMode rounding);
+
+namespace detail {
+
+/**
+ * @brief Returns a * b / c for non-negative operands, computed exactly and rounded once.
+ *
+ * @param a First factor, not negative.
+ * @param b Second factor, not negative.
+ * @param c Divisor, not negative.
+ * @param asset The asset of the result.
+ * @param mode How to round an inexact value: Upward or Downward. Other modes are not supported.
+ * @param targetExponent The exponent of the grid to round to. Without it, the grid is whole
+ *        units for XRP and MPT, and a 16-digit mantissa for an IOU. A finer grid than an IOU
+ *        can hold is coarsened to 16 digits, still with a single rounding.
+ *
+ * @return The rounded result, a zero of the asset when a or b is zero. A positive IOU value
+ *         below the smallest IOU is the smallest IOU when rounding up, otherwise zero.
+ *
+ * @throws std::overflow_error If c is zero, the result is out of range for the asset, or
+ *         targetExponent is a grid coarser than any amount of the asset.
+ */
+[[nodiscard]] STAmount
+mulDivRound(
+    Number const& a,
+    Number const& b,
+    Number const& c,
+    Asset const& asset,
+    Number::RoundingMode mode,
+    std::optional<int> targetExponent = std::nullopt);
+
+}  // namespace detail
 
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out

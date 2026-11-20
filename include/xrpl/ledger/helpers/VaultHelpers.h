@@ -255,11 +255,16 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param assets The amount of assets to convert.
+ * @param rules The ledger rules. fixCleanup3_6_0 selects the exact conversion.
  *
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& assets,
+    Rules const& rules);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -269,11 +274,16 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
+ * @param rules The ledger rules. fixCleanup3_6_0 selects the exact conversion.
  *
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& shares,
+    Rules const& rules);
 
 /**
  * Adjusts a requested asset change (delta) to match the decimal scale of the
@@ -364,7 +374,8 @@ isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale);
 checkAssetsMaximum(SLE::ConstRef vault, Number const& amount);
 
 /**
- * Controls whether to truncate shares instead of rounding.
+ * Controls whether to truncate shares instead of rounding. Ignored under fixCleanup3_6_0, where
+ * shares always truncate; it goes when that amendment is retired.
  */
 enum class TruncateShares : bool { No = false, Yes = true };
 
@@ -418,6 +429,8 @@ checkDebitNotDust(
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param assets The amount of assets to convert.
+ * @param rules The ledger rules. fixCleanup3_6_0 selects the exact conversion, which always
+ *              truncates and ignores truncate.
  * @param truncate Whether to truncate instead of rounding.
  * @param waive Whether to waive the unrealized-loss discount when computing
  *              the exchange rate.
@@ -429,6 +442,7 @@ assetsToSharesWithdraw(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
+    Rules const& rules,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -440,6 +454,7 @@ assetsToSharesWithdraw(
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
+ * @param rules The ledger rules. fixCleanup3_6_0 selects the exact conversion.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
  *              loss when computing the exchange rate.
  *
@@ -450,6 +465,7 @@ sharesToAssetsWithdraw(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
+    Rules const& rules,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 /**
@@ -503,7 +519,7 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  * @param rules The active ledger rules.
  *
  * @return VaultVersion::FixedPrecision once featureLendingProtocolV1_1,
- * featureLendingProtocolV1_2 and fixCleanup3_4_0 are all enabled;
+ * featureLendingProtocolV1_2, fixCleanup3_4_0 and fixCleanup3_6_0 are all enabled;
  * VaultVersion::CashBasis
  * once featureLendingProtocolV1_1 is enabled; VaultVersion::Legacy otherwise.
  */
