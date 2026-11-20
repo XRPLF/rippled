@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -185,7 +186,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         // Let preclaim worry about the error for this
         return normalCost;
     }
-    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
     {
         // Let preclaim worry about the error for this
@@ -291,7 +292,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     auto const vaultID = loanBrokerSle->at(sfVaultID);
-    auto const vaultSle = ctx.view.read(keylet::vault(vaultID));
+    VaultEntryR const vaultSle(vaultID, ctx.view);
     if (!vaultSle)
     {
         // This should be impossible
@@ -367,7 +368,7 @@ LoanPay::doApply()
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultID = brokerSle->at(sfVaultID);
-    auto const vaultSle = view.peek(keylet::vault(vaultID));
+    VaultEntryW vaultSle(vaultID, view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -378,7 +379,7 @@ LoanPay::doApply()
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
     bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getVaultScale(vaultSle.rawSle());
 
     // Send the broker fee to the owner if they have sufficient cover available,
     // _and_ if the owner can receive funds
@@ -395,7 +396,8 @@ LoanPay::doApply()
         auto const minCover = [&] {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
+                return minimumBrokerCover(
+                    debtTotalProxy.value(), coverRateMinimum, vaultSle.rawSle());
             }
             // Round the minimum required cover up to be conservative. This ensures
             // CoverAvailable never drops below the theoretical minimum, protecting
@@ -514,7 +516,7 @@ LoanPay::doApply()
         // Pass the exact Number sum: rounding it to 16 digits first could drop
         // a tail that moves floor16(AssetsAvailable + sum).
         ? creditToPosteriorAvailableScale(
-              vaultSle, totalPaidToVaultRaw, Number::RoundingMode::Downward)
+              vaultSle.rawSle(), totalPaidToVaultRaw, Number::RoundingMode::Downward)
         : STAmount{
               asset,
               roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward)};
@@ -530,7 +532,7 @@ LoanPay::doApply()
     Number const totalPaidToBroker = fixedPrecision && !sendBrokerFeeToOwner
         // The exact fee, for the same reason as totalPaidToVaultRounded.
         ? Number(creditToPosteriorBrokerCoverScale(
-              vaultSle, brokerSle, totalPaidToBrokerRaw, Number::RoundingMode::Downward))
+              vaultSle.rawSle(), brokerSle, totalPaidToBrokerRaw, Number::RoundingMode::Downward))
         : totalPaidToBrokerRaw;
 
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
@@ -550,11 +552,11 @@ LoanPay::doApply()
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total on Legacy/CashBasis Vaults. This is because
     // the broker may have more than one loan with significantly different scales.
-    adjustBrokerDebtTotal(brokerSle, vaultSle, -debtTotalDelta, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle.rawSle(), -debtTotalDelta, vaultScale);
 
     //------------------------------------------------------
     // Vault object state changes
-    view.update(vaultSle);
+    vaultSle.update();
 
     if (fixedPrecision)
     {
@@ -562,7 +564,7 @@ LoanPay::doApply()
         // taken from the Loan's own payment split rather than the
         // broker-side debtTotalDelta.
         if (auto const ter = adjustVaultBalances(
-                vaultSle,
+                vaultSle.mutableRawSle(),
                 {
                     .cash = totalPaidToVaultRounded,
                     .deployed = -paymentParts->principalPaid,

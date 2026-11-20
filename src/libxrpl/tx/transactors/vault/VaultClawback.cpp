@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -62,7 +63,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
 [[nodiscard]] STAmount
 clawbackAmount(
-    SLE::ConstRef vault,
+    VaultEntryR const& vault,
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
@@ -79,7 +80,7 @@ clawbackAmount(
 TER
 VaultClawback::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntryR const vault(ctx.tx[sfVaultID], ctx.view);
     if (!vault)
         return tecNO_ENTRY;
 
@@ -241,7 +242,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
 std::expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
-    SLE::Ref vault,
+    VaultEntryW& vault,
     SLE::ConstRef sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
@@ -383,7 +384,7 @@ VaultClawback::assetsToClawback(
         // shareholders.
         if (fix340Enabled && assetsRecovered > beast::kZero)
         {
-            auto const maybeClamped = clampVaultOutflow(vault, -assetsRecovered);
+            auto const maybeClamped = clampVaultOutflow(vault.rawSle(), -assetsRecovered);
             if (!maybeClamped)
                 return std::unexpected(maybeClamped.error());
             assetsRecovered = *maybeClamped;
@@ -411,7 +412,7 @@ TER
 VaultClawback::doApply()
 {
     auto const& tx = ctx_.tx;
-    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
+    VaultEntryW vault(tx[sfVaultID], view());
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -461,14 +462,16 @@ VaultClawback::doApply()
     {
         // A non-zero recovery can be too small to change the stored balance at
         // STAmount's precision. Shares would still be burned, reject it instead.
-        if (auto const ter = checkDebitNotDust(vault, assetsRecovered, j_, "VaultClawback");
+        if (auto const ter =
+                checkDebitNotDust(vault.rawSle(), assetsRecovered, j_, "VaultClawback");
             !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
 
-    if (auto const ter = adjustVaultCash(vault, -assetsRecovered, j_); !isTesSuccess(ter))
+    if (auto const ter = adjustVaultCash(vault.mutableRawSle(), -assetsRecovered, j_);
+        !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
-    view().update(vault);
+    vault.update();
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.

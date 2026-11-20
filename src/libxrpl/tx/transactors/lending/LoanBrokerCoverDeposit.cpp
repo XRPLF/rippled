@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -64,7 +65,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
     }
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    VaultEntryR const vault(sleBroker->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // LCOV_EXCL_START
@@ -111,7 +112,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             // Cover deposit is an inflow to CoverAvailable, so it must floor
             // the sum, not just the delta.
             return creditToPosteriorBrokerCoverScale(
-                vault, sleBroker, amount, Number::RoundingMode::Downward);
+                vault.rawSle(), sleBroker, amount, Number::RoundingMode::Downward);
         }
         if (!fix320Enabled)
             return STAmount{amount};
@@ -131,7 +132,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecPRECISION_LOSS;
     }
 
-    if (auto const ter = checkOptionalBrokerCoverInflow(vault, sleBroker, roundedAmount);
+    if (auto const ter = checkOptionalBrokerCoverInflow(vault.rawSle(), sleBroker, roundedAmount);
         !isTesSuccess(ter))
         return ter;
 
@@ -158,7 +159,7 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    VaultEntryR const vault(broker->at(sfVaultID), view());
     if (!vault)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -175,7 +176,7 @@ LoanBrokerCoverDeposit::doApply()
             // Cover deposit is an inflow to CoverAvailable, so it must floor
             // the sum, not just the delta.
             return creditToPosteriorBrokerCoverScale(
-                vault, broker, tx[sfAmount], Number::RoundingMode::Downward);
+                vault.rawSle(), broker, tx[sfAmount], Number::RoundingMode::Downward);
         }
         if (!fix320Enabled)
             return tx[sfAmount];

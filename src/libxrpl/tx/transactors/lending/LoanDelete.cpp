@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -91,7 +92,7 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryW vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -121,7 +122,7 @@ LoanDelete::doApply()
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
-                    getVaultScale(vaultSle),
+                    getVaultScale(vaultSle.rawSle()),
                     Number::RoundingMode::TowardsZero) == beast::kZero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");

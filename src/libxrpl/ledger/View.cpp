@@ -12,6 +12,7 @@
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -130,8 +131,8 @@ isVaultPseudoAccountFrozenForIssuance(
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
-    auto const vault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
-    if (vault == nullptr)
+    VaultEntryR const vault(mptIssuer->getFieldH256(sfVaultID), view);
+    if (!vault)
     {  // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null vault");
         return false;

@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -315,7 +316,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryR const vault(brokerSle->at(sfVaultID), ctx.view);
     if (!vault)
     {
         // Should be impossible
@@ -365,7 +366,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (vaultVersion == VaultVersion::FixedPrecision)
     {
         // Reject origination if the Vault is already coarsened.
-        if (getVaultScale(vault) != getVaultBaseScale(vault))
+        if (getVaultScale(vault.rawSle()) != getVaultBaseScale(vault.rawSle()))
         {
             JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
                                   "be originated until it returns to its base scale.";
@@ -466,7 +467,7 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntryW vaultSle(brokerSle->at(sfVaultID), view);
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -512,7 +513,7 @@ LoanSet::doApply()
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     // For Legacy/CashBasis, getVaultBaseScale falls through to getVaultScale.
-    auto const vaultScale = getVaultBaseScale(vaultSle);
+    auto const vaultScale = getVaultBaseScale(vaultSle.rawSle());
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
@@ -591,13 +592,14 @@ LoanSet::doApply()
     {
         // Reject origination if this loan's interest would grow the Vault past its Open-zone
         // capacity.
-        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+        if (vaultOpenZoneCapacity(vaultSle.rawSle(), state.interestDue) >
+            getVaultOpenLimit(vaultSle.rawSle()))
         {
             JLOG(j_.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
             return tecLIMIT_EXCEEDED;
         }
         XRPL_ASSERT(
-            properties.loanScale == getVaultBaseScale(vaultSle),
+            properties.loanScale == getVaultBaseScale(vaultSle.rawSle()),
             "xrpl::LoanSet::doApply : FixedPrecision loan uses Vault base scale");
     }
 
@@ -619,7 +621,7 @@ LoanSet::doApply()
         auto const minCover = [&] {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle.rawSle());
             }
 
             // Round the minimum required cover up to be conservative. This ensures
@@ -753,7 +755,7 @@ LoanSet::doApply()
     if (vaultVersion == VaultVersion::FixedPrecision)
     {
         if (auto const ter = adjustVaultBalances(
-                vaultSle,
+                vaultSle.mutableRawSle(),
                 {
                     .cash = -STAmount{vaultAsset, principalRequested},
                     .deployed = debtTotalDelta,
@@ -772,10 +774,10 @@ LoanSet::doApply()
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the balances in the loan broker
-    adjustBrokerDebtTotal(brokerSle, vaultSle, debtTotalDelta, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle.rawSle(), debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it

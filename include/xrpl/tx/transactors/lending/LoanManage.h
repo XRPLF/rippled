@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -45,7 +46,7 @@ public:
         ApplyView& view,
         SLE::Ref loanSle,
         SLE::Ref brokerSle,
-        SLE::Ref vaultSle,
+        VaultEntryW& vaultSle,
         beast::Journal j);
 
     /**
@@ -76,7 +77,7 @@ public:
     impairLoan(
         ApplyView& view,
         SLE::Ref loanSle,
-        SLE::Ref vaultSle,
+        VaultEntryW& vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -87,7 +88,7 @@ public:
     unimpairLoan(
         ApplyView& view,
         SLE::Ref loanSle,
-        SLE::Ref vaultSle,
+        VaultEntryW& vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
