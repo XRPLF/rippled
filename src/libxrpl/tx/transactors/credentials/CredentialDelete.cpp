@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -18,8 +17,6 @@
 
 #include <cstdint>
 namespace xrpl {
-
-using namespace credentials;
 
 std::uint32_t
 CredentialDelete::getFlagsMask(PreflightContext const& ctx)
@@ -92,7 +89,7 @@ CredentialDelete::doApply()
         return tecNO_PERMISSION;
     }
 
-    return deleteSLE(view(), sleCred, j_);
+    return sleCred.removeFromLedger();
 }
 
 void
