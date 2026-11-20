@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -14,6 +13,7 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
@@ -306,17 +306,18 @@ InfoSub::getRequest()
     return request_;
 }
 
-void
-InfoSub::setApiVersion(unsigned int apiVersion)
+std::optional<unsigned int>
+InfoSub::establishSubscriptionVersion(unsigned int apiVersion)
 {
-    apiVersion_ = apiVersion;
-}
+    std::scoped_lock const sl(lock_);
 
-unsigned int
-InfoSub::getApiVersion() const noexcept
-{
-    XRPL_ASSERT(apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
-    return apiVersion_;
+    if (!subscriptionApiVersion_)
+        subscriptionApiVersion_ = apiVersion;
+
+    if (*subscriptionApiVersion_ == apiVersion)
+        return std::nullopt;
+
+    return subscriptionApiVersion_;
 }
 
 void
