@@ -60,7 +60,6 @@ target_link_libraries(
     xrpl.imports.main
     INTERFACE
         absl::random_random
-        date::date
         ed25519::ed25519
         OpenSSL::Crypto
         Xrpl::boost

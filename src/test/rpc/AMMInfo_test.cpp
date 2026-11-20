@@ -6,11 +6,16 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -18,6 +23,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -369,6 +375,25 @@ public:
                                 to_string(ammAlice.lptIssue().currency) &&
                             auctionSlot[jss::price][jss::issuer].asString() ==
                                 to_string(ammAlice.lptIssue().account));
+
+                        // expiration is the slot's Expiration (a NetClock time)
+                        // rendered as an ISO 8601 UTC timestamp with the "Z"
+                        // designator and no fractional seconds. The expected
+                        // value is formatted with std::format directly from the
+                        // sys_seconds, so it does not go through toStringIso.
+                        if (auto const amm = env.current()->read(keylet::amm(ammAlice.ammID()));
+                            BEAST_EXPECT(amm && amm->isFieldPresent(sfAuctionSlot)))
+                        {
+                            auto const& slot =
+                                safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+                            auto const expiration =
+                                NetClock::time_point{NetClock::duration{slot[sfExpiration]}};
+                            auto const expected =
+                                std::format("{:%FT%TZ}", NetClock::to_sys(expiration));
+                            BEAST_EXPECTS(
+                                auctionSlot[jss::expiration].asString() == expected,
+                                auctionSlot[jss::expiration].asString() + " != " + expected);
+                        }
                     }
                     catch (std::exception const& e)
                     {
