@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -108,7 +109,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         if (*domain != beast::kZero)
         {
-            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
+            PermissionedDomainEntryR const sleDomain(*domain, ctx.view);
             if (!sleDomain)
                 return tecOBJECT_NOT_FOUND;
         }
