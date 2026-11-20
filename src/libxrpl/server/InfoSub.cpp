@@ -3,9 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 
 #include <cstddef>
@@ -334,6 +338,59 @@ InfoSub::deleteSubMPTInfo(MPTID const& mptID)
     std::scoped_lock const sl(lock_);
 
     mptSubscriptions_.erase(mptID);
+}
+
+std::optional<json::Value>
+shapeAsNotification(json::Value const& jvObj, unsigned int apiVersion)
+{
+    // A subscription with no recorded version, and every version below 3, keeps the legacy shape.
+    // A `type` that is not a string cannot be a `method`, so it names no method either; the const
+    // operator[] answers null for a missing member, so one test covers both.
+    if (!rpc::isSpecVersion(apiVersion) || !jvObj.isObject() || !jvObj[jss::type].isString())
+    {
+        return std::nullopt;
+    }
+
+    json::Value notification(json::ValueType::Object);
+    notification[jss::jsonrpc] = rpc::kJsonRpcVersion;
+    notification[jss::method] = jvObj[jss::type];
+
+    auto params = jvObj;
+    params.removeMember(jss::type);
+    notification[jss::params] = std::move(params);
+
+    return notification;
+}
+
+std::optional<json::Value>
+stampStreamError(
+    json::Value const& error,
+    unsigned int apiVersion,
+    bool wantsNotifications,
+    json::StaticString const& stream)
+{
+    if (!rpc::isSpecVersion(apiVersion) || !wantsNotifications)
+        return std::nullopt;
+
+    json::Value stamped = error;
+    stamped[jss::type] = stream;
+    return stamped;
+}
+
+void
+sendShaped(InfoSub& subscriber, unsigned int apiVersion, json::Value const& jvObj, bool broadcast)
+{
+    if (subscriber.wantsNotifications())
+    {
+        if (auto notification = shapeAsNotification(jvObj, apiVersion))
+        {
+            subscriber.send(*notification, broadcast);
+            return;
+        }
+    }
+
+    // Neither case copies: what the publisher built is sent as it stands.
+    subscriber.send(jvObj, broadcast);
 }
 
 }  // namespace xrpl
