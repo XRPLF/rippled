@@ -316,6 +316,8 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        # src/test/tools links the validator-keys library: added by XrplValidatorKeys.
+        list(FILTER sources EXCLUDE REGEX "/src/test/tools/")
         target_sources(xrpld PRIVATE ${sources})
     endif()
 

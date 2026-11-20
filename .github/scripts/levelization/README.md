@@ -3,17 +3,19 @@
 Levelization is the term used to describe efforts to prevent xrpld from
 having or creating cyclic dependencies.
 
-xrpld code is organized into directories under `src/xrpld`, `src/libxrpl` (and
-`src/test`) representing modules. The modules are intended to be
+xrpld code is organized into directories under `src/xrpld`, `src/libxrpl`,
+`src/tools` (and `src/test`) representing modules. The modules are intended to be
 organized into "tiers" or "levels" such that a module from one level can
 only include code from lower levels. Additionally, a module
 in one level should never include code in an `impl` or `detail` folder of any level
 other than its own.
 
-The codebase is split into two main areas:
+The codebase is split into three main areas:
 
 - **libxrpl** (`src/libxrpl`, `include/xrpl`): Reusable library modules with public interfaces
 - **xrpld** (`src/xrpld`): Application-specific implementation code
+- **tools** (`src/tools`): Standalone tools built on libxrpl, such as
+  `src/tools/validator-keys`, which includes only `xrpl` modules
 
 Unfortunately, over time, enforcement of levelization has been
 inconsistent, so the current state of the code doesn't necessarily
@@ -63,6 +65,10 @@ listed later.
 | 14           | test                                                                                           |
 | 15           | test/net test/protocol test/ledger test/consensus test/core test/server test/nodestore         |
 | 16           | test/rpc test/app                                                                              |
+| 17           | test/tools                                                                                     |
+
+`src/test/tools` holds the xrpld unit test suites of `src/tools`; it is compiled
+into xrpld only when the `validator_keys` option is ON.
 
 (Note that `test` levelization is _much_ less important and _much_ less
 strictly enforced than `xrpl`/`xrpld` levelization, other than the requirement
