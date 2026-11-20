@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -796,6 +797,44 @@ initializeFeeAuctionVote(
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
+
+/**
+ * Build a vote entry for account voting for fee, weighted by its LP token
+ * holdings relative to the AMM's total LP token balance.
+ */
+STObject
+makeAMMVoteEntry(
+    AccountID const& account,
+    std::uint16_t fee,
+    STAmount const& lpTokens,
+    STAmount const& lptAMMBalance);
+
+/**
+ * Set the AMM trading fee and the auction slot's discounted fee from the
+ * LP-weighted vote. A zero fee removes both fields.
+ */
+void
+setAMMTradingFee(SLE& ammSle, std::uint16_t fee);
+
+/**
+ * After an LP withdrawal or clawback, drop vote slots held by accounts that
+ * no longer hold LP tokens and recompute the trading fee (and auction
+ * discounted fee) as the LP-weighted average of the remaining voters.
+ *
+ * If no surviving voter still holds LP tokens, the weighted average is
+ * undefined: the current trading fee is left unchanged rather than treated
+ * as a 0% vote. If lpAccount is the auction-slot holder and now holds
+ * no LP tokens, the holder is cleared so they lose the discounted-fee
+ * privilege and the next bid pays the vacant-slot minimum with no refund.
+ * A slot purchased by burning all of the holder's LP tokens is left intact
+ * unless that holder is lpAccount.
+ */
+void
+updateAMMVoteSlotsAndFee(
+    ApplyView& view,
+    SLE::pointer const& ammSle,
+    AccountID const& lpAccount,
+    beast::Journal j);
 
 /**
  * Return true if the Liquidity Provider is the only AMM provider, false

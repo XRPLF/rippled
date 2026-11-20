@@ -108,7 +108,6 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             continue;
         }
         auto feeVal = entry[sfTradingFee];
-        STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
         if (entryAccount == accountID)
         {
@@ -119,12 +118,6 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
         // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
-        newEntry.setAccountID(sfAccount, entryAccount);
-        if (feeVal != 0)
-            newEntry.setFieldU16(sfTradingFee, feeVal);
-        newEntry.setFieldU32(
-            sfVoteWeight,
-            static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
@@ -138,21 +131,14 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             minAccount = entryAccount;
             minFee = feeVal;
         }
-        updatedVoteSlots.pushBack(std::move(newEntry));
+        updatedVoteSlots.pushBack(makeAMMVoteEntry(entryAccount, feeVal, lpTokens, lptAMMBalance));
     }
 
     // The account doesn't have the vote entry.
     if (!foundAccount)
     {
         auto const update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
-            STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
-            if (feeNew != 0)
-                newEntry.setFieldU16(sfTradingFee, feeNew);
-            newEntry.setFieldU32(
-                sfVoteWeight,
-                static_cast<std::int64_t>(
-                    Number(lpTokensNew) * kVoteWeightScaleFactor / lptAMMBalance));
-            newEntry.setAccountID(sfAccount, accountID);
+            auto newEntry = makeAMMVoteEntry(accountID, feeNew, lpTokensNew, lptAMMBalance);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
             if (minPos)
@@ -196,33 +182,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
 
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
-    if (auto const fee = static_cast<std::int64_t>(num / den))
-    {
-        ammSle->setFieldU16(sfTradingFee, fee);
-        if (ammSle->isFieldPresent(sfAuctionSlot))
-        {
-            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
-            {
-                auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
-            }
-            else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-            {
-                auctionSlot.makeFieldAbsent(sfDiscountedFee);
-            }
-        }
-    }
-    else
-    {
-        if (ammSle->isFieldPresent(sfTradingFee))
-            ammSle->makeFieldAbsent(sfTradingFee);
-        if (ammSle->isFieldPresent(sfAuctionSlot))
-        {
-            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auctionSlot.isFieldPresent(sfDiscountedFee))
-                auctionSlot.makeFieldAbsent(sfDiscountedFee);
-        }
-    }
+    setAMMTradingFee(*ammSle, static_cast<std::uint16_t>(static_cast<std::int64_t>(num / den)));
     sb.update(ammSle);
 
     return {tesSUCCESS, true};
