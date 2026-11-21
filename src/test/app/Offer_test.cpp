@@ -1,5 +1,4 @@
 #include <test/jtx/Account.h>
-#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
@@ -26,7 +25,6 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -55,8 +53,6 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
-#include <memory>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -5311,64 +5307,41 @@ public:
         std::uint32_t const offerCount = kMaxPersistentDeletes + 88;
         static_assert(kMaxPersistentDeletes + 88 < kUnfundedOfferRemoveLimit);
 
-        std::string logs;
-        std::uint32_t ownerCount = 0;
-        std::string info;
         // Bob's trust line remains, plus the offers past the limit.
         std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, bob);
+        // Close so that gw's DefaultRipple flag is set before any trust line
+        // is created. Otherwise, the order in which the first close replays
+        // the funding and trust transactions decides whether gw's side of
+        // each line gets NoRipple, which blocks crossing through gw.
+        env.close();
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env(trust(bob, eur(1000)));
+        env(pay(gw, bob, eur(10)));
+        env.close();
+
+        for (std::uint32_t i = 0; i < offerCount; ++i)
         {
-            Env env{*this, features, std::make_unique<CaptureLogs>(&logs)};
-            Account const gw{"gw"};
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            auto const usd = gw["USD"];
-            auto const eur = gw["EUR"];
-            env.fund(XRP(100000), gw, alice, bob);
-            env(trust(alice, usd(100)));
-            env(pay(gw, alice, usd(100)));
-            env(trust(bob, eur(1000)));
-            env(pay(gw, bob, eur(10)));
-            env.close();
-
-            for (std::uint32_t i = 0; i < offerCount; ++i)
-            {
-                env(offer(bob, usd(10), eur(10)));
-                if (i % 100 == 99)
-                    env.close();
-            }
-            env(pay(bob, gw, eur(10)));
-            env.close();
-            env.require(Owners(bob, offerCount + 1));
-
-            info = "aliceUsdLineFlags=" +
-                std::to_string(env.le(keylet::trustLine(alice.id(), usd.issue()))->getFlags()) +
-                " bobEurLineFlags=" +
-                std::to_string(env.le(keylet::trustLine(bob.id(), eur.issue()))->getFlags()) +
-                " gwFlags=" + std::to_string(env.le(gw)->getFlags()) +
-                " aliceFlags=" + std::to_string(env.le(alice)->getFlags()) +
-                " aliceGtGw=" + std::to_string(alice.id() > gw.id());
-            env.app().getLogs().journal("Test").info() << "MARKER_START";
-            env.app().getLogs().threshold(beast::Severity::Trace);
-            env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
-            env.app().getLogs().threshold(beast::Severity::Info);
-            env.app().getLogs().journal("Test").info() << "MARKER_END";
-            env.close();
-
-            ownerCount = env.le(bob)->getFieldU32(sfOwnerCount);
+            env(offer(bob, usd(10), eur(10)));
+            if (i % 100 == 99)
+                env.close();
         }
-        BEAST_EXPECTS(
-            ownerCount == remaining + 1,
-            info + " fixEnabled=" + std::to_string(fixEnabled) + " actual=" +
-                std::to_string(ownerCount) + " expected=" + std::to_string(remaining + 1));
-        if (ownerCount != remaining + 1)
-        {
-            auto const start = logs.find("MARKER_START");
-            auto const end = logs.find("MARKER_END");
-            auto const body = logs.substr(start, end - start);
-            log << "LOGS size=" << body.size() << "\n"
-                << body.substr(0, 15000) << "\n...\n"
-                << body.substr(body.size() > 5000 ? body.size() - 5000 : 0) << std::endl;
-        }
+        env(pay(bob, gw, eur(10)));
+        env.close();
+        env.require(Owners(bob, offerCount + 1));
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+
+        env.require(Owners(bob, remaining + 1));
     }
 
     void
