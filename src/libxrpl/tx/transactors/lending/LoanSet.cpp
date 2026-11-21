@@ -58,6 +58,9 @@ LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 LoanSet::getFlagsMask(PreflightContext const& ctx)
 {
+    // tfLoanLease exists only with AccountLeasing.
+    if (!ctx.rules.enabled(featureAccountLeasing))
+        return tfLoanSetMask | tfLoanLease;
     return tfLoanSetMask;
 }
 
@@ -447,6 +450,23 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return ret;
     }
 
+    if (tx.isFlag(tfLoanLease))
+    {
+        // A lease loan pays account reserves, which are XRP.
+        if (!asset.native())
+        {
+            JLOG(ctx.j.warn()) << "A lease loan needs an XRP vault.";
+            return tecWRONG_ASSET;
+        }
+        // The lease must hold at least one account reserve.
+        Number const held = tx[sfPrincipalRequested] - tx[~sfLoanOriginationFee].value_or(Number{});
+        if (held < Number{ctx.view.fees().reserve.drops()})
+        {
+            JLOG(ctx.j.warn()) << "A lease loan must hold at least one base reserve.";
+            return tecINSUFFICIENT_RESERVE;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -635,7 +655,9 @@ LoanSet::doApply()
         }
     }
 
-    increaseOwnerCount(view, borrowerSle, {}, 1, j_);
+    // A lease loan also has its lease account, which the borrower carries.
+    bool const isLease = tx.isFlag(tfLoanLease);
+    increaseOwnerCount(view, borrowerSle, {}, isLease ? 2 : 1, j_);
 
     {
         auto const balance =
@@ -695,15 +717,6 @@ LoanSet::doApply()
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
         return ter;
 
-    if (auto const ter = accountSendMulti(
-            view,
-            vaultPseudo,
-            vaultAsset,
-            {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
-            j_,
-            WaiveTransferFee::Yes))
-        return ter;
-
     // Get shortcuts to the loan property values
     auto const startDate = getStartDate(view);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
@@ -711,6 +724,29 @@ LoanSet::doApply()
     // Create the loan
     auto loan =
         std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
+
+    // A lease loan keeps its principal on its own pseudo-account, the lease
+    // account, which sponsors the reserves of the accounts the lease creates.
+    AccountID principalReceiver = borrower;
+    if (isLease)
+    {
+        auto const leaseAccount = createPseudoAccount(view, loan->key(), sfLoanID);
+        if (!leaseAccount)
+            return leaseAccount.error();
+        principalReceiver = (*leaseAccount)->at(sfAccount);
+        loan->setFlag(lsfLoanLease);
+        loan->at(~sfAccount) = principalReceiver;
+        loan->at(~sfLeaseUnit) = Number{view.fees().reserve.drops()};
+    }
+
+    if (auto const ter = accountSendMulti(
+            view,
+            vaultPseudo,
+            vaultAsset,
+            {{principalReceiver, loanAssetsToBorrower}, {brokerOwner, originationFee}},
+            j_,
+            WaiveTransferFee::Yes))
+        return ter;
 
     // Prevent copy/paste errors
     auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {

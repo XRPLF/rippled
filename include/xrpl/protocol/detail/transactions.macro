@@ -58,6 +58,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
     {sfDeliverMin, SoeOptional, SoeMptSupported},
     {sfCredentialIDs, SoeOptional},
     {sfDomainID, SoeOptional},
+    {sfLoanID, SoeOptional},
 }))
 
 /** This transaction type creates an escrow object. */
@@ -860,7 +861,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
 TRANSACTION(ttLOAN_SET, 80, LoanSet,
     ({
         .amendment = featureLendingProtocol,
-        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
+        .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault | Privilege::CreatePseudoAcct,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -889,6 +890,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     ({
         .amendment = featureLendingProtocol,
+        .privileges = Privilege::MayDeleteAcct,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1008,6 +1010,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     ({
         .amendment = featureSponsor,
+        .privileges = Privilege::MayDeleteAcct,
     }),
     ({
     {sfObjectID, SoeOptional},

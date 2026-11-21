@@ -16,6 +16,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -293,6 +294,152 @@ ValidLoan::finalize(
                            "other than LoanDelete";
         return false;
     }
+    return true;
+}
+
+void
+ValidLease::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+{
+    auto const& entry = after ? after : before;
+    if (!entry)
+        return;  // LCOV_EXCL_LINE
+    SLE::const_pointer const afterKept = isDelete ? SLE::const_pointer{} : after;
+
+    if (entry->getType() == ltACCOUNT_ROOT)
+    {
+        if (entry->isFieldPresent(sfLoanID))
+        {
+            leaseAccounts_.emplace_back(before, afterKept);
+        }
+        else if (
+            afterKept && afterKept->isFieldPresent(sfSponsor) &&
+            (!before || before->at(~sfSponsor) != afterKept->at(~sfSponsor)))
+        {
+            sponsorChanges_.emplace_back(before, afterKept);
+        }
+        return;
+    }
+
+    if (entry->getType() == ltLOAN &&
+        ((before && before->isFlag(lsfLoanLease)) || (after && after->isFlag(lsfLoanLease))))
+        leaseLoans_.emplace_back(before, afterKept);
+}
+
+bool
+ValidLease::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (!view.rules().enabled(featureAccountLeasing))
+    {
+        if (leaseAccounts_.empty() && leaseLoans_.empty())
+            return true;
+        JLOG(j.fatal()) << "Invariant failed: lease entry changed without AccountLeasing";
+        return false;
+    }
+
+    auto const txType = tx.getTxnType();
+
+    for (auto const& [before, after] : leaseAccounts_)
+    {
+        if (!after)
+            continue;  // checked through its loan below
+
+        auto const loan = view.read(keylet::loan(after->at(sfLoanID)));
+        if (!loan || !loan->isFlag(lsfLoanLease) ||
+            loan->at(~sfAccount) != after->getAccountID(sfAccount))
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease account without its lease loan";
+            return false;
+        }
+
+        XRPAmount const balance = after->at(sfBalance).value().xrp();
+        std::int64_t const count = after->at(sfSponsoringAccountCount);
+        XRPAmount const unit{Number{loan->at(~sfLeaseUnit).value_or(Number{0})}};
+        if (balance < XRPAmount{count * unit.drops()})
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease account holds less than its "
+                               "leased accounts' units";
+            return false;
+        }
+
+        if (after->at(sfOwnerCount) != 0 || after->isFieldPresent(sfSponsor) ||
+            after->isFieldPresent(sfSponsoringOwnerCount) ||
+            after->isFieldPresent(sfSponsoredOwnerCount) ||
+            view.exists(keylet::ownerDir(after->getAccountID(sfAccount))))
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease account owns objects or is sponsored";
+            return false;
+        }
+
+        bool const isTakeover = txType == ttSPONSORSHIP_TRANSFER &&
+            tx.isFlag(tfSponsorshipReassign) && !tx.isFieldPresent(sfSponsor);
+        if (before && before->at(sfBalance) != after->at(sfBalance) && txType != ttLOAN_SET &&
+            txType != ttLOAN_PAY && txType != ttLOAN_MANAGE && txType != ttLOAN_DELETE &&
+            !isTakeover)
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease account balance changed by a "
+                               "transaction that may not move it";
+            return false;
+        }
+    }
+
+    for (auto const& [before, after] : leaseLoans_)
+    {
+        if (!after)
+        {
+            auto const leaseID = before->at(~sfAccount);
+            if (leaseID && view.exists(keylet::account(*leaseID)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: lease loan deleted without its "
+                                   "lease account";
+                return false;
+            }
+            continue;
+        }
+
+        if (before &&
+            (before->isFlag(lsfLoanLease) != after->isFlag(lsfLoanLease) ||
+             before->at(~sfAccount) != after->at(~sfAccount) ||
+             before->at(~sfLeaseUnit) != after->at(~sfLeaseUnit)))
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease loan terms changed";
+            return false;
+        }
+
+        if (!after->isFlag(lsfLoanDefault) &&
+            (after->at(sfLeaseClaimVault) != beast::kZero ||
+             after->at(sfLeaseClaimCover) != beast::kZero))
+        {
+            JLOG(j.fatal()) << "Invariant failed: lease claims set on a loan that is not "
+                               "defaulted";
+            return false;
+        }
+
+        if (after->at(sfLeaseClaimVault) < beast::kZero ||
+            after->at(sfLeaseClaimCover) < beast::kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: negative lease claim";
+            return false;
+        }
+    }
+
+    for (auto const& [before, after] : sponsorChanges_)
+    {
+        auto const sponsorSle = view.read(keylet::account(after->getAccountID(sfSponsor)));
+        if (!sponsorSle || !sponsorSle->isFieldPresent(sfLoanID))
+            continue;
+        if (before || txType != ttPAYMENT)
+        {
+            JLOG(j.fatal()) << "Invariant failed: leased account created by a "
+                               "transaction other than Payment";
+            return false;
+        }
+    }
+
     return true;
 }
 

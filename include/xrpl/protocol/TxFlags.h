@@ -202,7 +202,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         MASK_ADJ(tfInnerBatchTxn))                      /* Batch must reject tfInnerBatchTxn - only inner transactions should have this flag */                \
                                                                                                                                                                \
     TRANSACTION(LoanSet,                                /* True indicates the loan supports overpayments */                                                    \
-        TF_FLAG(tfLoanOverpayment, 0x00010000),                                                                                                                \
+        TF_FLAG(tfLoanOverpayment, 0x00010000)                                                                                                                 \
+        TF_FLAG(tfLoanLease, 0x00020000),                                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanPay,                                /* True indicates any excess in this payment can be used as an overpayment. */                         \
@@ -219,7 +220,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
     TRANSACTION(LoanManage,                                                                                                                                    \
         TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
         TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
-        TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
+        TF_FLAG(tfLoanUnimpair, 0x00040000)                                                                                                                    \
+        TF_FLAG(tfLoanLeaseRecover, 0x00100000),                                                                                                               \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(LoanBrokerSet,                                                                                                                                 \
@@ -237,7 +239,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
     TRANSACTION(SponsorshipTransfer,                                                                                                                           \
         TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
         TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
-        TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
+        TF_FLAG(tfSponsorshipReassign, 0x00040000)                                                                                                             \
+        TF_FLAG(tfSponsorshipReap, 0x00080000),                                                                                                            \
         MASK_ADJ(0))                                                                                                                                          \
                                                                                                                                                                \
     TRANSACTION(ConfidentialMPTHolderKeyUpdate,                                                                                                                \

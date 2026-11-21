@@ -251,6 +251,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfDomainID);
     }
+
+    /**
+     * @brief Get sfLoanID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getLoanID() const
+    {
+        if (hasLoanID())
+        {
+            return this->tx_->at(sfLoanID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLoanID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLoanID() const
+    {
+        return this->tx_->isFieldPresent(sfLoanID);
+    }
 };
 
 /**
@@ -398,6 +424,17 @@ public:
     setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfDomainID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLoanID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    PaymentBuilder&
+    setLoanID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfLoanID] = value;
         return *this;
     }
 

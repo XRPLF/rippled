@@ -25,6 +25,9 @@ public:
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
 
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 

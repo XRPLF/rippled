@@ -38,6 +38,7 @@ TEST(TransactionsPaymentTests, BuilderSettersRoundTrip)
     auto const deliverMinValue = canonical_AMOUNT();
     auto const credentialIDsValue = canonical_VECTOR256();
     auto const domainIDValue = canonical_UINT256();
+    auto const loanIDValue = canonical_UINT256();
 
     PaymentBuilder builder{
         accountValue,
@@ -55,6 +56,7 @@ TEST(TransactionsPaymentTests, BuilderSettersRoundTrip)
     builder.setDeliverMin(deliverMinValue);
     builder.setCredentialIDs(credentialIDsValue);
     builder.setDomainID(domainIDValue);
+    builder.setLoanID(loanIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -140,6 +142,14 @@ TEST(TransactionsPaymentTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasDomainID());
     }
 
+    {
+        auto const& expected = loanIDValue;
+        auto const actualOpt = tx.getLoanID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanID should be present";
+        expectEqualField(expected, *actualOpt, "sfLoanID");
+        EXPECT_TRUE(tx.hasLoanID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -165,6 +175,7 @@ TEST(TransactionsPaymentTests, BuilderFromStTxRoundTrip)
     auto const deliverMinValue = canonical_AMOUNT();
     auto const credentialIDsValue = canonical_VECTOR256();
     auto const domainIDValue = canonical_UINT256();
+    auto const loanIDValue = canonical_UINT256();
 
     // Build an initial transaction
     PaymentBuilder initialBuilder{
@@ -182,6 +193,7 @@ TEST(TransactionsPaymentTests, BuilderFromStTxRoundTrip)
     initialBuilder.setDeliverMin(deliverMinValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
     initialBuilder.setDomainID(domainIDValue);
+    initialBuilder.setLoanID(loanIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -261,6 +273,13 @@ TEST(TransactionsPaymentTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfDomainID");
     }
 
+    {
+        auto const& expected = loanIDValue;
+        auto const actualOpt = rebuiltTx.getLoanID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfLoanID should be present";
+        expectEqualField(expected, *actualOpt, "sfLoanID");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -334,6 +353,8 @@ TEST(TransactionsPaymentTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
+    EXPECT_FALSE(tx.hasLoanID());
+    EXPECT_FALSE(tx.getLoanID().has_value());
 }
 
 }

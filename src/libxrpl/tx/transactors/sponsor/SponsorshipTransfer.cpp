@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -8,19 +9,26 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/LeaseHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/account/AccountDelete.h>
 
 #include <bit>
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -91,17 +99,48 @@ decrementPrefundedReserveCount(ApplyView& view, SLE::Ref sponsorshipSle, std::ui
     return tesSUCCESS;
 }
 
+namespace {
+
+// Whether `accountID` owns a Sponsorship (as its sfOwner) with prefunded XRP.
+[[nodiscard]] bool
+ownsFundedSponsorship(ReadView const& view, AccountID const& accountID)
+{
+    bool found = false;
+    forEachItem(view, accountID, [&](SLE::const_pointer const& sle) {
+        if (sle && sle->getType() == ltSPONSORSHIP && sle->at(sfOwner) == accountID &&
+            sle->isFieldPresent(sfFeeAmount) && sle->getFieldAmount(sfFeeAmount) > beast::kZero)
+            found = true;
+    });
+    return found;
+}
+
+}  // namespace
+
 std::uint32_t
 SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
 {
+    // tfSponsorshipReap exists only with AccountLeasing.
+    if (!ctx.rules.enabled(featureAccountLeasing))
+        return tfSponsorshipTransferMask | tfSponsorshipReap;
     return tfSponsorshipTransferMask;
+}
+
+XRPAmount
+SponsorshipTransfer::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Reaping deletes an account, so it costs one owner reserve like
+    // AccountDelete to keep account churn uneconomical. Other transfer flags
+    // use the normal base fee.
+    if (tx.isFlag(tfSponsorshipReap))
+        return calculateOwnerReserveFee(view, tx);
+    return Transactor::calculateBaseFee(view, tx);
 }
 
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
     static constexpr auto transferFlags =
-        tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
+        tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd | tfSponsorshipReap;
     if (std::popcount(ctx.tx.getFlags() & transferFlags) != 1)
     {
         JLOG(ctx.j.debug()) << "preflight: Only one SponsorshipTransfer flag can be set per tx.";
@@ -133,7 +172,19 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (ctx.tx.isFlag(tfSponsorshipReassign))
+    // With AccountLeasing, the borrower of a paid-off lease loan takes over a
+    // leased account by Reassign with sfSponsee and no sfSponsor: the signer
+    // becomes the sponsor. preclaim checks that the account is leased.
+    bool const isLeaseTakeover = ctx.rules.enabled(featureAccountLeasing) &&
+        ctx.tx.isFlag(tfSponsorshipReassign) && !ctx.tx.isFieldPresent(sfSponsor) &&
+        ctx.tx.isFieldPresent(sfSponsee) && !ctx.tx.isFieldPresent(sfObjectID);
+    if (isLeaseTakeover && ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
+    {
+        JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
+        return temMALFORMED;
+    }
+
+    if (ctx.tx.isFlag(tfSponsorshipReassign) && !isLeaseTakeover)
     {
         // Reassigning sponsorship transfers an already sponsored target from its
         // current reserve sponsor to the new sponsor identified by sfSponsor +
@@ -186,6 +237,37 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
         if (ctx.tx.isFieldPresent(sfSponsee) &&
             ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
+            return temMALFORMED;
+        }
+    }
+
+    if (ctx.tx.isFlag(tfSponsorshipReap))
+    {
+        // Reaping deletes an abandoned, under-reserved sponsored account. The
+        // sponsee is the target and the reaping sponsor is the tx sender, so no
+        // sfSponsor is supplied, the target must be a named account other than
+        // the sender, and no object may be specified (account-level only).
+        if (ctx.tx.isFieldPresent(sfSponsor))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsor must not be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.isFieldPresent(sfObjectID))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfObjectID must not be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSponsee))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsee must be present when reaping";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
         {
             JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
             return temMALFORMED;
@@ -279,11 +361,27 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!newSponsorSle || isSponsored)
             return tecNO_PERMISSION;
     }
+    else if (ctx.tx.isFlag(tfSponsorshipReassign) && !ctx.tx.isFieldPresent(sfSponsor))
+    {
+        // A lease takeover (preflight): the target is a leased account and the
+        // signer is the borrower of its paid-off lease loan.
+        if (objectID.has_value() || !isSponsored)
+            return tecNO_PERMISSION;
+        auto const loan = leaseLoanOfSponsor(ctx.view, targetSle->getAccountID(*sponsorField));
+        if (!loan || loan->at(sfBorrower) != account || !isLoanPaidOff(*loan))
+            return tecNO_PERMISSION;
+    }
     else if (ctx.tx.isFlag(tfSponsorshipReassign))
     {
         // Reassigning sponsorship: needs a new reserve sponsor, and the target must already
         // be sponsored
         if (!newSponsorSle || !isSponsored)
+            return tecNO_PERMISSION;
+
+        // A leased account leaves its lease only by the takeover above, End,
+        // AccountDelete or Reap; another sponsor cannot take it.
+        if (!objectID.has_value() &&
+            leaseLoanOfSponsor(ctx.view, targetSle->getAccountID(*sponsorField)))
             return tecNO_PERMISSION;
 
         // Reassigning to the current sponsor would change no state, but would
@@ -298,10 +396,53 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (newSponsorSle || !isSponsored)
             return tecNO_PERMISSION;
 
-        // Only the sponsor or sponsee can end sponsorship.
+        // Only the sponsor or sponsee can end sponsorship. A leased account's
+        // sponsor is a pseudo-account, so the account acting for it may end it.
         auto const sponsor = targetSle->getAccountID(*sponsorField);
-        if (account != sponsor && account != sponseeID)
+        auto const acting =
+            objectID.has_value() ? std::nullopt : leaseActingSponsor(ctx.view, sponsor);
+        if (account != sponsor && account != sponseeID && account != acting)
             return tecNO_PERMISSION;
+    }
+    else if (ctx.tx.isFlag(tfSponsorshipReap))
+    {
+        // Reaping introduces no new sponsor and is account-level only.
+        if (newSponsorSle || objectID.has_value())
+            return tecNO_PERMISSION;
+
+        // The target must be an account-level sponsored account.
+        if (!isSponsored)
+            return tecNO_PERMISSION;
+
+        // Only the account's current sponsor may reap it; a leased account is
+        // reaped by the account acting for its lease account.
+        auto const sponsor = targetSle->getAccountID(*sponsorField);
+        auto const reaper = leaseActingSponsor(ctx.view, sponsor).value_or(sponsor);
+        if (account != reaper)
+            return tecNO_SPONSOR_PERMISSION;
+
+        // Reaping is limited to a sponsee that cannot stand on its own reserve.
+        // A solvent sponsee is never reapable — the sponsor should release the
+        // sponsorship with tfSponsorshipEnd instead. Keeping its own reserve is
+        // the sponsee's defense against being reaped.
+        XRPAmount const balance = sponseeSle->getFieldAmount(sfBalance).xrp();
+        XRPAmount const ownReserve =
+            accountReserve(ctx.view, sponseeSle, ctx.j, {.accountCountDelta = 1});
+        if (balance >= ownReserve)
+            return tecNO_PERMISSION;
+
+        // The sponsee account must itself satisfy the deletion preconditions
+        // (no obligations, outside the sequence-replay window).
+        if (auto const ter = checkAccountDeletable(ctx.view, sponseeSle, reaper, ctx.j);
+            !isTesSuccess(ter))
+            return ter;
+
+        // A Sponsorship the sponsee owns holds prefunded XRP (FeeAmount) that
+        // deleting the account would pay to the reaper. That XRP is the
+        // sponsee's, so such an account is not reapable. checkAccountDeletable
+        // has bounded the owner directory this reads.
+        if (ownsFundedSponsorship(ctx.view, sponseeID))
+            return tecHAS_OBLIGATIONS;
     }
 
     return tesSUCCESS;
@@ -467,7 +608,11 @@ SponsorshipTransfer::doApply()
         // sfSponsorSignature), so there is no pre-funded budget to draw down here.
         if (isCreate || isReassign)
         {
-            auto const newSponsor = ctx_.tx[~sfSponsor];
+            // A lease takeover (no sfSponsor, preflight) makes the signer the
+            // sponsor of the leased account.
+            bool const isLeaseTakeover = isReassign && !ctx_.tx.isFieldPresent(sfSponsor);
+            auto const newSponsor =
+                isLeaseTakeover ? std::optional<AccountID>{accountID_} : ctx_.tx[~sfSponsor];
             XRPL_ASSERT(
                 newSponsor.has_value(),
                 "xrpl::SponsorshipTransfer::doApply : sfSponsor present for account sponsor "
@@ -478,6 +623,28 @@ SponsorshipTransfer::doApply()
             auto const newSponsorSle = view().peek(keylet::account(newSponsorID));
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            // The borrower takes the leased account's unit with it: one
+            // LeaseUnit moves from the lease account to the borrower, then the
+            // borrower's reserve check below counts the account.
+            if (isLeaseTakeover)
+            {
+                auto const leaseID = sponseeSle->getAccountID(sfSponsor);
+                auto const loan = leaseLoanOfSponsor(view(), leaseID);
+                if (!loan)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+                XRPAmount const unit{Number{loan->at(~sfLeaseUnit).value_or(Number{0})}};
+                if (auto const ter = accountSend(
+                        view(),
+                        leaseID,
+                        newSponsorID,
+                        STAmount{unit},
+                        j_,
+                        {},
+                        WaiveTransferFee::Yes);
+                    !isTesSuccess(ter))
+                    return ter;
+            }
 
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
@@ -545,6 +712,22 @@ SponsorshipTransfer::doApply()
                     decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;  // LCOV_EXCL_LINE
+        }
+        else if (ctx_.tx.isFlag(tfSponsorshipReap))
+        {
+            // Reap the abandoned sponsee: delete its account, returning its
+            // residual XRP (and any prefunded sponsorship) to the sponsor. The
+            // account deletion unwinds the sfSponsor reserve sponsorship, so
+            // the sponsor's SponsoringAccountCount is released here.
+            // The reaper is the sponsor, or the account acting for a lease
+            // account (preclaim); it receives the residual XRP.
+            auto reaperSle = view().peek(keylet::account(accountID_));
+            if (!reaperSle)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            if (auto const ter = applyAccountDelete(ctx_, sponseeSle, reaperSle, ctx_.journal);
+                !isTesSuccess(ter))
+                return ter;
         }
     }
 

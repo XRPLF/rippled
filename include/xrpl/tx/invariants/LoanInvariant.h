@@ -63,4 +63,44 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: lease loans and their lease accounts (AccountLeasing)
+ *
+ * A lease account is the pseudo-account (sfLoanID) of a lease loan
+ * (lsfLoanLease); it sponsors the reserves of the accounts the lease creates.
+ *
+ * 1. Every lease account belongs to an existing lease loan whose sfAccount is
+ *    that account, and a deleted lease loan deletes its lease account in the
+ *    same transaction.
+ * 2. A lease account's XRP balance is at least its SponsoringAccountCount times
+ *    the loan's LeaseUnit.
+ * 3. A lease account has OwnerCount 0, no owner directory, and no Sponsor,
+ *    SponsoringOwnerCount or SponsoredOwnerCount.
+ * 4. A lease account's balance changes only in LoanSet, LoanPay, LoanManage,
+ *    LoanDelete and the takeover SponsorshipTransfer (tfSponsorshipReassign
+ *    without Sponsor).
+ * 5. A lease loan's sfAccount, LeaseUnit and lsfLoanLease never change, and
+ *    LeaseClaimVault and LeaseClaimCover are 0 unless it is defaulted.
+ * 6. An account gets a lease account as its Sponsor only when a Payment
+ *    creates it.
+ */
+class ValidLease
+{
+    // <before, after> of AccountRoots with sfLoanID; `after` is null when
+    // deleted.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> leaseAccounts_;
+    // <before, after> of lease loans; `after` is null when deleted.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> leaseLoans_;
+    // <before, after> of AccountRoots without sfLoanID whose Sponsor was set or
+    // changed in this transaction; `before` is null when created.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> sponsorChanges_;
+
+public:
+    void
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
 }  // namespace xrpl

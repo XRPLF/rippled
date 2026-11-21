@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LeaseHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -346,6 +347,20 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+namespace {
+
+// The payment that pays off a lease loan sends the lease account's free XRP,
+// all but the units of its leased accounts, to the borrower.
+[[nodiscard]] TER
+payLeaseOnPayoff(ApplyView& view, SLE::Ref loanSle, beast::Journal j)
+{
+    if (!isLeaseLoan(*loanSle) || !isLoanPaidOff(*loanSle))
+        return tesSUCCESS;
+    return leasePayFreeToBorrower(view, loanSle, j);
+}
+
+}  // namespace
+
 TER
 LoanPay::doApply()
 {
@@ -625,7 +640,7 @@ LoanPay::doApply()
             if (totalPaidToVaultRounded == beast::kZero &&
                 (totalPaidToBroker == beast::kZero || brokerPayee == accountID_))
             {
-                return tesSUCCESS;
+                return payLeaseOnPayoff(view, loanSle, j_);
             }
         }
         else
@@ -907,7 +922,7 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
 
-    return tesSUCCESS;
+    return payLeaseOnPayoff(view, loanSle, j_);
 }
 
 void

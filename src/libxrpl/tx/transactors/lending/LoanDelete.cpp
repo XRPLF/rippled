@@ -5,12 +5,15 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LeaseHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -67,6 +70,24 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    if (isLeaseLoan(*loanSle))
+    {
+        auto const leaseSle =
+            ctx.view.read(keylet::account(loanSle->at(~sfAccount).value_or(AccountID{})));
+        if (!leaseSle)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (leaseSle->at(sfSponsoringAccountCount) > 0)
+        {
+            JLOG(ctx.j.warn()) << "Lease loan still sponsors accounts.";
+            return tecHAS_OBLIGATIONS;
+        }
+        if (loanSle->isFlag(lsfLoanDefault) && leaseSle->at(sfBalance).value() != beast::kZero)
+        {
+            JLOG(ctx.j.warn()) << "Defaulted lease loan still holds XRP to recover.";
+            return tecHAS_OBLIGATIONS;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -104,6 +125,31 @@ LoanDelete::doApply()
     if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+    // A lease loan's lease account goes with it. A paid-off loan's lease XRP
+    // belongs to the borrower; a defaulted one is empty (checked in preclaim).
+    bool const isLease = isLeaseLoan(*loanSle);
+    if (isLease)
+    {
+        auto const leaseID = loanSle->at(~sfAccount);
+        if (!leaseID)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        auto const leaseSle = view.peek(keylet::account(*leaseID));
+        if (!leaseSle)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        XRPAmount const balance = leaseSle->at(sfBalance).value().xrp();
+        if (balance > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    view, *leaseID, borrower, STAmount{balance}, j_, {}, WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return ter;
+        }
+        if (leaseSle->at(sfBalance).value() != beast::kZero || leaseSle->at(sfOwnerCount) != 0 ||
+            view.exists(keylet::ownerDir(*leaseID)))
+            return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+        view.erase(leaseSle);
+    }
+
     // Delete the Loan object
     view.erase(loanSle);
 
@@ -129,7 +175,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
+    decreaseOwnerCountForObject(view, borrowerSle, loanSle, isLease ? 2 : 1, j_);
 
     associateAsset(*vaultSle, vaultAsset);
 

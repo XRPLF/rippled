@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/LeaseHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -26,6 +27,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -90,6 +92,8 @@ Payment::checkExtraFeatures(PreflightContext const& ctx)
         return false;
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
         return false;
+    if (ctx.tx.isFieldPresent(sfLoanID) && !ctx.rules.enabled(featureAccountLeasing))
+        return false;
 
     return true;
 }
@@ -122,6 +126,10 @@ Payment::preflight(PreflightContext const& ctx)
 
     if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
+
+    // A leased account is created only by a sponsored account creation.
+    if (tx.isFieldPresent(sfLoanID) && !tx.isFlag(tfSponsorCreatedAccount))
+        return temMALFORMED;
 
     if (tx.isFlag(tfSponsorCreatedAccount))
     {
@@ -375,6 +383,52 @@ Payment::checkGranularSemantics(
         });
 }
 
+namespace {
+
+// A Payment with LoanID creates an account whose reserve the lease loan's
+// lease account sponsors (AccountLeasing).
+[[nodiscard]] TER
+preclaimLeasedAccount(PreclaimContext const& ctx, UInt256 const& loanID)
+{
+    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    if (!loanSle || !isLeaseLoan(*loanSle))
+    {
+        JLOG(ctx.j.warn()) << "LoanID names no lease loan.";
+        return tecNO_ENTRY;
+    }
+    if (loanSle->at(sfBorrower) != ctx.tx[sfAccount])
+    {
+        JLOG(ctx.j.warn()) << "Only the borrower can create a leased account.";
+        return tecNO_PERMISSION;
+    }
+    if (loanSle->at(sfPaymentRemaining) == 0 || loanSle->isFlag(lsfLoanDefault) ||
+        loanSle->isFlag(lsfLoanImpaired))
+    {
+        JLOG(ctx.j.warn()) << "The lease loan is not active.";
+        return tecNO_PERMISSION;
+    }
+    auto const leaseSle =
+        ctx.view.read(keylet::account(loanSle->at(~sfAccount).value_or(AccountID{})));
+    if (!leaseSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    XRPAmount const unit{Number{loanSle->at(~sfLeaseUnit).value_or(Number{0})}};
+    // A base reserve above the lease's unit would leave a new account short.
+    if (ctx.view.fees().reserve > unit)
+    {
+        JLOG(ctx.j.warn()) << "The base reserve is above the lease's unit.";
+        return tecINSUFFICIENT_RESERVE;
+    }
+    XRPAmount const balance = leaseSle->at(sfBalance).value().xrp();
+    if (leaseLocked(*leaseSle, *loanSle) + unit > balance)
+    {
+        JLOG(ctx.j.warn()) << "The lease holds no free unit for another account.";
+        return tecINSUFFICIENT_RESERVE;
+    }
+    return tesSUCCESS;
+}
+
+}  // namespace
+
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
@@ -388,6 +442,12 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     auto const k = keylet::account(dstAccountID);
     auto const sleDst = ctx.view.read(k);
+
+    if (auto const loanID = ctx.tx[~sfLoanID])
+    {
+        if (auto const ter = preclaimLeasedAccount(ctx, *loanID); !isTesSuccess(ter))
+            return ter;
+    }
 
     if (!sleDst)
     {
@@ -577,7 +637,16 @@ Payment::doApply()
 
         if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
         {
-            auto const sponsor = view().peek(keylet::account(accountID_));
+            // A leased account's sponsor is the lease loan's lease account.
+            auto const sponsorID = [&]() -> AccountID {
+                if (auto const loanID = ctx_.tx[~sfLoanID])
+                {
+                    if (auto const loanSle = view().read(keylet::loan(*loanID)))
+                        return loanSle->at(~sfAccount).value_or(AccountID{});
+                }
+                return accountID_;
+            }();
+            auto const sponsor = view().peek(keylet::account(sponsorID));
             if (!sponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
@@ -586,7 +655,7 @@ Payment::doApply()
             {
                 // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
-                                 << to_string(accountID_);
+                                 << to_string(sponsorID);
                 return tecINTERNAL;
                 // LCOV_EXCL_STOP
             }

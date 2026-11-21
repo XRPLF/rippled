@@ -1147,7 +1147,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
             //    flags are set.
             // 4. The RegularKey is not set.
             // 5. The SponsoredOwnerCount, SponsoringOwnerCount, SponsoringAccountCount, Sponsor
-            //    fields are not set.
+            //    fields are not set, except SponsoringAccountCount on a lease account.
             {
                 std::vector<SField const*> const& fields = getPseudoAccountFields();
 
@@ -1173,9 +1173,13 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
             {
                 errors_.emplace_back("pseudo-account has a regular key");
             }
+            // A lease account (sfLoanID, AccountLeasing) sponsors the reserves of
+            // the accounts its lease created, so it may carry
+            // SponsoringAccountCount, and no other sponsorship field.
+            bool const mayCountAccounts = after->isFieldPresent(sfLoanID);
             if (after->isFieldPresent(sfSponsoredOwnerCount) ||
                 after->isFieldPresent(sfSponsoringOwnerCount) || after->isFieldPresent(sfSponsor) ||
-                after->isFieldPresent(sfSponsoringAccountCount))
+                (after->isFieldPresent(sfSponsoringAccountCount) && !mayCountAccounts))
             {
                 errors_.emplace_back("pseudo-account has a sponsorship field");
             }

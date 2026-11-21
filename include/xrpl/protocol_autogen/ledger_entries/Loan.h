@@ -562,6 +562,102 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanScale);
     }
+
+    /**
+     * @brief Get sfAccount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getAccount() const
+    {
+        if (hasAccount())
+            return this->sle_->at(sfAccount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAccount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAccount() const
+    {
+        return this->sle_->isFieldPresent(sfAccount);
+    }
+
+    /**
+     * @brief Get sfLeaseUnit (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getLeaseUnit() const
+    {
+        if (hasLeaseUnit())
+            return this->sle_->at(sfLeaseUnit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLeaseUnit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLeaseUnit() const
+    {
+        return this->sle_->isFieldPresent(sfLeaseUnit);
+    }
+
+    /**
+     * @brief Get sfLeaseClaimVault (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getLeaseClaimVault() const
+    {
+        if (hasLeaseClaimVault())
+            return this->sle_->at(sfLeaseClaimVault);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLeaseClaimVault is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLeaseClaimVault() const
+    {
+        return this->sle_->isFieldPresent(sfLeaseClaimVault);
+    }
+
+    /**
+     * @brief Get sfLeaseClaimCover (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getLeaseClaimCover() const
+    {
+        if (hasLeaseClaimCover())
+            return this->sle_->at(sfLeaseClaimCover);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLeaseClaimCover is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLeaseClaimCover() const
+    {
+        return this->sle_->isFieldPresent(sfLeaseClaimCover);
+    }
 };
 
 /**
@@ -914,6 +1010,50 @@ public:
     setLoanScale(std::decay_t<typename SF_INT32::type::value_type> const& value)
     {
         object_[sfLoanScale] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAccount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfAccount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLeaseUnit (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setLeaseUnit(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfLeaseUnit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLeaseClaimVault (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setLeaseClaimVault(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfLeaseClaimVault] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLeaseClaimCover (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setLeaseClaimCover(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfLeaseClaimCover] = value;
         return *this;
     }
 

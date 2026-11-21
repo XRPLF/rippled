@@ -47,6 +47,10 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     auto const totalValueOutstandingValue = canonical_NUMBER();
     auto const managementFeeOutstandingValue = canonical_NUMBER();
     auto const loanScaleValue = canonical_INT32();
+    auto const accountValue = canonical_ACCOUNT();
+    auto const leaseUnitValue = canonical_NUMBER();
+    auto const leaseClaimVaultValue = canonical_NUMBER();
+    auto const leaseClaimCoverValue = canonical_NUMBER();
 
     LoanBuilder builder{
         previousTxnIDValue,
@@ -78,6 +82,10 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     builder.setTotalValueOutstanding(totalValueOutstandingValue);
     builder.setManagementFeeOutstanding(managementFeeOutstandingValue);
     builder.setLoanScale(loanScaleValue);
+    builder.setAccount(accountValue);
+    builder.setLeaseUnit(leaseUnitValue);
+    builder.setLeaseClaimVault(leaseClaimVaultValue);
+    builder.setLeaseClaimCover(leaseClaimCoverValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -284,6 +292,38 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLoanScale());
     }
 
+    {
+        auto const& expected = accountValue;
+        auto const actualOpt = entry.getAccount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccount");
+        EXPECT_TRUE(entry.hasAccount());
+    }
+
+    {
+        auto const& expected = leaseUnitValue;
+        auto const actualOpt = entry.getLeaseUnit();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLeaseUnit");
+        EXPECT_TRUE(entry.hasLeaseUnit());
+    }
+
+    {
+        auto const& expected = leaseClaimVaultValue;
+        auto const actualOpt = entry.getLeaseClaimVault();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLeaseClaimVault");
+        EXPECT_TRUE(entry.hasLeaseClaimVault());
+    }
+
+    {
+        auto const& expected = leaseClaimCoverValue;
+        auto const actualOpt = entry.getLeaseClaimCover();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLeaseClaimCover");
+        EXPECT_TRUE(entry.hasLeaseClaimCover());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -324,6 +364,10 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     auto const totalValueOutstandingValue = canonical_NUMBER();
     auto const managementFeeOutstandingValue = canonical_NUMBER();
     auto const loanScaleValue = canonical_INT32();
+    auto const accountValue = canonical_ACCOUNT();
+    auto const leaseUnitValue = canonical_NUMBER();
+    auto const leaseClaimVaultValue = canonical_NUMBER();
+    auto const leaseClaimCoverValue = canonical_NUMBER();
 
     auto sle = std::make_shared<SLE>(Loan::entryType, index);
 
@@ -354,6 +398,10 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     sle->at(sfTotalValueOutstanding) = totalValueOutstandingValue;
     sle->at(sfManagementFeeOutstanding) = managementFeeOutstandingValue;
     sle->at(sfLoanScale) = loanScaleValue;
+    sle->at(sfAccount) = accountValue;
+    sle->at(sfLeaseUnit) = leaseUnitValue;
+    sle->at(sfLeaseClaimVault) = leaseClaimVaultValue;
+    sle->at(sfLeaseClaimCover) = leaseClaimCoverValue;
 
     LoanBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -685,6 +733,58 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLoanScale");
     }
 
+    {
+        auto const& expected = accountValue;
+
+        auto const fromSleOpt = entryFromSle.getAccount();
+        auto const fromBuilderOpt = entryFromBuilder.getAccount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccount");
+    }
+
+    {
+        auto const& expected = leaseUnitValue;
+
+        auto const fromSleOpt = entryFromSle.getLeaseUnit();
+        auto const fromBuilderOpt = entryFromBuilder.getLeaseUnit();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLeaseUnit");
+        expectEqualField(expected, *fromBuilderOpt, "sfLeaseUnit");
+    }
+
+    {
+        auto const& expected = leaseClaimVaultValue;
+
+        auto const fromSleOpt = entryFromSle.getLeaseClaimVault();
+        auto const fromBuilderOpt = entryFromBuilder.getLeaseClaimVault();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLeaseClaimVault");
+        expectEqualField(expected, *fromBuilderOpt, "sfLeaseClaimVault");
+    }
+
+    {
+        auto const& expected = leaseClaimCoverValue;
+
+        auto const fromSleOpt = entryFromSle.getLeaseClaimCover();
+        auto const fromBuilderOpt = entryFromBuilder.getLeaseClaimCover();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLeaseClaimCover");
+        expectEqualField(expected, *fromBuilderOpt, "sfLeaseClaimCover");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -791,5 +891,13 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getManagementFeeOutstanding().has_value());
     EXPECT_FALSE(entry.hasLoanScale());
     EXPECT_FALSE(entry.getLoanScale().has_value());
+    EXPECT_FALSE(entry.hasAccount());
+    EXPECT_FALSE(entry.getAccount().has_value());
+    EXPECT_FALSE(entry.hasLeaseUnit());
+    EXPECT_FALSE(entry.getLeaseUnit().has_value());
+    EXPECT_FALSE(entry.hasLeaseClaimVault());
+    EXPECT_FALSE(entry.getLeaseClaimVault().has_value());
+    EXPECT_FALSE(entry.hasLeaseClaimCover());
+    EXPECT_FALSE(entry.getLeaseClaimCover().has_value());
 }
 }

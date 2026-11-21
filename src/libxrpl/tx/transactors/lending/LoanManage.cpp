@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/LeaseHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -18,6 +19,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -39,6 +41,9 @@ LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 LoanManage::getFlagsMask(PreflightContext const& ctx)
 {
+    // tfLoanLeaseRecover exists only with AccountLeasing.
+    if (!ctx.rules.enabled(featureAccountLeasing))
+        return tfLoanManageMask | tfLoanLeaseRecover;
     return tfLoanManageMask;
 }
 
@@ -54,14 +59,40 @@ LoanManage::preflight(PreflightContext const& ctx)
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
         {
-            JLOG(ctx.j.warn()) << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
-                                  "tfLoanUnimpair can be set.";
+            JLOG(ctx.j.warn()) << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, "
+                                  "tfLoanUnimpair or tfLoanLeaseRecover can be set.";
             return temINVALID_FLAG;
         }
     }
 
     return tesSUCCESS;
 }
+
+namespace {
+
+// LoanManage with tfLoanLeaseRecover sends a defaulted lease loan's free XRP to
+// the vault, the cover and the borrower. The protocol fixes every amount and
+// the order, so any account may sign it.
+[[nodiscard]] TER
+preclaimLeaseRecover(PreclaimContext const& ctx, SLE const& loan)
+{
+    if (!isLeaseLoan(loan) || !loan.isFlag(lsfLoanDefault))
+    {
+        JLOG(ctx.j.warn()) << "Only a defaulted lease loan can be recovered.";
+        return tecNO_PERMISSION;
+    }
+    auto const leaseSle = ctx.view.read(keylet::account(loan.at(~sfAccount).value_or(AccountID{})));
+    if (!leaseSle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    if (leaseFree(*leaseSle, loan) == beast::kZero)
+    {
+        JLOG(ctx.j.warn()) << "The lease account holds no free XRP to recover.";
+        return tecPRECISION_LOSS;
+    }
+    return tesSUCCESS;
+}
+
+}  // namespace
 
 TER
 LoanManage::preclaim(PreclaimContext const& ctx)
@@ -77,6 +108,8 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
+    if (tx.isFlag(tfLoanLeaseRecover))
+        return preclaimLeaseRecover(ctx, *loanSle);
     // Impairment only allows certain transitions.
     // 1. Once it's in default, it can't be changed.
     // 2. It can get worse: unimpaired -> impaired -> default
@@ -221,6 +254,15 @@ defaultLoanFixedPrecision(
     brokerSle->at(sfDebtTotal) -= principalOutstanding;
     brokerSle->at(sfCoverAvailable) -= coverAmount;
     view.update(brokerSle);
+
+    // A lease loan records what the vault and the cover lost, to recover
+    // from its lease account.
+    if (isLeaseLoan(*loanSle))
+    {
+        Number const cover = coverAmount;
+        loanSle->at(sfLeaseClaimVault) = principalOutstanding - cover;
+        loanSle->at(sfLeaseClaimCover) = cover;
+    }
 
     loanSle->setFlag(lsfLoanDefault);
     loanSle->at(sfTotalValueOutstanding) = 0;
@@ -378,6 +420,14 @@ LoanManage::defaultLoan(
 
     // Update the Loan object:
     loanSle->setFlag(lsfLoanDefault);
+
+    // A lease loan records what the vault and the cover lost, to recover
+    // from its lease account.
+    if (isLeaseLoan(*loanSle))
+    {
+        loanSle->at(sfLeaseClaimVault) = vaultDefaultAmount;
+        loanSle->at(sfLeaseClaimCover) = defaultCovered;
+    }
 
     loanSle->at(sfTotalValueOutstanding) = 0;
     loanSle->at(sfPaymentRemaining) = 0;
@@ -557,7 +607,15 @@ LoanManage::doApply()
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
+        {
+            auto const ter = defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
+            // The free XRP of a lease loan pays the claims at once.
+            if (!isTesSuccess(ter) || !isLeaseLoan(*loanSle))
+                return ter;
+            return leaseRecover(view, loanSle, brokerSle, vaultSle, j_);
+        }
+        if (tx.isFlag(tfLoanLeaseRecover))
+            return leaseRecover(view, loanSle, brokerSle, vaultSle, j_);
         if (tx.isFlag(tfLoanImpair))
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))

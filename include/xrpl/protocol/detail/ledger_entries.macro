@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfLoanID,                 SoeOptional}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -593,6 +594,10 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     // number of digits after the decimal point (excluding
     // trailing zeros).
     {sfLoanScale,                SoeDefault},
+    {sfAccount,                  SoeOptional},
+    {sfLeaseUnit,                SoeOptional},
+    {sfLeaseClaimVault,          SoeDefault},
+    {sfLeaseClaimCover,          SoeDefault},
 }))
 
 /** A ledger object representing a sponsorship.

@@ -478,6 +478,7 @@ using InvariantChecks = std::tuple<
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
+    ValidLease,
     ValidVault,
     ValidConfidentialMPToken,
     ValidMPTBalanceChanges,
