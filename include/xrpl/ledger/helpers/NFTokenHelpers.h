@@ -71,6 +71,14 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, SLE::Ref page);
 
 /**
+ * Options for deleteTokenOffer().
+ */
+struct DeleteTokenOfferOptions
+{
+    EraseMode eraseMode = EraseMode::Normal;
+};
+
+/**
  * Deletes the given token offer.
  *
  * An offer is tracked in two separate places:
@@ -79,9 +87,11 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
  *     - The owner directory of the account that placed the offer.
  *
  * The offer also consumes one incremental reserve.
+ *
+ * @param options Options for the delete.
  */
 bool
-deleteTokenOffer(ApplyView& view, SLE::Ref offer);
+deleteTokenOffer(ApplyView& view, SLE::Ref offer, DeleteTokenOfferOptions options = {});
 
 /**
  * Repairs the links in an NFTokenPage directory.

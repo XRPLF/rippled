@@ -34,7 +34,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -5202,6 +5204,146 @@ public:
         pass();
     }
 
+    // Create an offer by `owner` that sells EUR for USD, then make it
+    // unfunded. Return its keylet.
+    static Keylet
+    createUnfundedOffer(
+        jtx::Env& env,
+        jtx::Account const& gw,
+        jtx::Account const& owner,
+        jtx::IOU const& usd,
+        jtx::IOU const& eur)
+    {
+        using namespace jtx;
+        env(trust(owner, eur(100)));
+        env(pay(gw, owner, eur(10)));
+        auto const k = keylet::offer(owner, SeqProxy::rawSequence(env.seq(owner)));
+        env(offer(owner, usd(10), eur(10)));
+        env(pay(owner, gw, eur(10)));
+        env.close();
+        return k;
+    }
+
+    void
+    testPersistentDeleteFillOrKill(FeatureBitset features)
+    {
+        // A killed offer keeps the removal of the unfunded offers that flow
+        // found and then reported on failure.
+        testcase("Persistent delete: fill or kill");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice, bob);
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        auto const bobOffer = createUnfundedOffer(env, gw, bob, usd, eur);
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+        BEAST_EXPECT(!env.le(bobOffer));
+    }
+
+    void
+    testPersistentDeleteInsufficientReserve(FeatureBitset features)
+    {
+        // With fixCleanup3_6_0, every tec reset keeps the recorded unfunded
+        // offer removals, and only those. An OfferSequence cancel is never
+        // kept.
+        testcase("Persistent delete: insufficient reserve");
+        using namespace jtx;
+
+        bool const fixEnabled = features[fixCleanup3_6_0];
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice, bob);
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+
+        // Leave alice enough XRP for one more offer, but not for a second.
+        auto const fee = env.current()->fees().base;
+        XRPAmount const target = reserve(env, 2) + fee - XRPAmount{1};
+        env(pay(alice, gw, STAmount{env.balance(alice).value().xrp() - fee - target}));
+        env.close();
+
+        auto const aliceSeq = env.seq(alice);
+        auto const aliceOffer = keylet::offer(alice, SeqProxy::rawSequence(aliceSeq));
+        env(offer(alice, XRP(1), usd(1)));
+        env.close();
+        BEAST_EXPECT(env.le(aliceOffer));
+
+        auto const bobOffer = createUnfundedOffer(env, gw, bob, usd, eur);
+
+        auto jv = offer(alice, eur(10), usd(10));
+        jv[sfOfferSequence.jsonName] = aliceSeq;
+        env(jv, Ter(tecINSUF_RESERVE_OFFER));
+        env.close();
+
+        BEAST_EXPECT(env.le(aliceOffer));
+        BEAST_EXPECT(static_cast<bool>(env.le(bobOffer)) != fixEnabled);
+    }
+
+    void
+    testPersistentDeleteLimit(FeatureBitset features)
+    {
+        // With fixCleanup3_6_0, a tec keeps at most kMaxPersistentDeletes
+        // persistent deletes of any type. Before it, the offer limit is
+        // kUnfundedOfferRemoveLimit.
+        testcase("Persistent delete: limit");
+        using namespace jtx;
+
+        bool const fixEnabled = features[fixCleanup3_6_0];
+        std::uint32_t const offerCount = kMaxPersistentDeletes + 88;
+        static_assert(kMaxPersistentDeletes + 88 < kUnfundedOfferRemoveLimit);
+
+        // Bob's trust line remains, plus the offers past the limit.
+        std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, bob);
+        // Close so that gw's DefaultRipple flag is set before any trust line
+        // is created. Otherwise, the order in which the first close replays
+        // the funding and trust transactions decides whether gw's side of
+        // each line gets NoRipple, which blocks crossing through gw.
+        env.close();
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env(trust(bob, eur(1000)));
+        env(pay(gw, bob, eur(10)));
+        env.close();
+
+        for (std::uint32_t i = 0; i < offerCount; ++i)
+        {
+            env(offer(bob, usd(10), eur(10)));
+            if (i % 100 == 99)
+                env.close();
+        }
+        env(pay(bob, gw, eur(10)));
+        env.close();
+        env.require(Owners(bob, offerCount + 1));
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+
+        env.require(Owners(bob, remaining + 1));
+    }
+
     void
     testFillOrKill(FeatureBitset features)
     {
@@ -5437,6 +5579,13 @@ public:
         testAll(allFeatures - featurePermissionedDEX);
         testAll(allFeatures);
         testFalseAssert();
+
+        for (auto const& features : {allFeatures - fixCleanup3_6_0, allFeatures})
+        {
+            testPersistentDeleteFillOrKill(features);
+            testPersistentDeleteInsufficientReserve(features);
+            testPersistentDeleteLimit(features);
+        }
     }
 };
 

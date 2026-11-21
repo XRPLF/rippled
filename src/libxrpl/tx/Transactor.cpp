@@ -1467,8 +1467,74 @@ Transactor::trapTransaction(UInt256 txHash) const
 }
 
 std::tuple<TER, XRPAmount, bool>
+Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
+{
+    JLOG(j_.trace()) << "reapplying persistent deletes because of " << transToken(result);
+
+    // Copy the keys, because reset() replaces the view that holds them.
+    auto const keys = ctx_.persistentKeys();
+
+    auto const [resetResult, resetFee] = reset(fee);
+    if (!isTesSuccess(resetResult))
+        return {resetResult, resetFee, isTecClaim(resetResult)};
+
+    std::size_t erased = 0;
+    auto const viewJ = ctx_.registry.get().getJournal("View");
+    for (auto const& key : keys)
+    {
+        // One limit covers all entry types.
+        if (erased == kMaxPersistentDeletes)
+            break;
+
+        // A recorded entry can be missing from the reset view: the
+        // transaction can create and then erase it.
+        auto const sle = view().peek(keylet::unchecked(key));
+        if (!sle)
+            continue;
+        ++erased;
+
+        switch (sle->getType())
+        {
+            case ltOFFER:
+                offerDelete(view(), sle, viewJ);
+                break;
+            case ltNFTOKEN_OFFER:
+                nft::deleteTokenOffer(view(), sle);
+                break;
+            case ltCREDENTIAL:
+                if (auto const ter = credentials::deleteSLE(view(), sle, viewJ); !isTesSuccess(ter))
+                {
+                    JLOG(viewJ.error()) << "replayPersistentDeletes: failed to delete "
+                                           "expired credential. Err: "
+                                        << transToken(ter);
+                }
+                break;
+            case ltRIPPLE_STATE:
+                if (!isTesSuccess(deleteAMMTrustLine(view(), sle, std::nullopt, viewJ)))
+                {
+                    JLOG(viewJ.error())
+                        << "replayPersistentDeletes: failed to delete AMM trustline";
+                }
+                break;
+            // LCOV_EXCL_START
+            default:
+                UNREACHABLE(
+                    "xrpl::Transactor::replayPersistentDeletes : unexpected "
+                    "type");
+                break;
+                // LCOV_EXCL_STOP
+        }
+    }
+
+    return {result, resetFee, isTecClaim(result)};
+}
+
+std::tuple<TER, XRPAmount, bool>
 Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
+    if (view().rules().enabled(fixCleanup3_6_0))
+        return replayPersistentDeletes(result, fee);
+
     JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
     // FIXME: This mechanism for doing work while returning a `tec` is
@@ -1651,8 +1717,12 @@ Transactor::operator()()
             canApplyTmp = false;
         }
         else if (
-            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-            (result == tecEXPIRED) || isTecClaimHardFail(result, view().flags()))
+            isTecClaimHardFail(result, view().flags()) ||
+            // Before fixCleanup3_6_0, these results are applied even when the
+            // transaction could be retried, so that their deletions are kept.
+            (!view().rules().enabled(fixCleanup3_6_0) &&
+             ((result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+              (result == tecEXPIRED))))
         {
             // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.

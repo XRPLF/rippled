@@ -452,6 +452,7 @@ PaymentSandbox::apply(RawView& to)
 {
     XRPL_ASSERT(!ps_, "xrpl::PaymentSandbox::apply : non-null sandbox");
     items_.apply(to);
+    applyPersistent(to);
 }
 
 void
@@ -460,6 +461,7 @@ PaymentSandbox::apply(PaymentSandbox& to)
     XRPL_ASSERT(ps_ == &to, "xrpl::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
+    applyPersistent(to);
 }
 
 XRPAmount
