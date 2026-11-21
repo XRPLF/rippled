@@ -449,9 +449,8 @@ parseLedgerHashes(
     json::StaticString const fieldName,
     unsigned const apiVersion)
 {
-    if (params.isUInt() || params.isInt())
+    if (params.isUInt() || (params.isInt() && params.asInt() >= 0))
     {
-        // If the index doesn't parse as a UInt, throw
         auto const index = params.asUInt();
 
         // Return the "long" skip list for the given ledger index.
