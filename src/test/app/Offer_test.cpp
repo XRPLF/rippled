@@ -5313,6 +5313,7 @@ public:
 
         std::string logs;
         std::uint32_t ownerCount = 0;
+        std::string info;
         // Bob's trust line remains, plus the offers past the limit.
         std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
         {
@@ -5339,6 +5340,13 @@ public:
             env.close();
             env.require(Owners(bob, offerCount + 1));
 
+            info = "aliceUsdLineFlags=" +
+                std::to_string(env.le(keylet::trustLine(alice.id(), usd.issue()))->getFlags()) +
+                " bobEurLineFlags=" +
+                std::to_string(env.le(keylet::trustLine(bob.id(), eur.issue()))->getFlags()) +
+                " gwFlags=" + std::to_string(env.le(gw)->getFlags()) +
+                " aliceFlags=" + std::to_string(env.le(alice)->getFlags()) +
+                " aliceGtGw=" + std::to_string(alice.id() > gw.id());
             env.app().getLogs().journal("Test").info() << "MARKER_START";
             env.app().getLogs().threshold(beast::Severity::Trace);
             env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
@@ -5350,8 +5358,8 @@ public:
         }
         BEAST_EXPECTS(
             ownerCount == remaining + 1,
-            "fixEnabled=" + std::to_string(fixEnabled) + " actual=" + std::to_string(ownerCount) +
-                " expected=" + std::to_string(remaining + 1));
+            info + " fixEnabled=" + std::to_string(fixEnabled) + " actual=" +
+                std::to_string(ownerCount) + " expected=" + std::to_string(remaining + 1));
         if (ownerCount != remaining + 1)
         {
             auto const start = logs.find("MARKER_START");
