@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
@@ -27,8 +28,10 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -414,6 +417,26 @@ class AccountLeasing_test : public LoanTestBase
         env.memoize(user4);
         createLeased(env, lease, user4, XRP(1));
         BEAST_EXPECT(leaseCount(env, lease) == 1);
+
+        // The user ends its own lease once it carries its reserve.
+        env(pay(lease.stranger, user4, XRP(1'000)));
+        env.close();
+        env(sponsor::transfer(user4, tfSponsorshipEnd));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(user4))->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(leaseCount(env, lease) == 0);
+        BEAST_EXPECT(leaseBalance(env, lease) == lease.principal);
+
+        // An impaired lease creates no account; unimpaired, it does again.
+        Account const user5{"user5"};
+        env.memoize(user5);
+        env(manage(lease.lender, lease.loanKeylet.key, tfLoanImpair));
+        env.close();
+        createLeased(env, lease, user5, XRP(1), tecNO_PERMISSION);
+        env(manage(lease.lender, lease.loanKeylet.key, tfLoanUnimpair));
+        env.close();
+        createLeased(env, lease, user5, XRP(1));
+        BEAST_EXPECT(leaseCount(env, lease) == 1);
     }
 
     void
@@ -534,6 +557,11 @@ class AccountLeasing_test : public LoanTestBase
         // Nothing free: recovery moves nothing.
         env(manage(lease.lender, lease.loanKeylet.key, tfLoanLeaseRecover), Ter(tecPRECISION_LOSS));
 
+        // A defaulted lease creates no account.
+        Account const user4{"user4"};
+        env.memoize(user4);
+        createLeased(env, lease, user4, XRP(1), tecNO_PERMISSION);
+
         // After default the borrower no longer acts for the lease account;
         // the broker owner does.
         env(pay(lease.stranger, user1, XRP(1'000)));
@@ -577,14 +605,81 @@ class AccountLeasing_test : public LoanTestBase
             Fee(deleteFee));
         env.close();
         BEAST_EXPECT(leaseCount(env, lease) == 0);
+
+        // No account is leased, but the lease account still holds XRP to
+        // recover: the loan cannot be deleted yet.
+        env(del(lease.borrower, lease.loanKeylet.key), Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        // The last recovery pays the rest of the vault's claim, then the
+        // cover's, then the borrower, each exactly.
+        auto const lastLoan = env.le(lease.loanKeylet);
+        auto const brokerPseudo = env.le(keylet::loanBroker(lease.broker.brokerID))->at(sfAccount);
+        XRPAmount const free = leaseBalance(env, lease);
+        auto const claimDrops = [](Number const& claim) {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return XRPAmount{claim};
+        };
+        XRPAmount const toVault = std::min(free, claimDrops(lastLoan->at(sfLeaseClaimVault)));
+        XRPAmount const toCover =
+            std::min(free - toVault, claimDrops(lastLoan->at(sfLeaseClaimCover)));
+        auto const vaultBefore = accountBalance(env, vaultPseudo);
+        auto const brokerBefore = accountBalance(env, brokerPseudo);
+        auto const borrowerBefore = accountBalance(env, lease.borrower);
         env(manage(lease.borrower, lease.loanKeylet.key, tfLoanLeaseRecover));
         env.close();
         BEAST_EXPECT(leaseBalance(env, lease) == XRPAmount{0});
+        BEAST_EXPECTS(
+            accountBalance(env, vaultPseudo) == vaultBefore + toVault,
+            to_string(accountBalance(env, vaultPseudo) - vaultBefore));
+        BEAST_EXPECTS(
+            accountBalance(env, brokerPseudo) == brokerBefore + toCover,
+            to_string(accountBalance(env, brokerPseudo) - brokerBefore));
+        // The borrower signed: it pays the transaction fee out of its share.
+        BEAST_EXPECTS(
+            accountBalance(env, lease.borrower) + env.current()->fees().base ==
+                borrowerBefore + free - toVault - toCover,
+            to_string(accountBalance(env, lease.borrower) - borrowerBefore));
         env(del(lease.borrower, lease.loanKeylet.key));
         env.close();
         BEAST_EXPECT(!env.le(lease.loanKeylet));
         BEAST_EXPECT(!env.le(keylet::account(lease.leaseAccount)));
     }
+    void
+    testReserveRise(FeatureBitset features)
+    {
+        testcase("A base reserve above the lease's unit stops new leased accounts");
+        using namespace jtx;
+
+        // A genesis base reserve of 2 XRP; the fee vote at the first flag
+        // ledger raises it to the default of 10 XRP.
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->fees.accountReserve = XRP(2).value().xrp().drops();
+                return cfg;
+            }),
+            features};
+        Lease lease = setupBroker(env);
+        createLease(env, lease, 3);
+        Account const user1{"user1"};
+        Account const user2{"user2"};
+        env.memoize(user1);
+        env.memoize(user2);
+        createLeased(env, lease, user1, XRP(1));
+
+        for (int i = 0; i < 260; ++i)
+            env.close();
+        if (!BEAST_EXPECTS(
+                env.current()->fees().reserve > lease.reserve,
+                to_string(env.current()->fees().reserve)))
+            return;
+
+        // Two units are free, but a unit no longer covers a base reserve.
+        createLeased(env, lease, user2, XRP(1), tecINSUFFICIENT_RESERVE);
+        BEAST_EXPECT(leaseCount(env, lease) == 1);
+    }
+
     void
     testSponsorshipObligation(FeatureBitset features)
     {
@@ -766,6 +861,7 @@ class AccountLeasing_test : public LoanTestBase
         testPayoff(features);
         testDefault(features);
         testDefaultAfterRepayment(features);
+        testReserveRise(features);
         testSponsorshipObligation(features);
         testReapFundedSponsorship(features);
     }
