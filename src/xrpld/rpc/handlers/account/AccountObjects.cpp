@@ -197,7 +197,7 @@ getAccountObjects(
             if (!sleNode)
             {
                 // LCOV_EXCL_START
-                UNREACHABLE("xrpl::doAccountObjects : null SLE");
+                UNREACHABLE("xrpl::getAccountObjects : null SLE");
                 continue;
                 // LCOV_EXCL_STOP
             }

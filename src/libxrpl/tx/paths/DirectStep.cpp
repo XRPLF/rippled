@@ -514,7 +514,7 @@ DirectStepI<TDerived>::revImp(
     auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::Reverse);
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
-        "xrpl::DirectStepI : valid destination quality");
+        "xrpl::DirectStepI::revImp : valid destination quality");
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 

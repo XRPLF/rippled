@@ -293,7 +293,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "xrpl::peer_finder::Logic::new_inbound_slot : remote endpoint "
+            "xrpl::peer_finder::Logic::newInboundSlot : remote endpoint "
             "inserted");
         // Add to the connected address list
         connectedAddresses.emplace(remoteEndpoint.address());
@@ -329,7 +329,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "xrpl::peer_finder::Logic::new_outbound_slot : remote endpoint "
+            "xrpl::peer_finder::Logic::newOutboundSlot : remote endpoint "
             "inserted");
 
         // Add to the connected address list
@@ -943,7 +943,7 @@ public:
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "xrpl::peer_finder::Logic::on_closed : invalid slot "
+                    "xrpl::peer_finder::Logic::onClosed : invalid slot "
                     "state");
                 break;
                 // LCOV_EXCL_STOP

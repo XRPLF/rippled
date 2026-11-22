@@ -248,7 +248,7 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
     catch (UnknownTxnType const&)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
+        UNREACHABLE("xrpl::invokeCalculateBaseFee : unknown transaction type");
         return std::unexpected(temUNKNOWN);
         // LCOV_EXCL_STOP
     }

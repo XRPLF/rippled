@@ -50,7 +50,7 @@ public:
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
-            "xrpl::peer_finder::Counts::can_activate : valid input state");
+            "xrpl::peer_finder::Counts::canActivate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;

@@ -509,8 +509,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     auto const numPartialCoeffs = (partialCoeffLen != 0u) ? 1 : 0;
     auto const numB5810Coeffs = numFullCoeffs + numPartialCoeffs;
     XRPL_ASSERT(
-        numB5810Coeffs <= b5810Coeff.size(),
-        "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
+        numB5810Coeffs <= b5810Coeff.size(), "xrpl::b58_fast::detail::b58ToB256Be : maximum coeff");
     for (unsigned char const c : input.substr(0, partialCoeffLen))
     {
         auto const curVal = ::xrpl::kAlphabetReverse[c];

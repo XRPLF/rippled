@@ -1411,8 +1411,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                                "nodes storing large amounts of history, because of the "
                                "difficulty inherent in rebuilding corrupted data.";
         }
-        XRPL_ASSERT(
-            result->size() == 3, "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
+        XRPL_ASSERT(result->size() == 3, "xrpl::setupDatabaseCon::globalPragma : result size is 3");
         setup.globalPragma = std::move(result);
     }
     setup.useGlobalPragma = true;
