@@ -17,7 +17,7 @@ namespace xrpl {
 /**
  * TrafficCount is used to count ingress and egress wire bytes and number of
  * messages. The general intended usage is as follows:
- *     1. Determine the message category by callin TrafficCount::categorize
+ *     1. Determine the message category by calling TrafficCount::categorize
  *     2. Increment the counters for incoming or outgoing traffic by calling
  * TrafficCount::addCount
  *     3. Optionally, TrafficCount::addCount can be called at any time to

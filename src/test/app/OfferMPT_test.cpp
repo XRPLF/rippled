@@ -2856,7 +2856,7 @@ public:
         BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
-        // only 300 XRP should have been payed since that's all
+        // only 300 XRP should have been paid since that's all
         // that remained in the offer from bob. The alice balance is now
         // 100 USD because another 60 USD were transferred to bob in the second
         // payment
