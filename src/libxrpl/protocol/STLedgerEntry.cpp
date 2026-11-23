@@ -154,8 +154,6 @@ STLedgerEntry::thread(
 {
     UInt256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
-    JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
-
     if (oldPrevTxID == txID)
     {
         // this transaction is already threaded
@@ -169,6 +167,9 @@ STLedgerEntry::thread(
     prevLedgerID = getFieldU32(sfPreviousTxnLgrSeq);
     setFieldH256(sfPreviousTxnID, txID);
     setFieldU32(sfPreviousTxnLgrSeq, ledgerSeq);
+
+    JLOG(debugLog().trace()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
+
     return true;
 }
 

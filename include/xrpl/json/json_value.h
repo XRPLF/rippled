@@ -3,11 +3,15 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
 
+#include <concepts>
+#include <cstddef>
 #include <cstring>
 #include <iterator>
 #include <limits>
 #include <map>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <vector>
 
 /**
@@ -184,6 +188,7 @@ public:
     Value(double value);
     Value(char const* value);
     Value(xrpl::Number const& value);
+
     /**
      * @brief Constructs a value from a static string.
      *
@@ -197,7 +202,26 @@ public:
      * @endcode
      */
     Value(StaticString const& value);
+
+    /**
+     * @brief Constructs a value from a string.
+     *
+     * The characters are copied, so the string need not outlive the call.
+     *
+     * @param value The characters to copy.
+     */
     Value(std::string const& value);
+
+    /**
+     * @brief Constructs a value from a string view.
+     *
+     * The characters are copied, so the view need not outlive the call and need
+     * not end in a null character.
+     *
+     * @param value The characters to copy.
+     */
+    Value(std::string_view value);
+
     Value(bool value);
     Value(Value const& other);
     ~Value();
@@ -471,6 +495,45 @@ toJson(xrpl::Number const& number)
 
 bool
 operator==(Value const&, Value const&);
+
+/**
+ * Compares a value with the characters of a string, in place.
+ *
+ * Any right-hand side that converts to a string view takes this path: a
+ * literal, a `char const*`, a `std::string` or a view. Deduction matches each
+ * exactly, ahead of its conversion to a Value. A `0` deduces as `int`, which no
+ * view accepts, and `nullptr` is excluded, so both compare through Value like
+ * every other type.
+ *
+ * @tparam T A type that converts to `std::string_view`, except
+ *           `std::nullptr_t`.
+ * @param value The value to compare.
+ * @param text The characters to compare it against. A null pointer reads as
+ *             empty text.
+ * @return Whether `value` is a string whose characters, up to its first null
+ *         character, are exactly `text`.
+ */
+template <class T>
+    requires std::convertible_to<T const&, std::string_view> && (!std::same_as<T, std::nullptr_t>)
+bool
+operator==(Value const& value, T const& text)
+{
+    if (!value.isString())
+        return false;
+
+    // A string value holding a null pointer equals no text, not even the empty one.
+    char const* const s = value.asCString();
+    if (s == nullptr)
+        return false;
+
+    // A null pointer names no characters, as it does when it builds a Value.
+    if constexpr (std::is_pointer_v<T>)
+    {
+        if (text == nullptr)
+            return std::string_view{s}.empty();
+    }
+    return std::string_view{s} == std::string_view{text};
+}
 
 bool
 operator<(Value const&, Value const&);
