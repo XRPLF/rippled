@@ -114,7 +114,7 @@ class CurrentTransactionRulesGuard
 {
 public:
     explicit CurrentTransactionRulesGuard(Rules r)
-        : saved_(getCurrentTransactionRules()), savedScale_(Number::getMantissaScale())
+        : saved_(getCurrentTransactionRules()), scaleGuard_(Number::getMantissaScale())
     {
         setCurrentTransactionRules(std::move(r));
     }
@@ -122,9 +122,9 @@ public:
     ~CurrentTransactionRulesGuard()
     {
         setCurrentTransactionRules(saved_);
-        // Setting the rules also sets the mantissa scale. Restore the scale that was active
-        // before this guard, which an outer NumberMantissaScaleGuard may have chosen.
-        Number::setMantissaScale(savedScale_);
+        // Setting the rules also sets the mantissa scale. scaleGuard_ is destroyed after this body
+        // and restores the scale that was active before this guard, which an outer
+        // NumberMantissaScaleGuard may have chosen.
     }
 
     CurrentTransactionRulesGuard() = delete;
@@ -134,10 +134,8 @@ public:
 
 private:
     std::optional<Rules> saved_;
-    MantissaRange::MantissaScale savedScale_;
+    NumberMantissaScaleGuard scaleGuard_;
 };
-
-class NumberMantissaScaleGuard;
 
 bool
 useRulesGuards(Rules const& rules);
