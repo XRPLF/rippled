@@ -1553,7 +1553,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
                     peer->charge(resource::kFeeInvalidData, "TMGetLedger: Invalid node ID");
                     return;
                 }
-                nodeIDs.push_back(std::move(*parsed));
+                nodeIDs.push_back(*parsed);
             }
         }
 

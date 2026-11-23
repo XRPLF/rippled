@@ -16,6 +16,8 @@
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
 #include <benchmark/benchmark.h>
@@ -25,6 +27,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <vector>
 
@@ -124,11 +127,15 @@ family()
 }
 
 // Hashed keys, as in a ledger. Keys at odd indices are never inserted, so
-// they serve as lookup targets that fall between items.
+// they serve as lookup targets that fall between items. Benchmark threads call
+// this concurrently; the lock covers creation, and a returned vector is never
+// modified afterward.
 std::vector<UInt256> const&
 keys(std::size_t n)
 {
+    static std::mutex mutex;
     static std::map<std::size_t, std::vector<UInt256>> cache;
+    std::scoped_lock const lock(mutex);
     auto& v = cache[n];
     if (v.empty())
     {
@@ -148,11 +155,14 @@ fill(SHAMap& map, std::size_t n)
         map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k[2 * i], makeSlice(payload)));
 }
 
-// An immutable map of `n` items, shared by every thread of a run.
+// An immutable map of `n` items, shared by every thread of a run. The lock
+// covers creation, and a returned map is never modified afterward.
 SHAMap const&
 immutableMap(std::size_t n)
 {
+    static std::mutex mutex;
     static std::map<std::size_t, std::shared_ptr<SHAMap>> cache;
+    std::scoped_lock const lock(mutex);
     auto& snap = cache[n];
     if (!snap)
     {
@@ -172,7 +182,7 @@ bmLookup(benchmark::State& state)
     auto const& k = keys(n);
     // Each thread starts at a different item.
     std::size_t i = static_cast<std::size_t>(state.thread_index()) * 7919;
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         benchmark::DoNotOptimize(map.hasItem(k[2 * (i % n)]));
         ++i;
@@ -194,10 +204,10 @@ bmUpperBound(benchmark::State& state)
     auto const& map = immutableMap(n);
     auto const& k = keys(n);
     std::size_t i = 0;
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         // An absent key, so the walk has to find the next item.
-        benchmark::DoNotOptimize(map.upperBound(k[2 * (i % n) + 1]));
+        benchmark::DoNotOptimize(map.upperBound(k[(2 * (i % n)) + 1]));
         ++i;
     }
     state.SetItemsProcessed(state.iterations());
@@ -209,7 +219,7 @@ bmIterate(benchmark::State& state)
 {
     auto const n = static_cast<std::size_t>(state.range(0));
     auto const& map = immutableMap(n);
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         std::size_t count = 0;
         for (auto const& item : map)
@@ -229,7 +239,7 @@ bmIteratorCopy(benchmark::State& state)
     auto const n = static_cast<std::size_t>(state.range(0));
     auto const& map = immutableMap(n);
     auto const it = map.upperBound(keys(n)[n + 1]);
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto copy = it;
         benchmark::DoNotOptimize(copy);
@@ -242,7 +252,7 @@ bmInsertDelete(benchmark::State& state)
 {
     auto const n = static_cast<std::size_t>(state.range(0));
     auto const& k = keys(n);
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         SHAMap map(SHAMapType::STATE, family());
         map.setUnbacked();

@@ -1,6 +1,8 @@
 benchmarks.libxrpl > xrpl.basics
 benchmarks.libxrpl > xrpl.config
 benchmarks.libxrpl > xrpl.nodestore
+benchmarks.libxrpl > xrpl.protocol
+benchmarks.libxrpl > xrpl.shamap
 libxrpl.basics > xrpl.basics
 libxrpl.conditions > xrpl.basics
 libxrpl.conditions > xrpl.conditions
