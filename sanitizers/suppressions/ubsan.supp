@@ -1,4 +1,4 @@
-# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppressions.
 
 # Patterns match substrings of the reported source path.
 # Conan names package folders after the first five letters of the package name plus a hash
