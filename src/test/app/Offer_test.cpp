@@ -5295,6 +5295,96 @@ public:
     }
 
     void
+    testPersistentDeleteSelfCross(FeatureBitset features)
+    {
+        // Offer crossing removes the taker's own crossed offer only because of
+        // this transaction. If the new offer then fails, the old offer stays.
+        testcase("Persistent delete: self cross");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice);
+        env.close();
+        env(trust(alice, usd(100)));
+        env(trust(alice, eur(100)));
+        env(pay(gw, alice, usd(100)));
+        env(pay(gw, alice, eur(100)));
+        env.close();
+
+        auto const aliceOffer = keylet::offer(alice, SeqProxy::rawSequence(env.seq(alice)));
+        env(offer(alice, usd(10), eur(10)));
+        env.close();
+        env.require(Owners(alice, 3));
+
+        // Leave alice 1 drop below the reserve for her 3 objects. A payment
+        // cannot go below the reserve, so a fee burns the last drops.
+        auto const base = env.current()->fees().base;
+        auto const burn = base * 2 + XRPAmount{1};
+        env(pay(
+            alice,
+            gw,
+            STAmount{
+                env.balance(alice).value().xrp() - base - reserve(env, 3) - burn + XRPAmount{1}}));
+        env(noop(alice), Fee(STAmount{burn}));
+        env.close();
+        BEAST_EXPECT(env.balance(alice).value().xrp() == reserve(env, 3) - XRPAmount{1});
+
+        // The new offer crosses and removes alice's old offer, then has no
+        // reserve to rest on the book.
+        env(offer(alice, eur(10), usd(10)), Ter(tecINSUF_RESERVE_OFFER));
+        env.close();
+        BEAST_EXPECT(env.le(aliceOffer));
+    }
+
+    void
+    testPersistentDeleteEarlierIteration(FeatureBitset features)
+    {
+        // Flow finds bob's autobridged offer unfunded because an earlier
+        // iteration spent bob's EUR. When the fill-or-kill offer fails, bob
+        // gets the EUR back, so the offer is funded and stays.
+        testcase("Persistent delete: funds spent by an earlier iteration");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const ed{"ed"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice, bob, ed);
+        env.close();
+        env(trust(alice, usd(100)));
+        env(trust(alice, eur(100)));
+        env(trust(bob, usd(100)));
+        env(trust(bob, eur(100)));
+        env(trust(ed, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env(pay(gw, bob, eur(10)));
+        env.close();
+
+        // The direct offer has a better quality than the autobridged path, so
+        // flow takes it first.
+        auto const directOffer = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob)));
+        env(offer(bob, usd(9), eur(10)));
+        auto const bridgedOffer = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob)));
+        env(offer(bob, XRP(10), eur(10)));
+        env(offer(ed, usd(10), XRP(10)));
+        env.close();
+
+        env(offer(alice, eur(20), usd(20)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+        BEAST_EXPECT(env.le(directOffer));
+        // Before fixCleanup3_6_0, the tecKILLED replay removes the funded
+        // bridged offer.
+        BEAST_EXPECT(static_cast<bool>(env.le(bridgedOffer)) == features[fixCleanup3_6_0]);
+    }
+
+    void
     testPersistentDeleteLimit(FeatureBitset features)
     {
         // With fixCleanup3_6_0, a tec keeps at most kMaxPersistentDeletes
@@ -5584,6 +5674,8 @@ public:
         {
             testPersistentDeleteFillOrKill(features);
             testPersistentDeleteInsufficientReserve(features);
+            testPersistentDeleteSelfCross(features);
+            testPersistentDeleteEarlierIteration(features);
             testPersistentDeleteLimit(features);
         }
     }
