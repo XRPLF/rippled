@@ -1,4 +1,4 @@
-// cspell:words callgraph inboundledger
+// cspell:words callgraph
 #include <xrpld/app/ledger/InboundLedgers.h>
 
 #include <xrpld/app/ledger/InboundLedger.h>
@@ -287,7 +287,7 @@ public:
         return 60 * fetchRate_.value(clock_.now());
     }
 
-    // Should only be called with an inboundledger that has
+    // Should only be called with an InboundLedger that has
     // a reason of history
     void
     onLedgerFetched() override

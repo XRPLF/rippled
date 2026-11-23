@@ -1,4 +1,3 @@
-// cspell:words depositpreauth
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -627,7 +626,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             env.close();
 
             {
-                // becky setup depositpreauth with credentials
+                // becky setup DepositPreauth with credentials
                 char const credType[] = "abcde";
                 Account const carol{"carol"};
                 env.fund(XRP(5000), carol);

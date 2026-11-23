@@ -1,4 +1,3 @@
-// cspell:words ledgerreplay
 #pragma once
 
 #include <xrpld/app/main/Application.h>

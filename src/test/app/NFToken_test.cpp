@@ -1,4 +1,3 @@
-// cspell:words buyside sellside
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -5318,7 +5317,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             {
                 // Buyer attempts to send 100% of their balance of an IOU
-                // (sellside)
+                // (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(1000));
@@ -5330,7 +5329,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Buyer attempts to send 100% of their balance of an IOU
-                // (buyside)
+                // (buy side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createBuyOffer(buyer, minter, nftID, gwXAU(1000));
@@ -5343,7 +5342,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU, but such that the addition of the transfer
-                // fee would be greater than the buyer's balance (sellside)
+                // fee would be greater than the buyer's balance (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(995));
@@ -5356,7 +5355,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU, but such that the addition of the transfer
-                // fee would be greater than the buyer's balance (buyside)
+                // fee would be greater than the buyer's balance (buy side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createBuyOffer(buyer, minter, nftID, gwXAU(995));
@@ -5370,7 +5369,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU with a transfer fee, and such that the
                 // addition of the transfer fee is still less than their balance
-                // (sellside)
+                // (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(900));
@@ -5386,7 +5385,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU with a transfer fee, and such that the
                 // addition of the transfer fee is still less than their balance
-                // (buyside)
+                // (buy side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createBuyOffer(buyer, minter, nftID, gwXAU(900));
@@ -5402,7 +5401,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU with a transfer fee, and such that the
                 // addition of the transfer fee is equal than their balance
-                // (sellside)
+                // (sell side)
                 reinitializeTrustLineBalances();
 
                 // pay them an additional XAU 20 to cover transfer rate
@@ -5423,7 +5422,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 // Buyer attempts to send an amount less than 100% of their
                 // balance of an IOU with a transfer fee, and such that the
                 // addition of the transfer fee is equal than their balance
-                // (buyside)
+                // (buy side)
                 reinitializeTrustLineBalances();
 
                 // pay them an additional XAU 20 to cover transfer rate
@@ -5442,7 +5441,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Gateway attempts to buy NFT with their own IOU - no
-                // transfer fee is calculated here (sellside)
+                // transfer fee is calculated here (sell side)
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
@@ -5456,7 +5455,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Gateway attempts to buy NFT with their own IOU - no
-                // transfer fee is calculated here (buyside)
+                // transfer fee is calculated here (buy side)
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
@@ -5471,7 +5470,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
-                // than minter trusts (sellside)
+                // than minter trusts (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(5000));
@@ -5484,7 +5483,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
-                // than minter trusts (buyside)
+                // than minter trusts (buy side)
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
@@ -5500,7 +5499,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
                 // amount that would be greater than a balance if there were a
-                // transfer fee calculated in this transaction. (sellside)
+                // transfer fee calculated in this transaction. (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(gw);
                 auto const offerID = createSellOffer(gw, nftID, gwXAU(1000));
@@ -5513,7 +5512,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
                 // amount that would be greater than a balance if there were a
-                // transfer fee calculated in this transaction. (buyside)
+                // transfer fee calculated in this transaction. (buy side)
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(gw);
@@ -5527,7 +5526,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
                 // amount that is greater than a balance before transfer fees.
-                // (sellside)
+                // (sell side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(gw);
                 auto const offerID = createSellOffer(gw, nftID, gwXAU(2000));
@@ -5539,7 +5538,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
                 // amount that is greater than a balance before transfer fees.
-                // (buyside)
+                // (buy side)
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(gw);
                 auto const offerID = createBuyOffer(buyer, gw, nftID, gwXAU(2000));
@@ -5550,7 +5549,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Minter attempts to sell the token for XPB 10, which they
-                // have no trust line for and buyer has kNone of (sellside).
+                // have no trust line for and buyer has kNone of (sell side).
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXPB(10));
@@ -5561,7 +5560,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Minter attempts to sell the token for XPB 10, which they
-                // have no trust line for and buyer has kNone of (buyside).
+                // have no trust line for and buyer has kNone of (buy side).
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createBuyOffer(
@@ -5574,7 +5573,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Minter attempts to sell the token for XPB 10 and the buyer
                 // has it but the minter has no trust line. Trust line is
-                // created as a result of the tx (sellside).
+                // created as a result of the tx (sell side).
                 reinitializeTrustLineBalances();
                 env(pay(gw, buyer, gwXPB(100)));
                 env.close();
@@ -5592,7 +5591,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 // Minter attempts to sell the token for XPB 10 and the buyer
                 // has it but the minter has no trust line. Trust line is
-                // created as a result of the tx (buyside).
+                // created as a result of the tx (buy side).
                 reinitializeTrustLineBalances();
                 env(pay(gw, buyer, gwXPB(100)));
                 env.close();
@@ -5609,7 +5608,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // There is a transfer fee on the NFT and buyer has exact
-                // amount (sellside)
+                // amount (sell side)
                 reinitializeTrustLineBalances();
 
                 // secondarySeller has to sell it because transfer fees only
@@ -5629,7 +5628,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // There is a transfer fee on the NFT and buyer has exact
-                // amount (buyside)
+                // amount (buy side)
                 reinitializeTrustLineBalances();
 
                 // secondarySeller has to sell it because transfer fees only
@@ -5649,7 +5648,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // There is a transfer fee on the NFT and buyer has enough
-                // (sellside)
+                // (sell side)
                 reinitializeTrustLineBalances();
 
                 // secondarySeller has to sell it because transfer fees only
@@ -5673,7 +5672,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // There is a transfer fee on the NFT and buyer has enough
-                // (buyside)
+                // (buy side)
                 reinitializeTrustLineBalances();
 
                 // secondarySeller has to sell it because transfer fees only

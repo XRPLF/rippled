@@ -1,5 +1,3 @@
-<!-- cspell:words sidechains trustlines -->
-
 # API Changelog
 
 This changelog is intended to list all updates to the [public API methods](https://xrpl.org/public-api-methods.html).

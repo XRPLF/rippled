@@ -1,4 +1,3 @@
-// cspell:words signerlist
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -513,7 +512,7 @@ public:
         env.close();
 
         // Get all account objects for alice and verify that her
-        // signerlist is first.  This is only a (reliable) coincidence of
+        // SignerList is first.  This is only a (reliable) coincidence of
         // object naming.  So if any of alice's objects are renamed this
         // may fail.
         json::Value aliceObjectsParams;

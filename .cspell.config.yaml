@@ -12,9 +12,10 @@ ignorePaths:
 language: en
 ignoreRandomStrings: true
 minWordLength: 5
+# cspell's own dictionary ids: `en_us` has an underscore, `en-gb` a hyphen.
 dictionaries:
   - cpp
-  - en_US
+  - en_us
   - en-gb
 ignoreRegExpList:
   - /\b[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
@@ -38,8 +39,6 @@ overrides:
       - /"[^"]*"/g # double-quoted strings
       - /'[^']*'/g # single-quoted strings
       - /`[^`]*`/g # backtick strings
-  - filename: .github/scripts/strategy-matrix/linux.json
-    words: [reffee]
 suggestWords:
   - unsynched->unsynced
   - synched->synced
@@ -200,6 +199,7 @@ words:
   - ledgerheader
   - ledgerid
   - ledgerindex
+  - ledgerreplay
   - ledgerseq
   - leftw
   - legleux
@@ -327,6 +327,7 @@ words:
   - rcflags
   - readelf
   - reencrypted
+  - reffee
   - remint
   - replayer
   - repodata
@@ -351,6 +352,7 @@ words:
   - RLUSD
   - rngfill
   - rocksdb
+  - rockylinux
   - Rohrs
   - roundings
   - rpcspec
@@ -376,6 +378,7 @@ words:
   - shlibdeps
   - shlibs
   - sidechain
+  - sidechains
   - SIGGOOD
   - sle
   - sles
@@ -414,6 +417,7 @@ words:
   - tradability
   - trixie
   - trustline
+  - trustlines
   - tx
   - txid
   - txids

@@ -1,4 +1,3 @@
-// cspell:words ledgermaster
 #pragma once
 
 #include <xrpl/basics/Blob.h>
@@ -10,7 +9,7 @@ namespace xrpl {
 
 /**
  * An interface facilitating retrieval of fetch packs without
- * an application or ledgermaster object.
+ * an application or LedgerMaster object.
  */
 class AbstractFetchPackContainer
 {
