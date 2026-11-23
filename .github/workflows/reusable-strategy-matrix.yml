@@ -26,17 +26,20 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
+
+      - name: Test the matrix generator
+        working-directory: .github/scripts/strategy-matrix
+        run: ./test_generate.py
 
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
         env:
           GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
-          # Run only the minimal matrix for pull requests that are not yet
-          # labeled "Ready to merge" or "Full CI build". Any other event (merge
-          # queue, push, schedule, manual dispatch) runs the full matrix.
-          GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge') && !contains(github.event.pull_request.labels.*.name, 'Full CI build')) && '--minimal' || '' }}
-        run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} >>"${GITHUB_OUTPUT}"
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: ./generate.py ${GENERATE_CONFIG} --event="${EVENT}" --labels="${LABELS}" --ref-type="${REF_TYPE}" >>"${GITHUB_OUTPUT}"

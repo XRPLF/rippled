@@ -2680,7 +2680,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         // this is a reply
         std::uint32_t pLSeq = 0;
         bool pLDo = true;
-        bool progress = false;
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
@@ -2703,10 +2702,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         {
                             JLOG(pJournal_.debug()) << "GetObj: Late fetch pack for " << pLSeq;
                         }
-                        else
-                        {
-                            progress = true;
-                        }
                     }
                 }
 
@@ -2725,7 +2720,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             JLOG(pJournal_.debug()) << "GetObj: Partial fetch pack for " << pLSeq;
         }
         if (packet.type() == protocol::TMGetObjectByHash::otFETCH_PACK)
-            app_.getLedgerMaster().gotFetchPack(progress, pLSeq);
+            app_.getLedgerMaster().gotFetchPack();
     }
 }
 
@@ -2772,8 +2767,6 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
         newObj.set_hash(hash.begin(), hash.size());
         auto const& data = nodeObject->getData();
         newObj.set_data(data.data(), data.size());
-        if (obj.has_nodeid())
-            newObj.set_index(obj.nodeid());
         if (obj.has_ledgerseq())
             newObj.set_ledgerseq(obj.ledgerseq());
     }
@@ -3019,7 +3012,6 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
         tx->set_rawtransaction(s.data(), s.size());
         tx->set_status(
             txn->getStatus() == TransStatus::INCLUDED ? protocol::tsCURRENT : protocol::tsNEW);
-        tx->set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
         tx->set_deferred(txn->getSubmitResult().queued);
     }
 
@@ -3639,9 +3631,9 @@ PeerImp::processLedgerRequest(
             }
         }
 
-        JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                               << " node IDs at depth " << queryDepth << ", return "
-                               << ledgerData.nodes_size() << " nodes";
+        JLOG(pJournal_.debug()) << "processLedgerRequest: Got request for " << m->nodeids_size()
+                                << " node IDs at depth " << queryDepth << ", return "
+                                << ledgerData.nodes_size() << " nodes";
     }
 
     if (ledgerData.nodes_size() == 0)

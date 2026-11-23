@@ -130,7 +130,7 @@ else()
         INTERFACE
             -Wall
             -Wdeprecated
-            $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
+            $<$<BOOL:${is_any_clang}>:-Wno-deprecated-declarations>
             $<$<BOOL:${wextra}>:-Wextra
             -Wno-unused-parameter>
             $<$<BOOL:${werr}>:-Werror>
@@ -148,13 +148,12 @@ else()
         INTERFACE
             -rdynamic
             $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-            # link to static libc/c++ if:
+            # link to static libstdc++ if:
             # * static option set and
-            # * NOT APPLE (AppleClang does not support static libc/c++)
-            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:
-            -static-libstdc++
-            -static-libgcc
-            >
+            # * NOT APPLE (AppleClang does not support static libc++)
+            # libgcc stays dynamic: with -static-libgcc, an exception thrown from
+            # a std::call_once callable hangs or crashes, depending on glibc.
+            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:-static-libstdc++>
     )
 
     # On aarch64, libatomic is required for atomic operations. It is not needed on x86_64.
@@ -177,7 +176,7 @@ else()
     if(
         is_nix_compiler
         AND is_linux
-        AND is_clang
+        AND is_any_clang
         AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"
     )
         string(
@@ -204,7 +203,10 @@ if(voidstar)
             "Antithesis instrumentation requires Linux, aborting..."
         )
     elseif(
-        NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+        NOT (
+            is_llvm_clang
+            AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0
+        )
     )
         message(
             FATAL_ERROR

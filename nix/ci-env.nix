@@ -7,17 +7,26 @@
   ...
 }:
 let
-  inherit (import ./packages.nix { inherit pkgs customGlibc; }) commonPackages;
+  inherit (import ./packages.nix { inherit pkgs customGlibc; }) cacert commonPackages;
 
   # Each forces something absent on the other platform, so both stay lazy.
   linux = import ./linux.nix { inherit pkgs customGlibc; };
   darwin = import ./darwin.nix { inherit pkgs; };
 
+  # Nix-built tools (git, curl, Conan's certifi) read NIX_SSL_CERT_FILE, which
+  # the macOS runners point at their Nix profile's bundle, frozen at install
+  # time. The Linux images set it in nix/docker/Dockerfile.
+  caEnv = {
+    NIX_SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
+  };
+
   # What a buildEnv cannot express: environment variables. $GITHUB_ENV format;
   # `set -a; . env; set +a` loads it in a shell.
   darwinEnv = pkgs.writeTextDir "share/xrpld-ci-env/env" (
     pkgs.lib.concatStrings (
-      pkgs.lib.mapAttrsToList (name: value: "${name}=${value}\n") (darwin.sdkEnv // darwin.libresolvEnv)
+      pkgs.lib.mapAttrsToList (name: value: "${name}=${value}\n") (
+        darwin.sdkEnv // darwin.libresolvEnv // caEnv
+      )
     )
   );
 
@@ -33,7 +42,7 @@ in
       ++ [
         # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
         # TLS connections without ca-certificates being installed in the system.
-        pkgs.cacert
+        cacert
       ];
     pathsToLink = [
       "/bin"

@@ -31,7 +31,19 @@ private:
      */
     TaggedPointer hashesAndChildren_;
 
-    std::uint32_t fullBelowGen_ = 0;
+    // Pin that wrapping fullBelowGen_ in an atomic keeps the packed layout, and that the load
+    // isFullBelow() does once per node of every walk stays lock-free.
+    static_assert(std::atomic<std::uint32_t>::is_always_lock_free);
+    static_assert(sizeof(std::atomic<std::uint32_t>) == sizeof(std::uint32_t));
+    static_assert(alignof(std::atomic<std::uint32_t>) == alignof(std::uint32_t));
+
+    /**
+     * Written from more than one thread, since canonicalization shares a node
+     * between maps and a walk can run with the acquisition lock released (see
+     * SHAMap::state_). Relaxed both ways, since a generation is only compared
+     * for equality and the children it vouches for are published through lock_.
+     */
+    std::atomic<std::uint32_t> fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
     /**
@@ -204,13 +216,13 @@ SHAMapInnerNode::getBranchCount() const
 inline bool
 SHAMapInnerNode::isFullBelow(std::uint32_t generation) const
 {
-    return fullBelowGen_ == generation;
+    return fullBelowGen_.load(std::memory_order_relaxed) == generation;
 }
 
 inline void
 SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 {
-    fullBelowGen_ = gen;
+    fullBelowGen_.store(gen, std::memory_order_relaxed);
 }
 
 }  // namespace xrpl
