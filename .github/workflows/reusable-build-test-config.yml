@@ -120,6 +120,10 @@ jobs:
       ASAN_ENABLED: ${{ contains(inputs.sanitizers, 'address') }}
       TSAN_ENABLED: ${{ contains(inputs.sanitizers, 'thread') }}
       UBSAN_ENABLED: ${{ contains(inputs.sanitizers, 'undefinedbehavior') }}
+      # The names of the test logs, which the test steps write to the workspace.
+      XRPL_TESTS_LOG: xrpl-tests.log
+      XRPLD_TESTS_LOG: xrpld-tests.log
+      EMBEDDED_TESTS_LOG: embedded-tests.log
       # The binaries reusable-package.yml consumes. A private repository skips
       # them except on a tag push, which is what produces its release packages.
       PACKAGING_ARTIFACTS_ENABLED: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
@@ -350,63 +354,25 @@ jobs:
               exit 1
           fi
 
-      # An undefined reference to the sanitizer runtime in an object file proves
-      # the -fsanitize flags reached the compiler. The version string cannot, as
-      # cmake sets the SANITIZERS macro separately. Nor can the linked binary: a
-      # static runtime defines the symbols whether or not any code calls them.
       - name: Verify presence of instrumentation (Linux)
         if: ${{ runner.os == 'Linux' && (env.VOIDSTAR_ENABLED == 'true' || env.SANITIZERS_ENABLED == 'true') }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          version="$(./xrpld --version 2>&1)" || {
-              echo "${version}"
-              exit 1
-          }
-          echo "${version}"
-          status=0
+          "${GITHUB_WORKSPACE}/.github/scripts/verify-instrumentation.sh"
 
-          named() {
-              if grep -q "$2" <<<"${version}"; then
-                  echo "${1}: the version string names '${2}'."
-              else
-                  echo "${1} is enabled, but the version string does not name '${2}'."
-                  status=1
-              fi
-          }
-
-          if [ "${SANITIZERS_ENABLED}" = 'true' ]; then
-              # The grep stops at the first match and find then dies of SIGPIPE,
-              # which pipefail must not turn into a failure.
-              instrumented() {
-                  if { find . -name '*.o' -exec nm -u {} + || true; } | grep -qE "${2}"; then
-                      echo "${1}: the objects reference the runtime, matching '${2}'."
-                  else
-                      echo "${1} is enabled, but no object references '${2}'."
-                      status=1
-                  fi
-              }
-
-              [ "${ASAN_ENABLED}" = 'true' ] &&
-                  instrumented address '__asan_report|__asan_memcpy|__asan_stack_malloc'
-              [ "${TSAN_ENABLED}" = 'true' ] &&
-                  instrumented thread '__tsan_read|__tsan_write|__tsan_atomic'
-              [ "${UBSAN_ENABLED}" = 'true' ] &&
-                  instrumented undefinedbehavior '__ubsan_handle'
-          fi
-
-          [ "${VOIDSTAR_ENABLED}" = 'true' ] && named voidstar libvoidstar
-          [ "${ASAN_ENABLED}" = 'true' ] && named address ASAN
-          [ "${TSAN_ENABLED}" = 'true' ] && named thread TSAN
-          [ "${UBSAN_ENABLED}" = 'true' ] && named undefinedbehavior UBSAN
-
-          exit "${status}"
-
-      - name: Run the separate tests
+      - name: Run the separate tests (xrpl)
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
           set -o pipefail
-          { ./xrpl_tests && ./xrpld_tests; } 2>&1 | tee "${GITHUB_WORKSPACE}/separate-tests.log"
+          ./xrpl_tests 2>&1 | tee "${GITHUB_WORKSPACE}/${XRPL_TESTS_LOG}"
+
+      - name: Run the separate tests (xrpld)
+        if: ${{ !inputs.build_only }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        run: |
+          set -o pipefail
+          ./xrpld_tests 2>&1 | tee "${GITHUB_WORKSPACE}/${XRPLD_TESTS_LOG}"
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -439,14 +405,14 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/embedded-tests.log"
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/${EMBEDDED_TESTS_LOG}"
 
       # With exitcode=0 the reports sit in the log of a green job, so count them
       # into an annotation and keep the logs, until a new finding can fail the job.
       - name: Report the ThreadSanitizer findings
         if: ${{ !cancelled() && !inputs.build_only && env.TSAN_ENABLED == 'true' }}
         run: |
-          reports="$(cat separate-tests.log embedded-tests.log 2>/dev/null | grep 'WARNING: ThreadSanitizer: ' || true)"
+          reports="$(cat "${XRPL_TESTS_LOG}" "${XRPLD_TESTS_LOG}" "${EMBEDDED_TESTS_LOG}" 2>/dev/null | grep 'WARNING: ThreadSanitizer: ' || true)"
           if [ -z "${reports}" ]; then
               echo 'No ThreadSanitizer findings.'
               exit 0
@@ -462,8 +428,9 @@ jobs:
         with:
           name: tsan-logs-${{ inputs.config_name }}
           path: |
-            separate-tests.log
-            embedded-tests.log
+            ${{ env.XRPL_TESTS_LOG }}
+            ${{ env.XRPLD_TESTS_LOG }}
+            ${{ env.EMBEDDED_TESTS_LOG }}
           if-no-files-found: ignore
 
       - name: Run Rust tests
@@ -496,9 +463,9 @@ jobs:
         run: |
           cd "${GITHUB_WORKSPACE}"
 
-          if [ -f embedded-tests.log ]; then
-              if ! grep -E "failed" embedded-tests.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
-                  echo "embedded-tests.log present but no failure lines found."
+          if [ -f "${EMBEDDED_TESTS_LOG}" ]; then
+              if ! grep -E "failed" "${EMBEDDED_TESTS_LOG}" | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "${EMBEDDED_TESTS_LOG} present but no failure lines found."
               fi
           elif [ -f build.log ]; then
               # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
@@ -510,7 +477,7 @@ jobs:
                   echo "build.log present but no compile errors found."
               fi
           else
-              echo "embedded-tests.log/build.log not found; something went wrong."
+              echo "${EMBEDDED_TESTS_LOG}/build.log not found; something went wrong."
               exit 1
           fi
       - name: Debug failure (Linux)
