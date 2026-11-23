@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# cspell:words creatordate
 
 # Exit the script as soon as an error occurs.
 set -euo pipefail

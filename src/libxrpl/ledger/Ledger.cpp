@@ -1,3 +1,4 @@
+// cspell:words persistable
 #include <xrpl/ledger/Ledger.h>
 
 #include <xrpl/basics/Log.h>

@@ -1,3 +1,4 @@
+// cspell:words prefund
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>

@@ -1,3 +1,4 @@
+// cspell:words ledgercleaner
 #pragma once
 
 #include <xrpld/app/main/Application.h>

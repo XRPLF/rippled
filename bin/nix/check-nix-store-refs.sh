@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# cspell:words autotools
 # Fail if a binary under <path> records a /nix/store path it resolves at run
 # time. See docs/build/nix.md#prebuilt-packages for why that matters.
 #

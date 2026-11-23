@@ -1,3 +1,4 @@
+// cspell:words votebehavior
 #include <xrpl/ledger/AmendmentTable.h>
 
 #include <xrpl/basics/Log.h>

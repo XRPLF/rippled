@@ -1,3 +1,4 @@
+// cspell:words hugepage
 // Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
 #pragma once

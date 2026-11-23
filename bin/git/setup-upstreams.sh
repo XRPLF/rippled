@@ -1,4 +1,6 @@
 #!/bin/bash
+# cspell:words currentgroup currentpush originpath originuser sshuser upstreamgroup
+# cspell:words upstreampush
 
 if [[ $# -ne 1 || "$1" == "--help" || "$1" == "-h" ]]; then
     name=$(basename $0)

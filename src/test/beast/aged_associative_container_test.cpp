@@ -1,3 +1,4 @@
+// cspell:words defaultctor
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/container/aged_map.h>                 // IWYU pragma: keep
 #include <xrpl/beast/container/aged_multimap.h>            // IWYU pragma: keep

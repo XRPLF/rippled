@@ -43,14 +43,14 @@ public:
     }
 
     void
-    testPeelTrailingSlashstar(
+    testPeelTrailingSlashStar(
         std::string s,
         std::string const& expectedRemainder,
         bool shouldBeFound)
     {
         try
         {
-            bool const found(Source::peelTrailingSlashstar(&s));
+            bool const found(Source::peelTrailingSlashStar(&s));
             BEAST_EXPECT(found == shouldBeFound);
             BEAST_EXPECT(s == expectedRemainder);
         }
@@ -157,16 +157,16 @@ public:
         testPeelLeadingSlash("/foo", "foo", true);
 
         testcase("peel_trailing_slashstar");
-        testPeelTrailingSlashstar("/foo/goo/*", "/foo/goo", true);
-        testPeelTrailingSlashstar("foo/goo/*", "foo/goo", true);
-        testPeelTrailingSlashstar("/foo/goo/", "/foo/goo", false);
-        testPeelTrailingSlashstar("foo/goo", "foo/goo", false);
-        testPeelTrailingSlashstar("", "", false);
-        testPeelTrailingSlashstar("/", "", false);
-        testPeelTrailingSlashstar("/*", "", true);
-        testPeelTrailingSlashstar("//", "/", false);
-        testPeelTrailingSlashstar("**", "*", true);
-        testPeelTrailingSlashstar("*/", "*", false);
+        testPeelTrailingSlashStar("/foo/goo/*", "/foo/goo", true);
+        testPeelTrailingSlashStar("foo/goo/*", "foo/goo", true);
+        testPeelTrailingSlashStar("/foo/goo/", "/foo/goo", false);
+        testPeelTrailingSlashStar("foo/goo", "foo/goo", false);
+        testPeelTrailingSlashStar("", "", false);
+        testPeelTrailingSlashStar("/", "", false);
+        testPeelTrailingSlashStar("/*", "", true);
+        testPeelTrailingSlashStar("//", "/", false);
+        testPeelTrailingSlashStar("**", "*", true);
+        testPeelTrailingSlashStar("*/", "*", false);
 
         testcase("find_one");
         testFindOne(a, &b, "b");

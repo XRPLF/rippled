@@ -1,3 +1,4 @@
+// cspell:words largestseq
 #include <xrpl/consensus/LedgerTrie.h>
 
 #include <csf/ledgers.h>

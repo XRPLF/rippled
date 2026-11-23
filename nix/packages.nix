@@ -1,3 +1,4 @@
+# cspell:words clangbuildanalyzer gnumake nettools truststore
 {
   pkgs,
   # With the custom glibc, the clang tools (clang-tidy, ...) parse code with the

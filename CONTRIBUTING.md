@@ -1,3 +1,5 @@
+<!-- cspell:words signingkey -->
+
 The XRP Ledger has many and diverse stakeholders, and everyone deserves
 a chance to contribute meaningful changes to the code that runs the
 XRPL.

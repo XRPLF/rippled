@@ -1,3 +1,5 @@
+<!-- cspell:words bugcrowd -->
+
 ### Operating an XRP Ledger server securely
 
 For more details on operating an XRP Ledger server securely, please visit https://xrpl.org/manage-the-rippled-server.html.

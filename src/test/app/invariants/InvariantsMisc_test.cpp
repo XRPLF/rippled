@@ -1,3 +1,4 @@
+// cspell:words keyletfunc
 #include <test/app/invariants/InvariantsBase.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>

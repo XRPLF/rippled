@@ -1,3 +1,4 @@
+' cspell:words autoactivate enduml startuml
 @startuml
 box "Server 1"
     participant timer1 as "std::timer"

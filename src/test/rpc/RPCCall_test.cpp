@@ -1,3 +1,4 @@
+// cspell:words dispatchable
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/utility.h>

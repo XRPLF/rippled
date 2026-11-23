@@ -1,3 +1,4 @@
+// cspell:words signerlist
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -802,9 +803,9 @@ public:
 
         // Offers, one where alice is the owner, and one where alice is the
         // issuer
-        auto const usDalice = alice["USD"];
+        auto const usdAlice = alice["USD"];
         env(offer(alice, eur(10), XRP(100)));
-        env(offer(becky, usDalice(10), XRP(100)));
+        env(offer(becky, usdAlice(10), XRP(100)));
 
         // Tickets
         env(ticket::create(alice, 2));

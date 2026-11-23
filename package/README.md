@@ -1,3 +1,5 @@
+<!-- cspell:words conffiles -->
+
 # Linux Packaging
 
 This directory contains all files needed to build RPM and Debian packages for

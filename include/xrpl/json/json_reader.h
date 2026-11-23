@@ -1,3 +1,4 @@
+// cspell:words endverbatim
 #pragma once
 
 #include <xrpl/json/json_forwards.h>

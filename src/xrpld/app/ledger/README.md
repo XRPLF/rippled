@@ -218,7 +218,7 @@ of the permanent, public history.
 
 The most recent ledger that the server believes the network reached consensus
 on. Different servers can arrive at a different conclusion about the last
-closed ledger. This is a consequence of Byzantanine failure. The purpose of
+closed ledger. This is a consequence of Byzantine failure. The purpose of
 validations is to resolve the differences between servers and come to a common
 conclusion about which last closed ledger is authoritative.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cspell:words overindent overindented
 """
 Check C++ Doxygen comment style.
 

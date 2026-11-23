@@ -296,7 +296,7 @@ trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) 
     // of this as an "issuer" and a "holder" the relationship is actually fully
     // bidirectional.
     //
-    // So that we can generate a unique ID for a trust line, regardess of which
+    // So that we can generate a unique ID for a trust line, regardless of which
     // side of the line we're looking at, we define a "canonical" order for the
     // two accounts (smallest then largest)  and hash them in that order:
     auto const accounts = std::minmax(id0, id1);

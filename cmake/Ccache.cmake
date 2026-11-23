@@ -1,3 +1,4 @@
+# cspell:words shimgen
 find_program(CCACHE_PATH "ccache")
 if(NOT CCACHE_PATH)
     return()

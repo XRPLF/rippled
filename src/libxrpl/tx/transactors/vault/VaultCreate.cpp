@@ -1,3 +1,4 @@
+// cspell:words underlyings
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <xrpl/basics/Log.h>

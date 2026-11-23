@@ -1,3 +1,4 @@
+// cspell:words fundable
 #include <test/jtx/AMM.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
@@ -539,9 +540,9 @@ public:
                 // carol's offer can be partially crossed when EUR is IOU:
                 // 10e-3EUR/1USD
                 using TEur = std::decay_t<decltype(eur)>;
-                static constexpr bool kIsEuriou = std::is_same_v<TEur, IOU>;
+                static constexpr bool kIsEurIou = std::is_same_v<TEur, IOU>;
                 // partially crossed if IOU, removed but not taken if MPT
-                auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
+                auto const balanceCarolUSD = kIsEurIou ? usd(0) : initialCarolUSD;
 
                 env.require(Offers(carol, 0), Balance(carol, balanceCarolUSD));
                 if (crossBothOffers)
@@ -552,7 +553,7 @@ public:
                 else
                 {
                     // partially crossed if IOU, not crossed if MPT
-                    auto const balanceAliceUSD = kIsEuriou ? usd(1) : usd(0);
+                    auto const balanceAliceUSD = kIsEurIou ? usd(1) : usd(0);
                     env.require(Offers(alice, 1), Balance(alice, balanceAliceUSD));
                 }
             }
@@ -609,9 +610,9 @@ public:
                     // carol's offer can be partially crossed when EUR is IOU:
                     // 10e-3EUR/1USD
                     using TEur = std::decay_t<decltype(eur)>;
-                    static constexpr bool kIsEuriou = std::is_same_v<TEur, IOU>;
+                    static constexpr bool kIsEurIou = std::is_same_v<TEur, IOU>;
                     // partially crossed if IOU, removed but not taken if MPT
-                    auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
+                    auto const balanceCarolUSD = kIsEurIou ? usd(0) : initialCarolUSD;
                     env.require(Offers(carol, 0));
                     env.require(Balance(carol, balanceCarolUSD));
                 }

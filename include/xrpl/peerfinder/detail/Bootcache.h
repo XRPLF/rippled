@@ -1,3 +1,4 @@
+// cspell:words staticallyconfigured
 #pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>

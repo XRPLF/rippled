@@ -1,3 +1,4 @@
+// cspell:words consensuslog
 #pragma once
 
 #include <xrpl/basics/Log.h>

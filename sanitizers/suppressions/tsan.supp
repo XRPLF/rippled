@@ -1,3 +1,4 @@
+# cspell:words crtstuff
 # The idea is to empty this file gradually by fixing the underlying issues and removing suppressions.
 
 # Suppress race in Boost ASIO scheduler detected by GCC-15

@@ -1,3 +1,4 @@
+// cspell:words nodedata
 syntax = "proto2";
 package protocol;
 

@@ -1,3 +1,5 @@
+<!-- cspell:words setcap -->
+
 # Installing xrpld 3.3.0 and earlier
 
 > [!IMPORTANT]

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cspell:words addsign debsigs dsaheader gnupghome pgpsig pinentry queryformat rsaheader
 """Sign the RPMs built by build_pkg.py.
 
 Nexus signs the yum repository metadata (via the 'rpm-<channel>' group

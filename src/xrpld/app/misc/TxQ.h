@@ -167,7 +167,7 @@ public:
         /**
          * Minimum difference between the current ledger sequence and a
          * transaction's `LastLedgerSequence` for the transaction to be
-         * queueable. Decreases the chance a transaction will get queued
+         * queuable. Decreases the chance a transaction will get queued
          * and broadcast only to expire before it gets a chance to be
          * processed.
          */

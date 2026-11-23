@@ -245,7 +245,7 @@ PropertyStream::Source::write(PropertyStream& stream, std::string const& path)
 std::pair<PropertyStream::Source*, bool>
 PropertyStream::Source::find(std::string path)
 {
-    bool const deep(peelTrailingSlashstar(&path));
+    bool const deep(peelTrailingSlashStar(&path));
     bool const rooted(peelLeadingSlash(&path));
     Source* source(this);
     if (!path.empty())
@@ -274,7 +274,7 @@ PropertyStream::Source::peelLeadingSlash(std::string* path)
 }
 
 bool
-PropertyStream::Source::peelTrailingSlashstar(std::string* path)
+PropertyStream::Source::peelTrailingSlashStar(std::string* path)
 {
     bool found(false);
     if (path->empty())

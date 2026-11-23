@@ -1,3 +1,4 @@
+# cspell:words codesign dwarfdump
 # The darwin toolchain, counterpart to linux.nix. Split by consumer: a dev
 # shell's stdenv provides the SDK variables, nothing provides libresolv.
 #

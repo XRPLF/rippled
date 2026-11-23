@@ -1,3 +1,4 @@
+// cspell:words microcent
 #include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>

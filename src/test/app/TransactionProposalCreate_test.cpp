@@ -1,3 +1,4 @@
+// cspell:words sponsorable
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>

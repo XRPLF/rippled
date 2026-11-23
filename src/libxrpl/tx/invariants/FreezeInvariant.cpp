@@ -1,3 +1,4 @@
+// cspell:words hotfixes
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 
 #include <xrpl/basics/Log.h>

@@ -1,3 +1,4 @@
+// cspell:words fullbelow
 #pragma once
 
 #include <xrpl/json/json_value.h>

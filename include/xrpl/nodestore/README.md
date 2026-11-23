@@ -1,3 +1,5 @@
+<!-- cspell:words memtable memtables -->
+
 # Database Documentation
 
 - [NodeStore](#nodestore)

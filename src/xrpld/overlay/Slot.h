@@ -1,3 +1,4 @@
+// cspell:words milsec
 #pragma once
 
 #include <xrpld/core/Config.h>

@@ -1,3 +1,4 @@
+// cspell:words serdes
 #include <xrpl/tx/Transactor.h>
 
 #include <xrpl/basics/Log.h>

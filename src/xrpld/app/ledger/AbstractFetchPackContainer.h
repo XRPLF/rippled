@@ -1,3 +1,4 @@
+// cspell:words ledgermaster
 #pragma once
 
 #include <xrpl/basics/Blob.h>

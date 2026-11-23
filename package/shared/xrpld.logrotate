@@ -1,3 +1,4 @@
+# cspell:words compresscmd compressext endscript postrotate
 /var/log/xrpld/*.log {
   daily
   minsize 200M

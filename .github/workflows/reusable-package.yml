@@ -1,3 +1,4 @@
+# cspell:words rockylinux
 # Build, verify and publish Linux packages from the pre-built xrpld and
 # validator-keys artifacts, in these stages:
 #

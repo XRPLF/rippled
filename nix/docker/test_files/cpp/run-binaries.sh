@@ -1,4 +1,5 @@
 #!/bin/bash
+# cspell:words seccomp
 # Run pre-compiled sanitizer binaries and confirm each emits its expected diagnostic.
 # Binaries must already exist in <bins_dir> with the layout:
 # <name>-g++ and <name>-clang++ for name in {regular,asan,tsan,ubsan}

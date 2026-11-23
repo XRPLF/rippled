@@ -1,3 +1,4 @@
+# cspell:words advapi syslibs winspool
 # cspell:words comdlg odbccp oleaut shlwapi wsuggest
 #[===================================================================[
    xrpld compile options/settings via an interface library

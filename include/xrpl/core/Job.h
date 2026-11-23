@@ -1,3 +1,4 @@
+// cspell:words txnset
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>

@@ -1,3 +1,4 @@
+// cspell:words overcredits
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>

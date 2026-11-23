@@ -1,3 +1,4 @@
+// cspell:words offercreate
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>

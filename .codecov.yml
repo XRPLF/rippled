@@ -1,3 +1,4 @@
+# cspell:words carryforward
 codecov:
   require_ci_to_pass: true
   # The C++ and Rust uploads land minutes apart; without this gate Codecov

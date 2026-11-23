@@ -414,7 +414,7 @@ public:
     static bool
     peelLeadingSlash(std::string* path);
     static bool
-    peelTrailingSlashstar(std::string* path);
+    peelTrailingSlashStar(std::string* path);
     static std::string
     peelName(std::string* path);
 

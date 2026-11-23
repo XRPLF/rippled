@@ -1,3 +1,4 @@
+// cspell:words lvalues
 #pragma once
 
 #include <xrpl/json/json_forwards.h>

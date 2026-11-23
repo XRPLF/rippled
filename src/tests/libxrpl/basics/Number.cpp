@@ -1,3 +1,4 @@
+// cspell:words relationals
 #include <xrpl/basics/Number.h>
 
 #include <xrpl/beast/utility/Zero.h>

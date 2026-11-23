@@ -1,3 +1,4 @@
+// cspell:words finishable
 #pragma once
 
 #include <xrpl/basics/Log.h>

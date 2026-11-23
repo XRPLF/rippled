@@ -1,3 +1,4 @@
+// cspell:words qdtext
 #pragma once
 
 #include <boost/beast/http/message.hpp>

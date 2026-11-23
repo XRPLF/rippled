@@ -1,3 +1,4 @@
+# cspell:words libresolv stdenvs
 { pkgs, customGlibc, ... }:
 let
   inherit (import ./packages.nix { inherit pkgs; })

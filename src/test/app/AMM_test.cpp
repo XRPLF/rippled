@@ -1,3 +1,4 @@
+// cspell:words gatehub numbertodo
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>

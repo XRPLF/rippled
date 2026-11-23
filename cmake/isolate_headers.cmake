@@ -1,3 +1,4 @@
+# cspell:words jobqueue
 include(create_symbolic_link)
 
 # Consider include directory B nested under prefix A:

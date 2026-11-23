@@ -1,3 +1,4 @@
+// cspell:words lpcstr
 #include <xrpl/beast/core/CurrentThreadName.h>
 
 #include <string>

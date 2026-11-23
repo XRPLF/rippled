@@ -1,3 +1,4 @@
+// cspell:words evented
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpld/core/Config.h>

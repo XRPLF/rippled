@@ -1,3 +1,4 @@
+// cspell:words unstepped
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -1677,9 +1678,9 @@ public:
     }
 
     void
-    testAccountObjectDoesntShowCancelledOffers()
+    testAccountObjectDoesNotShowCancelledOffers()
     {
-        testcase("AccountObjectDoesntShowCancelledOffers");
+        testcase("AccountObjectDoesNotShowCancelledOffers");
 
         using namespace jtx;
         Env env(*this);
@@ -1825,7 +1826,7 @@ public:
         testAccountNFTs();
         testAccountObjectMarker();
         testSponsoredFilter();
-        testAccountObjectDoesntShowCancelledOffers();
+        testAccountObjectDoesNotShowCancelledOffers();
         testDeletionBlockersProposal();
     }
 };

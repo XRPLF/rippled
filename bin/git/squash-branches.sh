@@ -1,4 +1,5 @@
 #!/bin/bash
+# cspell:words workbranch
 
 if [[ $# -lt 3 || "$1" == "--help" || "$1" = "-h" ]]; then
     name=$(basename $0)

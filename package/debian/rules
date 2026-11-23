@@ -1,4 +1,5 @@
 #!/usr/bin/make -f
+# cspell:words firstword substvars
 
 export DH_VERBOSE = 1
 
