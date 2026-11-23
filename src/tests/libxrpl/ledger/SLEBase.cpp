@@ -50,6 +50,7 @@
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
@@ -120,6 +121,28 @@ static_assert(
 static_assert(
     std::is_convertible_v<AccountRootEntryW, ReadOnlySLE>,
     "typed -> generic widening must keep working");
+
+// Read-only entries are copyable and assignable; writable entries are
+// move-only.
+static_assert(
+    std::is_copy_assignable_v<ReadOnlySLE> && std::is_move_assignable_v<ReadOnlySLE>,
+    "read-only entries must be copy and move assignable");
+static_assert(
+    std::is_copy_assignable_v<AccountRootEntryR>,
+    "typed read-only entries must be copy assignable");
+static_assert(
+    !std::is_copy_constructible_v<WritableSLE>,
+    "writable entries must not be copy constructible");
+static_assert(
+    !std::is_copy_assignable_v<WritableSLE>,
+    "writable entries must not be copy assignable");
+static_assert(std::is_move_assignable_v<WritableSLE>, "writable entries must be move assignable");
+static_assert(
+    !std::is_copy_assignable_v<AccountRootEntryW>,
+    "typed writable entries must not be copy assignable");
+static_assert(
+    std::is_move_assignable_v<AccountRootEntryW>,
+    "typed writable entries must be move assignable");
 
 // Detection idioms for the writable interface. These have to go through a
 // template parameter: a requires-expression over a concrete type is checked
@@ -278,17 +301,17 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         ticket.newSle();
         EXPECT_TRUE(ticket.exists());
         ticket.insertIntoView();
-        ticket.updateView();
+        ticket.updateInView();
 
         // Erasing an entry inserted in this same view drops it outright.
         ticket.eraseFromView();
         EXPECT_FALSE(ticket.exists());
     }
 
-    // Entry that already exists: updateView() is what promotes it from a bare
+    // Entry that already exists: updateInView() is what promotes it from a bare
     // peek to a real change. ApplyViewImpl::size() counts Insert, Modify and
     // Erase but not Cache, so it shows the difference: building the entry
-    // only peeks, and the write is invisible to the view until updateView().
+    // only peeks, and the write is invisible to the view until updateInView().
     {
         ApplyViewImpl fresh(&env_.getClosedLedger(), TapNone);
 
@@ -299,11 +322,11 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         account->setFieldU32(sfSequence, account->getFieldU32(sfSequence) + 1);
         EXPECT_EQ(fresh.size(), 0);
 
-        account.updateView();
+        account.updateInView();
         EXPECT_EQ(fresh.size(), 1);
 
-        // updateView() is idempotent: the entry is already a Modify.
-        account.updateView();
+        // updateInView() is idempotent: the entry is already a Modify.
+        account.updateInView();
         EXPECT_EQ(fresh.size(), 1);
     }
 
@@ -318,6 +341,43 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         account.eraseFromView();
         EXPECT_FALSE(account.exists());
     }
+}
+
+TEST_F(SLEBaseTests, assignment)
+{
+    Account const carol{"carol"};
+    env_.createAccount(carol, XRP(10'000));
+    ApplyViewImpl first(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl second(&env_.getClosedLedger(), TapNone);
+
+    // Read-only: assigning an entry built over another view changes both the
+    // view and the SLE.
+    AccountRootEntryR readOnly(alice_.id(), first);
+    AccountRootEntryR const other(carol.id(), second);
+    ASSERT_TRUE(readOnly.exists());
+    ASSERT_TRUE(other.exists());
+    EXPECT_EQ(&readOnly.readView(), static_cast<ReadView const*>(&first));
+
+    readOnly = other;
+    EXPECT_EQ(&readOnly.readView(), static_cast<ReadView const*>(&second));
+    EXPECT_EQ(readOnly.rawSle(), other.rawSle());
+    EXPECT_EQ(readOnly.key(), keylet::account(carol.id()).key);
+
+    // Writable: move-assigning changes the apply view, so updateInView()
+    // reaches the new view and not the old one.
+    AccountRootEntryW writable(alice_.id(), first);
+    AccountRootEntryW donor(carol.id(), second);
+    ASSERT_TRUE(writable.exists());
+    ASSERT_TRUE(donor.exists());
+
+    writable = std::move(donor);
+    EXPECT_EQ(&writable.applyView(), &second);
+    EXPECT_EQ(writable.key(), keylet::account(carol.id()).key);
+
+    writable->setFieldU32(sfSequence, writable->getFieldU32(sfSequence) + 1);
+    writable.updateInView();
+    EXPECT_EQ(first.size(), 0);
+    EXPECT_EQ(second.size(), 1);
 }
 
 TEST_F(SLEBaseTests, conversion)
@@ -406,7 +466,7 @@ TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
     EXPECT_THROW(std::ignore = missing.operator->(), std::logic_error);
     EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
     EXPECT_THROW(missing.insertIntoView(), std::logic_error);
-    EXPECT_THROW(missing.updateView(), std::logic_error);
+    EXPECT_THROW(missing.updateInView(), std::logic_error);
     EXPECT_THROW(missing.eraseFromView(), std::logic_error);
 
     // keylet() and key() are the exception: a writable entry keeps the keylet
@@ -423,7 +483,7 @@ TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
     missing.insertIntoView();
     missing.eraseFromView();
     EXPECT_FALSE(missing.exists());
-    EXPECT_THROW(missing.updateView(), std::logic_error);
+    EXPECT_THROW(missing.updateInView(), std::logic_error);
 }
 
 }  // namespace test

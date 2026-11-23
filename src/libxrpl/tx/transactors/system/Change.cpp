@@ -155,8 +155,8 @@ Change::initializeVMFees()
 
     if (!feeObject)
     {
-        feeObject.newSLE();
-        feeObject.insert();
+        feeObject.newSle();
+        feeObject.insertIntoView();
     }
 
     // Compile-time constants, never `FeeSetup`: every node applies this
@@ -165,7 +165,7 @@ Change::initializeVMFees()
     feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
     feeObject->at(sfGasPrice) = kDefaultGasPrice;
 
-    feeObject.update();
+    feeObject.updateInView();
 
     JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
 }
@@ -260,7 +260,7 @@ Change::applyAmendment()
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
     }
 
-    amendmentObject.updateView();
+    amendmentObject.updateInView();
 
     return tesSUCCESS;
 }
@@ -289,7 +289,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
     }
 
-    feeObject.updateView();
+    feeObject.updateInView();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
@@ -407,7 +407,7 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    negUnlObject.updateView();
+    negUnlObject.updateInView();
     return tesSUCCESS;
 }
 

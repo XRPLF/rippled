@@ -72,15 +72,15 @@ resolveEntry(ReadView const& view, Keylet const& key)
  *
  * SLEBase<ReadView>  — read-only:  holds shared_ptr<SLE const> + ReadView const*
  * SLEBase<ApplyView> — writable:   holds shared_ptr<SLE> + ApplyView* + Keylet,
- *                                   plus insertIntoView/updateView/eraseFromView
- *                                   operations
+ *                                  plus insertIntoView/updateInView/eraseFromView
+ *                                  operations
  *
  * Write-only members are gated by `requires` clauses, providing compile-time
  * guarantees that read-only entries cannot mutate state.
  *
  * Read-only entries are copyable, movable, and assignable. Writable entries
  * are move-only (not copyable or copy-assignable): the view is stored as a
- * pointer so assignment can reseat it, but a writable entry's shared_ptr<SLE>
+ * pointer so assignment can overwrite it, but a writable entry's shared_ptr<SLE>
  * is meant to have a single writer at a time.
  *
  * @tparam EntryType the ledger entry type this entry is statically bound to.
@@ -113,7 +113,7 @@ public:
 
     // View pointer type: what the entry actually stores. A pointer, rather
     // than ViewRefType itself, so the entry stays assignable -- a stored
-    // reference member cannot be reseated, which is what forced the deleted
+    // reference member cannot be reassigned, which is what forced the deleted
     // assignment operators below.
     using ViewPtrType = std::conditional_t<kIsWritable, ApplyView*, ReadView const*>;
 
@@ -129,7 +129,7 @@ public:
 
     // Read-only entries are freely copyable and movable, including
     // assignment: the view is stored as a pointer (see ViewPtrType above), so
-    // reseating it on assignment is well defined. Writable entries stay
+    // overwriting it on assignment is well defined. Writable entries stay
     // move-only, matching the shared_ptr<SLE> they wrap: copying one would
     // leave two entries thinking they each own the only write access to the
     // same SLE.
@@ -352,13 +352,17 @@ public:
     STLedgerEntry const*
     operator->() const
     {
-        return &sleRef();
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
+        return sle_.get();
     }
 
     STLedgerEntry const&
     operator*() const
     {
-        return sleRef();
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
+        return *sle_;
     }
 
     // --- Writable interface (compile-time gated) ---
@@ -399,14 +403,18 @@ public:
     operator->()
         requires kIsWritable
     {
-        return &sleRef();
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator-> : entry does not exist");
+        return sle_.get();
     }
 
     STLedgerEntry&
     operator*()
         requires kIsWritable
     {
-        return sleRef();
+        if (!exists())
+            Throw<std::logic_error>("xrpl::SLEBase::operator* : entry does not exist");
+        return *sle_;
     }
 
     /**
@@ -450,11 +458,11 @@ public:
      * @throws std::logic_error if exists() is false.
      */
     void
-    updateView()
+    updateInView()
         requires kIsWritable
     {
         if (!exists())
-            Throw<std::logic_error>("xrpl::SLEBase::updateView : entry does not exist");
+            Throw<std::logic_error>("xrpl::SLEBase::updateInView : entry does not exist");
         view_->update(sle_);
     }
 
@@ -482,8 +490,6 @@ protected:
      * Returns the underlying SLE, for derived entries to call member
      * functions on without spelling out `(*this)->`:
      * `this->sleRef().getFieldX(...)` reads like an ordinary method call.
-     * operator-> and operator* are implemented on top of this, so the
-     * "does not exist" throw lives in one place.
      *
      * @return The underlying SLE.
      * @throws std::logic_error if exists() is false.
