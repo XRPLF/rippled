@@ -28,6 +28,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -47,6 +48,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -5232,6 +5234,8 @@ public:
         testcase("Persistent delete: fill or kill");
         using namespace jtx;
 
+        bool const fixEnabled = features[fixCleanup3_6_0];
+
         Env env{*this, features};
         Account const gw{"gw"};
         Account const alice{"alice"};
@@ -5243,6 +5247,38 @@ public:
         env(pay(gw, alice, usd(100)));
         env.close();
         auto const bobOffer = createUnfundedOffer(env, gw, bob, usd, eur);
+
+        // Apply the killed offer to a copy of the open ledger: first a retry pass, then a final
+        // pass.
+        auto const jt = env.jt(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill));
+        auto const fee = jt.stx->getFieldAmount(sfFee).xrp();
+        auto const acctKey = keylet::account(alice.id());
+        auto const before = env.current()->read(acctKey);
+        OpenView view(*env.current());
+        auto const seqUsed = [&] {
+            return (*view.read(acctKey))[sfSequence] - (*before)[sfSequence];
+        };
+        auto const feePaid = [&] {
+            return (*before)[sfBalance].xrp() - (*view.read(acctKey))[sfBalance].xrp();
+        };
+
+        // With the amendment, the retry pass changes nothing. Before it, the retry pass applies
+        // the failure.
+        auto const retry = xrpl::apply(env.app(), view, *jt.stx, TapRetry, env.journal);
+        BEAST_EXPECT(retry.ter == tecKILLED);
+        BEAST_EXPECT(retry.applied != fixEnabled);
+        BEAST_EXPECT(view.exists(bobOffer) == fixEnabled);
+        BEAST_EXPECT(seqUsed() == (fixEnabled ? 0 : 1));
+        BEAST_EXPECT(feePaid() == (fixEnabled ? XRPAmount{0} : fee));
+
+        // With the amendment, the final pass applies the failure. Before it, the transaction
+        // was already applied, so the final pass fails. Either way, the effects happen once.
+        auto const last = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+        BEAST_EXPECT(last.applied == fixEnabled);
+        BEAST_EXPECT(fixEnabled ? last.ter == tecKILLED : isTefFailure(last.ter));
+        BEAST_EXPECT(!view.exists(bobOffer));
+        BEAST_EXPECT(seqUsed() == 1);
+        BEAST_EXPECT(feePaid() == fee);
 
         env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
         env.close();
@@ -5394,8 +5430,8 @@ public:
         using namespace jtx;
 
         bool const fixEnabled = features[fixCleanup3_6_0];
-        std::uint32_t const offerCount = kMaxPersistentDeletes + 88;
-        static_assert(kMaxPersistentDeletes + 88 < kUnfundedOfferRemoveLimit);
+        constexpr std::uint32_t offerCount = kMaxPersistentDeletes + 88;
+        static_assert(offerCount < kUnfundedOfferRemoveLimit);
 
         // Bob's trust line remains, plus the offers past the limit.
         std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;

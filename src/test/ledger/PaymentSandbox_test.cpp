@@ -664,6 +664,19 @@ public:
         BEAST_EXPECT(av.persistentKeys().contains(k.key));
         BEAST_EXPECT(!av.exists(k));
 
+        // A persistent erase in an applied plain sandbox is kept.
+        {
+            ApplyViewImpl av2(&*env.current(), TapNone);
+            {
+                Sandbox sb(&av2);
+                BEAST_EXPECT(isTesSuccess(
+                    offerDelete(sb, sb.peek(k), j, {.eraseMode = EraseMode::Persistent})));
+                sb.apply(av2);
+            }
+            BEAST_EXPECT(av2.persistentKeys().contains(k.key));
+            BEAST_EXPECT(!av2.exists(k));
+        }
+
         // A key can be recorded after a child view erased the entry.
         {
             Sandbox sb(&av);
