@@ -1019,7 +1019,6 @@ transactionSign(
     // could change the signing prefix of an alternate signature field.
     std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     auto const j = app.getJournal("RPCHandler");
-    // The next statement reads the signing secret out of this same request.
     JLOG(j.debug()) << "transactionSign: " << loggable(jvRequest);
 
     // Add and amend fields based on the transaction type.

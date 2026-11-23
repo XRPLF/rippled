@@ -1907,7 +1907,7 @@ struct RPCCallImp
                 Throw<std::runtime_error>("couldn't parse reply from server");
             }
             // Logged once parsed, masked: `validation_create` and `wallet_propose` answer with a
-            // private key, which the fallback scrubber in Log.cpp does not know by every name.
+            // private key, and the fallback scrubber in Log.cpp reaches one field per name only.
             JLOG(j.debug()) << "RPC reply: " << rpc::loggable(jvReply);
 
             if (!jvReply)
@@ -2069,10 +2069,10 @@ rpcClient(
             json::Value jvParams(json::ValueType::Array);
 
             if (!setup.client.adminUser.empty())
-                jvRequest["admin_user"] = setup.client.adminUser;
+                jvRequest[jss::admin_user] = setup.client.adminUser;
 
             if (!setup.client.adminPassword.empty())
-                jvRequest["admin_password"] = setup.client.adminPassword;
+                jvRequest[jss::admin_password] = setup.client.adminPassword;
 
             if (jvRequest.isObject())
             {

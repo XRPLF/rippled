@@ -2,44 +2,10 @@
 
 #include <xrpl/json/json_value.h>
 
-#include <array>
 #include <cstddef>
 #include <string>
-#include <string_view>
 
 namespace xrpl::rpc {
-
-/**
- * Fields that carry a credential, in a request or in a reply.
- *
- * Literals rather than jss entries, since not every one has a jss entry.
- *
- * `username` and `password` are `subscribe`'s deprecated spellings of
- * `url_username` and `url_password`, which is why a name identifying rather
- * than authenticating is on the list. The `master_` and `validation_` names
- * come from `wallet_propose` and `validation_create` replies, and a reply is
- * logged like a request. `master_key` is also the public key that
- * `validator_info` and the `manifests` and `validations` streams report, and
- * it is masked with the rest.
- */
-inline constexpr std::array<std::string_view, 16> kCredentialFields{
-    "admin_password",
-    "admin_user",
-    "master_key",
-    "master_seed",
-    "master_seed_hex",
-    "passphrase",
-    "password",
-    "secret",
-    "seed",
-    "seed_hex",
-    "url_password",
-    "url_username",
-    "username",
-    "validation_key",
-    "validation_private_key",
-    "validation_seed",
-};
 
 /**
  * How much of a request or a reply a log line carries.

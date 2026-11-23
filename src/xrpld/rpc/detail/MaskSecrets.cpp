@@ -1,15 +1,41 @@
 #include <xrpld/rpc/detail/MaskSecrets.h>
 
+#include <xrpl/basics/CredentialFields.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <array>
 #include <string>
 #include <string_view>
 
 namespace xrpl::rpc {
 
 namespace {
+
+// kCredentialFields cannot name jss entries, since its module sits below jss.h.
+constexpr std::array<std::string_view, kCredentialFields.size()> kJssCredentialFields{
+    jss::admin_password.cStr(),
+    jss::admin_user.cStr(),
+    jss::master_key.cStr(),
+    jss::master_seed.cStr(),
+    jss::master_seed_hex.cStr(),
+    jss::passphrase.cStr(),
+    jss::password.cStr(),
+    jss::secret.cStr(),
+    jss::seed.cStr(),
+    jss::seed_hex.cStr(),
+    jss::url_password.cStr(),
+    jss::url_username.cStr(),
+    jss::username.cStr(),
+    jss::validation_key.cStr(),
+    jss::validation_private_key.cStr(),
+    jss::validation_seed.cStr(),
+};
+static_assert(
+    std::ranges::equal(kCredentialFields, kJssCredentialFields),
+    "kCredentialFields must name the same fields as their jss entries, in the same order");
 
 /**
  * Reports whether @p name is one of kCredentialFields.

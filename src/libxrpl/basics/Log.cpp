@@ -1,13 +1,15 @@
 #include <xrpl/basics/Log.h>
 
+#include <xrpl/basics/CredentialFields.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <algorithm>
+#include <array>
 #include <chrono>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -16,10 +18,36 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+/**
+ * Returns every name in kCredentialFields as the quoted JSON key the scrubber
+ * looks for.
+ *
+ * Built once, so that a log line costs no allocation for it.
+ *
+ * @return The quoted names, in the order of kCredentialFields.
+ */
+std::array<std::string, kCredentialFields.size()> const&
+quotedCredentialFields()
+{
+    static auto const kQuoted = [] {
+        std::array<std::string, kCredentialFields.size()> quoted;
+        std::ranges::transform(kCredentialFields, quoted.begin(), [](std::string_view field) {
+            return '"' + std::string{field} + '"';
+        });
+        return quoted;
+    }();
+    return kQuoted;
+}
+
+}  // namespace
 
 Logs::Sink::Sink(std::string partition, beast::Severity thresh, Logs& logs)
     : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
@@ -302,14 +330,14 @@ Logs::format(
 
     // Attempt to prevent sensitive information from appearing in log files by
     // redacting it with asterisks.
-    auto const scrubber = [&output](char const* token) {
+    auto const scrubber = [&output](std::string_view token) {
         auto first = output.find(token);
 
         // If we have found the specified token, then attempt to isolate the
         // sensitive data (it's enclosed by double quotes) and mask it off:
         if (first != std::string::npos)
         {
-            first = output.find('\"', first + std::strlen(token));
+            first = output.find('\"', first + token.size());
 
             if (first != std::string::npos)
             {
@@ -323,13 +351,8 @@ Logs::format(
         }
     };
 
-    scrubber("\"seed\"");
-    scrubber("\"seed_hex\"");
-    scrubber("\"secret\"");
-    scrubber("\"master_key\"");
-    scrubber("\"master_seed\"");
-    scrubber("\"master_seed_hex\"");
-    scrubber("\"passphrase\"");
+    for (auto const& token : quotedCredentialFields())
+        scrubber(token);
 }
 
 //------------------------------------------------------------------------------

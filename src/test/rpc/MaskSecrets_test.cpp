@@ -2,6 +2,7 @@
 
 #include <xrpld/rpc/detail/MaskSecrets.h>
 
+#include <xrpl/basics/CredentialFields.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
@@ -30,15 +31,15 @@ public:
         testcase("Every credential field is masked");
 
         json::Value request(json::ValueType::Object);
-        for (auto const field : rpc::kCredentialFields)
+        for (auto const field : kCredentialFields)
             request[std::string{field}] = kSensitive;
 
         auto const masked = rpc::maskSecrets(request);
-        for (auto const field : rpc::kCredentialFields)
+        for (auto const field : kCredentialFields)
             BEAST_EXPECTS(masked[std::string{field}] == kMasked, std::string{field});
 
         // An empty list would let every assertion above pass while masking nothing.
-        BEAST_EXPECT(!rpc::kCredentialFields.empty());
+        BEAST_EXPECT(!kCredentialFields.empty());
     }
 
     /**
@@ -254,7 +255,7 @@ public:
     {
         testcase("A credential is detected at any depth");
 
-        for (auto const field : rpc::kCredentialFields)
+        for (auto const field : kCredentialFields)
         {
             json::Value request(json::ValueType::Object);
             request[std::string{field}] = kSensitive;

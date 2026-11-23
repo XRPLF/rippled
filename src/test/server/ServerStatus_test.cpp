@@ -7,6 +7,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
 
+#include <xrpl/basics/CredentialFields.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/test/yield_to.h>
@@ -18,6 +19,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
@@ -1292,12 +1294,12 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::params] = json::ValueType::Array;
             json::Value params(json::ValueType::Object);
             params[jss::ripplerpc] = rpc::kRippleRpcVersion1;
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 params[std::string{field}] = "sensitive";
             jv[jss::params][0u] = params;
             auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
             auto const& echoed = reply[jss::result][jss::request];
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
         }
 
@@ -1325,13 +1327,13 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto const ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
 
             json::Value jv;
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 jv[std::string{field}] = "sensitive";
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const reply = doWSMessage(yield, *ip, *port, to_string(jv));
             auto const& echoed = reply[jss::request];
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
 
             // The `id` the rejection echoes beside the request is masked as well.
@@ -1350,7 +1352,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         {
             json::Value params(json::ValueType::Object);
             params[jss::account] = "rSomeAccount";
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 params[std::string{field}] = "sensitive";
 
             json::Value entry;
@@ -1370,7 +1372,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(reply.isArray() && reply.size() == 1);
 
             auto const& echoed = reply[0u][jss::params][0u];
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 BEAST_EXPECTS(echoed[std::string{field}] == "<masked>", std::string{field});
 
             // The rest of the request survives masking; only the credentials are replaced.
@@ -1409,7 +1411,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env publicEnv{*this, makeConfig("http", false)};
 
         json::Value credentials(json::ValueType::Object);
-        for (auto const field : rpc::kCredentialFields)
+        for (auto const field : kCredentialFields)
             credentials[std::string{field}] = "sensitive-" + std::string{field};
 
         auto const withMethod = [&credentials](json::Value const& method) {
@@ -1528,7 +1530,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
                 continue;
 
             auto const echoed = c.echo(reply[0u]);
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
             {
                 BEAST_EXPECTS(
                     echoed[std::string{field}] == "<masked>", name + ": " + std::string{field});
@@ -1748,6 +1750,56 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A throw before the handler runs is reported as `internal`, with the
+     * request masked in the reply and in the log.
+     *
+     * `RPCHandler` reads a `method` beside `command` as a string before it
+     * dispatches, outside the `try` that catches a handler's throw. Over HTTP
+     * the request's own `method` sits at the top level, so one inside `params`
+     * is not checked first, and an object there throws into the `catch` arm of
+     * `processRequest`. The WebSocket transport rejects such a frame as
+     * `missingCommand`, so the arm in `processSession` is not reached here.
+     *
+     * @param yield The coroutine the request runs on.
+     */
+    void
+    testThrowBeforeTheHandlerIsReportedAsInternal(boost::asio::yield_context& yield)
+    {
+        testcase("A throw before the handler is reported as internal");
+
+        using namespace test::jtx;
+
+        static constexpr char const* kSensitiveSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+        std::string logs;
+        {
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Error};
+
+            json::Value params(json::ValueType::Object);
+            params[jss::method] = json::ValueType::Object;
+            params[jss::secret] = kSensitiveSeed;
+
+            json::Value jv;
+            jv[jss::method] = "ping";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+
+            boost::system::error_code ec;
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECTS(reply[jss::result][jss::error] == "internal", to_string(reply));
+            BEAST_EXPECT(reply[jss::result][jss::request][jss::secret] == "<masked>");
+        }
+
+        // The arm logged, so the absence assertion below is not vacuous.
+        BEAST_EXPECT(logs.contains("Internal error : "));
+
+        // The line reports what was thrown and the request, masked.
+        BEAST_EXPECT(!logs.contains(kSensitiveSeed));
+    }
+
+    /**
      * The credentials the command line client adds are masked in what it
      * prints.
      *
@@ -1757,9 +1809,11 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
      * The account is asserted unmasked beside them, so that masking everything
      * does not satisfy this case.
      *
-     * `request_sent` is a second echo of the same request and is not exercised
-     * here: `fromCommandLine` writes it only on the transport-error path, which
-     * no jtx harness drives.
+     * `request_sent` is a second echo of the same request. The client adds it
+     * only when the reply has `error` at its top level, which is how the
+     * server answers a rejected `json2` command. The test therefore sends the
+     * rejected request twice: first as `account_info`, to check the `request`
+     * echo of the server, and then as `json2`, to check `request_sent`.
      */
     void
     testCommandLineCredentialsAreMasked()
@@ -1788,12 +1842,29 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECTS(result[jss::error] == "actNotFound", to_string(output));
 
         // The credentials from the config are masked; the account the operator typed is not.
-        BEAST_EXPECT(result[jss::request]["admin_password"] == "<masked>");
-        BEAST_EXPECT(result[jss::request]["admin_user"] == "<masked>");
+        BEAST_EXPECT(result[jss::request][jss::admin_password] == "<masked>");
+        BEAST_EXPECT(result[jss::request][jss::admin_user] == "<masked>");
         BEAST_EXPECT(result[jss::request][jss::account] == Account{"never-funded"}.human());
 
         // The subject of the fix: the configured password reaches no member of the output.
         BEAST_EXPECT(!to_string(output).contains(kConfiguredPassword));
+
+        // The same rejection through `json2`, which the server answers with a top-level `error`.
+        json::Value request(json::ValueType::Object);
+        request[jss::jsonrpc] = rpc::kJsonRpcVersion;
+        request[jss::ripplerpc] = rpc::kRippleRpcVersion2;
+        request[jss::id] = 5;
+        request[jss::method] = "account_info";
+        request[jss::params][jss::account] = Account{"never-funded"}.human();
+        auto const rejected = env.rpc("json2", to_string(request));
+        BEAST_EXPECTS(rejected[jss::error][jss::error] == "actNotFound", to_string(rejected));
+
+        // The client's own echo of the request it built is masked the same way.
+        auto const& sent = rejected["request_sent"];
+        BEAST_EXPECT(sent[jss::admin_password] == "<masked>");
+        BEAST_EXPECT(sent[jss::admin_user] == "<masked>");
+        BEAST_EXPECT(sent[jss::account] == Account{"never-funded"}.human());
+        BEAST_EXPECT(!to_string(rejected).contains(kConfiguredPassword));
     }
 
     /**
@@ -1905,7 +1976,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto const ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
 
             json::Value params(json::ValueType::Object);
-            for (auto const field : rpc::kCredentialFields)
+            for (auto const field : kCredentialFields)
                 params[std::string{field}] = kSensitive;
 
             json::Value jv;
@@ -2004,6 +2075,7 @@ public:
             testTheLoggedRequestIsMaskedAndCapped(yield);
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
             testInternalErrorIsReportedOnBothTransports(yield);
+            testThrowBeforeTheHandlerIsReportedAsInternal(yield);
             testNoCredentialReachesTheLogAtTrace(yield);
             testStatusNotOkay(yield);
         });

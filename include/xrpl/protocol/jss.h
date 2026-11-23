@@ -113,6 +113,8 @@ JSS(active);                      // out: OverlayImpl
 JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
+JSS(admin_password);              // in: Role; out: RPCCall
+JSS(admin_user);                  // in: Role; out: RPCCall
 JSS(affected);                    // out: AcceptedLedgerTx
 JSS(age);                         // out: NetworkOPs, Peers
 JSS(alternatives);                // out: PathRequest, RipplePathFind
