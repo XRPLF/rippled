@@ -11,6 +11,7 @@
 #include <functional>
 #include <istream>
 #include <optional>
+#include <ostream>
 #include <string>
 
 namespace beast::ip {
@@ -202,10 +203,13 @@ to_string(Endpoint const& endpoint)
 
 /**
  * Output stream conversion.
+ *
+ * @param os The stream to write to.
+ * @param endpoint The endpoint to write.
+ * @return @p os.
  */
-template <typename OutputStream>
-OutputStream&
-operator<<(OutputStream& os, Endpoint const& endpoint)
+inline std::ostream&
+operator<<(std::ostream& os, Endpoint const& endpoint)
 {
     os << to_string(endpoint);
     return os;

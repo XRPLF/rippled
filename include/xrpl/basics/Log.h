@@ -4,6 +4,7 @@
 
 #include <boost/beast/core/string.hpp>
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -203,11 +204,15 @@ public:
     static std::optional<beast::Severity>
     fromString(std::string const& s);
 
-private:
-    // Maximum line length for log messages.
-    // If the message exceeds this length it will be truncated with ellipses.
-    static constexpr auto kMaximumMessageCharacters = 12 * 1024;
+    /**
+     * Maximum length of a log line, with its timestamp, partition and
+     * severity.
+     *
+     * A longer line is cut to this length and ends in an ellipsis.
+     */
+    static constexpr std::size_t kMaximumMessageCharacters = 12 * 1024;
 
+private:
     static void
     format(
         std::string& output,

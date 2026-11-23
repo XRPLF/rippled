@@ -36,7 +36,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
@@ -66,6 +65,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
@@ -1478,7 +1478,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Startup RPC: " << rpc::loggable(jvCommand) << std::endl;
+            JLOG(journal_.fatal()) << "Startup RPC: " << json::Masked{jvCommand} << std::endl;
         }
 
         resource::Charge loadType = resource::kFeeReferenceRpc;
@@ -1504,7 +1504,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         if (!config_->quiet())
         {
-            JLOG(journal_.fatal()) << "Result: " << rpc::loggable(jvResult) << std::endl;
+            JLOG(journal_.fatal()) << "Result: " << json::Masked{jvResult} << std::endl;
         }
     }
 
@@ -1765,7 +1765,7 @@ ApplicationImp::getLastFullLedger()
             stream << "Failed on ledger";
             json::Value p;
             addJson(p, {*ledger, nullptr, static_cast<int>(LedgerFill::Options::Full)});
-            stream << p;
+            stream << json::Unmasked{p};
         }
 
         return {};
@@ -2067,7 +2067,7 @@ ApplicationImp::loadOldLedger(
             json::Value j = getJson({*loadLedger, {}});
             j[jss::accountTreeHash] = to_string(loadLedger->header().accountHash);
             j[jss::transTreeHash] = to_string(loadLedger->header().txHash);
-            JLOG(journal_.fatal()) << "Ledger is not sensible: " << j;
+            JLOG(journal_.fatal()) << "Ledger is not sensible: " << json::Unmasked{j};
             UNREACHABLE(
                 "xrpl::ApplicationImp::loadOldLedger : ledger is not "
                 "sensible");

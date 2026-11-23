@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <ostream>
 #include <string>
 
 namespace xrpl {
@@ -34,9 +35,15 @@ to_string(KeyType type)
     return "INVALID";
 }
 
-template <class Stream>
-inline Stream&
-operator<<(Stream& s, KeyType type)
+/**
+ * Writes the name of a key type to a stream.
+ *
+ * @param s The stream to write to.
+ * @param type The key type to write.
+ * @return @p s.
+ */
+inline std::ostream&
+operator<<(std::ostream& s, KeyType type)
 {
     return s << to_string(type);
 }

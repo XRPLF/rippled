@@ -1,7 +1,6 @@
 #include <xrpld/rpc/RPCSub.h>
 
 #include <xrpld/rpc/RPCCall.h>
-#include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -9,6 +8,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/InfoSub.h>
@@ -88,7 +88,7 @@ public:
         std::scoped_lock const sl(lock_);
 
         auto const jm = broadcast ? j_.debug() : j_.info();
-        JLOG(jm) << "rpc_call::fromNetwork push: " << rpc::loggable(jvObj);
+        JLOG(jm) << "rpc_call::fromNetwork push: " << json::Masked{jvObj};
 
         deque_.emplace_back(seq_++, jvObj);
 

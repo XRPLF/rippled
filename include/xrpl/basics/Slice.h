@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -215,9 +216,15 @@ operator<(Slice const& lhs, Slice const& rhs) noexcept
         lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
-template <class Stream>
-Stream&
-operator<<(Stream& s, Slice const& v)
+/**
+ * Writes a Slice to a stream as hex.
+ *
+ * @param s The stream to write to.
+ * @param v The Slice to write.
+ * @return @p s.
+ */
+inline std::ostream&
+operator<<(std::ostream& s, Slice const& v)
 {
     s << strHex(v);
     return s;

@@ -8,6 +8,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -201,7 +202,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, Deseria
     if (options.checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::Values::None);
+                                 << json::Unmasked{getJson(JsonOptions::Values::None)};
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 

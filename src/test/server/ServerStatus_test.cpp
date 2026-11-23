@@ -5,7 +5,6 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/rpc/detail/MaskSecrets.h>
 
 #include <xrpl/basics/CredentialFields.h>
 #include <xrpl/basics/base64.h>
@@ -14,6 +13,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/MaskSecrets.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -1584,7 +1584,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
      * Both are asserted on one rendering: without the mask a seed reaches the
      * log in the clear, and without the cap a client chooses how much it writes
      * there. The marker past the cap is expected nowhere, every site rendering
-     * through `rpc::loggable`.
+     * through `json::Masked`.
      *
      * `CaptureLogs` assigns its text in the destructor, so the `Env` is scoped
      * and the string read after it.
@@ -1599,7 +1599,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace test::jtx;
 
         // Sorts after `secret` and before the tail marker, so the cap falls between them.
-        static constexpr std::size_t kFillerSize = 12000;
+        static constexpr std::size_t kFillerSize = json::kMaxLoggedChars;
         static constexpr char const* kSensitiveSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
         static constexpr char const* kTailMarker = "PastTheCapMarker";
 
@@ -1640,7 +1640,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(logs.contains("RPC request processing duration = "));
         BEAST_EXPECT(occurrences("<masked>") >= 2);
 
-        // No line reached the tail marker, because every site renders through `rpc::loggable`.
+        // No line reached the tail marker, because every site renders through `json::Masked`.
         BEAST_EXPECT(occurrences(kTailMarker) == 0);
     }
 

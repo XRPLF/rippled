@@ -4,7 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/json_writer.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -662,7 +662,7 @@ toStrands(
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::Values::None);
+                            << "path: " << json::Unmasked{p.getJson(JsonOptions::Values::None)};
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }

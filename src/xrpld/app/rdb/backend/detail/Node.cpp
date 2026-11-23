@@ -21,6 +21,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -236,7 +237,7 @@ saveValidatedLedger(
     if (!ledger->header().accountHash.isNonZero())
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
+        JLOG(j.fatal()) << "AH is zero: " << json::Unmasked{getJson({*ledger, {}})};
         UNREACHABLE("xrpl::detail::saveValidatedLedger : zero account hash");
         // LCOV_EXCL_STOP
     }
@@ -370,7 +371,7 @@ saveValidatedLedger(
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::Values::None);
+                    JLOG(j.warn()) << json::Unmasked{sleTxn->getJson(JsonOptions::Values::None)};
                 }
 
                 *db

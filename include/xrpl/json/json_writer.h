@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
@@ -326,5 +327,24 @@ public:
         return o;
     }
 };
+
+/**
+ * A raw value does not stream into a beast::Journal.
+ *
+ * A log statement wraps the value in json::Masked or json::Unmasked, from
+ * <xrpl/json/Loggable.h>, which says whether its credentials are masked. These
+ * overloads are found by argument-dependent lookup and are a better match than
+ * the member templates of the Journal streams, so a raw value does not build.
+ */
+/** @{ */
+void
+operator<<(beast::Journal::Stream const&, Value const&) = delete;
+void
+operator<<(beast::Journal::ScopedStream const&, Value const&) = delete;
+void
+operator<<(beast::Journal::Stream const&, Compact const&) = delete;
+void
+operator<<(beast::Journal::ScopedStream const&, Compact const&) = delete;
+/** @} */
 
 }  // namespace json

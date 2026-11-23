@@ -1,41 +1,16 @@
-#include <xrpld/rpc/detail/MaskSecrets.h>
+#include <xrpl/json/MaskSecrets.h>
 
 #include <xrpl/basics/CredentialFields.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <array>
 #include <string>
 #include <string_view>
 
-namespace xrpl::rpc {
+namespace json {
 
 namespace {
-
-// kCredentialFields cannot name jss entries, since its module sits below jss.h.
-constexpr std::array<std::string_view, kCredentialFields.size()> kJssCredentialFields{
-    jss::admin_password.cStr(),
-    jss::admin_user.cStr(),
-    jss::master_key.cStr(),
-    jss::master_seed.cStr(),
-    jss::master_seed_hex.cStr(),
-    jss::passphrase.cStr(),
-    jss::password.cStr(),
-    jss::secret.cStr(),
-    jss::seed.cStr(),
-    jss::seed_hex.cStr(),
-    jss::url_password.cStr(),
-    jss::url_username.cStr(),
-    jss::username.cStr(),
-    jss::validation_key.cStr(),
-    jss::validation_private_key.cStr(),
-    jss::validation_seed.cStr(),
-};
-static_assert(
-    std::ranges::equal(kCredentialFields, kJssCredentialFields),
-    "kCredentialFields must name the same fields as their jss entries, in the same order");
 
 /**
  * Reports whether @p name is one of kCredentialFields.
@@ -49,7 +24,8 @@ static_assert(
 bool
 isCredential(std::string_view name)
 {
-    return !name.empty() && std::ranges::find(kCredentialFields, name) != kCredentialFields.end();
+    return !name.empty() &&
+        std::ranges::find(xrpl::kCredentialFields, name) != xrpl::kCredentialFields.end();
 }
 
 /**
@@ -58,7 +34,7 @@ isCredential(std::string_view name)
  * @param value The object or array to mask. Any other value is left alone.
  */
 void
-maskInPlace(json::Value& value)
+maskInPlace(Value& value)
 {
     if (!value.isObject() && !value.isArray())
         return;
@@ -68,7 +44,7 @@ maskInPlace(json::Value& value)
         // A credential is replaced whatever it holds, so it is not descended into.
         if (isCredential(it.memberName()))
         {
-            *it = json::Value{"<masked>"};
+            *it = Value{"<masked>"};
         }
         else
         {
@@ -80,7 +56,7 @@ maskInPlace(json::Value& value)
 }  // namespace
 
 bool
-hasSecret(json::Value const& value)
+hasSecret(Value const& value)
 {
     if (!value.isObject() && !value.isArray())
         return false;
@@ -93,8 +69,8 @@ hasSecret(json::Value const& value)
     return false;
 }
 
-json::Value
-maskSecrets(json::Value const& request)
+Value
+maskSecrets(Value const& request)
 {
     auto masked = request;
     maskInPlace(masked);
@@ -102,7 +78,7 @@ maskSecrets(json::Value const& request)
 }
 
 std::string
-loggable(json::Value const& value)
+loggable(Value const& value)
 {
     // The copy the mask takes is paid only when there is a credential to replace.
     auto text = hasSecret(value) ? to_string(maskSecrets(value)) : to_string(value);
@@ -111,4 +87,4 @@ loggable(json::Value const& value)
     return text;
 }
 
-}  // namespace xrpl::rpc
+}  // namespace json

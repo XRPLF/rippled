@@ -168,11 +168,23 @@ public:
             return ostream_;
         }
 
-        std::ostream&
+        /**
+         * Applies a stream manipulator to the message.
+         *
+         * @param manip The manipulator, such as std::endl.
+         * @return This stream, so that a chain of `<<` keeps its type.
+         */
+        ScopedStream const&
         operator<<(std::ostream& manip(std::ostream&)) const;
 
+        /**
+         * Appends a value to the message.
+         *
+         * @param t The value, which must be streamable to a std::ostream.
+         * @return This stream, so that a chain of `<<` keeps its type.
+         */
         template <typename T>
-        std::ostream&
+        ScopedStream const&
         operator<<(T const& t) const;
 
     private:
@@ -391,11 +403,11 @@ Journal::ScopedStream::ScopedStream(Journal::Stream const& stream, T const& t)
 }
 
 template <typename T>
-std::ostream&
+Journal::ScopedStream const&
 Journal::ScopedStream::operator<<(T const& t) const
 {
     ostream_ << t;
-    return ostream_;
+    return *this;
 }
 
 //------------------------------------------------------------------------------

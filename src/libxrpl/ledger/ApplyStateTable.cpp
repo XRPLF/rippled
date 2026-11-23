@@ -5,6 +5,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
@@ -267,7 +268,7 @@ ApplyStateTable::apply(
 
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
-        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::Values::None);
+        JLOG(j.trace()) << "metadata " << json::Unmasked{meta.getJson(JsonOptions::Values::None)};
 
         metadata = meta;
     }

@@ -12,6 +12,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
@@ -442,7 +443,7 @@ Pathfinder::getPathLiquidity(
     catch (std::exception const& e)
     {
         JLOG(j_.info()) << "checkpath: exception (" << e.what() << ") "
-                        << path.getJson(JsonOptions::Values::None);
+                        << json::Unmasked{path.getJson(JsonOptions::Values::None)};
         return tefEXCEPTION;
     }
 }
@@ -560,12 +561,12 @@ Pathfinder::rankPaths(
             if (!isTesSuccess(resultCode))
             {
                 JLOG(j_.debug()) << "findPaths: dropping : " << transToken(resultCode) << ": "
-                                 << currentPath.getJson(JsonOptions::Values::None);
+                                 << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
             }
             else
             {
                 JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
-                                 << currentPath.getJson(JsonOptions::Values::None);
+                                 << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
 
                 rankedPaths.push_back({
                     .quality = uQuality,
@@ -713,12 +714,13 @@ Pathfinder::getBestPaths(
             // We found an extra path that can move the whole amount.
             fullLiquidityPath = (startsWithIssuer ? removeIssuer(path) : path);
             JLOG(j_.debug()) << "Found extra full path: "
-                             << fullLiquidityPath.getJson(JsonOptions::Values::None);
+                             << json::Unmasked{
+                                    fullLiquidityPath.getJson(JsonOptions::Values::None)};
         }
         else
         {
             JLOG(j_.debug()) << "Skipping a non-filling path: "
-                             << path.getJson(JsonOptions::Values::None);
+                             << json::Unmasked{path.getJson(JsonOptions::Values::None)};
         }
     }
 
@@ -730,7 +732,8 @@ Pathfinder::getBestPaths(
     }
     else
     {
-        JLOG(j_.debug()) << "findPaths: RESULTS: " << bestPaths.getJson(JsonOptions::Values::None);
+        JLOG(j_.debug()) << "findPaths: RESULTS: "
+                         << json::Unmasked{bestPaths.getJson(JsonOptions::Values::None)};
     }
     return bestPaths;
 }
@@ -979,7 +982,7 @@ Pathfinder::addLink(
 
     JLOG(j_.trace()) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP
                      << " completePaths size=" << completePaths_.size();
-    JLOG(j_.trace()) << currentPath.getJson(JsonOptions::Values::None);
+    JLOG(j_.trace()) << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
 
     if ((addFlags & kAfAddAccounts) != 0u)
     {
@@ -989,7 +992,7 @@ Pathfinder::addLink(
             if (dstAmount_.native() && !currentPath.empty())
             {  // non-default path to XRP destination
                 JLOG(j_.trace()) << "complete path found ax: "
-                                 << currentPath.getJson(JsonOptions::Values::None);
+                                 << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
                 completePaths_.pushBack(currentPath);
             }
         }
@@ -1095,9 +1098,9 @@ Pathfinder::addLink(
                                     // this is a complete path
                                     if (!currentPath.empty())
                                     {
-                                        JLOG(j_.trace())
-                                            << "complete path found ae: "
-                                            << currentPath.getJson(JsonOptions::Values::None);
+                                        JLOG(j_.trace()) << "complete path found ae: "
+                                                         << json::Unmasked{currentPath.getJson(
+                                                                JsonOptions::Values::None)};
                                         completePaths_.pushBack(currentPath);
                                     }
                                 }
@@ -1226,8 +1229,9 @@ Pathfinder::addLink(
                         {
                             // destination is XRP, add account and path is
                             // complete
-                            JLOG(j_.trace()) << "complete path found bx: "
-                                             << currentPath.getJson(JsonOptions::Values::None);
+                            JLOG(j_.trace())
+                                << "complete path found bx: "
+                                << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
                             completePaths_.pushBack(newPath);
                         }
                         else
@@ -1273,8 +1277,9 @@ Pathfinder::addLink(
                             equalTokens(book.out, dstAmount_.asset()))
                         {  // with the destination account, this path is
                            // complete
-                            JLOG(j_.trace()) << "complete path found ba: "
-                                             << currentPath.getJson(JsonOptions::Values::None);
+                            JLOG(j_.trace())
+                                << "complete path found ba: "
+                                << json::Unmasked{currentPath.getJson(JsonOptions::Values::None)};
                             completePaths_.pushBack(newPath);
                         }
                         else
