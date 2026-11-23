@@ -64,7 +64,7 @@ def staged_files(repo_root: Path) -> list[Path]:
     return [repo_root / rel for rel in output.splitlines() if rel]
 
 
-def main():
+def main() -> int:
     if not os.environ.get("TIDY"):
         return 0
 
@@ -105,12 +105,12 @@ def main():
             run_clang_tidy,
             "-quiet",
             "-p",
-            build_dir,
+            str(build_dir),
             "-fix",
             "-format",
             "-allow-no-checks",
         ]
-        + files,
+        + [str(f) for f in files],
         check=False,
     )
     return result.returncode

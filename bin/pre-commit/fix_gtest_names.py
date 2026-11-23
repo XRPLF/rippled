@@ -74,7 +74,7 @@ def camel_case(name: str) -> str:
     return prefix + "".join(w[:1].upper() + w[1:] for w in core.split("_") if w)
 
 
-def _corrected(match: re.Match) -> tuple[str, str]:
+def _corrected(match: re.Match[str]) -> tuple[str, str]:
     """Returns the suite and test-case names this definition should end up with."""
     suite = match["suite"]
     return (
@@ -92,7 +92,7 @@ def fix_source(text: str) -> tuple[str, list[str]]:
     joined = Counter("_".join(_corrected(m)) for m in PATTERN.finditer(text))
     reports = []
 
-    def rewrite(match: re.Match) -> str:
+    def rewrite(match: re.Match[str]) -> str:
         suite, name = match["suite"], match["name"]
         new_suite, new_name = _corrected(match)
         line = text.count("\n", 0, match.start()) + 1
