@@ -556,6 +556,14 @@ private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
+    /**
+     * Reset the view like reset(), but keep `result` unless the reset itself fails.
+     *
+     * @return `result` (or the reset error) and the fee actually charged.
+     */
+    std::pair<TER, XRPAmount>
+    resetKeepResult(TER result, XRPAmount fee);
+
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
     TER

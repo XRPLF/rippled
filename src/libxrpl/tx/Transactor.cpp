@@ -1410,6 +1410,13 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
+std::pair<TER, XRPAmount>
+Transactor::resetKeepResult(TER result, XRPAmount fee)
+{
+    auto const [resetTer, resetFee] = reset(fee);
+    return {isTesSuccess(resetTer) ? result : resetTer, resetFee};
+}
+
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
@@ -1474,9 +1481,10 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
     // Copy the keys, because reset() replaces the view that holds them.
     auto const keys = ctx_.persistentKeys();
 
-    auto const [resetResult, resetFee] = reset(fee);
-    if (!isTesSuccess(resetResult))
-        return {resetResult, resetFee, isTecClaim(resetResult)};
+    std::tie(result, fee) = resetKeepResult(result, fee);
+    // A failed reset replaces the result with a non-tec error.
+    if (!isTecClaim(result))
+        return {result, fee, false};
 
     std::size_t erased = 0;
     auto const viewJ = ctx_.registry.get().getJournal("View");
@@ -1526,7 +1534,7 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
         }
     }
 
-    return {result, resetFee, isTecClaim(result)};
+    return {result, fee, true};
 }
 
 std::tuple<TER, XRPAmount, bool>
@@ -1597,13 +1605,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     }
 
     // Reset the context, potentially adjusting the fee.
-    {
-        auto const resetResult = reset(fee);
-        if (!isTesSuccess(resetResult.first))
-            result = resetResult.first;
-
-        fee = resetResult.second;
-    }
+    std::tie(result, fee) = resetKeepResult(result, fee);
 
     // Re-apply the collected deletions, but only if the reset succeeded
     // and the post-reset result still allows the same deletion type.
@@ -1752,11 +1754,7 @@ Transactor::operator()()
         // Fee-claim reset: roll the transaction's effects back so that
         // only the fee deduction remains. This is the reset referenced
         // by InvariantScope::ProtocolOnly.
-        auto const resetResult = reset(fee);
-        if (!isTesSuccess(resetResult.first))
-            result = resetResult.first;
-
-        fee = resetResult.second;
+        std::tie(result, fee) = resetKeepResult(result, fee);
 
         // Re-check invariants against the post-reset (fee-claim only)
         // state. The transaction's effects are gone, so the
