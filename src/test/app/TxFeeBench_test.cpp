@@ -12,6 +12,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
@@ -19,10 +20,12 @@
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Indexes.h>
@@ -38,6 +41,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <ratio>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -118,15 +124,15 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         Account const ghost{"ghost"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        auto const USD = gw["USD"];
-        auto const UNF = gw["UNF"];
+        auto const usd = gw["USD"];
+        auto const unf = gw["UNF"];
 
         env.fund(XRP(100'000'000), gw, maker, ghost);
         env.fund(XRP(1'000'000), alice, bob);
         env.close();
 
-        env.trust(USD(1e9), maker, alice, bob);
-        env.trust(UNF(1e9), maker, ghost, bob);
+        env.trust(usd(1e9), maker, alice, bob);
+        env.trust(unf(1e9), maker, ghost, bob);
         for (int p = 0; p < kMaxPaths; ++p)
         {
             for (int h = 1; h <= kMaxLen; ++h)
@@ -134,10 +140,10 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         }
         env.close();
 
-        env(pay(gw, maker, USD(1e8)));
-        env(pay(gw, alice, USD(1e6)));
-        env(pay(gw, maker, UNF(1e6)));
-        env(pay(gw, ghost, UNF(1e6)));
+        env(pay(gw, maker, usd(1e8)));
+        env(pay(gw, alice, usd(1e6)));
+        env(pay(gw, maker, unf(1e6)));
+        env(pay(gw, ghost, unf(1e6)));
         for (int p = 0; p < kMaxPaths; ++p)
         {
             for (int h = 1; h <= kMaxLen; ++h)
@@ -155,7 +161,7 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
                 auto const cur = gw[hopCode(p, h)];
                 if (h < kMaxLen)
                     env(offer(maker, cur(1'000'000), gw[hopCode(p, h + 1)](1'000'000)));
-                env(offer(maker, cur(1'000'000), USD(1'000'000)));
+                env(offer(maker, cur(1'000'000), usd(1'000'000)));
             }
             env.close();
         }
@@ -163,7 +169,7 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         // Deep XRP -> USD book: many small offers at the same quality.
         for (int i = 0; i < kDeepOffers; ++i)
         {
-            env(offer(maker, XRP(1), USD(1)));
+            env(offer(maker, XRP(1), usd(1)));
             if (i % 100 == 99)
                 env.close();
         }
@@ -172,25 +178,25 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         // unfunded, then one funded offer from maker at a worse quality.
         for (int i = 0; i < 500; ++i)
         {
-            env(offer(ghost, XRP(1), UNF(1)));
+            env(offer(ghost, XRP(1), unf(1)));
             if (i % 100 == 99)
                 env.close();
         }
-        env(offer(maker, XRP(2), UNF(1)));
-        env(pay(ghost, gw, UNF(1e6)));
+        env(offer(maker, XRP(2), unf(1)));
+        env(pay(ghost, gw, unf(1e6)));
         env.close();
 
         section("Payment");
         bench("XRP -> XRP (baseline)", env, env.jt(pay(alice, bob, XRP(1))));
-        bench("USD -> USD direct", env, env.jt(pay(alice, bob, USD(1))));
+        bench("USD -> USD direct", env, env.jt(pay(alice, bob, usd(1))));
 
         // Grid: N explicit paths of L elements each, tiny amount (one flow
         // iteration, one offer touched per book). Default path disabled.
-        for (int len : {1, 4, 8})
+        for (int const len : {1, 4, 8})
         {
-            for (int n : {1, 3, 6})
+            for (int const n : {1, 3, 6})
             {
-                json::Value jv = pay(alice, bob, USD(0.01));
+                json::Value jv = pay(alice, bob, usd(0.01));
                 jv[jss::Paths] = json::Value(json::ValueType::Array);
                 for (int p = 0; p < n; ++p)
                 {
@@ -211,12 +217,12 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         }
 
         // Default path only, consuming K offers in one book.
-        for (int k : {1, 10, 100, 1000})
+        for (int const k : {1, 10, 100, 1000})
         {
             bench(
                 "default path, " + std::to_string(k) + " offers crossed",
                 env,
-                env.jt(pay(alice, bob, USD(k)), Sendmax(XRP(k + 1))),
+                env.jt(pay(alice, bob, usd(k)), Sendmax(XRP(k + 1))),
                 k >= 100 ? 20 : kReps);
         }
 
@@ -224,22 +230,22 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         bench(
             "default path, 500 unfunded removed",
             env,
-            env.jt(pay(alice, bob, UNF(1)), Sendmax(XRP(3))),
+            env.jt(pay(alice, bob, unf(1)), Sendmax(XRP(3))),
             20);
 
         section("OfferCreate");
-        for (int k : {1, 10, 100, 1000})
+        for (int const k : {1, 10, 100, 1000})
         {
             bench(
                 "OfferCreate, " + std::to_string(k) + " offers crossed",
                 env,
-                env.jt(offer(alice, USD(k), XRP(k))),
+                env.jt(offer(alice, usd(k), XRP(k))),
                 k >= 100 ? 20 : kReps);
         }
         bench(
             "OfferCreate, 500 unfunded removed",
             env,
-            env.jt(offer(bob, UNF(1), XRP(2)), Txflags(tfImmediateOrCancel)),
+            env.jt(offer(bob, unf(1), XRP(2)), Txflags(tfImmediateOrCancel)),
             20);
     }
 
@@ -278,7 +284,7 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         bench("NFTokenMint (new page)", env, env.jt(token::mint(bob, 0)));
         bench("NFTokenMint (page split)", env, env.jt(token::mint(carol, 0)));
         bench("NFTokenAcceptOffer (sell)", env, env.jt(token::acceptSellOffer(bob, offers[0])));
-        for (std::size_t n : {1, 50, 500})
+        for (std::size_t const n : {1, 50, 500})
         {
             std::vector<uint256> const ids(offers.begin(), offers.begin() + n);
             bench(
@@ -308,22 +314,22 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         Account const gw{"gw"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(1'000'000), gw, alice, bob);
         env.close();
-        env.trust(USD(1e9), alice, bob);
+        env.trust(usd(1e9), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(100'000)));
+        env(pay(gw, alice, usd(100'000)));
         env.close();
 
-        AMM const amm(env, gw, XRP(10'000), USD(10'000));
+        AMM const amm(env, gw, XRP(10'000), usd(10'000));
 
-        auto ammJv = [&](char const* type, STAmount const& amount) {
+        auto const ammJv = [&](char const* type, STAmount const& amount) {
             json::Value jv;
             jv[jss::TransactionType] = type;
             jv[jss::Account] = alice.human();
             jv[jss::Asset] = toJson(xrpIssue());
-            jv[jss::Asset2] = toJson(USD.issue());
+            jv[jss::Asset2] = toJson(usd.issue());
             jv[jss::Amount] = amount.getJson();
             jv[jss::Flags] = static_cast<std::uint32_t>(tfSingleAsset);
             return jv;
@@ -337,7 +343,7 @@ class TxFeeBench_test : public ConfidentialTransferTestBase
         bench(
             "Payment XRP -> USD through AMM",
             env,
-            env.jt(pay(alice, bob, USD(10)), Sendmax(XRP(20))));
+            env.jt(pay(alice, bob, usd(10)), Sendmax(XRP(20))));
         bench("AMMDeposit single asset", env, env.jt(ammJv("AMMDeposit", XRP(100))));
         bench("AMMWithdraw single asset", env, env.jt(ammJv("AMMWithdraw", XRP(100))));
     }
