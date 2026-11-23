@@ -59,7 +59,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw_, carol_["USD"](0), tfSetFreeze));
         env.close();
 
-        // bob_ can still send lptoken to carol_ even tho carol_'s USD is
+        // bob_ can still send lptoken to carol_ even though carol_'s USD is
         // frozen, regardless of whether fixFrozenLPTokenTransfer is enabled or
         // not
         // Note: Deep freeze is not considered for LPToken transfer

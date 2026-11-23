@@ -127,7 +127,7 @@ public:
 
     // --- Constructors that adopt/resolve an SLE (public so the ReadOnlySLE /
     //     WritableSLE aliases and the per-type entries can be built directly
-    //     from a keylet, or -- read-only only -- from an already-fetched
+    //     from a keylet, or -- only read-only -- from an already-fetched
     //     SLE). ---
 
     /**

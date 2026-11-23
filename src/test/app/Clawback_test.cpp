@@ -237,7 +237,7 @@ class Clawback_test : public beast::unit_test::Suite
             env.require(Balance(bob, alice["USD"](0)));
             env.require(Balance(alice, bob["USD"](0)));
 
-            // clawback fails because because balance is 0
+            // clawback fails because balance is 0
             env(claw(alice, bob["USD"](5)), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
 

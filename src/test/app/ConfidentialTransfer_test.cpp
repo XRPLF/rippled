@@ -4884,7 +4884,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 });
 
             // proof failure for incorrect amount when clawbacking from
-            // carol carol: 100 in inbox, 300 in spending
+            // carol: 100 in inbox, 300 in spending
             checkBadProofs(
                 mptAlice,
                 carol,

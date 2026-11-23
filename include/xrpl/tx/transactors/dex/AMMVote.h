@@ -16,7 +16,7 @@ namespace xrpl {
  * This transactor allows for the TradingFee of the AMM instance be a votable
  * parameter. Any account (LP) that holds the corresponding LPTokens can cast
  * a vote using the new AMMVote transaction. VoteSlots array in ltAMM object
- * keeps track of upto eight active votes (VoteEntry) for the instance.
+ * keeps track of up to eight active votes (VoteEntry) for the instance.
  * VoteEntry contains:
  * Account - account id that cast the vote.
  * FeeVal - proposed fee in basis points.

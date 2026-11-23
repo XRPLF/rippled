@@ -1163,7 +1163,7 @@ protected:
 
         // Periodic payment amount will consist of
         // 1. principal outstanding (1000)
-        // 2. interest interest rate (at 12%)
+        // 2. interest rate (at 12%)
         // 3. payment interval (600s)
         // 4. loan service fee (2)
         // Calculate these values without the helper functions
@@ -2805,7 +2805,7 @@ protected:
 
                 // Periodic payment amount will consist of
                 // 1. principal outstanding (1000)
-                // 2. interest interest rate (at 12%)
+                // 2. interest rate (at 12%)
                 // 3. payment interval (600s)
                 // 4. loan service fee (2)
                 // Calculate these values without the helper functions

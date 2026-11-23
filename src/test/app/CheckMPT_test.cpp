@@ -372,7 +372,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             usdm.set({.holder = alice, .flags = tfMPTLock});
             // Setting MPT locked prevents alice from
-            // creating a check for USD ore receiving a check. This is different
+            // creating a check for USD or receiving a check. This is different
             // from IOU where alice can receive checks from bob or gw.
             env.close();
             env(check::create(alice, bob, usd(50)), Ter(tecLOCKED));
