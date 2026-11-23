@@ -55,9 +55,9 @@ include(default)
 {% endif %}
 
 {# Frame pointer required for meaningful stack traces; -O1 for reasonable performance. #}
-{# tools.build:cxxflags puts -O1 ahead of the build type's own flags, so a Release build #}
-{# keeps its -O3 and a clang Debug build gets -O1 (xrpld adds -O0 to a gcc Debug build). #}
-{# It is left out of SANITIZERS_COMPILER_FLAGS, which would override Release with -O1. #}
+{# tools.build:cflags and tools.build:cxxflags put -O1 ahead of the build type's own flags, #}
+{# so a build type that sets its own optimization level keeps it. SANITIZERS_COMPILER_FLAGS #}
+{# leaves -O1 out, because xrpld adds those flags after the build type's own. #}
 {% set sanitizer_compiler_flags = ["-fno-omit-frame-pointer", "-O1"] %}
 
 {% if compiler == "gcc" %}

@@ -36,11 +36,11 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-VARIANTS = ("", "assert", "asan", "ubsan", "tsan")
+# The build metadata that the binary of each sanitizer variant reports, as
+# cmake/XrplSanitizers.cmake names it.
+SANITIZER_METADATA = {"asan": "ASAN", "ubsan": "UBSAN", "tsan": "TSAN"}
 
-# The variants whose binary reports its sanitizer as build metadata, which the
-# stable channel rejects and the variant name already carries.
-SANITIZER_VARIANTS = ("asan", "ubsan", "tsan")
+VARIANTS = ("", "assert", *SANITIZER_METADATA)
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -149,11 +149,39 @@ def package_name(variant: str) -> str:
     return f"{BASE_NAME}-{variant}" if variant else BASE_NAME
 
 
-def read_version(xrpld: Path) -> str:
-    """Read the version from the binary that is about to be packaged."""
-    fields = capture(xrpld, "--version").partition("\n")[0].split()
+def read_version(xrpld: Path) -> tuple[str, str]:
+    """Read the version and the commit hash from the binary that is about to be
+    packaged. The commit hash is empty when the binary reports none.
+    """
+    lines = capture(xrpld, "--version").splitlines()
+    fields = lines[0].split() if lines else []
     assert len(fields) >= 3, f"cannot read a version from {xrpld} --version"
-    return fields[2]
+    prefix = "Git commit hash:"
+    commit_hash = next(
+        (
+            line.removeprefix(prefix).strip()
+            for line in lines
+            if line.startswith(prefix)
+        ),
+        "",
+    )
+    return fields[2], commit_hash
+
+
+def without_sanitizer_metadata(reported: str, variant: str, commit_hash: str) -> str:
+    """Remove the build metadata that a sanitizer build appends to its version:
+    the name of the sanitizer, and the commit hash that a version without
+    metadata gets with it. The metadata of a tag stays.
+
+    A release channel rejects the sanitizer's metadata, and the name of the
+    variant carries it already.
+    """
+    name = SANITIZER_METADATA[variant]
+    return (
+        reported.removesuffix(f".{name}")
+        .removesuffix(f"+{name}")
+        .removesuffix(f"+{commit_hash}")
+    )
 
 
 def check_binaries(build_dir: Path) -> None:
@@ -348,12 +376,15 @@ def main() -> None:
     )
 
     check_binaries(build_dir)
-    reported = read_version(build_dir / "xrpld")
-    # A sanitizer build appends its name as build metadata, which a release
-    # channel rejects, so only the package version drops it: the changelog
+    reported, commit_hash = read_version(build_dir / "xrpld")
+    # Only the package version drops the sanitizer's metadata: the changelog
     # still records the version the binary reports.
     version = package_version(
-        reported.partition("+")[0] if variant in SANITIZER_VARIANTS else reported,
+        (
+            without_sanitizer_metadata(reported, variant, commit_hash)
+            if variant in SANITIZER_METADATA
+            else reported
+        ),
         channel,
     )
     epoch = source_date_epoch()
