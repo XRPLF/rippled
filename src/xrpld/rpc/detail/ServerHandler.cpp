@@ -343,7 +343,7 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > rpc::tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
-        // An unparsed body cannot be masked field-wise, so its size goes instead of its content.
+        // An unparsed body cannot be masked field by field, so the reply reports only its size.
         // Clamped rather than narrowed: json has no integer wider than 32 bits.
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;

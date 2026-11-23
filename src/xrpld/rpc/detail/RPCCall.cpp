@@ -1902,8 +1902,9 @@ struct RPCCallImp
             json::Value jvReply;
             if (!reader.parse(strData, jvReply))
             {
-                JLOG(j.debug()) << "RPC reply: "
-                                << std::string_view{strData}.substr(0, rpc::kMaxLoggedChars);
+                // A body that does not parse cannot be masked field by field, so only its size
+                // is logged.
+                JLOG(j.debug()) << "RPC reply: unparsable, " << strData.size() << " bytes";
                 Throw<std::runtime_error>("couldn't parse reply from server");
             }
             // Logged once parsed, masked: `validation_create` and `wallet_propose` answer with a

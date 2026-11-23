@@ -31,13 +31,17 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/connect.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/read_until.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/core/make_printable.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
@@ -48,6 +52,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -55,6 +60,7 @@
 #include <regex>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -1868,6 +1874,87 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A reply the command line client cannot parse is logged by its size,
+     * never by its content.
+     *
+     * A stand-in server answers one request with a JSON array that lacks its
+     * closing `]`, so the client cannot parse it. The array holds the seeds of
+     * two wallets, because the fallback scrubber of the log masks only the
+     * first occurrence of a name.
+     */
+    void
+    testUnparsableReplyIsNotLogged()
+    {
+        testcase("The command line client does not log a reply it cannot parse");
+
+        using namespace test::jtx;
+        using boost::asio::ip::tcp;
+
+        static constexpr char const* kFirstSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+        static constexpr char const* kSecondSeed = "shHM53KPZ87Gwdqarm1bAmPeXg8Tn";
+
+        std::string body{R"([{"result":{"master_seed":")"};
+        body.append(kFirstSeed).append(R"("}},{"result":{"master_seed":")");
+        body.append(kSecondSeed).append(R"("}})");
+
+        std::string reply{"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "};
+        reply.append(std::to_string(body.size())).append("\r\nConnection: close\r\n\r\n");
+        reply.append(body);
+
+        boost::asio::io_context ioc;
+        tcp::acceptor acceptor{ioc, tcp::endpoint{boost::asio::ip::make_address("127.0.0.1"), 0}};
+        auto const port = acceptor.local_endpoint().port();
+
+        boost::asio::spawn(
+            ioc,
+            [&](boost::asio::yield_context yield) {
+                boost::system::error_code ec;
+                tcp::socket socket{ioc};
+                acceptor.async_accept(socket, yield[ec]);
+                boost::asio::streambuf request;
+                boost::asio::async_read_until(socket, request, "\r\n\r\n", yield[ec]);
+                boost::asio::async_write(socket, boost::asio::buffer(reply), yield[ec]);
+                socket.shutdown(tcp::socket::shutdown_send, ec);
+
+                // Read until the client closes, so that the reply is not lost to a reset.
+                std::array<char, 1024> rest{};
+                while (!ec)
+                    socket.async_read_some(boost::asio::buffer(rest), yield[ec]);
+            },
+            boost::asio::detached);
+
+        // Bounded, so that a client that never connects cannot hang the suite.
+        std::thread server{[&ioc] { ioc.run_for(std::chrono::seconds{30}); }};
+
+        std::string logs;
+        json::Value output;
+        {
+            Env env{
+                *this,
+                envconfig([port](std::unique_ptr<Config> cfg) {
+                    cfg->rpcIp =
+                        beast::ip::Endpoint{boost::asio::ip::make_address("127.0.0.1"), port};
+                    return cfg;
+                }),
+                std::make_unique<CaptureLogs>(&logs),
+                beast::Severity::Debug};
+
+            // `Env::doRpc` retries an internal error, and the stand-in answers once.
+            env.setRetries(0);
+            output = env.rpc("wallet_propose");
+        }
+        server.join();
+
+        BEAST_EXPECTS(
+            output["error_what"] == "couldn't parse reply from server", to_string(output));
+
+        // The line was written, so the absence assertions below are not vacuous.
+        BEAST_EXPECT(logs.contains("RPC reply: unparsable, " + std::to_string(body.size())));
+        BEAST_EXPECT(!logs.contains(kFirstSeed));
+        BEAST_EXPECT(!logs.contains(kSecondSeed));
+    }
+
+    /**
      * A credential in an `[rpc_startup]` command is masked in the startup
      * log, and so is the result.
      *
@@ -2081,6 +2168,7 @@ public:
         });
 
         testCommandLineCredentialsAreMasked();
+        testUnparsableReplyIsNotLogged();
         testStartupCommandsAreMasked();
     }
 };
