@@ -1831,8 +1831,6 @@ roundedQuotient(BigInt const& num, BigInt const& den, int shift, int magnitudeDi
 
 }  // namespace
 
-namespace detail {
-
 STAmount
 mulDivRound(
     Number const& a,
@@ -1843,13 +1841,13 @@ mulDivRound(
     std::optional<int> targetExponent)
 {
     XRPL_ASSERT(
-        a.signum() >= 0 && b.signum() >= 0 && c.signum() >= 0,
-        "xrpl::detail::mulDivRound : non-negative inputs");
-    XRPL_ASSERT(
         mode == Number::RoundingMode::Upward || mode == Number::RoundingMode::Downward,
-        "xrpl::detail::mulDivRound : directed rounding mode");
+        "xrpl::mulDivRound : directed rounding mode");
     bool const roundUp = mode == Number::RoundingMode::Upward;
 
+    // Thrown rather than asserted so a release build never casts a negative value to unsigned.
+    if (a.signum() < 0 || b.signum() < 0 || c.signum() < 0)
+        Throw<std::overflow_error>("mulDivRound: negative operand");
     if (c == beast::kZero)
         Throw<std::overflow_error>("mulDivRound: division by zero");
     // A zero Number has the lowest possible exponent, so it is handled before any exponent maths.
@@ -1899,7 +1897,7 @@ mulDivRound(
         ++grid;
         mantissa = roundedQuotient(num, den, exponent - grid, magnitudeDigits, roundUp);
         // 10^16 is a 16-digit mantissa at the next exponent, and STAmount drops its zero digit.
-        XRPL_ASSERT(mantissa <= maxMantissa, "xrpl::detail::mulDivRound : coarsened mantissa fits");
+        XRPL_ASSERT(mantissa <= maxMantissa, "xrpl::mulDivRound : coarsened mantissa fits");
     }
     if (mantissa == 0)
         return STAmount{asset};
@@ -1914,8 +1912,6 @@ mulDivRound(
     }
     return STAmount{asset, static_cast<std::uint64_t>(mantissa), grid, false};
 }
-
-}  // namespace detail
 
 [[nodiscard]] bool
 STAmount::isZeroAtScale(int scale) const

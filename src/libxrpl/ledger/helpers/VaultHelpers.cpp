@@ -536,7 +536,7 @@ assetsToSharesDeposit(
     // Exact, rounded once: shares to the depositor round down.
     if (rules.enabled(fixCleanup3_6_0))
     {
-        return detail::mulDivRound(
+        return mulDivRound(
             shareTotal, assets, assetTotal, shares.asset(), Number::RoundingMode::Downward);
     }
     shares = ((shareTotal * assets) / assetTotal).truncate();
@@ -569,7 +569,7 @@ sharesToAssetsDeposit(
     // Exact, rounded once: assets taken for shares round up.
     if (rules.enabled(fixCleanup3_6_0))
     {
-        return detail::mulDivRound(
+        return mulDivRound(
             assetTotal,
             shares,
             shareTotal,
@@ -722,7 +722,7 @@ assetsToSharesWithdraw(
     // Exact, rounded once and always down, so truncate is ignored.
     if (rules.enabled(fixCleanup3_6_0))
     {
-        return detail::mulDivRound(
+        return mulDivRound(
             shareTotal, assets, assetTotal, shares.asset(), Number::RoundingMode::Downward);
     }
     Number result = (shareTotal * assets) / assetTotal;
@@ -755,7 +755,7 @@ sharesToAssetsWithdraw(
     // Exact, rounded once: assets paid out round down.
     if (rules.enabled(fixCleanup3_6_0))
     {
-        return detail::mulDivRound(
+        return mulDivRound(
             assetTotal,
             shares,
             shareTotal,

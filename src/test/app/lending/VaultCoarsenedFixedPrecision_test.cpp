@@ -219,6 +219,66 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         }
     }
 
+    // Pins the payout of a share withdrawal at a fractional share price. There is no pre-fix run:
+    // a FixedPrecision vault cannot be created without fixCleanup3_6_0.
+    void
+    testWithdrawSharesRoundsDownToBaseScale()
+    {
+        testcase(
+            "Lending: a share withdrawal from an IOU vault grown by interest pays out on the "
+            "base grid, rounded down");
+
+        using namespace test::jtx;
+        Env env{*this, features()};
+        auto const [issuer, owner, depositor, asset] =
+            setupIou(env, {.depositorTrust = 1'100, .ownerTrust = 1'000});
+
+        // Scale 6: 1,000 USD mints 1,000,000,000 shares and the base grid is 10^-6.
+        auto const fixture = setupLendingVault(
+            env, owner, depositor, asset, Number{1'000}, std::chrono::seconds{1'000'000}, 6);
+        auto const loanKeylet =
+            openLoan(env, fixture, Number{1'000}, 1, percentageToTenthBips(10), 0, 60 * 60);
+        env(loan::pay(depositor, loanKeylet.key, asset(1'001).value()));
+        env.close();
+        env.close(fixture.redemptionDate + std::chrono::seconds{1});
+
+        auto const vaultBefore = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        MPTIssue const share{vaultBefore->at(sfShareMPTID)};
+        // Share balances are read through the vault's pseudo-account, the share issuer.
+        env.memoize(Account{"vault", vaultBefore->at(sfAccount)});
+        auto const issuance = env.le(keylet::mptokenIssuance(share.getMptID()));
+        if (!BEAST_EXPECT(issuance))
+            return;
+        // One hour of 10% interest on 1,000 grew the vault to 1,000.011416 for 10^9 shares.
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const grownTotal{1'000'011'416, -6};
+        BEAST_EXPECT(totalBefore == grownTotal);
+        BEAST_EXPECT(issuance->at(sfOutstandingAmount) == 1'000'000'000);
+        Number const balanceBefore = env.balance(depositor, asset).number();
+
+        // 50,000 shares are worth 1,000.011416 * 50,000 / 10^9 = 0.0500005708. On the 10^-6 grid
+        // that rounds down to 0.050000; to nearest it would be 0.050001.
+        std::uint64_t const sharesRedeemed = 50'000;
+        env(fixture.vault.withdraw({
+            .depositor = depositor,
+            .id = fixture.vaultKeylet.key,
+            .amount = STAmount{share, sharesRedeemed},
+        }));
+        env.close();
+
+        auto const vaultAfter = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        Number const paid = env.balance(depositor, asset).number() - balanceBefore;
+        Number const debited = totalBefore - Number{vaultAfter->at(sfAssetsTotal)};
+        Number const payout{5, -2};
+        BEAST_EXPECTS(paid == payout, "paid " + to_string(paid));
+        BEAST_EXPECTS(debited == payout, "AssetsTotal fell by " + to_string(debited));
+        BEAST_EXPECT(env.balance(depositor, share).number() == Number{1'000'000'000 - 50'000});
+    }
+
     void
     testCoarsenedVaultWithdrawClawbackKeepAvailableGridDigit()
     {
@@ -501,6 +561,7 @@ public:
         testDepositRefusedOnDebtCoarsenedVault();
         testFullWithdrawAfterLateInterest();
         testFullClawbackAfterLateInterest();
+        testWithdrawSharesRoundsDownToBaseScale();
     }
 };
 

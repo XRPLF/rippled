@@ -27,7 +27,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1137,9 +1136,6 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         }));
         env.close();
         Number const sharesLeft = env.balance(shareHolder_, setup.share).value();
-        log << "clawback of 6564364663 from a holder of 6564360495 shares: " << sharesLeft
-            << " shares left, vault holds "
-            << snapshotVault(env, setup.keylet, setup.asset).vaultBalance << std::endl;
 
         // The clawback is capped at the vault's 6,564,360,495 units, the worth of all the shares.
         BEAST_EXPECTS(

@@ -37,6 +37,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/Units.h>
 
 #include <chrono>
 #include <cstdint>
@@ -2763,6 +2764,98 @@ private:
         BEAST_EXPECT(env.balance(destination) == destinationBalanceBefore + XRP(100));
     }
 
+    // A deposit at a share price that is not a whole number of units. A defaulted 1,000 loan
+    // leaves a Legacy MPT vault with AssetsTotal 3,000 and 4,000 shares. A deposit of 5 mints
+    // floor(4,000 * 5 / 3,000) = 6 shares, worth 3,000 * 6 / 4,000 = 4.5 units. After
+    // fixCleanup3_6_0 the depositor pays that worth rounded up, 5. Before it the 19-digit result
+    // was rounded to nearest, which charged expectedCharge.
+    // LendingProtocolV1_1 is off because the test needs a Legacy open-ended vault. Under V1_1 a
+    // broker needs a closed-ended vault, which refuses deposits once a loan can exist.
+    void
+    testBugDepositUnderchargesAtFractionalSharePrice()
+    {
+        using namespace test::jtx;
+
+        auto const runScenario = [this](FeatureBitset features, std::int64_t expectedCharge) {
+            Env env(*this, features);
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const borrower{"borrower"};
+            env.fund(XRP(100'000), issuer, owner, depositor, borrower);
+            env.close();
+
+            MPTTester mpt{env, issuer, kMptInitNoFund};
+            mpt.create({.flags = tfMPTCanTransfer});
+            PrettyAsset const asset = mpt.issuanceID();
+            mpt.authorize({.account = owner});
+            mpt.authorize({.account = depositor});
+            mpt.authorize({.account = borrower});
+            env(pay(issuer, depositor, asset(4'005)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            env(createTx);
+            env.close();
+            env(vault.deposit(
+                {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(4'000)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(loan_broker::set(owner, vaultKeylet.key));
+            env.close();
+            auto const brokerSle = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(brokerSle))
+                return;
+            auto const loanKeylet = keylet::loan(
+                brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+            env(loan::set(borrower, brokerKeylet.key, asset(1'000).value()),
+                loan::kInterestRate(TenthBips32(0)),
+                loan::kGracePeriod(60),
+                loan::kPaymentInterval(120),
+                loan::kPaymentTotal(1),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+            env.close(std::chrono::seconds{120 + 60});
+            env(loan::manage(owner, loanKeylet.key, tfLoanDefault));
+            env.close();
+
+            auto const vaultBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultBefore))
+                return;
+            MPTIssue const share{vaultBefore->at(sfShareMPTID)};
+            env.memoize(Account{"vault", vaultBefore->at(sfAccount)});
+            Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+            BEAST_EXPECT(totalBefore == Number{3'000});
+            BEAST_EXPECT(env.balance(depositor, share).number() == Number{4'000});
+
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(5)}));
+            env.close();
+
+            auto const vaultAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultAfter))
+                return;
+            Number const charged = Number{4'005 - 4'000} - env.balance(depositor, asset).number();
+            Number const credited = Number{vaultAfter->at(sfAssetsTotal)} - totalBefore;
+            Number const minted = env.balance(depositor, share).number() - Number{4'000};
+            BEAST_EXPECTS(minted == Number{6}, "minted " + to_string(minted) + " shares");
+            BEAST_EXPECTS(
+                charged == Number{expectedCharge},
+                "charged " + to_string(charged) + " for 6 shares worth 4.5");
+            BEAST_EXPECTS(
+                credited == Number{expectedCharge}, "AssetsTotal grew by " + to_string(credited));
+        };
+
+        auto const legacy = cashBasisAll_ - featureLendingProtocolV1_1;
+        testcase("bug: VaultDeposit at a fractional share price (pre-fixCleanup3_6_0)");
+        runScenario(legacy - fixCleanup3_6_0, 4);
+        testcase("VaultDeposit at a fractional share price charges the rounded-up worth");
+        runScenario(legacy, 5);
+    }
+
 public:
     void
     run() override
@@ -2790,6 +2883,7 @@ public:
         testBugSponsorAsDestinationFeeMisappliedToPayout();
         testPrefundedFeeWithdraw();
         testUnsponsoredWithdrawToDistinctDestinationPreAmendment();
+        testBugDepositUnderchargesAtFractionalSharePrice();
     }
 };
 
