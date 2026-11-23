@@ -15,7 +15,7 @@ The legacy unit tests under `src/test/` are a custom framework (derived from Bea
 - A suite's `--unittest` name is built from the arguments to its `BEAST_DEFINE_TESTSUITE`/`BEAST_DEFINE_TESTSUITE_PRIO` macro (usually at the bottom of the test file), in reverse order and joined with `.`: `BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl)` → `xrpl.app.Credentials`.
 - `--unittest-arg=<string>` passes one string to every suite that runs; a suite reads it with `arg()` and interprets it itself. Only a few suites use it (e.g. `TheoreticalQuality`, the nodestore `import` test); for the rest it has no effect.
 - Tests that run offline in under a minute should be automatic `--unittest` suites; anything else is a manual/integration test.
-- New tests should be written using `gtest` under `src/tests/` unless that isn't possible, in which case fall back to the legacy Beast framework under `src/test/` (see [src/test/AGENTS.md](./src/test/AGENTS.md) for conventions specific to that directory). `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
+- Before you add a new test, search `src/test/` and `src/tests/` for a suite that already covers the same feature or code path. If one exists, add the test there, even if that suite uses the legacy Beast framework under `src/test/` (see [src/test/AGENTS.md](./src/test/AGENTS.md) for conventions specific to that directory). Otherwise, write it using `gtest` under `src/tests/`, and fall back to `src/test/` only if `gtest` isn't possible. `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
 
 ## Lint/Format
 
