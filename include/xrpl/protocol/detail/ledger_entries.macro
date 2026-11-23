@@ -595,7 +595,6 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     // trailing zeros).
     {sfLoanScale,                SoeDefault},
     {sfAccount,                  SoeOptional},
-    {sfLeaseUnit,                SoeOptional},
     {sfLeaseClaimVault,          SoeDefault},
     {sfLeaseClaimCover,          SoeDefault},
 }))

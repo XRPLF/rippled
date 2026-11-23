@@ -624,26 +624,30 @@ SponsorshipTransfer::doApply()
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            // The borrower takes the leased account's unit with it: one
-            // LeaseUnit moves from the lease account to the borrower, then the
-            // borrower's reserve check below counts the account.
+            // The borrower takes the leased account with the XRP it frees: the
+            // lease account's Free once it sponsors one account less (the base
+            // reserve, more after a fall of the reserve, less after a rise). The
+            // borrower's reserve check below then counts the account.
             if (isLeaseTakeover)
             {
                 auto const leaseID = sponseeSle->getAccountID(sfSponsor);
-                auto const loan = leaseLoanOfSponsor(view(), leaseID);
-                if (!loan)
+                auto const leaseSle = view().read(keylet::account(leaseID));
+                if (!leaseSle)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
-                XRPAmount const unit{Number{loan->at(~sfLeaseUnit).value_or(Number{0})}};
-                if (auto const ter = accountSend(
-                        view(),
-                        leaseID,
-                        newSponsorID,
-                        STAmount{unit},
-                        j_,
-                        {},
-                        WaiveTransferFee::Yes);
-                    !isTesSuccess(ter))
-                    return ter;
+                XRPAmount const freed = leaseFree(view(), *leaseSle, -1);
+                if (freed > beast::kZero)
+                {
+                    if (auto const ter = accountSend(
+                            view(),
+                            leaseID,
+                            newSponsorID,
+                            STAmount{freed},
+                            j_,
+                            {},
+                            WaiveTransferFee::Yes);
+                        !isTesSuccess(ter))
+                        return ter;
+                }
             }
 
             if (auto const ter = checkReserve(

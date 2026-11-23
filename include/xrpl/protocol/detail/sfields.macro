@@ -243,7 +243,6 @@ TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfYieldUnrealized,          NUMBER,     18, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfAssetsDeployed,           NUMBER,     19, SField::kSmdNeedsAsset | SField::kSmdDefault)
-TYPED_SFIELD(sfLeaseUnit,                NUMBER,    204, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfLeaseClaimVault,          NUMBER,    205, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfLeaseClaimCover,          NUMBER,    206, SField::kSmdNeedsAsset | SField::kSmdDefault)
 

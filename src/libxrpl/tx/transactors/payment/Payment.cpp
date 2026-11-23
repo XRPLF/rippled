@@ -411,17 +411,12 @@ preclaimLeasedAccount(PreclaimContext const& ctx, UInt256 const& loanID)
         ctx.view.read(keylet::account(loanSle->at(~sfAccount).value_or(AccountID{})));
     if (!leaseSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    XRPAmount const unit{Number{loanSle->at(~sfLeaseUnit).value_or(Number{0})}};
-    // A base reserve above the lease's unit would leave a new account short.
-    if (ctx.view.fees().reserve > unit)
-    {
-        JLOG(ctx.j.warn()) << "The base reserve is above the lease's unit.";
-        return tecINSUFFICIENT_RESERVE;
-    }
+    // The lease must hold the current base reserve for every leased account,
+    // the new one included.
     XRPAmount const balance = leaseSle->at(sfBalance).value().xrp();
-    if (leaseLocked(*leaseSle, *loanSle) + unit > balance)
+    if (leaseLocked(ctx.view, *leaseSle, 1) > balance)
     {
-        JLOG(ctx.j.warn()) << "The lease holds no free unit for another account.";
+        JLOG(ctx.j.warn()) << "The lease cannot carry the reserve of another account.";
         return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;

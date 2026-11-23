@@ -79,18 +79,20 @@ leaseActingSponsor(ReadView const& view, AccountID const& sponsorID)
 }
 
 XRPAmount
-leaseLocked(SLE const& leaseAccount, SLE const& loan)
+leaseLocked(ReadView const& view, SLE const& leaseAccount, std::int32_t countDelta)
 {
-    std::int64_t const count = leaseAccount.at(sfSponsoringAccountCount);
-    XRPAmount const unit{Number{loan.at(~sfLeaseUnit).value_or(Number{0})}};
-    return XRPAmount{count * unit.drops()};
+    std::int64_t const count =
+        static_cast<std::int64_t>(leaseAccount.at(sfSponsoringAccountCount)) + countDelta;
+    if (count <= 0)
+        return XRPAmount{0};
+    return view.fees().accountReserve(0, static_cast<std::uint32_t>(count));
 }
 
 XRPAmount
-leaseFree(SLE const& leaseAccount, SLE const& loan)
+leaseFree(ReadView const& view, SLE const& leaseAccount, std::int32_t countDelta)
 {
     XRPAmount const balance = leaseAccount.at(sfBalance).value().xrp();
-    XRPAmount const locked = leaseLocked(leaseAccount, loan);
+    XRPAmount const locked = leaseLocked(view, leaseAccount, countDelta);
     return balance > locked ? balance - locked : XRPAmount{0};
 }
 
@@ -104,7 +106,7 @@ leaseRecover(ApplyView& view, SLE::Ref loan, SLE::Ref broker, SLE::Ref vault, be
     if (!leaseSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    XRPAmount const free = leaseFree(*leaseSle, *loan);
+    XRPAmount const free = leaseFree(view, *leaseSle);
     if (free == beast::kZero)
         return tesSUCCESS;
 
@@ -179,7 +181,7 @@ leasePayFreeToBorrower(ApplyView& view, SLE::Ref loan, beast::Journal j)
     if (!leaseSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    XRPAmount const free = leaseFree(*leaseSle, *loan);
+    XRPAmount const free = leaseFree(view, *leaseSle);
     if (free == beast::kZero)
         return tesSUCCESS;
 

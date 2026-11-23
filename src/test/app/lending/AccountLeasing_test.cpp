@@ -227,7 +227,6 @@ class AccountLeasing_test : public LoanTestBase
         if (!BEAST_EXPECT(loanSle))
             return;
         BEAST_EXPECT(loanSle->isFlag(lsfLoanLease));
-        BEAST_EXPECT(loanSle->at(~sfLeaseUnit) == Number{lease.reserve.drops()});
         BEAST_EXPECT(loanSle->at(sfLeaseClaimVault) == beast::kZero);
 
         // The lease account holds the principal; the borrower got nothing.
@@ -648,7 +647,7 @@ class AccountLeasing_test : public LoanTestBase
     void
     testReserveRise(FeatureBitset features)
     {
-        testcase("A base reserve above the lease's unit stops new leased accounts");
+        testcase("A rise of the base reserve stops new leased accounts");
         using namespace jtx;
 
         // A genesis base reserve of 2 XRP; the fee vote at the first flag
@@ -675,9 +674,64 @@ class AccountLeasing_test : public LoanTestBase
                 to_string(env.current()->fees().reserve)))
             return;
 
-        // Two units are free, but a unit no longer covers a base reserve.
+        // The lease holds 3 old reserves; two current ones do not fit.
         createLeased(env, lease, user2, XRP(1), tecINSUFFICIENT_RESERVE);
         BEAST_EXPECT(leaseCount(env, lease) == 1);
+
+        // The rise alone breaks nothing: a later release still succeeds, and
+        // no XRP leaves the lease account.
+        env(pay(lease.stranger, user1, XRP(1'000)));
+        env.close();
+        env(sponsor::transfer(user1, tfSponsorshipEnd));
+        env.close();
+        BEAST_EXPECT(leaseCount(env, lease) == 0);
+        BEAST_EXPECT(leaseBalance(env, lease) == lease.principal);
+    }
+
+    void
+    testReserveFall(FeatureBitset features)
+    {
+        testcase("A fall of the base reserve frees the surplus");
+        using namespace jtx;
+        using namespace loan;
+
+        // A genesis base reserve of 50 XRP; the fee vote at the first flag
+        // ledger lowers it to the default of 10 XRP.
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->fees.accountReserve = XRP(50).value().xrp().drops();
+                return cfg;
+            }),
+            features};
+        Lease lease = setupBroker(env);
+        createLease(env, lease, 3);
+        Account const user1{"user1"};
+        Account const user2{"user2"};
+        env.memoize(user1);
+        env.memoize(user2);
+        createLeased(env, lease, user1, XRP(1));
+
+        for (int i = 0; i < 260; ++i)
+            env.close();
+        auto const reserve = env.current()->fees().reserve;
+        if (!BEAST_EXPECTS(reserve < lease.reserve, to_string(reserve)))
+            return;
+
+        // The lease now carries far more accounts than at creation.
+        createLeased(env, lease, user2, XRP(1));
+        BEAST_EXPECT(leaseCount(env, lease) == 2);
+
+        // At default the vault gets all but two current reserves at once.
+        auto const loanSle = env.le(lease.loanKeylet);
+        env.close(
+            NetClock::time_point{NetClock::duration{
+                loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod) + 10}});
+        env(manage(lease.lender, lease.loanKeylet.key, tfLoanDefault));
+        env.close();
+        BEAST_EXPECTS(
+            leaseBalance(env, lease) == XRPAmount{reserve.drops() * 2},
+            to_string(leaseBalance(env, lease)));
     }
 
     void
@@ -862,6 +916,7 @@ class AccountLeasing_test : public LoanTestBase
         testDefault(features);
         testDefaultAfterRepayment(features);
         testReserveRise(features);
+        testReserveFall(features);
         testSponsorshipObligation(features);
         testReapFundedSponsorship(features);
     }

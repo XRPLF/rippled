@@ -84,7 +84,7 @@ preclaimLeaseRecover(PreclaimContext const& ctx, SLE const& loan)
     auto const leaseSle = ctx.view.read(keylet::account(loan.at(~sfAccount).value_or(AccountID{})));
     if (!leaseSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    if (leaseFree(*leaseSle, loan) == beast::kZero)
+    if (leaseFree(ctx.view, *leaseSle) == beast::kZero)
     {
         JLOG(ctx.j.warn()) << "The lease account holds no free XRP to recover.";
         return tecPRECISION_LOSS;

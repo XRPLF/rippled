@@ -123,9 +123,9 @@ class InvariantsLease_test : public InvariantsBase
         testcase("ValidLease: lease account");
         using namespace jtx;
 
-        // Balance below the leased accounts' units.
+        // XRP paid out beyond the free XRP.
         check(
-            "lease account holds less than its leased accounts' units",
+            "lease account paid out more than its free XRP",
             [&](Account const&, Account const&, ApplyContext& ac) {
                 auto sle = ac.view().peek(keylet::account(leaseAccount_));
                 if (!sle)
@@ -135,6 +135,19 @@ class InvariantsLease_test : public InvariantsBase
                 return true;
             },
             ttLOAN_PAY);
+
+        // The count raised by a transaction other than Payment.
+        check(
+            "lease account sponsors an account it cannot carry",
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::account(leaseAccount_));
+                if (!sle)
+                    return false;
+                sle->at(sfSponsoringAccountCount) = sle->at(sfSponsoringAccountCount) + 1;
+                ac.view().update(sle);
+                return true;
+            },
+            ttLOAN_MANAGE);
 
         // A sponsored lease account.
         check(
@@ -221,7 +234,7 @@ class InvariantsLease_test : public InvariantsBase
                 auto sle = ac.view().peek(loanKeylet_);
                 if (!sle)
                     return false;
-                sle->at(~sfLeaseUnit) = Number{1};
+                sle->clearFlag(lsfLoanLease);
                 ac.view().update(sle);
                 return true;
             },

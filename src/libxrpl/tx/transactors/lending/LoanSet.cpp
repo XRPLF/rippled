@@ -736,7 +736,6 @@ LoanSet::doApply()
         principalReceiver = (*leaseAccount)->at(sfAccount);
         loan->setFlag(lsfLoanLease);
         loan->at(~sfAccount) = principalReceiver;
-        loan->at(~sfLeaseUnit) = Number{view.fees().reserve.drops()};
     }
 
     if (auto const ter = accountSendMulti(

@@ -8,6 +8,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <optional>
 
 namespace xrpl {
@@ -49,18 +50,24 @@ leaseLoanOfSponsor(ReadView const& view, AccountID const& sponsorID);
 leaseActingSponsor(ReadView const& view, AccountID const& sponsorID);
 
 /**
- * The XRP a lease account holds for its leased accounts: its
- * SponsoringAccountCount times the Loan's LeaseUnit.
+ * The XRP a lease account must hold for its leased accounts: its
+ * SponsoringAccountCount, changed by `countDelta`, times the current base
+ * reserve, as for any reserve sponsor. A lease account has no reserve of its
+ * own.
+ *
+ * @param view         The ledger whose fees apply.
+ * @param leaseAccount The lease account.
+ * @param countDelta   Change to SponsoringAccountCount to count with.
  */
 [[nodiscard]] XRPAmount
-leaseLocked(SLE const& leaseAccount, SLE const& loan);
+leaseLocked(ReadView const& view, SLE const& leaseAccount, std::int32_t countDelta = 0);
 
 /**
  * The XRP on a lease account above leaseLocked, or 0 when its balance is
- * below that.
+ * below that (as after a rise of the base reserve).
  */
 [[nodiscard]] XRPAmount
-leaseFree(SLE const& leaseAccount, SLE const& loan);
+leaseFree(ReadView const& view, SLE const& leaseAccount, std::int32_t countDelta = 0);
 
 /**
  * Send a defaulted lease loan's free XRP to the vault up to LeaseClaimVault,

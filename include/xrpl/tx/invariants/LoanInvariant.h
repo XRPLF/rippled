@@ -72,14 +72,17 @@ public:
  * 1. Every lease account belongs to an existing lease loan whose sfAccount is
  *    that account, and a deleted lease loan deletes its lease account in the
  *    same transaction.
- * 2. A lease account's XRP balance is at least its SponsoringAccountCount times
- *    the loan's LeaseUnit.
+ * 2. XRP leaves a lease account only from its free XRP: after the transaction
+ *    the balance is at least the lower of the balance before and the
+ *    SponsoringAccountCount after times the current base reserve; and the count
+ *    rises only by 1 in a Payment that moves no XRP of the lease account and
+ *    leaves the balance at or above that requirement.
  * 3. A lease account has OwnerCount 0, no owner directory, and no Sponsor,
  *    SponsoringOwnerCount or SponsoredOwnerCount.
  * 4. A lease account's balance changes only in LoanSet, LoanPay, LoanManage,
  *    LoanDelete and the takeover SponsorshipTransfer (tfSponsorshipReassign
  *    without Sponsor).
- * 5. A lease loan's sfAccount, LeaseUnit and lsfLoanLease never change, and
+ * 5. A lease loan's sfAccount and lsfLoanLease never change, and
  *    LeaseClaimVault and LeaseClaimCover are 0 unless it is defaulted.
  * 6. An account gets a lease account as its Sponsor only when a Payment
  *    creates it.

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 
 namespace xrpl {
@@ -356,14 +357,31 @@ ValidLease::finalize(
             return false;
         }
 
+        // XRP leaves a lease account only from Free, measured at the current
+        // base reserve after the transaction's own change of the count; a fee
+        // vote alone lowers no balance and raises no count, so it breaks
+        // neither rule.
         XRPAmount const balance = after->at(sfBalance).value().xrp();
-        std::int64_t const count = after->at(sfSponsoringAccountCount);
-        XRPAmount const unit{Number{loan->at(~sfLeaseUnit).value_or(Number{0})}};
-        if (balance < XRPAmount{count * unit.drops()})
+        std::uint32_t const count = after->at(sfSponsoringAccountCount);
+        XRPAmount const locked = view.fees().accountReserve(0, count);
+        if (before)
         {
-            JLOG(j.fatal()) << "Invariant failed: lease account holds less than its "
-                               "leased accounts' units";
-            return false;
+            XRPAmount const balanceBefore = before->at(sfBalance).value().xrp();
+            std::uint32_t const countBefore = before->at(sfSponsoringAccountCount);
+            if (balance < std::min(balanceBefore, locked))
+            {
+                JLOG(j.fatal()) << "Invariant failed: lease account paid out more than "
+                                   "its free XRP";
+                return false;
+            }
+            if (count > countBefore &&
+                (txType != ttPAYMENT || count != countBefore + 1 || balance != balanceBefore ||
+                 balance < locked))
+            {
+                JLOG(j.fatal()) << "Invariant failed: lease account sponsors an account "
+                                   "it cannot carry";
+                return false;
+            }
         }
 
         if (after->at(sfOwnerCount) != 0 || after->isFieldPresent(sfSponsor) ||
@@ -403,8 +421,7 @@ ValidLease::finalize(
 
         if (before &&
             (before->isFlag(lsfLoanLease) != after->isFlag(lsfLoanLease) ||
-             before->at(~sfAccount) != after->at(~sfAccount) ||
-             before->at(~sfLeaseUnit) != after->at(~sfLeaseUnit)))
+             before->at(~sfAccount) != after->at(~sfAccount)))
         {
             JLOG(j.fatal()) << "Invariant failed: lease loan terms changed";
             return false;
