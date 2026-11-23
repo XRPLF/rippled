@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <chrono>
 #include <string>
 
 namespace xrpl {
@@ -14,6 +15,13 @@ namespace xrpl {
 class KeyCacheTest : public ::testing::Test
 {
 public:
+    using Cache = TaggedCache<std::string, int, true>;
+
+    static constexpr std::chrono::seconds kExpiration{2};
+
+protected:
+    beast::Journal const j_{TestSink::instance()};
+    TestStopwatch clock_;  ///< ManualClock starts at zero
 };
 
 TEST_F(KeyCacheTest, key_cache)
@@ -76,6 +84,47 @@ TEST_F(KeyCacheTest, key_cache)
         c.sweep();
         EXPECT_LT(c.size(), 3);
     }
+}
+
+TEST_F(KeyCacheTest, touch_if_exists_counts_hits_and_misses)
+{
+    Cache c("test", LedgerIndex(1), kExpiration, clock_, j_);
+    EXPECT_FLOAT_EQ(c.getHitRate(), 0.0f);
+
+    EXPECT_TRUE(c.insert("one"));
+    EXPECT_TRUE(c.touchIfExists("one"));
+    EXPECT_FALSE(c.touchIfExists("two"));
+
+    // One hit and one miss, so the rate the reporters read is fifty percent.
+    EXPECT_FLOAT_EQ(c.getHitRate(), 50.0f);
+}
+
+TEST_F(KeyCacheTest, sweep_counts_removals)
+{
+    Cache c("test", LedgerIndex(2), kExpiration, clock_, j_);
+
+    EXPECT_TRUE(c.insert("one"));
+    EXPECT_TRUE(c.insert("two"));
+    EXPECT_EQ(c.getCacheSize(), 2);
+    EXPECT_EQ(c.getTrackSize(), 2);
+
+    // A repeat insert half way to expiry refreshes the entry and is not counted again.
+    clock_.advance(kExpiration / 2);
+    EXPECT_FALSE(c.insert("two"));
+    EXPECT_EQ(c.getCacheSize(), 2);
+
+    // At the expiry of "one", only "one" ages out: the refreshed "two" has half its age left, so
+    // the cache count follows the map down by one.
+    clock_.advance(kExpiration / 2);
+    c.sweep();
+    EXPECT_EQ(c.getCacheSize(), 1);
+    EXPECT_EQ(c.getTrackSize(), 1);
+
+    // Another half expiry later "two" ages out as well.
+    clock_.advance(kExpiration / 2);
+    c.sweep();
+    EXPECT_EQ(c.getCacheSize(), 0);
+    EXPECT_EQ(c.getTrackSize(), 0);
 }
 
 }  // namespace xrpl
