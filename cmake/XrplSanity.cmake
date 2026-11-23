@@ -63,7 +63,7 @@ endif()
 if(voidstar AND NOT is_amd64)
     message(
         FATAL_ERROR
-        "The voidstar library only supported on amd64/x86_64. Detected archictecture was: ${CMAKE_SYSTEM_PROCESSOR}"
+        "The voidstar library only supported on amd64/x86_64. Detected architecture was: ${CMAKE_SYSTEM_PROCESSOR}"
     )
 endif()
 

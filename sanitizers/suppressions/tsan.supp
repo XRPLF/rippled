@@ -1,4 +1,4 @@
-# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppressions.
 
 # Suppress race in Boost ASIO scheduler detected by GCC-15
 # This is a false positive in Boost's internal pipe() synchronization
