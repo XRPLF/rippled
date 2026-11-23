@@ -97,9 +97,8 @@ repos:
       - id: prettier
         args: [--end-of-line=auto]
 
-  # The ruff hook checks every Python file. The mypy hook checks every one
-  # except those listed, which have pre-existing findings or share a module name
-  # with another file.
+  # The ruff and mypy hooks check every Python file, except that mypy skips the
+  # Conan recipes, whose base class has no type information.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c # frozen: v0.17.3
     hooks:
@@ -115,20 +114,18 @@ repos:
     rev: ad26ebfa797fcb9b8f83275937c1c1d6e126719c # frozen: v2.4.1
     hooks:
       - id: mypy
-        args: [--strict]
+        args: [--strict, --ignore-missing-imports]
+        # Two files named generate.py cannot share a mypy run.
         exclude: |
           (?x)^(
-            \.github/scripts/format-inline-bash\.py|
             \.github/scripts/levelization/generate\.py|
-            bin/pre-commit/clang_tidy_check\.py|
-            bin/pre-commit/fix_gtest_names\.py|
-            bin/pre-commit/test_fix_gtest_names\.py|
-            cmake/scripts/codegen/generate_ledger_classes\.py|
-            cmake/scripts/codegen/generate_tx_classes\.py|
-            cmake/scripts/codegen/macro_parser_common\.py|
             conanfile\.py|
             tests/conan/conanfile\.py
           )$
+      - id: mypy
+        name: mypy (levelization)
+        args: [--strict, --ignore-missing-imports]
+        files: ^\.github/scripts/levelization/generate\.py$
 
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: 479be5958357ba5ab65ce47172117348516860e9 # frozen: v3.14.1-1

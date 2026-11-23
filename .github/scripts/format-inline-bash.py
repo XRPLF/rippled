@@ -36,9 +36,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 
-_HOOK_RUNNER = next((cmd for cmd in ("pre-commit", "prek") if shutil.which(cmd)), None)
-if _HOOK_RUNNER is None:
+_found_runner = next((cmd for cmd in ("pre-commit", "prek") if shutil.which(cmd)), None)
+if _found_runner is None:
     sys.exit("error: neither `pre-commit` nor `prek` found on PATH")
+_HOOK_RUNNER: str = _found_runner
 
 RUN_BLOCK_RE = re.compile(r"^(?P<prefix>[ \t]*(?:- )?)run:[ \t]*\|[+-]?[ \t]*$")
 RUN_INLINE_RE = re.compile(

@@ -119,7 +119,7 @@ def find_repository_directories(
     )
 
 
-def main():
+def main() -> None:
     # Change to the script's directory
     script_dir = Path(__file__).parent.resolve()
     os.chdir(script_dir)
@@ -187,12 +187,12 @@ def main():
     print("Build levelization paths")
     path_counts: dict[tuple[str, str], int] = defaultdict(int)
 
-    for file_path, include_line in raw_includes:
+    for rel_path, include_line in raw_includes:
         include_level = extract_include_level(include_line)
         if not include_level:
             continue
 
-        level = get_level(file_path)
+        level = get_level(rel_path)
         if level != include_level:
             path_counts[(level, include_level)] += 1
 
@@ -298,7 +298,7 @@ def main():
 
                 if source_freq is not None:
                     # Found a loop
-                    loop_key = tuple(sorted([source, include]))
+                    loop_key = (min(source, include), max(source, include))
                     if loop_key in loops_found:
                         continue
                     loops_found.add(loop_key)
