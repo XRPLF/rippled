@@ -62,6 +62,32 @@ repos:
         entry: ./bin/pre-commit/fix_gtest_names.py
         language: python
         types_or: [c++, c]
+      # Each hook runs the tests of a script when the script, its tests or a
+      # file that the tests read is part of the commit.
+      - id: test-check-doxygen-style
+        name: test check_doxygen_style.py
+        entry: ./bin/pre-commit/test_check_doxygen_style.py
+        language: python
+        files: ^bin/pre-commit/(test_)?check_doxygen_style\.py$
+        pass_filenames: false
+      - id: test-fix-gtest-names
+        name: test fix_gtest_names.py
+        entry: ./bin/pre-commit/test_fix_gtest_names.py
+        language: python
+        files: ^bin/pre-commit/(test_)?fix_gtest_names\.py$
+        pass_filenames: false
+      - id: test-strategy-matrix
+        name: test the strategy matrix generator
+        entry: ./.github/scripts/strategy-matrix/test_generate.py
+        language: python
+        files: ^\.github/(scripts/strategy-matrix/|workflows/reusable-package\.yml$)
+        pass_filenames: false
+      - id: test-build-pkg
+        name: test build_pkg.py
+        entry: ./package/test_build_pkg.py
+        language: python
+        files: ^package/(test_)?build_pkg\.py$
+        pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: 98ad4ddb9c057de2f5b9e93e44e6db959807d68c # frozen: v23.1.3
