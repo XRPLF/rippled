@@ -66,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
+      count: ${{ steps.generate.outputs.count }}
       deb_package_names: ${{ steps.generate.outputs.deb_package_names }}
       rpm_package_names: ${{ steps.generate.outputs.rpm_package_names }}
     steps:
@@ -73,18 +74,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
 
       - name: Generate packaging matrix
         id: generate
         working-directory: .github/scripts/strategy-matrix
-        run: ./generate.py --packaging >>"${GITHUB_OUTPUT}"
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: ./generate.py --packaging --event="${EVENT}" --labels="${LABELS}" --ref-type="${REF_TYPE}" >>"${GITHUB_OUTPUT}"
 
   package:
     needs: [generate-matrix]
-    if: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
+    # An unlabeled pull request packages nothing, and GitHub Actions fails a job
+    # whose strategy matrix has no entries.
+    if: ${{ needs.generate-matrix.outputs.count != '0' && (github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/')) }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -100,7 +107,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@8e98d61f011fd2a67f3fde5f0f075662c099a527
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: false
 
@@ -225,7 +232,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@8e98d61f011fd2a67f3fde5f0f075662c099a527
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: false
 
@@ -326,14 +333,14 @@ jobs:
 
       - name: Log in to Docker Hub
         if: ${{ env.PUSH == 'true' && matrix.target == 'xrpld' }}
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: xrplf
           password: ${{ secrets.dockerhub_token }}
 
       - name: Log in to the Antithesis registry
         if: ${{ env.PUSH == 'true' && matrix.target == 'voidstar' }}
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ${{ secrets.antithesis_docker_host }}
           username: _json_key

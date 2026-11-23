@@ -159,11 +159,15 @@ public:
                                    json::Value const& result,
                                    char const* error,
                                    ErrorCodeI code,
-                                   char const* errorMsg) {
+                                   char const* errorMsg,
+                                   bool withLedgerFields = false) {
             BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
             BEAST_EXPECT(result[jss::result][jss::error] == error);
             BEAST_EXPECT(result[jss::result][jss::error_code] == code);
             BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
+            BEAST_EXPECT(
+                result[jss::result].isMember(jss::ledger_current_index) == withLedgerFields);
+            BEAST_EXPECT(result[jss::result].isMember(jss::validated) == withLedgerFields);
         };
 
         Env env(*this);
@@ -245,7 +249,8 @@ public:
             // alice is not yet funded.
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "srcActNotFound", RpcSrcActNotFound, "Source account not found.");
+            verifyErr(
+                result, "srcActNotFound", RpcSrcActNotFound, "Source account not found.", true);
         }
         env.fund(XRP(1000), alice);
         env.close();
@@ -254,7 +259,11 @@ public:
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
-                result, "dstActNotFound", RpcDstActNotFound, "Destination account not found.");
+                result,
+                "dstActNotFound",
+                RpcDstActNotFound,
+                "Destination account not found.",
+                true);
         }
         env.fund(XRP(1000), becky);
         env.close();
@@ -293,6 +302,11 @@ public:
             BEAST_EXPECT(result[jss::error].asString() == error);
             BEAST_EXPECT(result[jss::error_code] == code);
             BEAST_EXPECT(result[jss::error_message].asString() == errorMessage);
+
+            bool const withLedgerFields = error == "badCredentials";
+            BEAST_EXPECT(result.isMember(jss::ledger_hash) == withLedgerFields);
+            BEAST_EXPECT(result.isMember(jss::ledger_index) == withLedgerFields);
+            BEAST_EXPECT(result.isMember(jss::validated) == withLedgerFields);
         }
 
         if (authorized)

@@ -159,7 +159,6 @@ JSS(both);                        // in: Subscribe, Unsubscribe
 JSS(both_sides);                  // in: Subscribe, Unsubscribe
 JSS(branch);                      // out: server_info
 JSS(broadcast);                   // out: SubmitTransaction
-JSS(bridge_account);              // in: LedgerEntry
 JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
@@ -263,7 +262,6 @@ JSS(fee_base);                       // out: NetworkOPs
 JSS(fee_div_max);                    // in: TransactionSign
 JSS(fee_level);                      // out: AccountInfo
 JSS(fee_mult_max);                   // in: TransactionSign
-JSS(fee_ref);                        // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);                     // out: NetworkOPs
 JSS(FIELDS);                         // out: RPC server_definitions
                                      // matches definitions.json format

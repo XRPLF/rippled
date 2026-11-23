@@ -88,43 +88,15 @@ Change::preclaim(PreclaimContext const& ctx)
     switch (ctx.tx.getTxnType())
     {
         case ttFEE:
-            if (ctx.view.rules().enabled(featureXRPFees))
-            {
-                // The ttFEE transaction format defines these fields as
-                // optional, but once the XRPFees feature is enabled, they are
-                // required.
-                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
-                    return temMALFORMED;
-                // The ttFEE transaction format defines these fields as
-                // optional, but once the XRPFees feature is enabled, they are
-                // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFee) ||
-                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    ctx.tx.isFieldPresent(sfReserveBase) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
-            }
-            else
-            {
-                // The ttFEE transaction format formerly defined these fields
-                // as required. When the XRPFees feature was implemented, they
-                // were changed to be optional. Until the feature has been
-                // enabled, they are required.
-                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
-                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    !ctx.tx.isFieldPresent(sfReserveBase) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
-                // The ttFEE transaction format defines these fields as
-                // optional, but without the XRPFees feature, they are
-                // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrementDrops))
-                    return temDISABLED;
-            }
+            // The XRPFees feature has been retired, these fields are required now.
+            if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                return temMALFORMED;
+            // The XRPFees feature has been retired, these fields are forbidden now.
+            if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
+                return temMALFORMED;
             if (ctx.view.rules().enabled(featureSmartEscrow))
             {
                 if (!ctx.tx.isFieldPresent(sfGasLimit) ||
@@ -306,19 +278,12 @@ Change::applyFee()
     auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const&... fields) {
         ((feeObject->at(fields) = tx[fields]), ...);
     };
-    if (view().rules().enabled(featureXRPFees))
-    {
-        set(feeObject, ctx_.tx, sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops);
-        // Ensure the old fields are removed
-        feeObject->makeFieldAbsent(sfBaseFee);
-        feeObject->makeFieldAbsent(sfReferenceFeeUnits);
-        feeObject->makeFieldAbsent(sfReserveBase);
-        feeObject->makeFieldAbsent(sfReserveIncrement);
-    }
-    else
-    {
-        set(feeObject, ctx_.tx, sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement);
-    }
+    set(feeObject, ctx_.tx, sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops);
+    // Ensure the old fields are removed
+    feeObject->makeFieldAbsent(sfBaseFee);
+    feeObject->makeFieldAbsent(sfReferenceFeeUnits);
+    feeObject->makeFieldAbsent(sfReserveBase);
+    feeObject->makeFieldAbsent(sfReserveIncrement);
     if (view().rules().enabled(featureSmartEscrow))
     {
         set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
