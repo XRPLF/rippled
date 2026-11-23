@@ -1709,7 +1709,12 @@ Transactor::operator()()
         bool canApplyTmp = isTesSuccess(result);
 
         if (ctx_.size() > kOversizeMetaDataCap)
+        {
             result = tecOVERSIZE;
+            // The tentative effects must not be applied with this result. On a retry pass under
+            // fixCleanup3_6_0, no branch below resets the view.
+            canApplyTmp = false;
+        }
 
         if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
         {
