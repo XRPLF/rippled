@@ -216,8 +216,9 @@ A build with one sanitizer passes `--variant asan`, `ubsan` or `tsan`, and
 otherwise `-Dassert=ON` passes `--variant assert`, so such a build packages
 under its own name without anything else being asked for. A build with two
 sanitizers has no variant, so it gets no `package` target. A sanitizer variant
-drops the build metadata its binary reports, since its name already carries the
-sanitizer; the stable channel would reject the metadata.
+drops the build metadata that the sanitizer adds to the version its binary
+reports, since its name already carries the sanitizer and the stable channel
+would reject the metadata. The metadata of a tag stays.
 
 ## Publishing packages
 

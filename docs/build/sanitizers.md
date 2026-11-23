@@ -43,10 +43,8 @@ Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with
    > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
 
    > [!NOTE]
-   > The profile adds `-O1` ahead of the build type's own flags, so a Release
-   > build keeps its `-O3` and a clang Debug build compiles at `-O1`. A gcc Debug
-   > build compiles at `-O0`, which `cmake/XrplCompiler.cmake` adds after the
-   > profile's flags.
+   > The profile adds `-O1` ahead of the build type's own flags, so a build type
+   > that sets its own optimization level keeps it.
 
 4. Set `ASAN_OPTIONS`, `LSAN_OPTIONS`, `UBSAN_OPTIONS` and `TSAN_OPTIONS` environment variables to configure sanitizer behavior when running executables. [More details below](#running-tests-with-sanitizers).
 
