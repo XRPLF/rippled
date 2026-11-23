@@ -89,6 +89,8 @@ class Event(StrEnum):
     # The events derived from context: a labeled pull request and the push of a tag.
     READY_TO_MERGE = "ready_to_merge"
     TAG = "tag"
+    # The event that on-weekly.yml passes in place of its GitHub event.
+    WEEKLY = "weekly"
 
 
 class RefType(StrEnum):
@@ -148,8 +150,9 @@ def _check_disabled(disabled: object) -> None:
 
 
 # Every config lists in 'events' the matrix events that build it, drawn from
-# Event. No event implies another. Every config lists 'schedule' and
-# 'workflow_dispatch', so the nightly run and a manual run build every config.
+# Event. No event implies another. Every config lists 'workflow_dispatch' and
+# either 'schedule' or 'weekly', so a manual run builds every config, and the
+# nightly run and the weekly run build every config between them.
 #
 # Configs may also opt into 'benchmark' to smoke-run the benchmarks, or carry a
 # 'package' map to be packaged as well. Note that either applies to every entry
@@ -513,9 +516,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--event",
-        help="The GitHub event that triggered the run (github.event_name).",
+        help="The GitHub event that triggered the run (github.event_name), or "
+        "the event that the calling workflow passes in its place.",
         type=Event,
-        choices=GITHUB_EVENTS,
+        choices=(*GITHUB_EVENTS, Event.WEEKLY),
         required=True,
     )
     parser.add_argument(

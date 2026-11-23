@@ -199,10 +199,19 @@ def test_config_names_are_unique() -> None:
         assert len(names) == len(set(names)), event
 
 
-def test_schedule_and_dispatch_build_every_config() -> None:
+def test_dispatch_and_one_schedule_build_every_config() -> None:
     for cfg in (c for c in CONFIGS if not c.disabled):
-        assert g.Event.SCHEDULE in cfg.events, cfg
         assert g.Event.WORKFLOW_DISPATCH in cfg.events, cfg
+        scheduled = {g.Event.SCHEDULE, g.Event.WEEKLY} & set(cfg.events)
+        assert len(scheduled) == 1, cfg
+
+
+def test_weekly_builds_linux_only_and_packages_nothing() -> None:
+    # The weekly workflow has a Linux build job and no package job.
+    for pf in PLATFORMS:
+        assert not g.expand_platform_matrix(pf, g.Event.WEEKLY), pf.platform
+    assert g.expand_linux_matrix(LINUX, g.Event.WEEKLY)
+    assert not g.expand_linux_packaging(LINUX, g.Event.WEEKLY)
 
 
 def test_pull_request_builds_part_of_stage_two() -> None:

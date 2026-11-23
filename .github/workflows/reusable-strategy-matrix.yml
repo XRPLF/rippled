@@ -7,6 +7,10 @@ on:
         description: 'The operating system to use for the build ("linux", "macos", "windows", or empty for all).'
         required: false
         type: string
+      event:
+        description: "The matrix event to generate for, in place of the GitHub event that triggered the run."
+        required: false
+        type: string
     outputs:
       matrix:
         description: "The generated strategy matrix."
@@ -39,7 +43,7 @@ jobs:
         id: generate
         env:
           GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
-          EVENT: ${{ github.event_name }}
+          EVENT: ${{ inputs.event || github.event_name }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           REF_TYPE: ${{ github.ref_type }}
         run: ./generate.py ${GENERATE_CONFIG} --event="${EVENT}" --labels="${LABELS}" --ref-type="${REF_TYPE}" >>"${GITHUB_OUTPUT}"

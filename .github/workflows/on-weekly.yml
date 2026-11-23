@@ -1,0 +1,29 @@
+# This workflow builds and tests, once a week, the Linux configs that the
+# nightly run of the Trigger workflow does not build: the configs that list the
+# 'weekly' event.
+name: Weekly
+
+on:
+  # Run at 05:06 UTC on every Sunday.
+  schedule:
+    - cron: "6 5 * * 0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/reusable-build-test.yml
+    with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
+      os: linux
+      event: weekly
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

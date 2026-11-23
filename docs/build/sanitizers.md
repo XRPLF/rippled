@@ -116,6 +116,11 @@ More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCpp
 > does fail the job, since the workflow also sets `abort_on_error=1`. Once the
 > findings are known and stable, drop `exitcode=0` so a new one fails the job,
 > and suppress the rest.
+>
+> The `ubuntu-gcc-debug-amd64-tsan`, `ubuntu-gcc-release-amd64-tsan` and
+> `ubuntu-clang-debug-amd64-tsan` configs list the `weekly` and
+> `workflow_dispatch` events, so they run in the Weekly workflow on Sunday and
+> on a manual run of the Trigger workflow.
 
 > [!IMPORTANT]
 > Check lock order on Linux, where TSan reports
