@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <memory>
@@ -29,7 +30,7 @@ public:
 
     ApplyViewBase(ApplyViewBase&&) = default;
 
-    ApplyViewBase(ReadView const* base, ApplyFlags flags);
+    ApplyViewBase(ReadView const* base, ApplyFlags flags, STTx const* tx = nullptr);
 
     // ReadView
     [[nodiscard]] bool
@@ -79,6 +80,9 @@ public:
     [[nodiscard]] ApplyFlags
     flags() const override;
 
+    [[nodiscard]] STTx const*
+    tx() const override;
+
     SLE::pointer
     peek(Keylet const& k) override;
 
@@ -108,6 +112,7 @@ public:
 protected:
     ApplyFlags flags_;
     ReadView const* base_;
+    STTx const* tx_;
     detail::ApplyStateTable items_;
 };
 

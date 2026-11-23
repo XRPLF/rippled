@@ -10,7 +10,8 @@ namespace xrpl {
 /**
  * Discardable, editable view to a ledger.
  *
- * The sandbox inherits the flags of the base.
+ * A sandbox built on an ApplyView inherits the flags and the transaction of
+ * the base.
  *
  * @note Presented as ApplyView to clients.
  */
@@ -30,7 +31,7 @@ public:
     {
     }
 
-    Sandbox(ApplyView const* base) : Sandbox(base, base->flags())
+    Sandbox(ApplyView const* base) : ApplyViewBase(base, base->flags(), base->tx())
     {
     }
 

@@ -17,7 +17,8 @@
 
 namespace xrpl {
 
-ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
+ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags, STTx const* tx)
+    : ApplyViewBase(base, flags, tx)
 {
 }
 

@@ -35,7 +35,7 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
-    , viewRef_(view_.emplace(&base_, flags_))
+    , viewRef_(view_.emplace(&base_, flags_, &tx))
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
@@ -46,7 +46,7 @@ ApplyContext::ApplyContext(
 void
 ApplyContext::discard()
 {
-    viewRef_ = view_.emplace(&base_, flags_);
+    viewRef_ = view_.emplace(&base_, flags_, &tx);
 }
 
 std::optional<TxMeta>

@@ -36,7 +36,7 @@ public:
     operator=(ApplyViewImpl const&) = delete;
 
     ApplyViewImpl(ApplyViewImpl&&) = default;
-    ApplyViewImpl(ReadView const* base, ApplyFlags flags);
+    ApplyViewImpl(ReadView const* base, ApplyFlags flags, STTx const* tx = nullptr);
 
     /**
      * Apply the transaction.
