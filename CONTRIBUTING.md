@@ -193,6 +193,21 @@ In addition to those guidelines, please start your PR title with one of the foll
 
 First letter after the type prefix should be capitalized, and the type prefix should be followed by a colon and a space. e.g. `feat: Add support for Borrowing Protocol`.
 
+### CI labels
+
+The labels on a pull request select which build configurations CI runs for
+it. `.github/scripts/strategy-matrix/` lists the configurations per event.
+
+- No label: a draft pull request runs no build, and a pull request that is
+  ready for review runs a small set of configurations.
+- "Draft CI": a draft pull request runs the builds as if it were ready for
+  review.
+- "Ready to merge": the pull request runs the configurations the merge queue
+  runs. See below for when to add this label.
+- "Merge CI": the same configurations as "Ready to merge", for a pull request
+  that is not ready to merge yet. It works on a draft as well, and it wins
+  over "Ready to merge" when both are set.
+
 ### "Ready to merge"
 
 A pull request should only have the "Ready to merge" label added when it
