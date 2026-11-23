@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/Loggable.h>   // IWYU pragma: keep
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -1611,8 +1612,8 @@ Transactor::operator()()
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::Values::None);
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::Values::None);
+            JLOG(j_.fatal()) << json::Unmasked{ctx_.tx.getJson(JsonOptions::Values::None)};
+            JLOG(j_.fatal()) << json::Unmasked{s2.getJson(JsonOptions::Values::None)};
             UNREACHABLE("xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }

@@ -8,7 +8,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
-#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
@@ -23,6 +22,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -325,7 +325,7 @@ checkPayment(
 
             auto const j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::Values::None);
+                            << json::Unmasked{result.getJson(JsonOptions::Values::None)};
 
             if (!result.empty())
                 txJson[jss::Paths] = result.getJson(JsonOptions::Values::None);
@@ -1019,7 +1019,7 @@ transactionSign(
     // could change the signing prefix of an alternate signature field.
     std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     auto const j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSign: " << loggable(jvRequest);
+    JLOG(j.debug()) << "transactionSign: " << json::Masked{jvRequest};
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -1056,7 +1056,7 @@ transactionSubmit(
 
     auto const& ledger = app.getOpenLedger().current();
     auto const j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmit: " << loggable(jvRequest);
+    JLOG(j.debug()) << "transactionSubmit: " << json::Masked{jvRequest};
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -1178,7 +1178,7 @@ transactionSignFor(
 {
     auto const& ledger = app.getOpenLedger().current();
     auto const j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSignFor: " << loggable(jvRequest);
+    JLOG(j.debug()) << "transactionSignFor: " << json::Masked{jvRequest};
 
     // Verify presence of the signer's account field.
     char const accountField[] = "account";
@@ -1302,7 +1302,7 @@ transactionSubmitMultiSigned(
 {
     auto const& ledger = app.getOpenLedger().current();
     auto const j = app.getJournal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << loggable(jvRequest);
+    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << json::Masked{jvRequest};
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
     // be passed in by the caller.

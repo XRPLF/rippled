@@ -35,6 +35,7 @@
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/AmendmentTable.h>
@@ -315,7 +316,7 @@ RCLConsensus::Adaptor::getPrevLedger(
         if (mode != ConsensusMode::WrongLedger)
             app_.getOPs().consensusViewChange();
 
-        JLOG(j_.debug()) << json::Compact(app_.getValidations().getJsonTrie());
+        JLOG(j_.debug()) << json::Unmasked{app_.getValidations().getJsonTrie()};
     }
 
     return netLgr;

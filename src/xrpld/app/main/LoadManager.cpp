@@ -7,6 +7,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -127,14 +128,16 @@ LoadManager::run()
 
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.warn()) << "JobQueue: " << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn())
+                            << "JobQueue: " << json::Unmasked{app_.getJobQueue().getJson(0)};
                     }
                 }
                 else
                 {
                     JLOG(journal_.fatal())
                         << "Server stalled for " << timeSpentStalled.count() << " seconds.";
-                    JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
+                    JLOG(journal_.fatal())
+                        << "JobQueue: " << json::Unmasked{app_.getJobQueue().getJson(0)};
                 }
             }
 
@@ -145,7 +148,8 @@ LoadManager::run()
             {
                 JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
                                        << timeSpentStalled.count() << "s";
-                JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
+                JLOG(journal_.fatal())
+                    << "JobQueue: " << json::Unmasked{app_.getJobQueue().getJson(0)};
                 logicError("Fatal server stall detected");
             }
         }
@@ -155,7 +159,7 @@ LoadManager::run()
     if (app_.getJobQueue().isOverloaded())
     {
         JLOG(journal_.info()) << "Raising local fee (JQ overload): "
-                              << app_.getJobQueue().getJson(0);
+                              << json::Unmasked{app_.getJobQueue().getJson(0)};
         change = app_.getFeeTrack().raiseLocalFee();
     }
     else

@@ -4,7 +4,6 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
@@ -20,6 +19,8 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/Loggable.h>
+#include <xrpl/json/MaskSecrets.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
@@ -354,13 +355,13 @@ ServerHandler::onWSMessage(
         json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
         });
-        JLOG(journal_.trace()) << "Websocket sending '" << jvResult << "'";
+        JLOG(journal_.trace()) << "Websocket sending '" << json::Masked{jvResult} << "'";
         session->send(std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb)));
         session->complete();
         return;
     }
 
-    JLOG(journal_.trace()) << "Websocket received '" << rpc::loggable(jv) << "'";
+    JLOG(journal_.trace()) << "Websocket received '" << json::Masked{jv} << "'";
 
     auto const postResult = jobQueue_.postCoro(
         JtClientWebsocket,
@@ -425,7 +426,7 @@ logDuration(json::Value const& request, T const& duration, beast::Journal& journ
     if (auto const stream = journal.debug())
     {
         stream << "RPC request processing duration = " << micros
-               << " microseconds. request = " << rpc::loggable(request);
+               << " microseconds. request = " << json::Masked{request};
     }
 }
 
@@ -461,16 +462,16 @@ ServerHandler::processSession(
             jr[jss::status] = jss::error;
             jr[jss::error] = apiVersion == rpc::kApiInvalidVersion ? jss::invalid_API_version
                                                                    : jss::missingCommand;
-            jr[jss::request] = rpc::maskSecrets(jv);
+            jr[jss::request] = json::maskSecrets(jv);
             // Echoed members are masked too: a client can put an object anywhere.
             if (jv.isMember(jss::id))
-                jr[jss::id] = rpc::maskSecrets(jv[jss::id]);
+                jr[jss::id] = json::maskSecrets(jv[jss::id]);
             if (jv.isMember(jss::jsonrpc))
-                jr[jss::jsonrpc] = rpc::maskSecrets(jv[jss::jsonrpc]);
+                jr[jss::jsonrpc] = json::maskSecrets(jv[jss::jsonrpc]);
             if (jv.isMember(jss::ripplerpc))
-                jr[jss::ripplerpc] = rpc::maskSecrets(jv[jss::ripplerpc]);
+                jr[jss::ripplerpc] = json::maskSecrets(jv[jss::ripplerpc]);
             if (jv.isMember(jss::api_version))
-                jr[jss::api_version] = rpc::maskSecrets(jv[jss::api_version]);
+                jr[jss::api_version] = json::maskSecrets(jv[jss::api_version]);
 
             is->getConsumer().charge(resource::kFeeMalformedRpc);
             return jr;
@@ -520,7 +521,7 @@ ServerHandler::processSession(
     {
         jr[jss::result] = rpc::makeError(RpcInternal);
         JLOG(journal_.error()) << "Exception while processing WS: " << ex.what() << "\n"
-                               << "Input JSON: " << rpc::loggable(jv);
+                               << "Input JSON: " << json::Masked{jv};
     }
 
     is->getConsumer().charge(loadType);
@@ -537,7 +538,7 @@ ServerHandler::processSession(
         jr = jr[jss::result];
         jr[jss::status] = jss::error;
 
-        jr[jss::request] = rpc::maskSecrets(jv);
+        jr[jss::request] = json::maskSecrets(jv);
     }
     else
     {
@@ -546,13 +547,13 @@ ServerHandler::processSession(
 
     // Echoed members are masked too: a client can put an object anywhere.
     if (jv.isMember(jss::id))
-        jr[jss::id] = rpc::maskSecrets(jv[jss::id]);
+        jr[jss::id] = json::maskSecrets(jv[jss::id]);
     if (jv.isMember(jss::jsonrpc))
-        jr[jss::jsonrpc] = rpc::maskSecrets(jv[jss::jsonrpc]);
+        jr[jss::jsonrpc] = json::maskSecrets(jv[jss::jsonrpc]);
     if (jv.isMember(jss::ripplerpc))
-        jr[jss::ripplerpc] = rpc::maskSecrets(jv[jss::ripplerpc]);
+        jr[jss::ripplerpc] = json::maskSecrets(jv[jss::ripplerpc]);
     if (jv.isMember(jss::api_version))
-        jr[jss::api_version] = rpc::maskSecrets(jv[jss::api_version]);
+        jr[jss::api_version] = json::maskSecrets(jv[jss::api_version]);
 
     jr[jss::type] = jss::response;
     return jr;
@@ -653,7 +654,7 @@ ServerHandler::processRequest(
         if (!jsonRPC.isObject())
         {
             json::Value r(json::ValueType::Object);
-            r[jss::request] = rpc::maskSecrets(jsonRPC);
+            r[jss::request] = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
             reply.append(r);
             continue;
@@ -681,7 +682,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r(json::ValueType::Object);
-            r[jss::request] = rpc::maskSecrets(jsonRPC);
+            r[jss::request] = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
             reply.append(r);
             continue;
@@ -723,7 +724,7 @@ ServerHandler::processRequest(
                     httpReply(503, "Server is overloaded", output, rpcJ);
                     return;
                 }
-                json::Value r = rpc::maskSecrets(jsonRPC);
+                json::Value r = json::maskSecrets(jsonRPC);
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
                 reply.append(r);
                 continue;
@@ -738,7 +739,7 @@ ServerHandler::processRequest(
                 httpReply(403, "Forbidden", output, rpcJ);
                 return;
             }
-            json::Value r = rpc::maskSecrets(jsonRPC);
+            json::Value r = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
             reply.append(r);
             continue;
@@ -752,7 +753,7 @@ ServerHandler::processRequest(
                 httpReply(400, "Null method", output, rpcJ);
                 return;
             }
-            json::Value r = rpc::maskSecrets(jsonRPC);
+            json::Value r = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
             reply.append(r);
             continue;
@@ -767,7 +768,7 @@ ServerHandler::processRequest(
                 httpReply(400, "method is not string", output, rpcJ);
                 return;
             }
-            json::Value r = rpc::maskSecrets(jsonRPC);
+            json::Value r = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
             reply.append(r);
             continue;
@@ -782,7 +783,7 @@ ServerHandler::processRequest(
                 httpReply(400, "method is empty", output, rpcJ);
                 return;
             }
-            json::Value r = rpc::maskSecrets(jsonRPC);
+            json::Value r = json::maskSecrets(jsonRPC);
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
             reply.append(r);
             continue;
@@ -836,7 +837,7 @@ ServerHandler::processRequest(
                     return;
                 }
 
-                json::Value r = rpc::maskSecrets(jsonRPC);
+                json::Value r = json::maskSecrets(jsonRPC);
                 r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
@@ -854,11 +855,11 @@ ServerHandler::processRequest(
             user.remove_suffix(user.size());
         }
 
-        JLOG(journal_.debug()) << "Query: " << strMethod << rpc::loggable(params);
+        JLOG(journal_.debug()) << "Query: " << strMethod << json::Masked{params};
 
         // Provide the JSON-RPC method as the field "command" in the request.
         params[jss::command] = strMethod;
-        JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << rpc::loggable(params);
+        JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << json::Masked{params};
 
         resource::Charge loadType = resource::kFeeReferenceRpc;
 
@@ -890,7 +891,7 @@ ServerHandler::processRequest(
         {
             result = rpc::makeError(RpcInternal);
             JLOG(journal_.error()) << "Internal error : " << ex.what()
-                                   << " when processing request: " << rpc::loggable(params);
+                                   << " when processing request: " << json::Masked{params};
         }
 
         auto const end = std::chrono::system_clock::now();
@@ -910,8 +911,8 @@ ServerHandler::processRequest(
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
                 result.removeMember(jss::error_message);
-                JLOG(journal_.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
+                JLOG(journal_.debug()) << "rpcError: " << json::Masked{result[jss::error]} << ": "
+                                       << json::Masked{result[jss::error_message]};
                 r[jss::error] = std::move(result);
             }
             else
@@ -927,10 +928,10 @@ ServerHandler::processRequest(
             if (result.isMember(jss::error))
             {
                 result[jss::status] = jss::error;
-                result[jss::request] = rpc::maskSecrets(params);
+                result[jss::request] = json::maskSecrets(params);
 
-                JLOG(journal_.debug())
-                    << "rpcError: " << result[jss::error] << ": " << result[jss::error_message];
+                JLOG(journal_.debug()) << "rpcError: " << json::Masked{result[jss::error]} << ": "
+                                       << json::Masked{result[jss::error_message]};
             }
             else
             {
@@ -941,11 +942,11 @@ ServerHandler::processRequest(
 
         // Echoed members are masked too: a client can put an object anywhere.
         if (params.isMember(jss::jsonrpc))
-            r[jss::jsonrpc] = rpc::maskSecrets(params[jss::jsonrpc]);
+            r[jss::jsonrpc] = json::maskSecrets(params[jss::jsonrpc]);
         if (params.isMember(jss::ripplerpc))
-            r[jss::ripplerpc] = rpc::maskSecrets(params[jss::ripplerpc]);
+            r[jss::ripplerpc] = json::maskSecrets(params[jss::ripplerpc]);
         if (params.isMember(jss::id))
-            r[jss::id] = rpc::maskSecrets(params[jss::id]);
+            r[jss::id] = json::maskSecrets(params[jss::id]);
         if (batch)
         {
             reply.append(std::move(r));
@@ -997,13 +998,13 @@ ServerHandler::processRequest(
     // serialization are paid for only when a credential has to be replaced.
     if (auto const stream = journal_.debug())
     {
-        if (rpc::hasSecret(reply))
+        if (json::hasSecret(reply))
         {
-            stream << "Reply: " << rpc::loggable(reply);
+            stream << "Reply: " << json::Masked{reply};
         }
         else
         {
-            stream << "Reply: " << std::string_view{response}.substr(0, rpc::kMaxLoggedChars);
+            stream << "Reply: " << std::string_view{response}.substr(0, json::kMaxLoggedChars);
         }
     }
 

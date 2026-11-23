@@ -12,6 +12,7 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/Ledger.h>
@@ -179,7 +180,7 @@ logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journa
     {
         JLOG(j.debug()) << "MISMATCH on TX " << tx << ": " << msg
                         << " is missing this transaction:\n"
-                        << metaData->getJson(JsonOptions::Values::None);
+                        << json::Unmasked{metaData->getJson(JsonOptions::Values::None)};
     }
     else
     {
@@ -260,38 +261,42 @@ logMetadataDifference(
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result, index and nodes!";
-                JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::Values::None);
-                JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::Values::None);
+                JLOG(j.debug()) << " Built:\n"
+                                << json::Unmasked{
+                                       builtMetaData->getJson(JsonOptions::Values::None)};
+                JLOG(j.debug()) << " Valid:\n"
+                                << json::Unmasked{
+                                       validMetaData->getJson(JsonOptions::Values::None)};
             }
             else if (resultDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Result: " << builtMetaData->getResult() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{builtNodes.getJson(JsonOptions::Values::None)};
                 JLOG(j.debug()) << " Valid:"
                                 << " Result: " << validMetaData->getResult() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{validNodes.getJson(JsonOptions::Values::None)};
             }
             else if (indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different index and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Index: " << builtMetaData->getIndex() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{builtNodes.getJson(JsonOptions::Values::None)};
                 JLOG(j.debug()) << " Valid:"
                                 << " Index: " << validMetaData->getIndex() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{validNodes.getJson(JsonOptions::Values::None)};
             }
             else  // nodesDiff
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{builtNodes.getJson(JsonOptions::Values::None)};
                 JLOG(j.debug()) << " Valid:"
                                 << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::Values::None);
+                                << json::Unmasked{validNodes.getJson(JsonOptions::Values::None)};
             }
         }
 
@@ -301,13 +306,13 @@ logMetadataDifference(
     if (validMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Valid=\n"
-                        << validMetaData->getJson(JsonOptions::Values::None);
+                        << json::Unmasked{validMetaData->getJson(JsonOptions::Values::None)};
     }
 
     if (builtMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Built=\n"
-                        << builtMetaData->getJson(JsonOptions::Values::None);
+                        << json::Unmasked{builtMetaData->getJson(JsonOptions::Values::None)};
     }
 }
 
@@ -353,9 +358,9 @@ LedgerHistory::handleMismatch(
 
     if (auto const stream = j_.debug())
     {
-        stream << "Built: " << getJson({*builtLedger, {}});
-        stream << "Valid: " << getJson({*validLedger, {}});
-        stream << "Consensus: " << consensus;
+        stream << "Built: " << json::Unmasked{getJson({*builtLedger, {}})};
+        stream << "Valid: " << json::Unmasked{getJson({*validLedger, {}})};
+        stream << "Consensus: " << json::Unmasked{consensus};
     }
 
     // Determine the mismatch reason, distinguishing Byzantine
@@ -404,8 +409,8 @@ LedgerHistory::handleMismatch(
                          << " valid transactions.";
     }
 
-    JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
-    JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});
+    JLOG(j_.error()) << "built\n" << json::Unmasked{getJson({*builtLedger, {}})};
+    JLOG(j_.error()) << "valid\n" << json::Unmasked{getJson({*validLedger, {}})};
 
     // Log all differences between built and valid ledgers
     auto b = builtTx.begin();

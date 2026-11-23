@@ -134,10 +134,11 @@ Journal::ScopedStream::~ScopedStream()
     }
 }
 
-std::ostream&
+Journal::ScopedStream const&
 Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return ostream_ << manip;
+    ostream_ << manip;
+    return *this;
 }
 
 //------------------------------------------------------------------------------

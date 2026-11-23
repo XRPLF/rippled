@@ -63,6 +63,7 @@
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -2083,7 +2084,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, UInt
     // Determine preferred last closed ledger
 
     auto& validations = registry_.get().getValidations();
-    JLOG(journal_.debug()) << "ValidationTrie " << json::Compact(validations.getJsonTrie());
+    JLOG(journal_.debug()) << "ValidationTrie " << json::Unmasked{validations.getJsonTrie()};
 
     // Will rely on peer LCL if no trusted validations exist
     HashMap<UInt256, std::uint32_t> peerCounts;
@@ -2145,7 +2146,8 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, UInt
     }
 
     JLOG(journal_.warn()) << "We are not running on the consensus ledger";
-    JLOG(journal_.info()) << "Our LCL: " << ourClosed->header().hash << getJson({*ourClosed, {}});
+    JLOG(journal_.info()) << "Our LCL: " << ourClosed->header().hash
+                          << json::Unmasked{getJson({*ourClosed, {}})};
     JLOG(journal_.info()) << "Net LCL " << closedLedger;
 
     if ((mode_ == OperatingMode::TRACKING) || (mode_ == OperatingMode::FULL))
@@ -3341,7 +3343,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
     // Don't lock since pubAcceptedTransaction is locking.
     for (auto const& accTx : *alpAccepted)
     {
-        JLOG(journal_.trace()) << "pubAccepted: " << accTx->getJson();
+        JLOG(journal_.trace()) << "pubAccepted: " << json::Unmasked{accTx->getJson()};
         bool const last = &*accTx == &alpAccepted->back();
         pubValidatedTransaction(lpAccepted, *accTx, last);
     }

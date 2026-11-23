@@ -8,8 +8,8 @@ namespace xrpl {
 /**
  * Fields that carry a credential, in a request or in a reply.
  *
- * The one list for the RPC masker and for the fallback scrubber of the log.
- * Literals, since jss.h sits above this module. MaskSecrets.cpp asserts at
+ * The one list for the JSON masker and for the fallback scrubber of the log.
+ * Literals, since jss.h sits above this module. The masker tests assert at
  * compile time that each one equals its jss entry, which is the name all
  * other code uses, so a misspelled literal here does not build.
  *

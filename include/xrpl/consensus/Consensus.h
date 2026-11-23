@@ -9,6 +9,7 @@
 #include <xrpl/consensus/ConsensusParms.h>
 #include <xrpl/consensus/ConsensusProposal.h>
 #include <xrpl/consensus/ConsensusTypes.h>
+#include <xrpl/json/Loggable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
@@ -1760,7 +1761,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     if (result_->state == ConsensusState::MovedOn)
     {
         JLOG(j_.error()) << "Unable to reach consensus";
-        JLOG(j_.error()) << json::Compact{getJson(true)};
+        JLOG(j_.error()) << json::Unmasked{getJson(true)};
         CLOG(clog) << "Unable to reach consensus " << json::Compact{getJson(true)} << ". ";
     }
 
