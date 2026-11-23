@@ -897,11 +897,15 @@ struct PayStrand_test : public beast::unit_test::Suite
             // dry because the AMM extends no credit.
             Env env(*this, features);
             env.fund(XRP(10000), alice, gw);
+            env.close();
             env(fset(gw, asfRequireAuth));
-            env(trust(gw, alice["USD"](1000), tfSetfAuth));
             env.trust(usd(1000), alice);
+            env(trust(gw, alice["USD"](0), tfSetfAuth));
+            env.close();
             env(pay(gw, alice, usd(100)));
+            env.close();
             AMM const amm(env, alice, XRP(100), usd(100));
+            BEAST_EXPECT(amm.ammExists());
 
             auto const [ter, strand] = toStrand(
                 *env.current(),
