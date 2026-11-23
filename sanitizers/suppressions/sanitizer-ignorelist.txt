@@ -1,6 +1,8 @@
-# Clang skips instrumenting the files listed here, for every sanitizer, so keep
-# the list short. An entry reads <entity>:<glob>, and the glob must match the
-# whole absolute path, so it needs a leading `*`. See docs/build/sanitizers.md.
+# Clang skips instrumenting the files listed here, so keep the list short. An
+# entry above the first section applies to every sanitizer. An entry below a
+# section header, such as [address], applies to that sanitizer only. An entry
+# reads <entity>:<glob>, and the glob must match the whole absolute path, so it
+# needs a leading `*`. See docs/build/sanitizers.md.
 
 # ASan false positive: stack-use-after-scope in ErrorCodes.h inline functions.
 # When Clang inlines the StaticString overloads (e.g. invalidFieldError(StaticString)),

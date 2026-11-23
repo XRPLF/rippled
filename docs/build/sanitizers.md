@@ -184,6 +184,9 @@ More details [here](https://clang.llvm.org/docs/undefinedbehaviorSanitizer.html)
 - **Purpose**: Compile-time ignorelist for all sanitizers
 - **Usage**: Passed via `-fsanitize-ignorelist=absolute/path/to/sanitizer-ignorelist.txt`
 - **Format**: `<entity>:<glob>` (e.g. `src:*Workers.cpp`)
+- **Note**: An entry above the first section applies to every sanitizer. An
+  entry below a section header, such as `[address]`, applies to that sanitizer
+  only.
 - **Note**: Not a suppressions file. Clang looks up only the entities `src`,
   `fun`, `global`, `type` and `mainfile`, so a `race:` or `deadlock:` entry
   parses but does nothing. Those belong in `tsan.supp`.
