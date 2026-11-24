@@ -350,8 +350,8 @@ def main() -> None:
         "--variant",
         default="",
         choices=VARIANTS,
-        help="the flavour of the package to build: a variant V produces "
-        "xrpld-V, which ships the same paths as xrpld and replaces it "
+        help="the flavour of the package to build: a variant <VARIANT> produces "
+        "xrpld-<VARIANT>, which ships the same paths as xrpld and replaces it "
         "(default: the plain xrpld package)",
     )
     parser.add_argument(

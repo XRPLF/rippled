@@ -34,8 +34,6 @@ _BASE_CMAKE_ARGS = [
     "-Drust=ON",
 ]
 
-# A packaged config builds validator-keys as well: the build job uploads that
-# artifact only when it sees this argument (reusable-build-test-config.yml).
 VALIDATOR_KEYS_ARG = "-Dvalidator_keys=ON"
 
 # The package formats a config can be packaged as, each with its own
