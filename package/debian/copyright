@@ -16,8 +16,7 @@ Copyright: 2016, Ripple Labs Inc.
  2011, The Bitcoin developers
  2003-2005, Tom Wu
 License: ISC and BSL-1.0 and MIT and Tom-Wu
-Comment: Built from https://github.com/ripple/validator-keys-tool at the commit
- pinned in cmake/XrplValidatorKeys.cmake. Besides ISC-licensed code it
+Comment: Built from src/tools/validator-keys in this repository. Besides ISC-licensed code it
  incorporates work under the Boost Software License 1.0 (ASIO), the MIT/X11
  license (Bitcoin) and Tom Wu's license, whose terms require its notice to be
  retained intact. The complete upstream notice is therefore shipped verbatim as

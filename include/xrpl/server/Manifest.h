@@ -7,6 +7,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 
 #include <atomic>
@@ -295,6 +296,92 @@ deserializeManifest(
     return deserializeManifest(makeSlice(v), journal);
 }
 /** @} */
+
+/**
+ * The fields of a manifest before it is signed: @p masterKey delegates to
+ * @p signingKey at @p sequence, with an optional domain.
+ *
+ * Both signatures cover @ref manifestSigningData of the returned object. Set
+ * them as sfSignature and sfMasterSignature, then serialize.
+ *
+ * @param masterKey The validator's or publisher's master public key
+ * @param signingKey The ephemeral key the manifest delegates to
+ * @param sequence The manifest sequence; a newer manifest has a larger one
+ * @param domain The domain to carry, or empty for none
+ * @return sfPublicKey, sfSigningPubKey, sfSequence and, when not empty,
+ *         sfDomain, without any signature
+ * @throws std::invalid_argument if @p sequence is the revocation sequence,
+ *         @p signingKey equals @p masterKey, or @p domain is not empty and
+ *         not a properly formed TOML domain
+ */
+STObject
+makeManifestFields(
+    PublicKey const& masterKey,
+    PublicKey const& signingKey,
+    std::uint32_t sequence,
+    std::string const& domain = {});
+
+/**
+ * The fields of a revocation before it is signed: @p masterKey at the
+ * largest sequence, with no signing key.
+ *
+ * @param masterKey The master public key being revoked
+ * @return sfPublicKey and sfSequence set to the largest value, without the
+ *         master signature
+ */
+STObject
+makeRevocationFields(PublicKey const& masterKey);
+
+/**
+ * The bytes a manifest's signatures cover: HashPrefix::Manifest followed by
+ * the fields without the signatures.
+ *
+ * @param fields An unsigned manifest or revocation, as
+ *        @ref makeManifestFields or @ref makeRevocationFields returns it
+ * @return The bytes sfMasterSignature covers, and sfSignature when the
+ *         manifest has a signing key
+ */
+Blob
+manifestSigningData(STObject const& fields);
+
+/**
+ * A manifest signed by both keys.
+ *
+ * Each signature is made with the key its secret derives, of the type of the
+ * public key it belongs to, so a secret that does not match its public key
+ * gives a manifest that fails verify().
+ *
+ * @param masterKey The master public key
+ * @param masterSecret The secret key of @p masterKey; signs sfMasterSignature
+ * @param signingKey The ephemeral key the manifest delegates to
+ * @param signingSecret The secret key of @p signingKey; signs sfSignature
+ * @param sequence The manifest sequence; a newer manifest has a larger one
+ * @param domain The domain to carry, or empty for none
+ * @return The serialized manifest, as `Manifest::serialized` holds it
+ * @throws std::invalid_argument as @ref makeManifestFields throws it
+ */
+std::string
+makeManifest(
+    PublicKey const& masterKey,
+    SecretKey const& masterSecret,
+    PublicKey const& signingKey,
+    SecretKey const& signingSecret,
+    std::uint32_t sequence,
+    std::string const& domain = {});
+
+/**
+ * A revocation of @p masterKey signed by it.
+ *
+ * The signature is made with the key @p masterSecret derives, of the type of
+ * @p masterKey, so a secret that does not match it gives a revocation that
+ * fails verify().
+ *
+ * @param masterKey The master public key being revoked
+ * @param masterSecret The secret key of @p masterKey
+ * @return The serialized manifest, as `Manifest::serialized` holds it
+ */
+std::string
+makeRevocation(PublicKey const& masterKey, SecretKey const& masterSecret);
 
 inline bool
 operator==(Manifest const& lhs, Manifest const& rhs)
