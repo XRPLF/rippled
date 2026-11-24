@@ -1,6 +1,8 @@
 #include <xrpl/protocol/STAmount.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -97,7 +99,7 @@ TEST(STAmount, from_json_uint_value)
     Issue const usd{toCurrency("USD"), kUsdIssuer};
     MPTIssue const mpt{makeMptID(1, kUsdIssuer)};
 
-    auto iouObject = [&](json::Value const& value) {
+    auto const iouObject = [&](json::Value const& value) {
         json::Value v(json::ValueType::Object);
         v[jss::currency] = "USD";
         v[jss::issuer] = toBase58(kUsdIssuer);
@@ -105,7 +107,7 @@ TEST(STAmount, from_json_uint_value)
         return v;
     };
 
-    auto iouArray = [&](json::Value const& value) {
+    auto const iouArray = [&](json::Value const& value) {
         json::Value v(json::ValueType::Array);
         v.append(value);
         v.append("USD");
@@ -113,7 +115,7 @@ TEST(STAmount, from_json_uint_value)
         return v;
     };
 
-    auto mptObject = [&](json::Value const& value) {
+    auto const mptObject = [&](json::Value const& value) {
         json::Value v(json::ValueType::Object);
         v[jss::mpt_issuance_id] = to_string(mpt.getMptID());
         v[jss::value] = value;
