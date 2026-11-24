@@ -1,3 +1,4 @@
+// cspell:words trustgraph
 #pragma once
 
 #include <csf/Proposal.h>

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# cspell:words dumpversion
 #
 # check-tools.sh — verify the xrpld development tooling is present and runnable.
 #

@@ -1,3 +1,4 @@
+// cspell:words preverified tlsext
 #pragma once
 
 #include <xrpl/basics/Log.h>

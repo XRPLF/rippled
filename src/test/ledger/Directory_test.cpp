@@ -1,3 +1,4 @@
+// cspell:words currcode
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>

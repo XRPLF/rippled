@@ -1,3 +1,4 @@
+# cspell:words errexit
 ARG BASE_IMAGE=nixos/nix:latest
 
 # Nix builder

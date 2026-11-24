@@ -1,3 +1,5 @@
+<!-- cspell:words flakeref relativeworktrees -->
+
 # Troubleshooting Nix problems
 
 Common issues encountered when using the [Nix development shell](./nix.md), and

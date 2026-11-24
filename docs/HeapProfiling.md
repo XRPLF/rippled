@@ -1,3 +1,5 @@
+<!-- cspell:words mallctl -->
+
 ## Heap profiling of xrpld with jemalloc
 
 The jemalloc library provides a good API for doing heap analysis,

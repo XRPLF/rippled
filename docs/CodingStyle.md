@@ -1,3 +1,5 @@
+<!-- cspell:words allman -->
+
 # Coding Standards
 
 Coding standards used here gradually evolve and propagate through

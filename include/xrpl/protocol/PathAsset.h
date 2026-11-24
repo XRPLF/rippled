@@ -1,3 +1,4 @@
+// cspell:words easset
 #pragma once
 
 #include <xrpl/basics/contract.h>

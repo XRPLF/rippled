@@ -1,3 +1,4 @@
+# cspell:words minrate mirrorlist
 # Install one package format on every distro family it targets, one job per
 # package name and image, and run the binaries there. Called once per format by
 # reusable-package.yml, which owns the names and the image lists.

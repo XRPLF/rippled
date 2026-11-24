@@ -1,3 +1,4 @@
+// cspell:words ledgerfile
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>

@@ -1,3 +1,4 @@
+# cspell:words rustflags
 # The Rust static libraries are linked into C++ targets, so the runtime linkage
 # here has to match what the C++ build uses (see cmake/XrplCompiler.cmake).
 

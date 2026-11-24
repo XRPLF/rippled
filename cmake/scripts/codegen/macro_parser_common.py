@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cspell:words alphanums includepath
 """
 Common utilities for parsing XRP Ledger macro files.
 

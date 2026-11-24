@@ -540,7 +540,7 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            // alice create mptissuance without allowisting
+            // alice create mptissuance without allow listing
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});

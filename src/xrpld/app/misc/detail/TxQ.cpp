@@ -223,7 +223,7 @@ private:
     std::optional<ApplyResult>
     checkBlockerInAccQue() const;
 
-    // Returns true if require Multitxn, false if not. Returns ApplyResult in case of error.
+    // Returns true if require MultiTxn, false if not. Returns ApplyResult in case of error.
     std::expected<bool, ApplyResult>
     checkMultiTxn() const;
 
@@ -404,7 +404,7 @@ TxQApplyImpl::checkMultiTxn() const
     bool requiresMultiTxn = false;
     if (accTxCount_ > 1 || !txToReplaceIter_)
     {
-        // If the transaction is queueable, create the multiTxn
+        // If the transaction is queuable, create the multiTxn
         // object to hold the info we need to adjust for prior txns.
 
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -623,7 +623,7 @@ TxQApplyImpl::processAccountTxs()
     // The transaction's sequence/ticket will be valid when the other
     // transactions in the queue have been processed. If the tx has a
     // sequence, set the account to match it. If it has a ticket, use
-    // the next queueable sequence, which is the closest approximation
+    // the next queuable sequence, which is the closest approximation
     // to the most successful case.
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access)

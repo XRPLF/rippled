@@ -1,3 +1,4 @@
+// cspell:words totalram
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/FileUtilities.h>

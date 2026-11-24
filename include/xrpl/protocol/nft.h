@@ -1,3 +1,4 @@
+// cspell:words dobell
 #pragma once
 
 #include <xrpl/basics/base_uint.h>

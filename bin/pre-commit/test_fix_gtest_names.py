@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cspell:words statm
 """
 Tests for fix_gtest_names.py.
 

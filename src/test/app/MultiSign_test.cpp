@@ -356,9 +356,9 @@ public:
     }
 
     void
-    testMisorderedSigners(FeatureBitset features)
+    testOutOfOrderSigners(FeatureBitset features)
     {
-        testcase("Misordered Signers");
+        testcase("Out Of Order Signers");
 
         using namespace jtx;
         Env env{*this, features};
@@ -1588,7 +1588,7 @@ public:
         testSignerListSet(features);
         testPhantomSigners(features);
         testFee(features);
-        testMisorderedSigners(features);
+        testOutOfOrderSigners(features);
         testMasterSigners(features);
         testRegularSigners(features);
         testRegularSignersUsingSubmitMulti(features);

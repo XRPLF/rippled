@@ -1,3 +1,5 @@
+<!-- cspell:words unitless -->
+
 # resource::Manager
 
 The ResourceManager module has these responsibilities:

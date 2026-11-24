@@ -1,3 +1,4 @@
+// cspell:words localtxns
 #pragma once
 
 #include <xrpl/basics/Blob.h>

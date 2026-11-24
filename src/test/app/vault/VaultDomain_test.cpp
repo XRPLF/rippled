@@ -468,7 +468,7 @@ private:
 
         // Charlie never held the domain credential. Buying shares via a
         // crossing offer must be blocked the same way a direct MPTokenAuthorize
-        // + pay attempt already is (see testWithDomainChecXRP's "cannot pay
+        // + pay attempt already is (see testWithDomainCheckXRP's "cannot pay
         // shares to 3rd party"): checkAcceptAsset() rejects the offer outright
         // in preclaim, before any funding check is even reached.
         env(offer(charlie, shares(1), XRP(1)), Ter{tecNO_AUTH});
@@ -478,7 +478,7 @@ private:
     }
 
     void
-    testWithDomainChecXRP()
+    testWithDomainCheckXRP()
     {
         using namespace test::jtx;
 
@@ -878,7 +878,7 @@ public:
         testWithDomainCheck();
         testDomainLossAfterAcquisition();
         testDomainCheckBuyerSideOffer();
-        testWithDomainChecXRP();
+        testWithDomainCheckXRP();
         testVaultWithdrawPrivateDestinationDomain(all_ - fixCleanup3_4_0);
         testVaultWithdrawPrivateDestinationDomain(all_);
         testWithdrawCredentialDepositPreauth(all_ - fixCleanup3_4_0);

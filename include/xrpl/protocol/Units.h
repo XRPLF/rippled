@@ -1,3 +1,4 @@
+// cspell:words muldivable
 #pragma once
 
 #include <xrpl/basics/safe_cast.h>

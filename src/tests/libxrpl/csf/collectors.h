@@ -344,9 +344,9 @@ struct TxCollector
                 << "txLatencySubmitToAccept10Pctl" << ","
                 << "txLatencySubmitToAccept50Pctl" << ","
                 << "txLatencySubmitToAccept90Pctl" << ","
-                << "txLatencySubmitToValidatet10Pctl" << ","
-                << "txLatencySubmitToValidatet50Pctl" << ","
-                << "txLatencySubmitToValidatet90Pctl" << std::endl;
+                << "txLatencySubmitToValidate10Pctl" << ","
+                << "txLatencySubmitToValidate50Pctl" << ","
+                << "txLatencySubmitToValidate90Pctl" << std::endl;
         }
 
         log << tag

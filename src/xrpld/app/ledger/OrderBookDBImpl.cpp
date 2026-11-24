@@ -244,7 +244,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
     }
 }
 
-// return list of all orderbooks that want this issuerID and currencyID
+// return list of all order books that want this issuerID and currencyID
 std::vector<Book>
 OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<UInt256> const& domain)
 {

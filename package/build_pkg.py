@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# cspell:words topdir
 """Build an RPM or Debian package from the pre-built xrpld and validator-keys binaries.
 
 The build tool for the chosen format has to be on PATH, so this runs in the

@@ -1,3 +1,4 @@
+# cspell:words nodeenv
 # To run pre-commit hooks, first install pre-commit:
 # - `pip install pre-commit==${PRE_COMMIT_VERSION}`
 #

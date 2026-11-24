@@ -1,3 +1,4 @@
+// cspell:words preflights
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <xrpl/basics/Log.h>

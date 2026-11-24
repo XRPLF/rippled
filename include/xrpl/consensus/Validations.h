@@ -1,3 +1,4 @@
+// cspell:words seqinserted
 #pragma once
 
 #include <xrpl/basics/Log.h>

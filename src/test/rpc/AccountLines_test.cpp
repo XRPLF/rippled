@@ -512,7 +512,7 @@ public:
         env.close();
 
         // Get all account objects for alice and verify that her
-        // signerlist is first.  This is only a (reliable) coincidence of
+        // SignerList is first.  This is only a (reliable) coincidence of
         // object naming.  So if any of alice's objects are renamed this
         // may fail.
         json::Value aliceObjectsParams;
@@ -802,9 +802,9 @@ public:
 
         // Offers, one where alice is the owner, and one where alice is the
         // issuer
-        auto const usDalice = alice["USD"];
+        auto const usdAlice = alice["USD"];
         env(offer(alice, eur(10), XRP(100)));
-        env(offer(becky, usDalice(10), XRP(100)));
+        env(offer(becky, usdAlice(10), XRP(100)));
 
         // Tickets
         env(ticket::create(alice, 2));

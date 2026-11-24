@@ -1,3 +1,4 @@
+# cspell:words profdata
 # The Rust half of the tool set shared by the CI environment and the dev shell:
 # the stable toolchain pinned by rust-toolchain.toml, the nightly the Rust
 # coverage job needs, and the cargo plugins. Consumed by packages.nix.

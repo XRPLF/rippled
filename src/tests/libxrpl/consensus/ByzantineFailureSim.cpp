@@ -74,7 +74,7 @@ TEST(ByzantineFailureSimTest, DISABLED_byzantine_failure_sim)
     sim.run(4);
     std::cout << "Branches: " << sim.branches() << "\n";
     std::cout << "Fully synchronized: " << std::boolalpha << sim.synchronized() << "\n";
-    // Not tessting anything currently.
+    // Not testing anything currently.
     SUCCEED();
 }
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# cspell:words sonames
 # Install sanitizer runtime libraries required to run binaries compiled with:
 #   -fsanitize=address   → libasan.so.8
 #   -fsanitize=thread    → libtsan.so.2

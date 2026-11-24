@@ -1,3 +1,4 @@
+// cspell:words parsedseed
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>

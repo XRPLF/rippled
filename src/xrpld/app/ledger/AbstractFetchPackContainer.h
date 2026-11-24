@@ -9,7 +9,7 @@ namespace xrpl {
 
 /**
  * An interface facilitating retrieval of fetch packs without
- * an application or ledgermaster object.
+ * an application or LedgerMaster object.
  */
 class AbstractFetchPackContainer
 {

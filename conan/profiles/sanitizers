@@ -1,3 +1,4 @@
+{# cspell:words sharedlinkflags #}
 include(default)
 {% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
 {% set arch = detect_api.detect_arch() %}

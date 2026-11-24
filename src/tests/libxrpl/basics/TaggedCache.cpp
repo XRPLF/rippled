@@ -1,3 +1,4 @@
+// cspell:words refetched
 #include <xrpl/basics/TaggedCache.h>
 
 #include <xrpl/basics/IntrusivePointer.h>

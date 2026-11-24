@@ -1,3 +1,4 @@
+// cspell:words cumsum
 #pragma once
 
 #include <cassert>

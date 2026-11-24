@@ -1,3 +1,4 @@
+// cspell:words multiplath
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Env.h>

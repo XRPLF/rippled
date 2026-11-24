@@ -1,3 +1,4 @@
+// cspell:words getround setround
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>

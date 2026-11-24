@@ -1,3 +1,4 @@
+// cspell:words ownfunds
 #include <xrpl/server/NetworkOPs.h>
 
 #include <xrpld/app/consensus/RCLConsensus.h>

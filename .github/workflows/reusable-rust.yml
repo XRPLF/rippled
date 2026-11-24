@@ -1,3 +1,4 @@
+# cspell:words rustdocflags
 # Clippy, coverage and documentation for the Rust crates in crates/. Each runs
 # as an independent job on a GitHub-hosted runner, but inside the same container
 # image used to build the crates in the C++/Corrosion path, so the toolchain

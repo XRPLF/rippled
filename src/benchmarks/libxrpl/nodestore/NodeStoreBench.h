@@ -1,3 +1,4 @@
+// cspell:words rngcpy
 #pragma once
 
 #include <xrpl/basics/Blob.h>

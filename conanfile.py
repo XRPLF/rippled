@@ -1,3 +1,4 @@
+# cspell:words includedirs
 import os
 import re
 

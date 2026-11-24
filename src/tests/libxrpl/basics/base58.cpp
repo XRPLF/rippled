@@ -1,3 +1,4 @@
+// cspell:words multiprecision
 #include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep

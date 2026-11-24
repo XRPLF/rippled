@@ -1,3 +1,4 @@
+// cspell:words delegators
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>

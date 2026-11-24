@@ -1,3 +1,4 @@
+// cspell:words loanbroker
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <xrpl/basics/Log.h>

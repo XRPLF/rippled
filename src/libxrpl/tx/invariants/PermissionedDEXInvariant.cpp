@@ -78,7 +78,7 @@ ValidPermissionedDEX::finalize(
     if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;
 
-    // For each offercreate transaction, check if
+    // For each OfferCreate transaction, check if
     // permissioned offers are valid
     bool const isMalformed = view.rules().enabled(fixCleanup3_1_3) ? badHybrids_ : badHybridsOld_;
     if (txType == ttOFFER_CREATE && isMalformed)
@@ -98,7 +98,7 @@ ValidPermissionedDEX::finalize(
         return false;
     }
 
-    // for both payment and offercreate, there shouldn't be another domain
+    // for both payment and OfferCreate, there shouldn't be another domain
     // that's different from the domain specified
     auto const& domains = view.rules().enabled(fixCleanup3_4_0) ? domains_ : domainsOld_;
     for (auto const& d : domains)

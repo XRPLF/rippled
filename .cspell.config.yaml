@@ -1,6 +1,7 @@
 ignorePaths:
   - build/**
   - src/libxrpl/crypto
+  - .git-blame-ignore-revs # commit titles cannot be edited
   - cmake/CodeCoverage.cmake # vendored from https://github.com/bilke/cmake-modules
   - CMakeUserPresets.json
   - Doxyfile
@@ -9,13 +10,13 @@ ignorePaths:
   - .clang-tidy
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
 language: en
-allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
 minWordLength: 5
+# cspell's own dictionary ids: `en_us` has an underscore, `en-gb` a hyphen.
 dictionaries:
   - cpp
-  - en_US
-  - en_GB
+  - en_us
+  - en-gb
 ignoreRegExpList:
   - /\b[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
   - /\bC[A-Z0-9]{15}/g # CTIDs
@@ -44,6 +45,7 @@ suggestWords:
   - synch->sync
 words:
   - abempty
+  - almalinux
   - AMMID
   - AMMMPT
   - AMMMPToken
@@ -55,30 +57,38 @@ words:
   - asnode
   - asynchrony
   - attestation
-  - authorises
   - autobridge
   - autobridged
   - autobridging
+  - bignum
   - bimap
   - bindir
+  - bintools
+  - binutils
   - blindings
   - bookdir
   - Bougalis
   - bthomee
   - Britto
   - Btrfs
+  - bugprone
+  - buildhost
+  - buildpackage
+  - buildroot
   - Buildx
   - canonicality
-  - canonicalised
   - cctools
+  - certifi
   - changespq
   - checkme
   - choco
   - chrono
   - citardauq
   - clawback
+  - clawbacking
   - clawbacks
   - clippy
+  - clusternodes
   - cmaketoolchain
   - coeffs
   - coldwallet
@@ -87,10 +97,12 @@ words:
   - conanrun
   - confs
   - connectability
+  - copyonly
   - coro
   - coros
   - cowid
   - cpack
+  - cppstd
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -98,18 +110,27 @@ words:
   - ctest
   - ctid
   - currenttxhash
+  - cxxbridge
   - daria
+  - dbgsym
   - dcmake
   - dearmor
+  - debbuild
+  - debhelper
   - decryptor
   - dedented
   - dedup
+  - dedups
+  - defaultable
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
+  - devnet
+  - devshell
+  - direnv
   - disablerepo
   - distro
   - doxyfile
@@ -118,32 +139,44 @@ words:
   - elgamal
   - enabled
   - enablerepo
+  - endcond
+  - endfunction
   - endmacro
   - envrc
   - exceptioned
+  - exelinkflags
   - EXPECT_STREQ
   - Falco
   - fcontext
+  - feelevel
   - finalizers
   - firewalled
   - fmtdur
+  - forkable
   - fsanitize
   - funclets
   - Gamal
   - gcov
   - gcovr
+  - gersemi
   - ghead
   - Gnutella
   - godexsoft
   - gpgcheck
   - gpgkey
+  - handshaked
   - Hinnant
   - hotwallet
   - hwaddress
   - hwrap
   - ifndef
+  - ignorelist
   - inequation
   - Injectivity
+  - installlogrotate
+  - installsystemd
+  - installsysusers
+  - installtmpfiles
   - insuf
   - insuff
   - invasively
@@ -162,13 +195,21 @@ words:
   - kwargs
   - ledgerentry
   - ledgerhash
+  - ledgerhashprevious
+  - ledgerheader
+  - ledgerid
   - ledgerindex
+  - ledgerreplay
+  - ledgerseq
   - leftw
   - legleux
   - levelization
   - levelized
+  - libcpp
   - libpb
   - libxrpl
+  - lintian
+  - listpackages
   - llection
   - LOCALGOOD
   - logwstream
@@ -199,10 +240,15 @@ words:
   - mpts
   - mtgox
   - mudhra
+  - muldiv
+  - multiarch
   - multisig
   - multisign
   - multisigned
+  - multisigner
+  - murmurhash
   - Nakamoto
+  - nextest
   - nftid
   - nftoffer
   - nftoken
@@ -215,40 +261,61 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - nodepubkey
+  - nodestore
+  - nodiscard
   - NOLINT
   - NOLINTNEXTLINE
+  - nondoor
+  - noninteractive
   - nonxrp
   - noreplace
   - noripple
   - nostdinc
   - notifempty
   - nudb
+  - nullopt
   - nullptr
   - nunl
   - Nyffenegger
+  - offerbook
   - onlatest
+  - optionaled
   - ostr
   - otool
   - oxalica
   - pargs
   - partitioner
+  - patchelf
+  - pathset
   - paychan
   - paychans
   - Pedersen
+  - peerfinder
+  - perflog
   - permdex
   - perminute
   - permissioned
+  - pipefail
   - pointee
   - populator
+  - postun
   - preauth
   - preauthorization
   - preauthorize
   - preauthorizes
   - preclaim
+  - prefunded
   - preun
+  - previousledger
+  - printables
+  - proposeseq
   - protobuf
+  - protoc
   - protos
   - ptrs
+  - publedger
+  - puboldledger
   - pushd
   - pyenv
   - pyparsing
@@ -256,11 +323,17 @@ words:
   - qbsprofile
   - queuable
   - Raphson
+  - rawincludes
   - rcflags
+  - readelf
   - reencrypted
+  - reffee
+  - remint
   - replayer
   - repodata
+  - repofile
   - repomd
+  - representability
   - rerandomize
   - rerandomization
   - rerandomized
@@ -271,6 +344,7 @@ words:
   - retriable
   - RIPD
   - ripdtop
+  - ripesha
   - rippleci
   - rippled
   - ripplerpc
@@ -278,8 +352,12 @@ words:
   - RLUSD
   - rngfill
   - rocksdb
+  - rockylinux
   - Rohrs
   - roundings
+  - rpcspec
+  - rpmbuild
+  - rpmsign
   - rustc
   - rustfmt
   - rustup
@@ -287,6 +365,7 @@ words:
   - Satoshi
   - scons
   - Schnorr
+  - sdkroot
   - secp
   - sendq
   - seqit
@@ -296,8 +375,10 @@ words:
   - shamap
   - shamapitem
   - shfmt
+  - shlibdeps
   - shlibs
   - sidechain
+  - sidechains
   - SIGGOOD
   - sle
   - sles
@@ -306,10 +387,12 @@ words:
   - Sonatype
   - sponsee
   - sponsees
+  - squelchduration
   - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
+  - stdenv
   - stissue
   - stnum
   - stobj
@@ -323,13 +406,18 @@ words:
   - superpeer
   - superpeers
   - Swatinem
+  - sysusers
   - takergets
   - takerpays
   - ters
   - TMEndpointv2
+  - tmpfiles
   - toolchain
   - tparam
+  - tradability
   - trixie
+  - trustline
+  - trustlines
   - tx
   - txid
   - txids
@@ -345,6 +433,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undefinedbehavior
   - undeserializable
   - unergonomic
   - unfetched
@@ -352,6 +441,7 @@ words:
   - unflatten
   - unfund
   - unimpair
+  - unparseable
   - unroutable
   - unscalable
   - unserviced
@@ -366,14 +456,19 @@ words:
   - unveto
   - unvetoed
   - upvotes
+  - urlgravatar
   - USDB
+  - validatorlist
+  - validatorpubkey
   - variadics
   - venv
   - vfalco
   - vinnie
+  - voidstar
   - wasmi
   - werror
   - wextra
+  - worktrees
   - wptr
   - writeme
   - wsrch

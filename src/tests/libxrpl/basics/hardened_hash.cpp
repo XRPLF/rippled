@@ -1,3 +1,4 @@
+// cspell:words fronumber
 #include <xrpl/basics/hardened_hash.h>
 
 #include <xrpl/beast/hash/hash_append.h>

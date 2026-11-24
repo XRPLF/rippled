@@ -1,3 +1,4 @@
+# cspell:words debugsource docdir presetdir sourcedir sysusersdir tmpfilesdir unitdir
 %if "%{?pkg_version}" == ""
 %{error:pkg_version must be defined}
 %endif

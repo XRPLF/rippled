@@ -149,7 +149,7 @@ public:
     insert(beast::ip::Endpoint const& endpoint);
 
     /**
-     * Add a staticallyconfigured address to the cache.
+     * Add a statically configured address to the cache.
      */
     bool
     insertStatic(beast::ip::Endpoint const& endpoint);
