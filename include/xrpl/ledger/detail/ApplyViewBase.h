@@ -114,12 +114,16 @@ public:
      *
      * Use this when the entry was already erased in this view by a child
      * view that was applied to it.
+     *
+     * @param key The key of the erased entry.
      */
     void
     markPersistent(uint256 const& key);
 
     /**
      * Keys recorded as persistent deletes in this view.
+     *
+     * @return The recorded keys, including keys merged from applied child views.
      */
     [[nodiscard]] std::set<uint256> const&
     persistentKeys() const
@@ -131,6 +135,8 @@ protected:
     /**
      * Add the persistent delete keys of this view to `to`, if `to` is
      * also an ApplyViewBase. Call this from apply().
+     *
+     * @param to The parent view that this view is applied to.
      */
     void
     applyPersistent(RawView& to) const;

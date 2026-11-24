@@ -48,7 +48,7 @@ constexpr std::size_t kUnfundedOfferRemoveLimit = 1000;
 constexpr std::size_t kExpiredOfferRemoveLimit = 256;
 
 /**
- * The maximum number of persistent deletes kept after a `tec` result
+ * The maximum number of persistent deletes kept after a `tec` result.
  */
 constexpr std::size_t kMaxPersistentDeletes = 512;
 

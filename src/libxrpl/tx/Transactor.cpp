@@ -11,7 +11,6 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -20,7 +19,6 @@
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1244,6 +1242,27 @@ Transactor::checkMultiSign(
 
 //------------------------------------------------------------------------------
 
+// The entry types whose deletions a `tec` result keeps.
+static std::unordered_set<LedgerEntryType>
+typesForResult(TER const ter)
+{
+    std::unordered_set<LedgerEntryType> types;
+    if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+    {
+        types.insert(ltOFFER);
+    }
+    else if (ter == tecINCOMPLETE)
+    {
+        types.insert(ltRIPPLE_STATE);
+    }
+    else if (ter == tecEXPIRED)
+    {
+        types.insert(ltNFTOKEN_OFFER);
+        types.insert(ltCREDENTIAL);
+    }
+    return types;
+}
+
 static void
 removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast::Journal viewJ)
 {
@@ -1488,6 +1507,7 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
     if (!isTecClaim(result))
         return {result, fee, false};
 
+    auto const typesToApply = typesForResult(result);
     std::size_t erased = 0;
     auto const viewJ = ctx_.registry.get().getJournal("View");
     for (auto const& key : keys)
@@ -1499,20 +1519,7 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
         // A recorded entry can be missing from the reset view: the
         // transaction can create and then erase it.
         auto const sle = view().peek(keylet::unchecked(key));
-        if (!sle)
-            continue;
-
-        // Flow finds invalid offers in views that hold this transaction's own changes: the
-        // taker's self-crossed offers, and offers whose owner an earlier iteration spent from.
-        // Keep only offers that are also invalid in the reset view.
-        if (sle->getType() == ltOFFER && !hasExpired(view(), (*sle)[~sfExpiration]) &&
-            accountFunds(
-                view(),
-                (*sle)[sfAccount],
-                (*sle)[sfTakerGets],
-                FreezeHandling::ZeroIfFrozen,
-                AuthHandling::ZeroIfUnauthorized,
-                viewJ) > beast::kZero)
+        if (!sle || !typesToApply.contains(sle->getType()))
             continue;
         ++erased;
 
@@ -1564,24 +1571,6 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        awkward and very limiting. A more general purpose approach
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
-
-    auto const typesForResult = [](TER const ter) {
-        std::unordered_set<LedgerEntryType> types;
-        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
-        {
-            types.insert(ltOFFER);
-        }
-        else if (ter == tecINCOMPLETE)
-        {
-            types.insert(ltRIPPLE_STATE);
-        }
-        else if (ter == tecEXPIRED)
-        {
-            types.insert(ltNFTOKEN_OFFER);
-            types.insert(ltCREDENTIAL);
-        }
-        return types;
-    };
 
     // Build a list of ledger entry types to collect, based on the
     // result code. Only deleted objects of these types will be
