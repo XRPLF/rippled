@@ -3,10 +3,14 @@
 #include <xrpl/beast/utility/Zero.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
 #include <limits>  // IWYU pragma: keep
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -81,13 +85,46 @@ Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp
     return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
+// Returns std::nullopt if a native result can't be represented, instead of
+// throwing. Pathfinding runs without transaction
+// rules, so default to the fixed behavior there to match transactions once the
+// amendment is enabled.
+template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
+static std::optional<STAmount>
+tryMulRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
+{
+    try
+    {
+        return MulRoundFunc(v1, v2, asset, roundUp);
+    }
+    catch (std::overflow_error const&)
+    {
+        // std::overflow_error is a std::runtime_error, so it must be caught
+        // first to keep the handler below from swallowing it. It means the
+        // computation itself overflowed, not that the result is out of range.
+        // Callers handle it, e.g. BookStep removes the offer.
+        throw;
+    }
+    catch (std::runtime_error const&)
+    {
+        if (!asset.native() || !isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
+            throw;
+        return std::nullopt;
+    }
+}
+
 template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
 ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.out > limit)
     {
-        Amounts result(MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp), limit);
+        // An unrepresentable XRP product is larger than amount.in, so the
+        // clamp below would return amount.in anyway.
+        Amounts result(
+            tryMulRound<MulRoundFunc>(limit, quality.rate(), amount.in.asset(), roundUp)
+                .value_or(amount.in),
+            limit);
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;

@@ -58,7 +58,7 @@ target_link_options(common INTERFACE ${sanitizers_linker_flags})
 # This module appends -fsanitize-ignorelist=<path> for Clang builds.
 # The ignorelist path contains CMAKE_SOURCE_DIR, so it must be set here, rather than in the Conan profile.
 # GCC does not support -fsanitize-ignorelist.
-if(is_clang)
+if(is_any_clang)
     set(ignorelist_path
         "${CMAKE_SOURCE_DIR}/sanitizers/suppressions/sanitizer-ignorelist.txt"
     )

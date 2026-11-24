@@ -30,9 +30,9 @@
 namespace xrpl {
 
 // A ledger we are trying to acquire
-class InboundLedger final : public TimeoutCounter,
-                            public std::enable_shared_from_this<InboundLedger>,
-                            public CountedObject<InboundLedger>
+class InboundLedger : public TimeoutCounter,
+                      public std::enable_shared_from_this<InboundLedger>,
+                      public CountedObject<InboundLedger>
 {
 public:
     using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
@@ -44,13 +44,29 @@ public:
         CONSENSUS,  // We believe the consensus round requires this ledger
     };
 
+    /**
+     * How long to wait between retries, and so how long one timeout takes.
+     */
+    static constexpr std::chrono::milliseconds kRetryInterval{3000};
+
+    /**
+     * @param app The application to run in.
+     * @param hash The ledger to acquire.
+     * @param seq Its sequence, or zero if not known yet.
+     * @param reason Why it is being acquired.
+     * @param clock The clock touch() records against.
+     * @param peerSet Which peers to ask, and how to reach them.
+     * @param retryInterval How long to wait between retries. TimeoutCounter
+     *        requires more than 10ms and less than 30s.
+     */
     InboundLedger(
         Application& app,
         UInt256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        ClockType&,
-        std::unique_ptr<PeerSet> peerSet);
+        ClockType& clock,
+        std::unique_ptr<PeerSet> peerSet,
+        std::chrono::milliseconds retryInterval = kRetryInterval);
 
     ~InboundLedger() override;
 
@@ -76,10 +92,19 @@ public:
         return failed_;
     }
 
+    /**
+     * The acquired ledger.
+     *
+     * A failed acquisition may still hold a partially built ledger, which
+     * getJson() reports on, so ledger_ is kept while this answers nullptr.
+     *
+     * @return The ledger, or nullptr before a header is obtained and once the
+     *         acquisition has failed.
+     */
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return ledger_;
+        return failed_ ? nullptr : ledger_;
     }
 
     std::uint32_t
@@ -119,14 +144,32 @@ public:
         return lastAction_;
     }
 
-private:
+protected:
+    // Protected so a test subclass can drive an acquisition through trigger() and done().
+
+    // Why trigger() is being run, which decides how deep a request goes and whether an
+    // aggressive retry applies.
     enum class TriggerReason { Added, Reply, Timeout };
 
+    /**
+     * Ask for more nodes, or judge what has been collected.
+     *
+     * @param peer The peer to ask, or nullptr to ask everyone being tracked.
+     * @param reason Why the acquisition is being triggered.
+     */
+    void
+    trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
+
+    /**
+     * Settle the acquisition and signal whatever is waiting on it. Runs at most
+     * once. Call under mtx_, which the flags written here require.
+     */
+    void
+    done();
+
+private:
     void
     filterNodes(std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes, TriggerReason reason);
-
-    void
-    trigger(std::shared_ptr<Peer> const&, TriggerReason);
 
     std::vector<NeededHashT>
     getNeededHashes();
@@ -138,10 +181,7 @@ private:
     tryDB(node_store::Database& srcDB);
 
     void
-    done();
-
-    void
-    onTimer(bool progress, ScopedLockType& peerSetLock) override;
+    onTimer(bool progress, ScopedLockType& sl) override;
 
     std::size_t
     getPeerCount() const;
@@ -154,6 +194,17 @@ private:
 
     bool
     takeHeader(std::string_view data);
+
+    /**
+     * Fail the acquisition when the header's account hash is zero. No ledger
+     * has an empty state map, so such a header cannot name a ledger. Both
+     * tryDB() and takeHeader() judge the header here.
+     *
+     * @return Whether the acquisition was failed. Then failed_ is set and
+     *         ledger_ is null.
+     */
+    bool
+    failOnZeroAccountHash();
 
     void
     receiveNode(

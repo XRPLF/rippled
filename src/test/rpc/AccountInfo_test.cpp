@@ -1,6 +1,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
@@ -16,6 +17,7 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -34,6 +36,8 @@ public:
         {
             // account_info with no account.
             auto const info = env.rpc("json", "account_info", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'account'.");
         }
         {
@@ -43,8 +47,11 @@ public:
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
+            BEAST_EXPECT(info[jss::result].isMember(jss::ledger_current_index));
+            BEAST_EXPECT(info[jss::result][jss::validated] == false);
         }
         {
             // account_info with an account that's not in the ledger.
@@ -52,12 +59,17 @@ public:
             json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
+            BEAST_EXPECT(info[jss::result][jss::error] == "actNotFound");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account not found.");
+            BEAST_EXPECT(info[jss::result][jss::account] == bogie.human());
+            BEAST_EXPECT(info[jss::result].isMember(jss::ledger_current_index));
+            BEAST_EXPECT(info[jss::result][jss::validated] == false);
         }
         {
             // Cannot use a seed as account
-            auto const info = env.rpc("json", "account_info", R"({"account": "foo"})");
+            auto const info = env.rpc("json", "account_info", R"JSON({"account": "foo"})JSON");
+            BEAST_EXPECT(info[jss::result][jss::error] == "actMalformed");
             BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
@@ -69,6 +81,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -87,6 +100,7 @@ public:
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ident'.");
             };
 
@@ -96,6 +110,41 @@ public:
             testInvalidIdentParam(json::Value(json::ValueType::Null));
             testInvalidIdentParam(json::Value(json::ValueType::Object));
             testInvalidIdentParam(json::Value(json::ValueType::Array));
+        }
+        {
+            // `ident` is ignored when `account` is present
+            json::Value params;
+            params[jss::account] = env.master.human();
+            params[jss::ident] = 1;
+            auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
+            BEAST_EXPECT(!info.isMember(jss::error));
+            BEAST_EXPECT(info.isMember(jss::account_data));
+            BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == env.master.human());
+        }
+        {
+            // an invalid ledger is reported before a missing account
+            json::Value params;
+            params[jss::ledger_hash] = 1;
+            auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                info[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+        }
+        {
+            // `queue` is read as a bool, so any non-empty string requests it, and the queue
+            // can't be requested from a closed ledger
+            env.close();
+            json::Value params;
+            params[jss::account] = env.master.human();
+            params[jss::ledger_index] = "closed";
+            params[jss::queue] = "false";
+            auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(info[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(info.isMember(jss::ledger_index));
+            BEAST_EXPECT(!info.isMember(jss::account_data));
         }
     }
 
@@ -234,8 +283,9 @@ public:
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
 
-        auto const withSignersAsString = std::string("{ ") + R"("api_version": 2, "account": ")" +
-            alice.human() + "\", " + "\"signer_lists\": asdfggh }";
+        auto const withSignersAsString = std::format(
+            R"JSON({{"api_version": 2, "account": "{}", "signer_lists": "yes"}})JSON",
+            alice.human());
 
         // Alice has no SignerList yet.
         {
@@ -285,9 +335,15 @@ public:
         }
         {
             // account_info with "signer_lists" as not bool should error out
-            auto const info = env.rpc("json", "account_info", withSignersAsString);
+            auto const info = env.rpc("json", "account_info", withSignersAsString)[jss::result];
             BEAST_EXPECT(info[jss::status] == "error");
             BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(info[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECT(info.isMember(jss::account_data));
+            BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(info.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(!info.isMember(jss::signer_lists));
         }
 
         // Give alice a big signer list
@@ -371,8 +427,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -385,8 +440,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
         {
@@ -396,8 +450,7 @@ public:
                 info[0u].isMember(jss::result) &&
                 info[0u][jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[0u][jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info[0u].isMember(jss::jsonrpc) && info[0u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[0u].isMember(jss::ripplerpc) && info[0u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[0u]));
             BEAST_EXPECT(info[0u].isMember(jss::id) && info[0u][jss::id] == 5);
 
             BEAST_EXPECT(
@@ -408,8 +461,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info[1u].isMember(jss::jsonrpc) && info[1u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[1u].isMember(jss::ripplerpc) && info[1u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[1u]));
             BEAST_EXPECT(info[1u].isMember(jss::id) && info[1u][jss::id] == 6);
         }
 
@@ -424,8 +476,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -445,8 +496,7 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
 
@@ -495,8 +545,7 @@ public:
                 BEAST_EXPECT(entry.isMember(sfAccount.jsonName));
                 BEAST_EXPECT(entry[sfSignerWeight.jsonName] == 1);
             }
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
     }

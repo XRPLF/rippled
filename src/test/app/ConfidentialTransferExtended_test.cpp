@@ -20,6 +20,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -259,8 +260,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         auto const credentialDeleted = [&](Env& env, Account const& subject) -> bool {
             auto const credentials = credentials::ledgerEntry(env, subject, dpIssuer, credType);
-            return credentials[jss::result].isMember(jss::error) &&
-                credentials[jss::result][jss::error] == "entryNotFound";
+            return credentials[jss::result][jss::error] == "entryNotFound" &&
+                credentials[jss::result][jss::error_code] == RpcEntryNotFound &&
+                credentials[jss::result][jss::error_message] == "Entry not found.";
         };
 
         // TEST 4: Expired credential with matching depositPreauth entry.
