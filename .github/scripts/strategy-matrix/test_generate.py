@@ -17,11 +17,11 @@ import generate as g
 LINUX = g.LinuxFile.load(g.config_file(g.LINUX))
 PLATFORMS = [g.PlatformFile.load(g.config_file(p)) for p in (g.MACOS, g.WINDOWS)]
 EVENTS = tuple(g.Event)
+MERGE_EVENTS = (g.Event.READY_TO_MERGE, g.Event.MERGE_GROUP, g.Event.PUSH)
 CONFIGS = [c for cfgs in LINUX.configs.values() for c in cfgs] + [
     c for pf in PLATFORMS for c in pf.configs
 ]
 PACKAGE_WORKFLOW = g.THIS_DIR.parents[1] / "workflows" / "reusable-package.yml"
-STAGE_TWO = (g.Event.READY_TO_MERGE, g.Event.MERGE_GROUP, g.Event.PUSH)
 
 
 def downloaded_by_name() -> set[str]:
@@ -214,14 +214,14 @@ def test_weekly_builds_linux_only_and_packages_nothing() -> None:
     assert not g.expand_linux_packaging(LINUX, g.Event.WEEKLY)
 
 
-def test_pull_request_builds_part_of_stage_two() -> None:
+def test_pull_request_builds_part_of_what_the_merge_events_build() -> None:
     assert set(build_names(g.Event.PULL_REQUEST)) <= set(
         build_names(g.Event.MERGE_GROUP)
     )
 
 
-def test_stage_two_events_build_the_same_matrix() -> None:
-    for event in STAGE_TWO:
+def test_merge_events_build_the_same_matrix() -> None:
+    for event in MERGE_EVENTS:
         assert set(build_names(event)) == set(build_names(g.Event.MERGE_GROUP)), event
         assert g.expand_linux_packaging(LINUX, event) == g.expand_linux_packaging(
             LINUX, g.Event.MERGE_GROUP
