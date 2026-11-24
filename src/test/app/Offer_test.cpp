@@ -28,6 +28,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -5288,13 +5289,10 @@ public:
     void
     testPersistentDeleteInsufficientReserve(FeatureBitset features)
     {
-        // With fixCleanup3_6_0, every tec reset keeps the recorded unfunded
-        // offer removals, and only those. An OfferSequence cancel is never
-        // kept.
+        // A tecINSUF_RESERVE_OFFER result keeps no deletions: not the
+        // OfferSequence cancel, and not the unfunded offers flow removed.
         testcase("Persistent delete: insufficient reserve");
         using namespace jtx;
-
-        bool const fixEnabled = features[fixCleanup3_6_0];
 
         Env env{*this, features};
         Account const gw{"gw"};
@@ -5327,7 +5325,7 @@ public:
         env.close();
 
         BEAST_EXPECT(env.le(aliceOffer));
-        BEAST_EXPECT(static_cast<bool>(env.le(bobOffer)) != fixEnabled);
+        BEAST_EXPECT(env.le(bobOffer));
     }
 
     void

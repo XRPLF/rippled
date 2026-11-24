@@ -1842,6 +1842,62 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     }
 
     void
+    testExpiredCredentialAfterPathDry(FeatureBitset features)
+    {
+        // A payment that passes the domain check with one credential, while a
+        // second credential has expired, and then fails on the path keeps the
+        // expired credential. Only tecEXPIRED keeps credential deletions.
+        testcase << "Expired credential after a path failure"
+                 << (features[fixCleanup3_6_0] ? " (fixCleanup3_6_0 enabled)"
+                                               : " (fixCleanup3_6_0 disabled)");
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] =
+            PermissionedDEX(env);
+
+        Account const issuer("issuer2");
+        Account const devin("devin");
+        env.fund(XRP(1000), issuer, devin);
+        env.close();
+
+        std::string const validType = "valid";
+        std::string const expiringType = "expiring";
+        env(pdomain::setTx(
+            issuer,
+            {{.issuer = issuer, .credType = validType},
+             {.issuer = issuer, .credType = expiringType}}));
+        env.close();
+        auto const domain2 = pdomain::getObjects(issuer, env).begin()->first;
+
+        for (auto const& account : {alice, devin})
+        {
+            env(credentials::create(account, issuer, validType));
+            env(credentials::accept(account, issuer, validType));
+        }
+        auto jv = credentials::create(devin, issuer, expiringType);
+        jv[sfExpiration.jsonName] =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 20;
+        env(jv);
+        env(credentials::accept(devin, issuer, expiringType));
+        env.close();
+        auto const expiredKey =
+            keylet::credential(devin.id(), issuer.id(), makeSlice(expiringType));
+        BEAST_EXPECT(env.le(expiredKey));
+
+        env.close(std::chrono::seconds(20));
+
+        // The domain has no offers, so the payment fails on the path.
+        env(pay(devin, alice, usd(10)),
+            Path(~usd),
+            Sendmax(XRP(10)),
+            Domain(domain2),
+            Ter(tecPATH_PARTIAL));
+        env.close();
+
+        BEAST_EXPECT(env.le(expiredKey));
+    }
+
+    void
     testHybridMalformedOffer(FeatureBitset features)
     {
         bool const fixEnabled = features[fixCleanup3_1_3];
@@ -2428,6 +2484,8 @@ public:
         testAutoBridge(all);
         testExpiredCredentialCleanup(all);
         testExpiredCredentialCleanup(all - fixCleanup3_4_0);
+        testExpiredCredentialAfterPathDry(all);
+        testExpiredCredentialAfterPathDry(all - fixCleanup3_6_0);
 
         // Test hybrid offers
         testHybridOfferCreate(all);
