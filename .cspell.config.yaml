@@ -1,10 +1,10 @@
 ignorePaths:
   - build/**
   - src/libxrpl/crypto
+  - cmake/CodeCoverage.cmake # vendored from https://github.com/bilke/cmake-modules
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
-  - cmake/**
   - LICENSE.md
   - .clang-tidy
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
@@ -372,6 +372,7 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
