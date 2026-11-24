@@ -21,7 +21,8 @@ std::expected<BookChangesHandler::Output, ::rpc::Status>
 BookChangesHandler::process(Input const& input) const
 {
     Output output;
-    if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get());
+        status != ::rpc::Status::kOK)
         return std::unexpected{status};
 
     return output;

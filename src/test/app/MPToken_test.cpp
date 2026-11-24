@@ -15,7 +15,6 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
@@ -26,7 +25,6 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -39,6 +37,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
@@ -994,8 +993,9 @@ class MPToken_test : public beast::unit_test::Suite
             test::jtx::MPT const mpT1("MPT", makeMptID(env.seq(alice) + 10, alice));
             err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tecOBJECT_NOT_FOUND);
             env(pay(alice, carol, mpT1(100)), Sendmax(mpt(100)), err);
-            // "paths" is invalid in V1
-            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+            // "paths" is invalid in V1. In V2 any path from the issuer back
+            // to its own MPT is a loop, like it is for a holder.
+            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(temBAD_PATH_LOOP);
             env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
@@ -1019,6 +1019,7 @@ class MPToken_test : public beast::unit_test::Suite
             payment[jss::build_path] = true;
             auto jrr = env.rpc("json", "submit", to_string(payment));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 jrr[jss::result][jss::error_message] ==
                 "Field 'build_path' not allowed in this context.");
@@ -1580,6 +1581,8 @@ class MPToken_test : public beast::unit_test::Suite
             jv[jss::tx_json][jss::Amount][jss::value] = std::to_string(kMaxMpTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Invalid field 'tx_json.Amount'.");
         }
 
         // Pay maximum amount with the transfer fee, SendMax, and
@@ -1929,7 +1932,6 @@ class MPToken_test : public beast::unit_test::Suite
         Account const carol("carol");
         MPTIssue const issue(makeMptID(1, alice));
         STAmount mpt{issue, UINT64_C(100)};
-        auto const jvb = bridge(alice, usd, alice, usd);
         for (auto const& feature : {features, features - featureMPTokensV1})
         {
             Env env{*this, feature};
@@ -1944,6 +1946,8 @@ class MPToken_test : public beast::unit_test::Suite
                 jtx.stx->add(s);
                 auto jrr = env.rpc("submit", strHex(s.slice()));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidTransaction");
+                BEAST_EXPECT(!jrr[jss::result].isMember(jss::error_code));
+                BEAST_EXPECT(jrr[jss::result][jss::error_message].isNull());
 
                 // tx is unsigned
                 json::Value jv1;
@@ -1951,9 +1955,13 @@ class MPToken_test : public beast::unit_test::Suite
                 jv1[jss::tx_json] = jv;
                 jrr = env.rpc("json", "submit", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Amount can not be MPT.");
 
                 jrr = env.rpc("json", "sign", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Amount can not be MPT.");
             };
             auto setMPTFields = [&](SField const& field, json::Value& jv, bool withAmount = true) {
                 jv[jss::Asset] = toJson(xrpIssue());
@@ -2075,70 +2083,6 @@ class MPToken_test : public beast::unit_test::Suite
             };
             trustSet(sfLimitAmount);
             trustSet(sfFee);
-            // XChainCommit
-            {
-                json::Value const jv = xchainCommit(alice, jvb, 1, mpt);
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainClaim
-            {
-                json::Value const jv = xchainClaim(alice, jvb, 1, mpt, alice);
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainCreateClaimID
-            {
-                json::Value const jv = xchainCreateClaimId(alice, jvb, mpt, alice);
-                test(jv, sfSignatureReward.fieldName);
-            }
-            // XChainAddClaimAttestation
-            {
-                json::Value const jv =
-                    claimAttestation(alice, jvb, alice, mpt, alice, true, 1, alice, Signer(alice));
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainAddAccountCreateAttestation
-            {
-                json::Value jv = createAccountAttestation(
-                    alice, jvb, alice, mpt, XRP(10), alice, false, 1, alice, Signer(alice));
-                for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
-                {
-                    jv[field] = mpt.getJson(JsonOptions::Values::None);
-                    test(jv, field);
-                }
-            }
-            // XChainAccountCreateCommit
-            {
-                json::Value jv = sidechainXchainAccountCreate(alice, jvb, alice, mpt, XRP(10));
-                for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
-                {
-                    jv[field] = mpt.getJson(JsonOptions::Values::None);
-                    test(jv, field);
-                }
-            }
-            // XChain[Create|Modify]Bridge
-            auto const bridgeTx = [&](json::StaticString const& tt,
-                                      STAmount const& rewardAmount,
-                                      STAmount const& minAccountAmount,
-                                      std::string const& field) {
-                json::Value jv;
-                jv[jss::TransactionType] = tt;
-                jv[jss::Account] = alice.human();
-                jv[sfXChainBridge.fieldName] = jvb;
-                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::Values::None);
-                jv[sfMinAccountCreateAmount.fieldName] =
-                    minAccountAmount.getJson(JsonOptions::Values::None);
-                test(jv, field);
-            };
-            auto reward = STAmount{sfSignatureReward, mpt};
-            auto minAmount = STAmount{sfMinAccountCreateAmount, usd(10)};
-            for (SField const& field :
-                 {std::ref(sfSignatureReward), std::ref(sfMinAccountCreateAmount)})
-            {
-                bridgeTx(jss::XChainCreateBridge, reward, minAmount, field.fieldName);
-                bridgeTx(jss::XChainModifyBridge, reward, minAmount, field.fieldName);
-                reward = STAmount{sfSignatureReward, usd(10)};
-                minAmount = STAmount{sfMinAccountCreateAmount, mpt};
-            }
             // SponsorshipSet
             {
                 json::Value jv;
@@ -3197,6 +3141,9 @@ class MPToken_test : public beast::unit_test::Suite
             jv1[jss::tx_json] = jv;
             auto const jrr = env.rpc("json", "submit", to_string(jv1));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                jrr[jss::result][jss::error_message] == "Field 'tx_json.Amount' has invalid data.");
         }
     }
 

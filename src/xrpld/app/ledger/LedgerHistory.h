@@ -2,6 +2,8 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Mutex.hpp>
+#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
@@ -35,13 +37,14 @@ public:
     insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
     /**
-     * Get the ledgers_by_hash cache hit rate
+     * Get the byHash cache hit rate
      * @return the hit rate
      */
     float
     getCacheHitRate()
     {
-        return ledgersByHash_.getHitRate();
+        auto lockedMaps = ledgerMaps_.lock();
+        return lockedMaps->byHash->getHitRate();
     }
 
     /**
@@ -70,7 +73,11 @@ public:
     void
     sweep()
     {
-        ledgersByHash_.sweep();
+        auto* const byHash = [this] {
+            auto lockedMaps = ledgerMaps_.lock();
+            return lockedMaps->byHash.get();
+        }();
+        byHash->sweep();
         consensusValidated_.sweep();
     }
 
@@ -124,9 +131,28 @@ private:
     beast::insight::Collector::Ptr collector_;
     beast::insight::Counter mismatchCounter_;
 
-    using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
+    struct LedgerMaps
+    {
+        using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash ledgersByHash_;
+        std::unique_ptr<LedgersByHash> byHash;
+
+        // Validated ledgers, seq -> hash. A cache over the ledger database:
+        // every consumer falls back to the database on a miss. Pruned only by
+        // clearLedgerCachePrior() on online_delete rotation. On nodes without
+        // online_delete it grows for the life of the process
+        // (~65 bytes per validated ledger).
+        std::map<LedgerIndex, LedgerHash> byIndex;
+    };
+
+    // No lock site re-enters ledgerMaps_: getLedgerBySeq, clearLedgerCachePrior
+    // and sweep release it before calling back into LedgerHistory, and the
+    // only work done under it is TaggedCache/std::map bookkeeping. A plain
+    // std::mutex is therefore sufficient, and any future re-entry deadlocks
+    // deterministically instead of silently relying on recursion. Do not
+    // fetch SHAMap nodes or load ledgers while holding it: both can call
+    // back into LedgerHistory through NodeFamily::missingNodeAcquireBySeq.
+    xrpl::Mutex<LedgerMaps> ledgerMaps_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
@@ -145,9 +171,6 @@ private:
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
     ConsensusValidated consensusValidated_;
-
-    // Maps ledger indexes to the corresponding hash.
-    std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers
 
     beast::Journal j_;
 };

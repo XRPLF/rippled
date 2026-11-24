@@ -34,7 +34,7 @@ so tools can filter them and protection rules can target `release/*` and `stagin
 - **Branches only move forward.**
   `develop`, `staging/X.Y.x`, and `release/X.Y.x` are never rewritten.
 - **Cherry-picking only goes from `develop` to a staging branch**,
-  for fixes that must get into a release after the code freeze
+  for fixes that must get into a release after the [code freeze](#release-candidates)
   (see [Emergency Fixes From `develop`](#emergency-fixes-from-develop)).
 - **Security fixes are prepared privately and published with the release that contains them**,
   so vulnerabilities are not disclosed prematurely.
@@ -49,6 +49,7 @@ develop                            staging/X.Y.x & release/X.Y.x
    │
    ├── Tag: X.Y.0-b1
    ├── Tag: X.Y.0-bN
+   │  (2 weeks before rc1: freeze on large changes starts)
    ├── Tag: X.Y.0-rc1 ───────────────┐ (branches created)
    │                                 │
    │  (development continues)        ├── Fixes
@@ -75,15 +76,19 @@ develop                            staging/X.Y.x & release/X.Y.x
 3. **Branches:** `staging/X.Y.x` and `release/X.Y.x` are created from `develop`
    at the commit tagged `X.Y.0-rc1`.
    The first RC also kicks off the QE process.
-4. **Code freeze:** No new features or unrelated changes are pulled from `develop`
-   into `staging/X.Y.x` or `release/X.Y.x`.
-   Only critical stabilization fixes go into the line.
-5. **No large changes on `develop`:** Until `X.Y.0` is [merged back](#merging-back-into-develop),
-   large changes (e.g., big refactors, moving or renaming many files, mass reformatting)
-   are not merged into `develop`,
-   so that fixes on the line and the merge back don't run into conflicts.
+
+### Freeze on Large Changes
+
+From two weeks before `X.Y.0-rc1` until `X.Y.0` is [merged back](#merging-back-into-develop),
+large changes (e.g., big refactors, moving or renaming many files, mass reformatting)
+are not merged into `develop`.
 
 ### Release Candidates
+
+After branching, the line is in code freeze:
+no new features or unrelated changes are pulled from `develop`
+into `staging/X.Y.x` or `release/X.Y.x`.
+Only critical stabilization fixes go into the line.
 
 1. Fixes are developed against `staging/X.Y.x`.
 2. When ready, a new RC is created on `staging/X.Y.x`,
@@ -106,7 +111,8 @@ one right after the other.
 2. `release/X.Y.x` is fast-forwarded to `staging/X.Y.x`,
    and the release is tagged on it.
 3. The release is immediately [merged back into `develop`](#merging-back-into-develop).
-   For a major-minor release, this lifts the freeze on large changes in `develop`.
+   For a major-minor release, this lifts the [freeze on large changes](#freeze-on-large-changes)
+   in `develop`.
 
 ### Merging Back Into `develop`
 
@@ -127,7 +133,7 @@ After the merge, `git log develop..<tag>` must be empty.
 ### Emergency Fixes From `develop`
 
 If a commit was merged to `develop`
-and needs to be included in a release after the code freeze:
+and needs to be included in a release after the [code freeze](#release-candidates):
 
 1. Create a PR that cherry-picks the commit onto `staging/X.Y.x`.
 2. Leave `develop` as it is, with no reverts.
