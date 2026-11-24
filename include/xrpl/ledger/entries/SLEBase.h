@@ -112,9 +112,8 @@ public:
     using ViewRefType = std::conditional_t<kIsWritable, ApplyView&, ReadView const&>;
 
     // View pointer type: what the entry actually stores. A pointer, rather
-    // than ViewRefType itself, so the entry stays assignable -- a stored
-    // reference member cannot be reassigned, which is what forced the deleted
-    // assignment operators below.
+    // than ViewRefType itself, so the entry stays assignable. A stored
+    // reference member cannot be reassigned.
     using ViewPtrType = std::conditional_t<kIsWritable, ApplyView*, ReadView const*>;
 
     // Non-virtual by design: these entries are parameterized on the view and
