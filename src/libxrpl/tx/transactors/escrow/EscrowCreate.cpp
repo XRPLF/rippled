@@ -316,8 +316,8 @@ EscrowCreate::doApply()
     // validates the sponsor's reserve + remaining credit. When
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = reserveToAdd}, j_);
+    if (auto const ret =
+            checkReserve(ctx_.view(), sle, balance, {.ownerCountDelta = reserveToAdd}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -435,8 +435,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, reserveToAdd, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), escrow.mutableRawSle());
+    increaseOwnerCount(ctx_.view(), sle, reserveToAdd, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.view(), escrow.mutableRawSle());
     ctx_.view().update(sle);
     return tesSUCCESS;
 }

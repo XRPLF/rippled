@@ -25,8 +25,8 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -304,7 +304,8 @@ private:
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             for (auto const field : encryptedBalanceFields)
             {
-                Sandbox sb(&view, TapNone);
+                auto const dummyTx = *env.jt(noop(holder)).stx;
+                ApplyViewImpl sb(&view, TapNone, &dummyTx);
                 auto const token = sb.peek(tokenKeylet);
                 if (!BEAST_EXPECT(token))
                     return false;
@@ -312,9 +313,8 @@ private:
                 token->setFieldVL(*field, gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
                 sb.update(token);
 
-                auto const dummyTx = *env.jt(noop(holder)).stx;
                 BEAST_EXPECT(
-                    removeEmptyHolding({sb, dummyTx}, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
+                    removeEmptyHolding(sb, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
                     tecHAS_OBLIGATIONS);
                 BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
             }

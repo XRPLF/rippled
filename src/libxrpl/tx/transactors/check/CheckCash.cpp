@@ -412,8 +412,7 @@ CheckCash::doApply()
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount),
             };
 
-            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
-            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+            auto const sponsorSle = getTxReserveSponsor(psb);
             if (!sponsorSle)
                 return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -424,12 +423,7 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkReserve(
-                        applyViewContext,
-                        sleDst,
-                        preFeeBalance_,
-                        *sponsorSle,
-                        {.ownerCountDelta = 1},
-                        j_);
+                        psb, sleDst, preFeeBalance_, *sponsorSle, {.ownerCountDelta = 1}, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "

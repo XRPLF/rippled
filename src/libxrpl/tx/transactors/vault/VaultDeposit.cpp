@@ -216,7 +216,6 @@ VaultDeposit::doApply()
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
@@ -251,8 +250,8 @@ VaultDeposit::doApply()
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
-        if (auto const err = enforceMPTokenAuthorization(
-                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_, j_);
+        if (auto const err =
+                enforceMPTokenAuthorization(view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -262,11 +261,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    applyViewContext,
-                    preFeeBalance_,
-                    mptIssuanceID->value(),
-                    accountID_,
-                    ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -278,7 +273,7 @@ VaultDeposit::doApply()
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
-                    applyViewContext,
+                    view(),
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account

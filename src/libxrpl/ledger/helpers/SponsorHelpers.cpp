@@ -78,15 +78,19 @@ getTxReserveSponsorID(STTx const& tx)
 }
 
 std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext ctx)
+getTxReserveSponsor(ApplyView& view)
 {
-    auto const sponsorID = getTxReserveSponsorID(ctx.tx);
+    auto const* tx = view.tx();
+    XRPL_ASSERT(tx != nullptr, "xrpl::getTxReserveSponsor : view has a transaction");
+    if (tx == nullptr)
+        return SLE::pointer();  // LCOV_EXCL_LINE
+    auto const sponsorID = getTxReserveSponsorID(*tx);
     if (sponsorID)
     {
         XRPL_ASSERT(
-            ctx.view.rules().enabled(featureSponsor),
+            view.rules().enabled(featureSponsor),
             "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
-        auto sle = ctx.view.peek(keylet::account(*sponsorID));
+        auto sle = view.peek(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
         if (!sle)
@@ -116,10 +120,10 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 }
 
 std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
+getEffectiveTxReserveSponsor(ApplyView& view, SLE::ConstRef accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    if (view.rules().enabled(fixCleanup3_2_0))
     {
         XRPL_ASSERT(
             accountSle && accountSle->getType() == ltACCOUNT_ROOT,
@@ -133,9 +137,12 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
             "xrpl::getEffectiveTxReserveSponsor : accountSle exists and is account type");
     }
 
-    if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
+    auto const* tx = view.tx();
+    XRPL_ASSERT(tx != nullptr, "xrpl::getEffectiveTxReserveSponsor : view has a transaction");
+    if (tx == nullptr || isPseudoAccount(accountSle) ||
+        accountSle->getAccountID(sfAccount) != (*tx)[sfAccount])
         return SLE::pointer();
-    return getTxReserveSponsor(ctx);
+    return getTxReserveSponsor(view);
 }
 
 std::optional<AccountID>
@@ -184,16 +191,16 @@ addSponsorToLedgerEntry(SLE::Ref sle, SLE::ConstRef sponsorSle, SF_ACCOUNT const
 }
 
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& field)
+addSponsorToLedgerEntry(ApplyView& view, SLE::Ref sle, SF_ACCOUNT const& field)
 {
     // getTxReserveSponsor yields a null pointer when the tx is not
     // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
     // error case (tecINTERNAL) is an already-checked invariant; skip stamping.
-    auto const sponsorSle = getTxReserveSponsor(ctx);
+    auto const sponsorSle = getTxReserveSponsor(view);
     if (sponsorSle && *sponsorSle)
     {
         XRPL_ASSERT(
-            ctx.view.rules().enabled(featureSponsor),
+            view.rules().enabled(featureSponsor),
             "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         addSponsorToLedgerEntry(sle, *sponsorSle, field);
     }

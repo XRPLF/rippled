@@ -264,14 +264,7 @@ LoanBrokerCoverWithdraw::doApply()
     associateAsset(*broker, vaultAsset);
 
     return doWithdraw(
-        ctx_.getApplyViewContext(),
-        accountID_,
-        dstAcct,
-        brokerPseudoID,
-        preFeeBalance_,
-        amount,
-        amount,
-        j_);
+        ctx_.view(), accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, amount, j_);
 }
 
 void

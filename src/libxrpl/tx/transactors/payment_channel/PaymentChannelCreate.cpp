@@ -140,8 +140,8 @@ PaymentChannelCreate::doApply()
         // validates the sponsor's reserve + remaining credit. When
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
-        if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(ctx_.view(), sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -210,8 +210,8 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
+    increaseOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.view(), slep);
     ctx_.view().update(sle);
 
     return tesSUCCESS;

@@ -159,7 +159,6 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
-    auto const applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));
@@ -169,8 +168,8 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(view(), sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -196,8 +195,8 @@ DepositPreauth::doApply()
         entryPreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
-        addSponsorToLedgerEntry(applyViewContext, entryPreauth.mutableRawSle());
+        increaseOwnerCount(view(), sleOwner, 1, j_);
+        addSponsorToLedgerEntry(view(), entryPreauth.mutableRawSle());
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
@@ -214,8 +213,8 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(view(), sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -255,8 +254,8 @@ DepositPreauth::doApply()
         entryPreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
-        addSponsorToLedgerEntry(applyViewContext, entryPreauth.mutableRawSle());
+        increaseOwnerCount(view(), sleOwner, 1, j_);
+        addSponsorToLedgerEntry(view(), entryPreauth.mutableRawSle());
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {

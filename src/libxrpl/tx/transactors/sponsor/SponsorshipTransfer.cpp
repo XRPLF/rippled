@@ -362,7 +362,7 @@ SponsorshipTransfer::doApply()
             // Check if new sponsor has sufficient balance
             // NOLINTNEXTLINE(readability-suspicious-call-argument)
             if (auto const ter = checkReserve(
-                    ctx_.getApplyViewContext(),
+                    ctx_.view(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
@@ -434,7 +434,7 @@ SponsorshipTransfer::doApply()
             if (view().rules().enabled(fixCleanup3_4_0))
             {
                 if (auto const ter = checkReserve(
-                        ctx_.getApplyViewContext(),
+                        ctx_.view(),
                         sponseeSle,
                         balanceBeforeFee(sponseeSle),
                         SLE::pointer(),
@@ -480,7 +480,7 @@ SponsorshipTransfer::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             if (auto const ter = checkReserve(
-                    ctx_.getApplyViewContext(),
+                    ctx_.view(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
@@ -528,7 +528,7 @@ SponsorshipTransfer::doApply()
             // The sponsee must be able to hold its own account reserve after
             // the sponsorship is removed.
             if (auto const ter = checkReserve(
-                    ctx_.getApplyViewContext(),
+                    ctx_.view(),
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
                     SLE::pointer(),

@@ -708,7 +708,7 @@ LoanPay::doApply()
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(),
+                    ctx_.view(),
                     brokerPayee,
                     brokerPayeeSle->at(sfBalance).value().xrp(),
                     asset,

@@ -277,7 +277,7 @@ SponsorshipSet::createSponsorship(
         sponsorBalanceAfterFee -= *feeAmountDelta;
 
     if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
+            ctx_.view(),
             sponsorAccSle,
             sponsorBalanceAfterFee.xrp(),
             reserveSponsorAccSle,
@@ -361,7 +361,7 @@ SponsorshipSet::doApply()
     auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const remainingOwnerCountDelta = ctx_.tx[~sfRemainingOwnerCountDelta];
 
-    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.view());
     if (!reserveSponsorAccSle)
         return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
 
@@ -389,7 +389,7 @@ SponsorshipSet::doApply()
         (*sponsorAccSle)[sfBalance] -= actualDelta;
 
         if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(),
+                ctx_.view(),
                 sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,

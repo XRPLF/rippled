@@ -140,12 +140,6 @@ public:
     void
     addOrderBook(Book const& book);
 
-    ApplyViewContext
-    getApplyViewContext()
-    {
-        return {.view = viewRef_.get(), .tx = tx};
-    }
-
 private:
     OpenView& base_;
     ApplyFlags flags_;

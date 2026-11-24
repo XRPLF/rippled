@@ -40,8 +40,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
@@ -243,30 +241,6 @@ TEST_F(SLEBaseTests, writable_accessors)
         "mutableRawSle() must not exist on a read-only entry");
     static_assert(
         !HasApplyView<AccountRootEntryR>, "applyView() must not exist on a read-only entry");
-}
-
-TEST_F(SLEBaseTests, apply_view_context_ctor)
-{
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
-    beast::Journal const j{beast::Journal::getNullSink()};
-
-    transactions::AccountSetBuilder builder{alice_.id()};
-    builder.setSequence(env_.getAccountRoot(alice_.id()).getSequence());
-    builder.setFee(XRPAmount(10));
-    auto const tx = builder.build(alice_.pk(), alice_.sk()).getSTTx();
-    ASSERT_NE(tx, nullptr);
-    ApplyViewContext const ctx{.view = av, .tx = *tx};
-
-    // Delegates to the (Keylet, ApplyView&) constructor; ctx.tx is not
-    // retained, so this must be indistinguishable from building from
-    // ctx.view directly.
-    AccountRootEntryW fromCtx(keylet::account(alice_.id()), ctx, j);
-    EXPECT_TRUE(fromCtx.exists());
-    EXPECT_EQ(&fromCtx.applyView(), &av);
-    EXPECT_EQ(fromCtx.key(), keylet::account(alice_.id()).key);
-
-    AccountRootEntryW const fromView(keylet::account(alice_.id()), av, j);
-    EXPECT_EQ(fromCtx.rawSle(), fromView.rawSle());
 }
 
 TEST_F(SLEBaseTests, writable_lifecycle)

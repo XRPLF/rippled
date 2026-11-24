@@ -304,7 +304,6 @@ VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -586,8 +585,7 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter =
-                removeEmptyHolding(applyViewContext, accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -612,7 +610,7 @@ VaultWithdraw::doApply()
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        applyViewContext,
+        view(),
         accountID_,
         dstAcct,
         vaultAccount,

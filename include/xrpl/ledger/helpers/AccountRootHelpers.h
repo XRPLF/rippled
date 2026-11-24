@@ -90,8 +90,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 /**
  * Check if an account has sufficient reserve.
  *
- * @param view The ledger view to read from
- * @param tx The transaction being processed
+ * @param view The ledger view to read from, which carries the transaction
  * @param accSle The account's ledger entry
  * @param accBalance The account's balance
  * @param sponsorSle The sponsor's ledger entry (if applicable)
@@ -104,7 +103,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  */
 [[nodiscard]] TER
 checkReserve(
-    ApplyViewContext ctx,
+    ApplyView const& view,
     SLE::ConstRef accSle,
     XRPAmount accBalance,
     SLE::ConstRef sponsorSle,
@@ -116,13 +115,13 @@ checkReserve(
  * Check if an account has sufficient reserve, deriving the sponsor internally.
  *
  * Equivalent to the overload above, but resolves the sponsor via
- * getEffectiveTxReserveSponsor(ctx, accSle) instead of taking it explicitly. Use this
+ * getEffectiveTxReserveSponsor(view, accSle) instead of taking it explicitly. Use this
  * in the common case where the sponsor is simply the transaction's reserve
  * sponsor for accSle. Callers that must force the account's-own-reserve branch
  * (passing a null sponsor) or supply a different sponsor should use the
  * explicit overload above.
  *
- * @param ctx The apply-view context (view + tx)
+ * @param view The apply view, which carries the transaction
  * @param accSle The account's ledger entry
  * @param accBalance The account's balance
  * @param adj Reserve adjustments (owner/account count deltas)
@@ -131,7 +130,7 @@ checkReserve(
  */
 [[nodiscard]] TER
 checkReserve(
-    ApplyViewContext ctx,
+    ApplyView& view,
     SLE::ConstRef accSle,
     XRPAmount accBalance,
     Adjustment adj,
@@ -175,22 +174,18 @@ increaseOwnerCount(
  * Increase owner-count fields, deriving the tx reserve sponsor internally.
  *
  * Equivalent to the overload above, but resolves the sponsor via
- * getEffectiveTxReserveSponsor(ctx, accountSle) instead of taking it explicitly. Use
+ * getEffectiveTxReserveSponsor(view, accountSle) instead of taking it explicitly. Use
  * this when the sponsor is the transaction's reserve sponsor for accountSle
  * (the common create path). Deletion paths, which derive the sponsor from an
  * object's sfSponsor field, should keep using the explicit overload.
  *
- * @param ctx The apply-view context (view + tx)
+ * @param view The apply view, which carries the transaction
  * @param accountSle The account's ledger entry
  * @param count Amount to add to the owner count
  * @param j Journal for logging
  */
 void
-increaseOwnerCount(
-    ApplyViewContext ctx,
-    SLE::Ref accountSle,
-    std::uint32_t count,
-    beast::Journal j);
+increaseOwnerCount(ApplyView& view, SLE::Ref accountSle, std::uint32_t count, beast::Journal j);
 
 /**
  * Convenience overload that accepts AccountID instead of SLE references.

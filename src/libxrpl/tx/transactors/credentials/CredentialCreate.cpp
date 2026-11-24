@@ -138,8 +138,8 @@ CredentialCreate::doApply()
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+    if (auto const ret =
+            checkReserve(ctx_.view(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -159,8 +159,8 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
-        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+        increaseOwnerCount(ctx_.view(), sleIssuer, 1, j_);
+        addSponsorToLedgerEntry(ctx_.view(), sleCred);
     }
 
     if (subject == accountID_)

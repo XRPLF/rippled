@@ -320,11 +320,7 @@ SignerListSet::replaceSignerList()
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
     if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
-            sle,
-            preFeeBalance_,
-            {.ownerCountDelta = kAddedOwnerCount},
-            ctx_.journal);
+            ctx_.view(), sle, preFeeBalance_, {.ownerCountDelta = kAddedOwnerCount}, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -348,8 +344,8 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
+    increaseOwnerCount(ctx_.view(), sle, kAddedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(ctx_.view(), signerList);
     return tesSUCCESS;
 }
 
