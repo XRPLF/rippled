@@ -1864,8 +1864,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         std::string const expiringType = "expiring";
         env(pdomain::setTx(
             issuer,
-            {{.issuer = issuer, .credType = validType},
-             {.issuer = issuer, .credType = expiringType}}));
+            {
+                {.issuer = issuer, .credType = validType},
+                {.issuer = issuer, .credType = expiringType},
+            }));
         env.close();
         auto const domain2 = pdomain::getObjects(issuer, env).begin()->first;
 
