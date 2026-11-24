@@ -30,15 +30,15 @@ buildVersionString()
     std::string version = kVersionString;
 
 #if defined(DEBUG) || defined(SANITIZERS)
-    // A version derived from git already names its commit in the metadata.
     bool const hasMetadata = version.contains('+');
     std::string metadata;
 
+#ifdef DEBUG
+    // A version derived from git already names its commit in the metadata.
     std::string const& commitHash = xrpl::git::getCommitHash();
     if (!hasMetadata && !commitHash.empty())
         metadata += commitHash + ".";
 
-#ifdef DEBUG
     metadata += "DEBUG";
 #endif
 

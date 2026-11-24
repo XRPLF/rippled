@@ -52,8 +52,7 @@ def linux_config(**overrides: Any) -> g.LinuxConfig:
     return g.LinuxConfig(**{**fields, **overrides})
 
 
-# What every packaged fixture passes besides its 'package' map.
-PACKAGED = {"extra_cmake_args": g.VALIDATOR_KEYS_ARG}
+WITH_VALIDATOR_KEYS = {"extra_cmake_args": g.VALIDATOR_KEYS_ARG}
 
 
 def rejected(**overrides: Any) -> bool:
@@ -117,9 +116,11 @@ def test_events_list_is_checked() -> None:
 
 def test_package_map_is_checked() -> None:
     package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
-    assert not rejected(package=package, events=[g.Event.SCHEDULE], **PACKAGED)
+    assert not rejected(
+        package=package, events=[g.Event.SCHEDULE], **WITH_VALIDATOR_KEYS
+    )
     assert rejected(
-        package={**package, "type": "msi"}, events=[g.Event.TAG], **PACKAGED
+        package={**package, "type": "msi"}, events=[g.Event.TAG], **WITH_VALIDATOR_KEYS
     )
 
 
@@ -131,15 +132,33 @@ def test_packaged_config_builds_validator_keys() -> None:
     assert rejected(
         package=package, events=[g.Event.TAG], extra_cmake_args="-Dassert=ON"
     )
-    assert not rejected(package=package, events=[g.Event.TAG], **PACKAGED)
+    assert not rejected(package=package, events=[g.Event.TAG], **WITH_VALIDATOR_KEYS)
 
 
-def test_packaged_sanitizer_build_is_its_variant() -> None:
-    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
-    sanitized = {"events": [g.Event.TAG], "sanitizers": ["address"], **PACKAGED}
-    assert not rejected(package=package, **sanitized)
-    assert rejected(package=package, **{**sanitized, "sanitizers": ["thread"]})
-    assert rejected(package={**package, "variant": ""}, **sanitized)
+def test_sanitizer_build_packages_as_its_own_variant() -> None:
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
+    sanitized = {
+        "compiler": ["gcc", "clang"],
+        "build_type": ["Debug", "Release"],
+        "events": [g.Event.TAG],
+        "sanitizers": ["address", "thread"],
+        **WITH_VALIDATOR_KEYS,
+    }
+    assert rejected(package={**package, "variant": "asan"}, **sanitized)
+    linux = g.LinuxFile(
+        image_tag="tag",
+        configs={"debian": [linux_config(package=package, **sanitized)]},
+    )
+    assert [e.package_name for e in g.expand_linux_packaging(linux, g.Event.TAG)] == [
+        "xrpld-gcc-debug-asan",
+        "xrpld-gcc-debug-tsan",
+        "xrpld-gcc-release-asan",
+        "xrpld-gcc-release-tsan",
+        "xrpld-clang-debug-asan",
+        "xrpld-clang-debug-tsan",
+        "xrpld-clang-release-asan",
+        "xrpld-clang-release-tsan",
+    ]
 
 
 def test_disabled_config_is_built_by_no_event() -> None:
@@ -175,19 +194,6 @@ def test_disabled_config_is_named_by_its_entries() -> None:
     )
     platform.disabled = "a reason"
     assert g.entry_names("macos/arm64", platform) == ["macos-arm64-release-nix"]
-
-
-def test_packaged_config_has_one_sanitizer_at_most() -> None:
-    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
-    assert not rejected(
-        package=package, events=[g.Event.TAG], sanitizers=["address"], **PACKAGED
-    )
-    assert rejected(
-        package=package,
-        events=[g.Event.TAG],
-        sanitizers=["address", "thread"],
-        **PACKAGED,
-    )
 
 
 # --- invariants over the JSON files -------------------------------------------
@@ -229,8 +235,6 @@ def test_merge_events_build_the_same_matrix() -> None:
 
 
 def test_tag_builds_only_what_it_publishes() -> None:
-    # Besides each packaged config's own artifacts, the tag builds the ones the
-    # packaging workflow downloads by a literal name, and nothing else.
     packaged = {
         e.xrpld_artifact_name.removeprefix("xrpld-")
         for e in g.expand_linux_packaging(LINUX, g.Event.TAG)
@@ -276,8 +280,6 @@ def test_packaging_events_build_a_plain_deb_and_every_format() -> None:
 
 
 def test_tag_packages_only_what_push_packages() -> None:
-    # No package is built for the first time on a tag: every one of them went
-    # through a push before.
     def names(event: g.Event) -> set[str]:
         return {e.package_name for e in g.expand_linux_packaging(LINUX, event)}
 

@@ -36,11 +36,20 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-# The build metadata that the binary of each sanitizer variant reports, as
-# cmake/XrplSanitizers.cmake names it.
+# The build metadata that the binary of a sanitizer build reports, as
+# cmake/XrplSanitizers.cmake names it, keyed by the last part of its variant.
 SANITIZER_METADATA = {"asan": "ASAN", "ubsan": "UBSAN", "tsan": "TSAN"}
 
-VARIANTS = ("", "assert", *SANITIZER_METADATA)
+# A sanitizer variant names the compiler, the build type and the sanitizer of
+# its build, such as clang-release-asan.
+SANITIZER_VARIANTS = tuple(
+    f"{compiler}-{build_type}-{sanitizer}"
+    for compiler in ("gcc", "clang")
+    for build_type in ("debug", "release")
+    for sanitizer in SANITIZER_METADATA
+)
+
+VARIANTS = ("", "assert", *SANITIZER_VARIANTS)
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -149,36 +158,23 @@ def package_name(variant: str) -> str:
     return f"{BASE_NAME}-{variant}" if variant else BASE_NAME
 
 
-def read_version(xrpld: Path) -> tuple[str, str]:
-    """Read the version and the commit hash from the binary that is about to be
-    packaged. The commit hash is empty when the binary reports none.
-    """
-    lines = capture(xrpld, "--version").splitlines()
-    fields = lines[0].split() if lines else []
+def read_version(xrpld: Path) -> str:
+    """Read the version from the binary that is about to be packaged."""
+    fields = capture(xrpld, "--version").partition("\n")[0].split()
     assert len(fields) >= 3, f"cannot read a version from {xrpld} --version"
-    prefix = "Git commit hash:"
-    commit_hash = next(
-        (
-            line.removeprefix(prefix).strip()
-            for line in lines
-            if line.startswith(prefix)
-        ),
-        "",
-    )
-    return fields[2], commit_hash
+    return fields[2]
 
 
-def without_sanitizer_metadata(reported: str, variant: str, commit_hash: str) -> str:
-    """Remove the build metadata that a sanitizer build appends to its version:
-    the name of the sanitizer, and the commit hash that a version without
-    metadata gets with it. The metadata of a tag stays.
+def without_sanitizer_metadata(reported: str, variant: str) -> str:
+    """Remove the name of the sanitizer that a sanitizer build appends to the
+    build metadata of its version. The metadata of a tag stays.
 
     A release channel rejects the sanitizer's metadata, and the name of the
     variant carries it already.
     """
-    name = SANITIZER_METADATA[variant]
+    name = SANITIZER_METADATA[variant.rpartition("-")[2]]
     if reported.endswith(f".{name}"):
-        return reported.removesuffix(f".{name}").removesuffix(f"+{commit_hash}")
+        return reported.removesuffix(f".{name}")
     return reported.removesuffix(f"+{name}")
 
 
@@ -350,8 +346,8 @@ def main() -> None:
         "--variant",
         default="",
         choices=VARIANTS,
-        help="the flavour of the package to build: a variant V produces "
-        "xrpld-V, which ships the same paths as xrpld and replaces it "
+        help="the flavour of the package to build: a variant <VARIANT> produces "
+        "xrpld-<VARIANT>, which ships the same paths as xrpld and replaces it "
         "(default: the plain xrpld package)",
     )
     parser.add_argument(
@@ -374,13 +370,13 @@ def main() -> None:
     )
 
     check_binaries(build_dir)
-    reported, commit_hash = read_version(build_dir / "xrpld")
+    reported = read_version(build_dir / "xrpld")
     # Only the package version drops the sanitizer's metadata: the changelog
     # still records the version the binary reports.
     version = package_version(
         (
-            without_sanitizer_metadata(reported, variant, commit_hash)
-            if variant in SANITIZER_METADATA
+            without_sanitizer_metadata(reported, variant)
+            if variant in SANITIZER_VARIANTS
             else reported
         ),
         channel,
