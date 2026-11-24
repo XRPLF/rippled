@@ -206,20 +206,16 @@ class LinuxConfig:
         _check_disabled(self.disabled)
         if isinstance(self.package, dict):
             self.package = PackageConfig(**self.package)
-        # The variant names the package, so one config packages one sanitizer.
         assert self.package is None or len(self.sanitizers) <= 1, (
             f"a config with a 'package' map may list one sanitizer at most; "
             f"got {self.sanitizers}."
         )
-        # The package of a sanitizer build is that sanitizer's variant, as
-        # XrplPackaging.cmake names it, so the JSON cannot claim another one.
         if self.package is not None and self.sanitizers:
             expected = _SANITIZER_SUFFIX.get(self.sanitizers[0], "")
             assert self.package.variant == expected, (
                 f"a config with sanitizer {self.sanitizers[0]!r} packages as "
                 f"variant {expected!r}, not {self.package.variant!r}."
             )
-        # Packaging downloads the validator-keys artifact of the config.
         assert (
             self.package is None or VALIDATOR_KEYS_ARG in self.extra_cmake_args.split()
         ), (
