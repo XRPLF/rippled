@@ -11,7 +11,6 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -20,7 +19,6 @@
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1500,19 +1498,6 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
         // transaction can create and then erase it.
         auto const sle = view().peek(keylet::unchecked(key));
         if (!sle)
-            continue;
-
-        // Flow finds invalid offers in views that hold this transaction's own changes: the
-        // taker's self-crossed offers, and offers whose owner an earlier iteration spent from.
-        // Keep only offers that are also invalid in the reset view.
-        if (sle->getType() == ltOFFER && !hasExpired(view(), (*sle)[~sfExpiration]) &&
-            accountFunds(
-                view(),
-                (*sle)[sfAccount],
-                (*sle)[sfTakerGets],
-                FreezeHandling::ZeroIfFrozen,
-                AuthHandling::ZeroIfUnauthorized,
-                viewJ) > beast::kZero)
             continue;
         ++erased;
 

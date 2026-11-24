@@ -58,9 +58,6 @@ enum ApplyFlags : std::uint32_t {
  *
  * A persistent erase removes an entry that is invalid regardless of the
  * transaction's outcome, such as an unfunded offer or an expired credential.
- * After a `tec` reset, an offer is erased again only if it is expired or
- * unfunded in the reset view, because flow can find offers invalid in views
- * that hold the transaction's own changes.
  */
 enum class EraseMode : bool { Normal, Persistent };
 
