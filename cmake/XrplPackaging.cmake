@@ -44,15 +44,17 @@ else()
     set(pkg_type rpm)
 endif()
 
-# A build with one sanitizer packages as that sanitizer's variant, asserts or
-# not. Unquoted below, so an empty value adds no argument at all.
+# A build with one sanitizer packages as the variant that names its compiler,
+# build type and sanitizer, asserts or not. Unquoted below, so an empty value
+# adds no argument at all.
 set(pkg_variant_option "")
+set(pkg_sanitizer "")
 if(SANITIZERS STREQUAL "address")
-    set(pkg_variant_option --variant=asan)
+    set(pkg_sanitizer asan)
 elseif(SANITIZERS STREQUAL "undefinedbehavior")
-    set(pkg_variant_option --variant=ubsan)
+    set(pkg_sanitizer ubsan)
 elseif(SANITIZERS STREQUAL "thread")
-    set(pkg_variant_option --variant=tsan)
+    set(pkg_sanitizer tsan)
 elseif(SANITIZERS)
     message(
         STATUS
@@ -61,6 +63,18 @@ elseif(SANITIZERS)
     return()
 elseif(assert)
     set(pkg_variant_option --variant=assert)
+endif()
+
+if(pkg_sanitizer)
+    if(is_gcc)
+        set(pkg_compiler gcc)
+    else()
+        set(pkg_compiler clang)
+    endif()
+    string(TOLOWER "${CMAKE_BUILD_TYPE}" pkg_build_type)
+    set(pkg_variant_option
+        --variant=${pkg_compiler}-${pkg_build_type}-${pkg_sanitizer}
+    )
 endif()
 
 add_custom_target(

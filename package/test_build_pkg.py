@@ -12,32 +12,28 @@ import sys
 
 import build_pkg as b
 
-COMMIT_HASH = "0123456789abcdef0123456789abcdef01234567"
-
 
 def test_sanitizer_package_has_the_version_of_the_plain_package() -> None:
     # A Release build without a sanitizer reports the tag as it is. A sanitizer
-    # build appends its name, after the commit hash if the tag has no metadata.
+    # build appends its name to the build metadata.
     for tag, channel in (
         ("3.5.0", "stable"),
         ("3.5.0-b1", "beta"),
         ("3.5.0-b1+hotfix1", "beta"),
         ("3.5.0-b1+ASAN", "beta"),
         ("3.5.0-b1+fix.TSAN", "beta"),
+        ("3.5.0-b1+0123456789abcdef0123456789abcdef01234567", "beta"),
         ("3.4.0-custom-1+fix2", "custom"),
         (f"{b.DEV_VERSION}+0123456", "develop"),
     ):
-        for variant, name in b.SANITIZER_METADATA.items():
-            appended = f".{name}" if "+" in tag else f"+{COMMIT_HASH}.{name}"
-            version = b.without_sanitizer_metadata(tag + appended, variant, COMMIT_HASH)
+        for variant in b.SANITIZER_VARIANTS:
+            name = b.SANITIZER_METADATA[variant.rpartition("-")[2]]
+            reported = tag + ("." if "+" in tag else "+") + name
+            version = b.without_sanitizer_metadata(reported, variant)
             assert version == tag, (tag, variant)
             assert b.package_version(version, channel) == b.package_version(
                 tag, channel
             ), (tag, variant)
-
-
-def test_build_without_a_commit_hash() -> None:
-    assert b.without_sanitizer_metadata("3.5.0+ASAN", "asan", "") == "3.5.0"
 
 
 def main() -> int:
