@@ -375,7 +375,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             //
             // By manipulating the internal form of the taxon we can force
             // creation of NFT pages that are completely full.  This lambda
-            // tells us the taxon value we should pass in in order for the
+            // tells us the taxon value we should pass in, in order for the
             // internal representation to match the passed in value.
             auto const internalTaxon =
                 [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
@@ -1022,7 +1022,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             //
             // By manipulating the internal form of the taxon we can force
             // creation of NFT pages that are completely full.  This lambda
-            // tells us the taxon value we should pass in in order for the
+            // tells us the taxon value we should pass in, in order for the
             // internal representation to match the passed in value.
             auto const internalTaxon =
                 [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {

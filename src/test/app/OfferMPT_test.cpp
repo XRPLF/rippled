@@ -2542,7 +2542,7 @@ public:
     testNegativeBalance(FeatureBitset features)
     {
         // This test creates an offer test for negative balance
-        // with transfer fees and miniscule funds.
+        // with transfer fees and minuscule funds.
         testcase("Negative Balance");
 
         using namespace jtx;
@@ -5619,7 +5619,7 @@ public:
                 //  takerGets:2230.682446713524, takerPays: 0.035378
                 // MPT test has the same order of magnitude for the scaled
                 // values and the first 5 digits match. Is the difference due to
-                // int arithmetics?
+                // int arithmetic?
                 BEAST_EXPECT(offer[sfTakerGets] == jpy(2'230'659'191'281'247));
                 BEAST_EXPECT(offer[sfTakerPays] == btc(3'537'743'015'958'622));
             }

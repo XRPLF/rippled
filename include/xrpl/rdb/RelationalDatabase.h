@@ -447,7 +447,7 @@ public:
     getKBUsedAll() = 0;
 
     /**
-     * @brief getKBUsedLedger Returns the amount of space space used by the
+     * @brief getKBUsedLedger Returns the amount of space used by the
      *        ledger database.
      * @return Space in kilobytes.
      */

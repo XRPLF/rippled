@@ -103,7 +103,7 @@ public:
         // quality.  The bad quality path needs two offer books in a row.
         // Each offer book should have two offers at the same quality, the
         // offers should be completely consumed, and the payment should
-        // should require both offers to be satisfied. The first offer must
+        // require both offers to be satisfied. The first offer must
         // be "taker gets" XRP. Old, broken would remove the first
         // "taker gets" xrp offer, even though the offer is still funded and
         // not used for the payment.
@@ -4022,7 +4022,7 @@ public:
         };
         struct TestData
         {
-            // The first three three integers give the *index* in actors
+            // The first three integers give the *index* in actors
             // to assign each of the three roles.  By using indices it is
             // easy for alice to own the offer in the first leg, the second
             // leg, or both.
@@ -4170,7 +4170,7 @@ public:
         };
         struct TestData
         {
-            // The first three three integers give the *index* in actors
+            // The first three integers give the *index* in actors
             // to assign each of the three roles.  By using indices it is
             // easy for alice to own the offer in the first leg, the second
             // leg, or both.

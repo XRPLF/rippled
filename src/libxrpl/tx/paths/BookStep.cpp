@@ -1202,7 +1202,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
     savedOuts.reserve(64);
 
     /* amt fed will be adjusted by owner funds (and may differ from the offer's
-      amounts - tho always <=)
+      amounts - though always <=)
       Return true to continue to receive offers, false to stop receiving offers.
     */
     auto eachOffer = [&](auto& offer,
@@ -1324,7 +1324,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     savedOuts.reserve(64);
 
     // amt fed will be adjusted by owner funds (and may differ from the offer's
-    // amounts - tho always <=)
+    // amounts - though always <=)
     auto eachOffer = [&](auto& offer,
                          TAmounts<TIn, TOut> const& ofrAmt,
                          TAmounts<TIn, TOut> const& stpAmt,

@@ -121,7 +121,7 @@ private:
      * the partialDestructor, while in another thread the last weak pointer
      * goes out of scope and starts the destructor while the partialDestructor
      * is still running. Both a start and finished bit is needed to handle a
-     * corner-case where the last strong pointer goes out of scope, then then
+     * corner-case where the last strong pointer goes out of scope, then
      * last `weakPointer` goes out of scope, but this happens before the
      * `partialDestructor` bit is set. It would be possible to use a single
      * bit if it could also be set atomically when the strong count goes to

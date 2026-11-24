@@ -88,7 +88,7 @@ Config::makeConfig(
         config.maxPeers = std::max<std::size_t>(config.maxPeers, tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
 
-        // Calculate the number of outbound peers we want. If we dont want
+        // Calculate the number of outbound peers we want. If we don't want
         // or can't accept incoming, this will simply be equal to maxPeers.
         if (!config.wantIncoming)
             config.outPeers = config.maxPeers;
