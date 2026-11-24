@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
@@ -31,7 +32,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -83,8 +86,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -113,8 +115,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -149,8 +150,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
@@ -184,8 +184,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -208,8 +207,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -266,8 +264,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -281,8 +278,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -314,8 +310,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -344,8 +339,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -364,8 +358,7 @@ public:
                     == "2000-01-01T00:00:10Z" &&
                     jv[jss::validated] == true &&  //
                     jv[jss::ledger_hash] ==
-                    "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB"
-                    "853185" &&  //
+                    "5CC95BD8BA54A009A4F5BA437867BBFCF18F5A9CFB7F68FE7816258D164C1516" &&  //
                     !jv[jss::inLedger] &&
                     jv[jss::ledger_index] == 3 &&           //
                     jv[jss::tx_json][jss::TransactionType]  //
@@ -391,8 +384,7 @@ public:
             auto jv = wsc->invoke("unsubscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -414,8 +406,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -425,19 +416,30 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void
-    testValidations(FeatureBitset features)
+    testValidations(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
 
-        Env env{*this, singleThreadIo(envconfig(validator, "")), features};
+        // doValidation only writes a fee field when its target differs from the
+        // ledger's current value, so a node with nothing to change emits
+        // nothing. Vote for limits other than the ones already in force, so
+        // the extension fields actually appear on the flag ledger.
+        auto const voteDifferentLimits = [](std::unique_ptr<Config> cfg) {
+            auto& voting = cfg->section(Sections::kVoting);
+            voting.set(Keys::kGasLimit, std::to_string(kDefaultGasLimit - 1000));
+            voting.set(Keys::kBytecodeSizeLimit, std::to_string(kDefaultBytecodeSizeLimit - 1000));
+            voting.set(Keys::kGasPrice, std::to_string(kDefaultGasPrice - 1000));
+
+            return cfg;
+        };
+        Env env{*this, singleThreadIo(voteDifferentLimits(envconfig(validator, ""))), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
@@ -461,8 +463,7 @@ public:
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -470,7 +471,7 @@ public:
 
         {
             // Lambda to check ledger validations from the stream.
-            auto validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
+            auto const validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
                 if (jv[jss::type] != "validationReceived")
                     return false;
 
@@ -520,6 +521,28 @@ public:
                 if (jv.isMember(jss::reserve_inc) != isFlagLedger)
                     return false;
 
+                if (env.closed()->rules().enabled(featureSmartEscrow))
+                {
+                    if (jv.isMember(jss::gas_limit) != isFlagLedger)
+                        return false;
+
+                    if (jv.isMember(jss::bytecode_size_limit) != isFlagLedger)
+                        return false;
+
+                    if (jv.isMember(jss::gas_price) != isFlagLedger)
+                        return false;
+                }
+                else
+                {
+                    if (jv.isMember(jss::gas_limit))
+                        return false;
+
+                    if (jv.isMember(jss::bytecode_size_limit))
+                        return false;
+
+                    if (jv.isMember(jss::gas_price))
+                        return false;
+                }
                 return true;
             };
 
@@ -537,8 +560,7 @@ public:
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jv));
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -586,6 +608,7 @@ public:
         {
             auto const jr = env.rpc("json", method, "{}")[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -598,6 +621,7 @@ public:
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jr[jss::error_message] == "Failed to parse url.");
             }
             // else TODO: why isn't this an error for unsubscribe ?
@@ -611,6 +635,7 @@ public:
             if (subscribe)
             {
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jr[jss::error_message] == "Only http and https is supported.");
             }
         }
@@ -621,6 +646,7 @@ public:
             jv[jss::url] = "no-url";
             auto const jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "noPermission");
+            BEAST_EXPECT(jr[jss::error_code] == RpcNoPermission);
             BEAST_EXPECT(jr[jss::error_message] == "You don't have permission for this command.");
         }
 
@@ -631,7 +657,8 @@ public:
             json::ValueType::Real,
             "",
             json::ValueType::Boolean,
-            json::ValueType::Object};
+            json::ValueType::Object,
+        };
 
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
@@ -641,6 +668,7 @@ public:
                 jv[f] = nonArray;
                 auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
             }
 
@@ -649,6 +677,7 @@ public:
                 jv[f] = json::ValueType::Array;
                 auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECT(jr[jss::error] == "actMalformed");
+                BEAST_EXPECT(jr[jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
         }
@@ -659,6 +688,7 @@ public:
             jv[jss::mpt_issuances] = nonArray;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -668,6 +698,7 @@ public:
             jv[jss::mpt_issuances][0u] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -677,6 +708,7 @@ public:
             jv[jss::mpt_issuances][0u] = "not-an-mpt-issuance-id";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -686,6 +718,7 @@ public:
             jv[jss::mpt_issuances][0u] = "0123456789ABCDEF";
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -695,6 +728,7 @@ public:
             jv[jss::books] = nonArray;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -704,6 +738,7 @@ public:
             jv[jss::books][0u] = 1;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -716,6 +751,7 @@ public:
             auto const jr = wsc->invoke(method, jv)[jss::result];
 
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcSrcCurMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
@@ -728,6 +764,7 @@ public:
             jv[jss::books][0u][jss::taker_pays][jss::currency] = "ZZZZ";
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcCurMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcSrcCurMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Source currency is malformed.");
         }
 
@@ -741,6 +778,7 @@ public:
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = 1;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcSrcIsrMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
@@ -754,6 +792,7 @@ public:
             jv[jss::books][0u][jss::taker_pays][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "srcIsrMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcSrcIsrMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Source issuer is malformed.");
         }
 
@@ -767,6 +806,7 @@ public:
             auto const jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcDstAmtMalformed);
             BEAST_EXPECT(
                 jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
@@ -782,6 +822,7 @@ public:
             // NOTE: this error is slightly incongruous with the
             // equivalent source currency error
             BEAST_EXPECT(jr[jss::error] == "dstAmtMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcDstAmtMalformed);
             BEAST_EXPECT(
                 jr[jss::error_message] == "Destination amount/currency/issuer is malformed.");
         }
@@ -796,6 +837,7 @@ public:
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcDstIsrMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
@@ -809,6 +851,7 @@ public:
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "dstIsrMalformed");
+            BEAST_EXPECT(jr[jss::error_code] == RpcDstIsrMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Destination issuer is malformed.");
         }
 
@@ -822,6 +865,7 @@ public:
                 Account{"gateway"}["USD"](1).value().getJson(JsonOptions::Values::IncludeDate);
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
+            BEAST_EXPECT(jr[jss::error_code] == RpcBadMarket);
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
         }
 
@@ -831,6 +875,7 @@ public:
             jv[jss::streams] = nonArray;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
         }
 
@@ -840,6 +885,7 @@ public:
             jv[jss::streams][0u] = 1;
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
+            BEAST_EXPECT(jr[jss::error_code] == RpcStreamMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
         }
 
@@ -849,6 +895,7 @@ public:
             jv[jss::streams][0u] = "not_a_stream";
             auto const jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "malformedStream");
+            BEAST_EXPECT(jr[jss::error_code] == RpcStreamMalformed);
             BEAST_EXPECT(jr[jss::error_message] == "Stream malformed.");
         }
 
@@ -865,6 +912,7 @@ public:
                 jv[jss::books][0u][jss::taker] = 1;
                 auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
 
@@ -879,6 +927,7 @@ public:
                 jv[jss::books][0u][jss::taker] = "not_an_account";
                 auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
 
@@ -893,6 +942,7 @@ public:
                 jv[jss::books][0u][jss::taker] = Account{"alice"}.human() + "DEAD";
                 auto const jr = wsc->invoke(method, jv)[jss::result];
                 BEAST_EXPECTS(jr[jss::error] == "actMalformed", jr.toStyledString());
+                BEAST_EXPECT(jr[jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(jr[jss::error_message] == "Account malformed.");
             }
         }
@@ -916,7 +966,7 @@ public:
         /*
          * return true if the subscribe or unsubscribe result is a success
          */
-        auto goodSubRPC = [](json::Value const& subReply) -> bool {
+        auto const goodSubRPC = [](json::Value const& subReply) -> bool {
             return subReply.isMember(jss::result) && subReply[jss::result].isMember(jss::status) &&
                 subReply[jss::result][jss::status] == jss::success;
         };
@@ -926,11 +976,11 @@ public:
          * return {true, true} if received numReplies replies and also
          * received a tx with the account_history_tx_first == true
          */
-        auto getTxHash = [](WSClient& wsc,
-                            IdxHashVec& v,
-                            int numReplies,
-                            std::chrono::milliseconds timeout =
-                                std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
+        auto const getTxHash = [](WSClient& wsc,
+                                  IdxHashVec& v,
+                                  int numReplies,
+                                  std::chrono::milliseconds timeout =
+                                      std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
             bool firstFlag = false;
 
             for (int i = 0; i < numReplies; ++i)
@@ -991,9 +1041,9 @@ public:
          * and in the same order.
          * If sizeCompare is false, txHistoryVec is allowed to be larger.
          */
-        auto hashCompare = [](IdxHashVec const& accountVec,
-                              IdxHashVec const& txHistoryVec,
-                              bool sizeCompare) -> bool {
+        auto const hashCompare = [](IdxHashVec const& accountVec,
+                                    IdxHashVec const& txHistoryVec,
+                                    bool sizeCompare) -> bool {
             if (accountVec.empty() || txHistoryVec.empty())
                 return false;
             if (sizeCompare && accountVec.size() != txHistoryVec.size())
@@ -1005,10 +1055,10 @@ public:
                 txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
             }
 
-            auto getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
+            auto const getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
                 if (i >= accountVec.size())
                     return {};
-                auto it = txHistoryMap.find(std::get<1>(accountVec[i]));
+                auto const it = txHistoryMap.find(std::get<1>(accountVec[i]));
                 if (it == txHistoryMap.end())
                     return {};
                 return it->second;
@@ -1055,7 +1105,7 @@ public:
         // (-9, "39E1C...", false, 4
         // (-10, "E5B8B...", true, 4
 
-        auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
+        auto const checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
             size_t const numTx = vec.size();
             for (size_t i = 0; i < numTx; ++i)
             {
@@ -1272,7 +1322,7 @@ public:
             env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
-            auto mixedPayments = [&] -> int {
+            auto const mixedPayments = [&] -> int {
                 sendPayments(env, alice, carol, 1, 0);
                 env(pay(alice, carol, usdA(100)));
                 BEAST_EXPECT(env.syncClose());
@@ -1284,7 +1334,7 @@ public:
             request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
-            auto jv = ws->invoke("subscribe", request);
+            auto const jv = ws->invoke("subscribe", request);
             BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
@@ -1292,7 +1342,7 @@ public:
                 getTxHash(*ws, tempVec, 100, 1000ms);
             }
 
-            auto count = mixedPayments();
+            auto const count = mixedPayments();
             IdxHashVec vec1;
             if (!BEAST_EXPECT(getTxHash(*ws, vec1, count).first))
                 return;
@@ -1309,7 +1359,7 @@ public:
             BEAST_EXPECT(env.syncClose());
 
             // many payments, and close lots of ledgers
-            auto oneRound = [&](int numPayments) {
+            auto const oneRound = [&](int numPayments) {
                 return sendPayments(env, alice, carol, numPayments, 300);
             };
 
@@ -1318,7 +1368,7 @@ public:
             request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
-            auto jv = wscLong->invoke("subscribe", request);
+            auto const jv = wscLong->invoke("subscribe", request);
             BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
@@ -1329,14 +1379,14 @@ public:
             // repeat the payments many rounds
             for (int kk = 2; kk < 10; ++kk)
             {
-                auto count = oneRound(kk);
+                auto const count = oneRound(kk);
                 IdxHashVec vec1;
                 if (!BEAST_EXPECT(getTxHash(*wscLong, vec1, count).first))
                     return;
 
                 // another subscribe, only for this round
                 auto wscShort = makeWSClient(env.app().config());
-                auto jv = wscShort->invoke("subscribe", request);
+                auto const jv = wscShort->invoke("subscribe", request);
                 IdxHashVec vec2;
                 if (!BEAST_EXPECT(getTxHash(*wscShort, vec2, count).first))
                     return;
@@ -1355,7 +1405,8 @@ public:
         using namespace std::chrono_literals;
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX const permDex(env);
@@ -1427,12 +1478,12 @@ public:
         json::Value stream;
         stream[jss::streams] = json::ValueType::Array;
         stream[jss::streams].append("transactions");
-        auto jv = wsc->invoke("subscribe", stream);
+        auto const jv = wsc->invoke("subscribe", stream);
 
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
+        auto const verifyNFTokenID = [&](UInt256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 UInt256 nftID;
                 BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
@@ -1442,7 +1493,7 @@ public:
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
+        auto const verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 std::vector<UInt256> metaIDs;
                 std::transform(
@@ -1473,7 +1524,7 @@ public:
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
+        auto const verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 UInt256 metaOfferID;
                 BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
@@ -1747,6 +1798,7 @@ public:
         auto const jr =
             wsc->invoke("subscribe", accountsRequest(makeAccountStrings(6)))[jss::result];
         BEAST_EXPECT(jr[jss::error] == "invalidParams");
+        BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
     }
 
@@ -1829,6 +1881,7 @@ public:
         {
             auto const jr = wsc->invoke("subscribe", req)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
         }
 
@@ -1879,6 +1932,7 @@ public:
             auto const jr =
                 wsc->invoke("subscribe", accountHistoryRequest(alice.human()))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Invalid parameters.");
             BEAST_EXPECT(jr[jss::error_message] != "Too many subscriptions for this connection.");
         }
@@ -1914,6 +1968,7 @@ public:
             auto const jr =
                 wsc->invoke("subscribe", accountHistoryRequest(bob.human()))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
         }
     }
@@ -1937,6 +1992,7 @@ public:
             auto const jr = wsc->invoke(
                 "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(6)))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
         }
 
@@ -1980,6 +2036,7 @@ public:
             auto const jr = wsc->invoke(
                 "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(1, 100)))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
         }
     }
@@ -2004,6 +2061,7 @@ public:
             auto const jr = wsc->invoke(
                 "subscribe", mptIssuancesRequest(makeMPTIssuanceStrings(3)))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
 
             // Two more issuances do fit the remaining allowance.
@@ -2025,6 +2083,7 @@ public:
             auto const jr =
                 wsc->invoke("subscribe", accountsRequest(makeAccountStrings(1)))[jss::result];
             BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jr[jss::error_message] == "Too many subscriptions for this connection.");
         }
     }
@@ -2426,7 +2485,7 @@ public:
             wsc->invoke("subscribe", mptIssuancesRequest({to_string(mpt.issuanceID())}));
         BEAST_EXPECT(subscribed[jss::status] == "success");
 
-        auto expectTransaction = [&](std::string const& type) {
+        auto const expectTransaction = [&](std::string const& type) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::engine_result] == "tesSUCCESS" &&
                     jv[jss::transaction][jss::TransactionType] == type &&
@@ -2457,14 +2516,13 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testableAmendments()};
-        FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
         testManifests();
-        testValidations(all - xrpFees);
+        testValidations(all - featureSmartEscrow);
         testValidations(all);
         testSubErrors(true);
         testSubErrors(false);

@@ -273,7 +273,7 @@ verifyHandshake(
         // We can't blindly "return a-b;" because TimeKeeper::time_point
         // uses an unsigned integer for representing durations, which is
         // a problem when trying to subtract time points.
-        auto calculateOffset = [](TimeKeeper::time_point a, TimeKeeper::time_point b) {
+        auto const calculateOffset = [](TimeKeeper::time_point a, TimeKeeper::time_point b) {
             if (a > b)
                 return duration_cast<std::chrono::seconds>(a - b);
             return -duration_cast<std::chrono::seconds>(b - a);
@@ -314,7 +314,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64Decode(iter->value());
+        auto const sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");

@@ -48,7 +48,7 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        if (auto ptr = wptr.lock())
+        if (auto const ptr = wptr.lock())
         {
             JLOG(ptr->journal_.debug())
                 << "timer: ec: " << ec
@@ -77,7 +77,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
 
     app_.getJobQueue().addJob(
         queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()] {
-            if (auto sptr = wptr.lock(); sptr)
+            if (auto const sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });
 }

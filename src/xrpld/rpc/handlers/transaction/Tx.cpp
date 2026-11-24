@@ -245,7 +245,7 @@ populateJsonResponse(
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             XRPL_ASSERT(args.binary, "xrpl::populateJsonResponse : binary is set");
-            auto jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[jsonMeta] = strHex(makeSlice(*blob));
         }
         // populate meta data

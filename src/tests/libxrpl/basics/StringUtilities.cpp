@@ -30,7 +30,7 @@ public:
     static void
     testUnHexFailure(std::string const& strIn)
     {
-        auto rv = strUnHex(strIn);
+        auto const rv = strUnHex(strIn);
         EXPECT_FALSE(rv);
     }
 };
@@ -49,6 +49,12 @@ TEST_F(StringUtilitiesTest, un_hex)
     testUnHexFailure("123X");
     testUnHexFailure("V");
     testUnHexFailure("XRP");
+
+    testUnHexFailure(std::string(2, static_cast<char>(0xFF)));
+    testUnHexFailure(std::string(2, static_cast<char>(0x80)));
+    testUnHexFailure(std::string(1, static_cast<char>(0xFE)));
+    testUnHexFailure(std::string(1, static_cast<char>(0x80)));
+    testUnHexFailure(std::string("4") + static_cast<char>(0x80));
 }
 
 // Everything a URL is expected to parse into. The components a case does not
@@ -296,7 +302,7 @@ TEST_F(StringUtilitiesTest, parse_url_rejects_an_overlong_authority)
 
 TEST_F(StringUtilitiesTest, to_string)
 {
-    auto result = to_string("hello");
+    auto const result = to_string("hello");
     EXPECT_EQ(result, "hello");
 }
 

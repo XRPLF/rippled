@@ -77,7 +77,7 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
 #ifdef ENABLE_VOIDSTAR
     GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
 #else
-    auto smallConstruct = [] {
+    auto const smallConstruct = [] {
         // Container smaller than the base_uint (8 bytes vs 12 bytes for
         // test96). Only the first 8 bytes are copied; the remaining 4 bytes
         // stay zero.
@@ -88,7 +88,7 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
     };
     EXPECT_DEBUG_DEATH(smallConstruct(), "input size match");
 
-    auto largeConstruct = [] {
+    auto const largeConstruct = [] {
         // Container larger than the base_uint (16 bytes vs 12 bytes for
         // test96). Only the first 12 bytes are copied; the extra bytes are
         // ignored.
@@ -99,7 +99,7 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
     };
     EXPECT_DEBUG_DEATH(largeConstruct(), "input size match");
 
-    auto smallCopy = [] {
+    auto const smallCopy = [] {
         // Container smaller than the base_uint (8 bytes vs 12 bytes for
         // test96). Only the first 8 bytes are copied; the remaining 4 bytes
         // stay zero.
@@ -215,7 +215,7 @@ TEST_F(BaseUintTest, from_raw)
     EXPECT_TRUE(ascending.isNonZero());
 
     unsigned char expectedByte = 0;
-    for (auto& byte : ascending)
+    for (auto const& byte : ascending)
         EXPECT_EQ(byte, ++expectedByte);
 }
 
@@ -242,7 +242,7 @@ TEST_F(BaseUintTest, complement)
     EXPECT_TRUE(complement.isNonZero());
 
     unsigned char expectedByte = 0xff;
-    for (auto& byte : complement)
+    for (auto const& byte : complement)
         EXPECT_EQ(byte, --expectedByte);
 
     EXPECT_LT(ascending, complement);
@@ -265,7 +265,7 @@ TEST_F(BaseUintTest, zero)
     EXPECT_TRUE(zero.isZero());
     EXPECT_FALSE(zero.isNonZero());
 
-    for (auto& byte : zero)
+    for (auto const& byte : zero)
         EXPECT_EQ(byte, 0);
 }
 
@@ -395,7 +395,7 @@ TEST_F(BaseUintTest, constexpr_constructor_throws_on_a_bad_length)
 {
     // The vector keeps this out of a constant expression, so the constructor
     // throws instead of failing to compile.
-    auto tooShort = [] {
+    auto const tooShort = [] {
         std::vector<char> const str(23, '7');
         std::string_view const sView(str.data(), str.size());
         [[maybe_unused]] BaseUInt96 const t96(sView);
@@ -407,7 +407,7 @@ TEST_F(BaseUintTest, constexpr_constructor_throws_on_a_bad_length)
 
 TEST_F(BaseUintTest, constexpr_constructor_throws_on_a_bad_character)
 {
-    auto badCharacter = [] {
+    auto const badCharacter = [] {
         std::vector<char> str(23, '7');
         str.push_back('G');
         std::string_view const sView(str.data(), str.size());

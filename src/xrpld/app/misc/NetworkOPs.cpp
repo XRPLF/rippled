@@ -33,6 +33,7 @@
 
 #include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
@@ -273,7 +274,8 @@ class NetworkOPsImp final : public NetworkOPs
                 .counters = counters_,
                 .mode = mode_,
                 .start = start_,
-                .initialSyncUs = initialSyncUs_};
+                .initialSyncUs = initialSyncUs_,
+            };
         }
     };
 
@@ -1008,7 +1010,7 @@ private:
         SPeerStatus,      // Peer status changes.
         SConsensusPhase,  // Consensus phase
         SBookChanges,     // Per-ledger order book changes
-        SLastEntry        // Any new entry must be ADDED ABOVE this one
+        SLastEntry,       // Any new entry must be ADDED ABOVE this one
     };
 
     /**
@@ -1085,16 +1087,20 @@ private:
 //------------------------------------------------------------------------------
 
 static std::array<char const*, 5> const kStateNames{
-    {"disconnected", "connected", "syncing", "tracking", "full"}};
+    {"disconnected", "connected", "syncing", "tracking", "full"},
+};
 
 std::array<char const*, 5> const NetworkOPsImp::kStates = kStateNames;
 
 std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kStates = {
-    {json::StaticString(kStateNames[0]),
-     json::StaticString(kStateNames[1]),
-     json::StaticString(kStateNames[2]),
-     json::StaticString(kStateNames[3]),
-     json::StaticString(kStateNames[4])}};
+    {
+        json::StaticString(kStateNames[0]),
+        json::StaticString(kStateNames[1]),
+        json::StaticString(kStateNames[2]),
+        json::StaticString(kStateNames[3]),
+        json::StaticString(kStateNames[4]),
+    },
+};
 
 static auto const kGenesisAccountId =
     calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -1287,7 +1293,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         // Check if the last validated ledger forces a change between these
         // states.
-        auto origMode = mode_.load();
+        auto const origMode = mode_.load();
         CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mode_ == OperatingMode::SYNCING)
         {
@@ -1297,7 +1303,7 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             setMode(OperatingMode::CONNECTED, "Heartbeat: check connected");
         }
-        auto newMode = mode_.load();
+        auto const newMode = mode_.load();
         if (origMode != newMode)
         {
             CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
@@ -1435,7 +1441,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     std::string reason;
 
-    auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
+    auto const tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
     jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx] {
         auto t = tx;
@@ -1462,7 +1468,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // This function is called by several different parts of the codebase
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
-    auto const sttx = *transaction->getSTransaction();
+    auto const& sttx = *transaction->getSTransaction();
     if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
@@ -1516,7 +1522,7 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
-    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
+    auto const ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
     if (!preProcessTransaction(transaction))
@@ -1605,7 +1611,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 void
 NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 {
-    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
+    auto const ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
     std::vector<std::shared_ptr<Transaction>> candidates;
     candidates.reserve(set.size());
     for (auto const& [_, tx] : set)
@@ -1635,7 +1641,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 
     std::unique_lock lock(mutex_);
 
-    for (auto& transaction : candidates)
+    for (auto const& transaction : candidates)
     {
         if (!transaction->getApplying())
         {
@@ -1728,7 +1734,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (auto const l = ledgerMaster_.getValidatedLedger())
             validatedLedgerIndex = l->header().seq;
 
-        auto newOL = registry_.get().getOpenLedger().current();
+        auto const newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
             e.transaction->clearSubmitResult();
@@ -1746,18 +1752,6 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 registry_.get().getHashRouter().setFlags(
                     e.transaction->getID(), HashRouterFlags::BAD);
             }
-
-#ifdef DEBUG
-            if (!isTesSuccess(e.result))
-            {
-                std::string token, human;
-
-                if (transResultInfo(e.result, token, human))
-                {
-                    JLOG(journal_.info()) << "TransactionResult: " << token << ": " << human;
-                }
-            }
-#endif
 
             bool const addLocal = e.local;
 
@@ -1780,7 +1774,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         batchLock.lock();
                     std::string reason;
                     auto const trans = sterilize(*txNext);
-                    auto t = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
+                    auto const t =
+                        std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
                     if (t->getApplying())
                         break;
                     submitHeld.emplace_back(t, false, false, FailHard::No);
@@ -1792,7 +1787,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else if (e.result == tefPAST_SEQ)
             {
                 // duplicate or conflict
-                JLOG(journal_.info()) << "Transaction is obsolete";
+                JLOG(journal_.debug()) << "Transaction is obsolete";
                 e.transaction->setStatus(TransStatus::OBSOLETE);
             }
             else if (e.result == terQUEUED)
@@ -1875,7 +1870,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *e.transaction->getSTransaction(); toSkip &&
+                if (auto const& sttx = *e.transaction->getSTransaction(); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
@@ -1888,11 +1883,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     sttx.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
-                    tx.set_receivetimestamp(
-                        registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
+                    registry_.get().getOverlay().relay(sttx, tx, *toSkip);
                     e.transaction->setBroadcast();
                 }
             }
@@ -1950,7 +1943,7 @@ json::Value
 NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID const& account)
 {
     json::Value jvObjects(json::ValueType::Object);
-    auto root = keylet::ownerDir(account);
+    auto const root = keylet::ownerDir(account);
     auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
     {
@@ -1960,7 +1953,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
         {
             for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
             {
-                auto sleCur = lpLedger->read(keylet::child(uDirEntry));
+                auto const sleCur = lpLedger->read(keylet::child(uDirEntry));
                 XRPL_ASSERT(sleCur, "xrpl::NetworkOPsImp::getOwnerInfo : non-null child SLE");
 
                 switch (sleCur->getType())
@@ -2234,12 +2227,12 @@ NetworkOPsImp::beginConsensus(
 {
     XRPL_ASSERT(networkClosed.isNonZero(), "xrpl::NetworkOPsImp::beginConsensus : nonzero input");
 
-    auto closingInfo = ledgerMaster_.getCurrentLedger()->header();
+    auto const closingInfo = ledgerMaster_.getCurrentLedger()->header();
 
     JLOG(journal_.info()) << "Consensus time for #" << closingInfo.seq << " with LCL "
                           << closingInfo.parentHash;
 
-    auto prevLedger = ledgerMaster_.getLedgerByHash(closingInfo.parentHash);
+    auto const prevLedger = ledgerMaster_.getLedgerByHash(closingInfo.parentHash);
 
     if (!prevLedger)
     {
@@ -2384,7 +2377,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         // check if the ledger is good enough to go to FULL
         // Note: Do not go to FULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to CONNECTED -- TODO
-        auto current = ledgerMaster_.getCurrentLedger();
+        auto const current = ledgerMaster_.getCurrentLedger();
         if (registry_.get().getTimeKeeper().now() <
             (current->header().parentCloseTime + 2 * current->header().closeTimeResolution))
         {
@@ -2615,13 +2608,13 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::data] = strHex(val->getSerializer().slice());
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (auto version = (*val)[~sfServerVersion])
+        if (auto const version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
 
-        if (auto cookie = (*val)[~sfCookie])
+        if (auto const cookie = (*val)[~sfCookie])
             jvObj[jss::cookie] = std::to_string(*cookie);
 
-        if (auto hash = (*val)[~sfValidatedHash])
+        if (auto const hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
         auto const masterKey = registry_.get().getValidatorManifests().getMasterKey(signerPublic);
@@ -2647,15 +2640,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
-
-        if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
-
-        if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
-
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP && baseFeeXRP->native())
@@ -2668,6 +2652,15 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
+
+        if (auto const gasLimit = ~val->at(~sfGasLimit); gasLimit)
+            jvObj[jss::gas_limit] = *gasLimit;
+
+        if (auto const bytecodeSizeLimit = ~val->at(~sfBytecodeSizeLimit); bytecodeSizeLimit)
+            jvObj[jss::bytecode_size_limit] = *bytecodeSizeLimit;
+
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
 
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
@@ -3113,11 +3106,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = json::UInt(lpClosed->header().seq);
         l[jss::hash] = to_string(lpClosed->header().hash);
 
+        bool const smartEscrowEnabled = lpClosed->rules().enabled(featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
             l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
             l[jss::close_time] =
                 json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         }
@@ -3126,6 +3126,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+            if (smartEscrowEnabled)
+            {
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
 
             if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
@@ -3139,12 +3145,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
             else
             {
-                auto lCloseTime = lpClosed->header().closeTime;
-                auto closeTime = registry_.get().getTimeKeeper().closeTime();
+                auto const lCloseTime = lpClosed->header().closeTime;
+                auto const closeTime = registry_.get().getTimeKeeper().closeTime();
                 if (lCloseTime <= closeTime)
                 {
                     using namespace std::chrono_literals;
-                    auto age = closeTime - lCloseTime;
+                    auto const age = closeTime - lCloseTime;
                     l[jss::age] = json::UInt(age < kHighAgeThreshold ? age.count() : 0);
                 }
             }
@@ -3159,7 +3165,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             info[jss::closed_ledger] = l;
         }
 
-        auto lpPublished = ledgerMaster_.getPublishedLedger();
+        auto const lpPublished = ledgerMaster_.getPublishedLedger();
         if (!lpPublished)
         {
             info[jss::published_ledger] = "none";
@@ -3180,7 +3186,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> kProtocols{
-        "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
+        "http",
+        "https",
+        "peer",
+        "ws",
+        "ws2",
+        "wss",
+        "wss2",
+    };
     static_assert(std::ranges::is_sorted(kProtocols));
     {
         json::Value ports{json::ValueType::Array};
@@ -3349,11 +3362,15 @@ NetworkOPsImp::publishLedgerStreams(
 
         jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
-        if (!lpAccepted->rules().enabled(featureXRPFees))
-            jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
         jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
         jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
         jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
+        if (lpAccepted->rules().enabled(featureSmartEscrow))
+        {
+            jvObj[jss::gas_limit] = lpAccepted->fees().gasLimit;
+            jvObj[jss::bytecode_size_limit] = lpAccepted->fees().bytecodeSizeLimit;
+            jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
+        }
 
         jvObj[jss::txn_count] = json::UInt(alpAccepted->size());
 
@@ -3679,7 +3696,7 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
 
         for (auto const& book : books)
         {
-            auto it = subBook_.find(book);
+            auto const it = subBook_.find(book);
             if (it == subBook_.end())
                 continue;
 
@@ -3736,7 +3753,7 @@ NetworkOPsImp::pubAccountTransaction(
         {
             for (auto const& affectedAccount : transaction.getAffected())
             {
-                if (auto simiIt = subRTAccount_.find(affectedAccount);
+                if (auto const simiIt = subRTAccount_.find(affectedAccount);
                     simiIt != subRTAccount_.end())
                 {
                     auto it = simiIt->second.begin();
@@ -3758,7 +3775,8 @@ NetworkOPsImp::pubAccountTransaction(
                     }
                 }
 
-                if (auto simiIt = subAccount_.find(affectedAccount); simiIt != subAccount_.end())
+                if (auto const simiIt = subAccount_.find(affectedAccount);
+                    simiIt != subAccount_.end())
                 {
                     auto it = simiIt->second.begin();
                     while (it != simiIt->second.end())
@@ -3778,7 +3796,7 @@ NetworkOPsImp::pubAccountTransaction(
                     }
                 }
 
-                if (auto historyIt = subAccountHistory_.find(affectedAccount);
+                if (auto const historyIt = subAccountHistory_.find(affectedAccount);
                     historyIt != subAccountHistory_.end())
                 {
                     auto& subs = historyIt->second;
@@ -3792,7 +3810,7 @@ NetworkOPsImp::pubAccountTransaction(
                             continue;
                         }
 
-                        if (auto isSptr = info.sinkWptr.lock(); isSptr)
+                        if (auto const isSptr = info.sinkWptr.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
                                 SubAccountHistoryInfo{.sink = isSptr, .index = info.index});
@@ -3838,7 +3856,7 @@ NetworkOPsImp::pubAccountTransaction(
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
-            auto& index = info.index;
+            auto const& index = info.index;
             if (index->forwardTxIndex == 0 && !index->haveHistorical)
                 jvObj.set(jss::account_history_tx_first, true);
 
@@ -3860,37 +3878,32 @@ NetworkOPsImp::pubProposedAccountTransaction(
     HashSet<InfoSub::pointer> notify;
     int iProposed = 0;
 
-    std::vector<SubAccountHistoryInfo> accountHistoryNotify;
-
     {
         std::scoped_lock const sl(accountLock_);
 
         if (subRTAccount_.empty())
             return;
 
-        if (!subAccount_.empty() || !subRTAccount_.empty() || !subAccountHistory_.empty())
+        for (auto const& affectedAccount : tx->getMentionedAccounts())
         {
-            for (auto const& affectedAccount : tx->getMentionedAccounts())
+            if (auto const simiIt = subRTAccount_.find(affectedAccount);
+                simiIt != subRTAccount_.end())
             {
-                if (auto simiIt = subRTAccount_.find(affectedAccount);
-                    simiIt != subRTAccount_.end())
+                auto it = simiIt->second.begin();
+
+                while (it != simiIt->second.end())
                 {
-                    auto it = simiIt->second.begin();
+                    InfoSub::pointer const p = it->second.lock();
 
-                    while (it != simiIt->second.end())
+                    if (p)
                     {
-                        InfoSub::pointer const p = it->second.lock();
-
-                        if (p)
-                        {
-                            notify.insert(p);
-                            ++it;
-                            ++iProposed;
-                        }
-                        else
-                        {
-                            it = simiIt->second.erase(it);
-                        }
+                        notify.insert(p);
+                        ++it;
+                        ++iProposed;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
                     }
                 }
             }
@@ -3899,31 +3912,16 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     JLOG(journal_.trace()) << "pubProposedAccountTransaction: " << iProposed;
 
-    if (!notify.empty() || !accountHistoryNotify.empty())
+    if (!notify.empty())
     {
         // Create two different Json objects, for different API versions
-        MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
+        MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::Ref isrListener : notify)
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
                 [&](json::Value const& jv) { isrListener->send(jv, true); });
-        }
-
-        XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::None,
-            "xrpl::NetworkOPs::pubProposedAccountTransaction : "
-            "account_history_tx_stream not set");
-        for (auto& info : accountHistoryNotify)
-        {
-            auto& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
-                jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
-            jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
 }
@@ -3951,7 +3949,7 @@ NetworkOPsImp::subAccount(
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        auto simIterator = subMap.find(naAccountID);
+        auto const simIterator = subMap.find(naAccountID);
         if (simIterator == subMap.end())
         {
             // Not found, note that account has a new single listener.
@@ -3996,7 +3994,7 @@ NetworkOPsImp::unsubAccountInternal(
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        auto simIterator = subMap.find(naAccountID);
+        auto const simIterator = subMap.find(naAccountID);
 
         if (simIterator != subMap.end())
         {
@@ -4033,13 +4031,13 @@ NetworkOPsImp::cleanupSubscriptionMap(
 
         for (std::size_t n = 0; n < kAccountCleanupChunk && it != end; ++n, ++it)
         {
-            auto outerIter = outerMap.find(*it);
+            auto const outerIter = outerMap.find(*it);
             if (outerIter != outerMap.end())
             {
                 // Give the caller a chance to tear down this connection's inner
                 // entry before it is erased (the history map stops its paging
                 // job here); the plain account maps pass a no-op.
-                auto innerIter = outerIter->second.find(seq);
+                auto const innerIter = outerIter->second.find(seq);
                 if (innerIter != outerIter->second.end())
                     beforeErase(innerIter->second);
 
@@ -4154,7 +4152,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
 
         for (auto const& affectedMPT : affectedMPTs)
         {
-            if (auto simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
+            if (auto const simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
             {
                 auto it = simiIt->second.begin();
                 while (it != simiIt->second.end())
@@ -4199,7 +4197,7 @@ NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
         {
             JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
 
-            auto simIterator = subMPT_.find(mptID);
+            auto const simIterator = subMPT_.find(mptID);
             if (simIterator == subMPT_.end())
             {
                 // Not found, note that the MPT issuance has a new single listener.
@@ -4238,7 +4236,7 @@ NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
     // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
     std::scoped_lock const sl(mptLock_);
 
-    auto simIterator = subMPT_.find(mptID);
+    auto const simIterator = subMPT_.find(mptID);
     if (simIterator == subMPT_.end())
         return;
 
@@ -4261,15 +4259,15 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         JLOG(journal_.trace()) << "AccountHistory job for account " << toBase58(accountId)
                                << " started. lastLedgerSeq=" << lastLedgerSeq;
 
-        auto isFirstTx = [&](std::shared_ptr<Transaction> const& tx,
-                             std::shared_ptr<TxMeta> const& meta) -> bool {
+        auto const isFirstTx = [&](std::shared_ptr<Transaction> const& tx,
+                                   std::shared_ptr<TxMeta> const& meta) -> bool {
             /*
              * genesis account: first tx is the one with seq 1
              * other account: first tx is the one created the account
              */
             if (accountId == kGenesisAccountId)
             {
-                auto stx = tx->getSTransaction();
+                auto const stx = tx->getSTransaction();
                 if (stx->getAccountID(sfAccount) == accountId && stx->getSeqProxy().value() == 1)
                     return true;
             }
@@ -4294,8 +4292,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             });
         };
 
-        auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
-            if (auto sptr = subInfo.sinkWptr.lock())
+        auto const send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
+            if (auto const sptr = subInfo.sinkWptr.lock())
             {
                 sptr->send(jvObj, true);
                 if (unsubscribe)
@@ -4306,7 +4304,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             return false;
         };
 
-        auto sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
+        auto const sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
             if (auto sptr = subInfo.sinkWptr.lock())
             {
                 jvObj.visit(
@@ -4321,9 +4319,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             return false;
         };
 
-        auto getMoreTxns = [&](std::uint32_t minLedger,
-                               std::uint32_t maxLedger,
-                               std::optional<RelationalDatabase::AccountTxMarker> marker)
+        auto const getMoreTxns = [&](std::uint32_t minLedger,
+                                     std::uint32_t maxLedger,
+                                     std::optional<RelationalDatabase::AccountTxMarker> marker)
             -> std::pair<
                 RelationalDatabase::AccountTxs,
                 std::optional<RelationalDatabase::AccountTxMarker>> {
@@ -4334,7 +4332,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 .marker = marker,
                 .limit = 0,
                 .bAdmin = true,
-                .delegate = std::nullopt};
+                .delegate = std::nullopt,
+            };
             return db.newestAccountTxPage(options);
         };
 
@@ -4344,7 +4343,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         while (lastLedgerSeq >= 2 && !subInfo.index->stopHistorical)
         {
             int feeChargeCount = 0;
-            if (auto sptr = subInfo.sinkWptr.lock(); sptr)
+            if (auto const sptr = subInfo.sinkWptr.lock(); sptr)
             {
                 sptr->getConsumer().charge(resource::kFeeMediumBurdenRpc);
                 ++feeChargeCount;
@@ -4363,10 +4362,10 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 << "AccountHistory job for account " << toBase58(accountId)
                 << ", working on ledger range [" << startLedgerSeq << "," << lastLedgerSeq << "]";
 
-            auto haveRange = [&] -> bool {
+            auto const haveRange = [&] -> bool {
                 std::uint32_t validatedMin = UINT_MAX;
                 std::uint32_t validatedMax = 0;
-                auto haveSomeValidatedLedgers =
+                auto const haveSomeValidatedLedgers =
                     registry_.get().getLedgerMaster().getValidatedRange(validatedMin, validatedMax);
 
                 return haveSomeValidatedLedgers && validatedMin <= startLedgerSeq &&
@@ -4385,7 +4384,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             std::optional<RelationalDatabase::AccountTxMarker> marker{};
             while (!subInfo.index->stopHistorical)
             {
-                auto dbResult = getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
+                auto const dbResult = getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
 
                 auto const& txns = dbResult.first;
                 marker = dbResult.second;
@@ -4401,7 +4400,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         send(rpcError(RpcInternal), true);
                         return;
                     }
-                    auto curTxLedger =
+                    auto const curTxLedger =
                         registry_.get().getLedgerMaster().getLedgerBySeq(tx->getLedger());
                     if (!curTxLedger)
                     {
@@ -4534,8 +4533,10 @@ NetworkOPsImp::subAccountHistory(InfoSub::Ref isrListener, AccountID const& acco
 
     std::scoped_lock const sl(accountLock_);
     SubAccountHistoryInfoWeak ahi{
-        .sinkWptr = isrListener, .index = std::make_shared<SubAccountHistoryIndex>(accountId)};
-    auto simIterator = subAccountHistory_.find(accountId);
+        .sinkWptr = isrListener,
+        .index = std::make_shared<SubAccountHistoryIndex>(accountId),
+    };
+    auto const simIterator = subAccountHistory_.find(accountId);
     if (simIterator == subAccountHistory_.end())
     {
         HashMap<std::uint64_t, SubAccountHistoryInfoWeak> inner;
@@ -4581,11 +4582,11 @@ NetworkOPsImp::unsubAccountHistoryInternal(
     bool historyOnly)
 {
     std::scoped_lock const sl(accountLock_);
-    auto simIterator = subAccountHistory_.find(account);
+    auto const simIterator = subAccountHistory_.find(account);
     if (simIterator != subAccountHistory_.end())
     {
         auto& subInfoMap = simIterator->second;
-        auto subInfoIter = subInfoMap.find(seq);
+        auto const subInfoIter = subInfoMap.find(seq);
         if (subInfoIter != subInfoMap.end())
         {
             subInfoIter->second.index->stopHistorical = true;
@@ -4633,7 +4634,7 @@ bool
 NetworkOPsImp::unsubBookInternal(std::uint64_t uSeq, Book const& book)
 {
     std::scoped_lock const sl(bookLock_);
-    auto it = subBook_.find(book);
+    auto const it = subBook_.find(book);
     if (it == subBook_.end())
         return false;
     bool const erased = it->second.erase(uSeq) != 0u;
@@ -4663,18 +4664,22 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
 bool
 NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
 {
-    if (auto lpClosed = ledgerMaster_.getValidatedLedger())
+    if (auto const lpClosed = ledgerMaster_.getValidatedLedger())
     {
         jvResult[jss::ledger_index] = lpClosed->header().seq;
         jvResult[jss::ledger_hash] = to_string(lpClosed->header().hash);
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
-        if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
+        if (lpClosed->rules().enabled(featureSmartEscrow))
+        {
+            jvResult[jss::gas_limit] = lpClosed->fees().gasLimit;
+            jvResult[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
+        }
     }
 
     if ((mode_ >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
@@ -4907,6 +4912,19 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
 
 #ifndef USE_NEW_BOOK_PAGE
 
+// Same as std::min(takerPays, multiply(funded, rate, asset)), but compares
+// before building the amount, so an unrepresentable product is never built.
+// multiply() uses this same Number product (the rate is a quality, never
+// native or MPT), so the result is unchanged.
+static STAmount
+takerPaysFunded(STAmount const& takerPays, STAmount const& takerGetsFunded, STAmount const& rate)
+{
+    Number const product = Number{takerGetsFunded} * Number{rate};
+    if (product >= Number{takerPays})
+        return takerPays;
+    return STAmount{takerPays.asset(), product};
+}
+
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
 //            work, but it demonstrated poor performance.
 //
@@ -4927,7 +4945,7 @@ NetworkOPsImp::getBookPage(
     UInt256 const uBookEnd = getQualityNext(uBookBase);
     UInt256 uTipIndex = uBookBase;
 
-    if (auto stream = journal_.trace())
+    if (auto const stream = journal_.trace())
     {
         stream << "getBookPage:" << book;
         stream << "getBookPage: uBookBase=" << uBookBase;
@@ -4948,7 +4966,7 @@ NetworkOPsImp::getBookPage(
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out);
-    auto viewJ = registry_.get().getJournal("View");
+    auto const viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
     {
@@ -4987,7 +5005,7 @@ NetworkOPsImp::getBookPage(
 
         if (!bDone)
         {
-            auto sleOffer = view.read(keylet::offer(offerIndex));
+            auto const sleOffer = view.read(keylet::offer(offerIndex));
 
             if (sleOffer)
             {
@@ -4997,7 +5015,7 @@ NetworkOPsImp::getBookPage(
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
                 auto foundBalance = [&] {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
+                    auto const umBalanceEntry = umBalance.find(uOfferOwnerID);
                     if (umBalanceEntry == umBalance.end())
                         return false;
 
@@ -5108,8 +5126,7 @@ NetworkOPsImp::getBookPage(
                     saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
-                    std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
+                    takerPaysFunded(saTakerPays, saTakerGetsFunded, saDirRate)
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
@@ -5334,7 +5351,7 @@ NetworkOPsImp::collectMetrics()
 void
 NetworkOPsImp::StateAccounting::mode(OperatingMode om)
 {
-    auto now = std::chrono::steady_clock::now();
+    auto const now = std::chrono::steady_clock::now();
 
     std::scoped_lock const lock(mutex_);
     ++counters_[static_cast<std::size_t>(om)].transitions;

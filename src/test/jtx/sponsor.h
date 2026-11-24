@@ -100,6 +100,9 @@ json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 STAmount
-sponsorshipFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
+sponsorshipFeeBalance(
+    jtx::Env const& env,
+    jtx::Account const& sponsor,
+    jtx::Account const& sponsee);
 
 }  // namespace xrpl::test::jtx::sponsor

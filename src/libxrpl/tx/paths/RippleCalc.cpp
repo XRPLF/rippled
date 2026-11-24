@@ -51,7 +51,7 @@ RippleCalc::rippleCalculate(
 {
     Output flowOut;
     PaymentSandbox flowSB(&view);
-    auto j = registry.getJournal("Flow");
+    auto const j = registry.getJournal("Flow");
 
     {
         bool const defaultPaths = (pInputs == nullptr) ? true : pInputs->defaultPathsAllowed;
@@ -89,8 +89,7 @@ RippleCalc::rippleCalculate(
                 limitQuality,
                 sendMax,
                 domainID,
-                j,
-                nullptr);
+                j);
         }
         catch (std::exception& e)
         {

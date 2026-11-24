@@ -86,7 +86,7 @@ public:
     {
         std::scoped_lock const sl(lock_);
 
-        auto jm = broadcast ? j_.debug() : j_.info();
+        auto const jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "rpc_call::fromNetwork push: " << jvObj;
 
         deque_.emplace_back(seq_++, jvObj);

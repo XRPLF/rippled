@@ -157,8 +157,8 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
         testcase << "sample ongoing";
         boost::system::error_code ec;
         using namespace std::chrono;
-        auto interval = 99ms;
-        auto probeDuration = 1s;
+        auto const interval = 99ms;
+        auto const probeDuration = 1s;
 
         size_t const expectedProbeCountMax = (probeDuration / interval);
         // NOLINTNEXTLINE(misc-const-correctness)
@@ -179,7 +179,7 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        auto probesSeen = ioProbe.durations.size();
+        auto const probesSeen = ioProbe.durations.size();
         BEAST_EXPECTS(
             probesSeen >= (expectedProbeCountMin - 1) && probesSeen <= (expectedProbeCountMax + 1),
             std::string("probe count is ") + std::to_string(probesSeen));

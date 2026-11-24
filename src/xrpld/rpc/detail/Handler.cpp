@@ -5,8 +5,17 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/account/AccountChannels.h>
+#include <xrpld/rpc/handlers/account/AccountCurrencies.h>
+#include <xrpld/rpc/handlers/account/AccountInfo.h>
+#include <xrpld/rpc/handlers/account/AccountLines.h>
+#include <xrpld/rpc/handlers/account/AccountNFTs.h>
+#include <xrpld/rpc/handlers/account/AccountOffers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/orderbook/BookChanges.h>
+#include <xrpld/rpc/handlers/orderbook/DepositAuthorized.h>
+#include <xrpld/rpc/handlers/orderbook/NFTBuyOffers.h>
+#include <xrpld/rpc/handlers/orderbook/NFTSellOffers.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
 #include <xrpld/rpc/handlers/transaction/TransactionEntry.h>
 
@@ -39,7 +48,7 @@ using Method = Handler::Method;
  * The handler is a template parameter rather than an argument, so that byRef
  * names a plain function instead of returning a closure over it.
  */
-template <json::Value (*Function)(JsonContext&)>
+template <auto Function>
 ::rpc::Status
 byRef(JsonContext& context, json::Value& result)
 {
@@ -115,31 +124,31 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     // Request-response methods
     {
         .name = method::kAccountInfo,
-        .valueMethod = Method::of<&byRef<&doAccountInfo>>(),
+        .valueMethod = Method::of<&handle<AccountInfoHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountCurrencies,
-        .valueMethod = Method::of<&byRef<&doAccountCurrencies>>(),
+        .valueMethod = Method::of<&handle<AccountCurrenciesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountLines,
-        .valueMethod = Method::of<&byRef<&doAccountLines>>(),
+        .valueMethod = Method::of<&handle<AccountLinesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountChannels,
-        .valueMethod = Method::of<&byRef<&doAccountChannels>>(),
+        .valueMethod = Method::of<&handle<AccountChannelsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountNfts,
-        .valueMethod = Method::of<&byRef<&doAccountNFTs>>(),
+        .valueMethod = Method::of<&handle<AccountNFTsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -151,7 +160,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountOffers,
-        .valueMethod = Method::of<&byRef<&doAccountOffers>>(),
+        .valueMethod = Method::of<&handle<AccountOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -218,7 +227,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kDepositAuthorized,
-        .valueMethod = Method::of<&byRef<&doDepositAuthorized>>(),
+        .valueMethod = Method::of<&handle<DepositAuthorizedHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -338,14 +347,14 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kNftBuyOffers,
-        .valueMethod = Method::of<&byRef<&doNFTBuyOffers>>(),
+        .valueMethod = Method::of<&handle<NFTBuyOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kNftSellOffers,
-        .valueMethod = Method::of<&byRef<&doNFTSellOffers>>(),
+        .valueMethod = Method::of<&handle<NFTSellOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,

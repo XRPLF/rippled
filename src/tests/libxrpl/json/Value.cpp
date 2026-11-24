@@ -242,11 +242,11 @@ TEST(JsonValue, type_object)
 
 TEST(JsonValue, compare_strings)
 {
-    auto doCompare = [&](json::Value const& lhs,
-                         json::Value const& rhs,
-                         bool lhsEqRhs,
-                         bool lhsLtRhs,
-                         int line) {
+    auto const doCompare = [&](json::Value const& lhs,
+                               json::Value const& rhs,
+                               bool lhsEqRhs,
+                               bool lhsLtRhs,
+                               int line) {
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);
@@ -270,17 +270,21 @@ TEST(JsonValue, compare_strings)
     json::Value const boolF{false};
     json::Value const boolT{true};
     json::Value const array0{json::ValueType::Array};
-    json::Value const array1{[] {
-        json::Value array1;
-        array1[0u] = 1;
-        return array1;
-    }()};
+    json::Value const array1{
+        [] {
+            json::Value array1;
+            array1[0u] = 1;
+            return array1;
+        }(),
+    };
     json::Value const obj0{json::ValueType::Object};
-    json::Value const obj1{[] {
-        json::Value obj1;
-        obj1["one"] = 1;
-        return obj1;
-    }()};
+    json::Value const obj1{
+        [] {
+            json::Value obj1;
+            obj1["one"] = 1;
+            return obj1;
+        }(),
+    };
 
 #pragma push_macro("DO_COMPARE")
     // DO_COMPARE(lhs, rhs, lhsEqualsToRhs lhsLessThanRhs)
@@ -594,6 +598,110 @@ TEST(JsonValue, compare_strings)
 #pragma pop_macro("DO_COMPARE")
 }
 
+TEST(JsonValue, construct_from_string_view)
+{
+    using namespace std::string_view_literals;
+
+    // The view need not end in a null character.
+    EXPECT_EQ(json::Value{"2.0"sv}.asString(), "2.0");
+    EXPECT_EQ(json::Value{"2.0 and more"sv.substr(0, 3)}.asString(), "2.0");
+    EXPECT_EQ(json::Value{""sv}.asString(), "");
+
+    // A default-constructed view has a null `data()` and yields an empty string value.
+    std::string_view const empty;
+    json::Value const fromEmpty{empty};
+    EXPECT_TRUE(fromEmpty.isString());
+    EXPECT_EQ(fromEmpty.asString(), "");
+    EXPECT_EQ(fromEmpty, ""sv);
+
+    // The characters are copied, not aliased: overwriting the owner leaves the value unchanged.
+    std::string owner{"borrowed"};
+    json::Value const copied{std::string_view{owner}};
+    owner.assign("replaced");
+    EXPECT_EQ(copied.asString(), "borrowed");
+
+    // A string value reads through its first null character only.
+    json::Value const embedded{"a\0b"sv};
+    EXPECT_EQ(embedded.asString(), "a");
+    EXPECT_NE(embedded, "a\0b"sv);
+    EXPECT_EQ(embedded, "a"sv);
+    EXPECT_EQ(embedded, json::Value{"a\0b"sv});
+}
+
+TEST(JsonValue, compare_string_view)
+{
+    // Comparing against a view builds no temporary Value.
+    using namespace std::string_view_literals;
+
+    EXPECT_EQ(json::Value{"2.0"}, "2.0"sv);
+    EXPECT_NE(json::Value{"2.0"}, "2.00"sv);
+    EXPECT_NE(json::Value{"2.0"}, ""sv);
+
+    // The comparison stops at the view's end, not at a null character.
+    EXPECT_EQ(json::Value{"2.0"}, "2.0 and more"sv.substr(0, 3));
+
+    EXPECT_EQ(json::Value{""}, ""sv);
+
+    // A string value holding a null pointer equals nothing, not even the empty view.
+    EXPECT_NE(json::Value{json::ValueType::String}, ""sv);
+    EXPECT_NE(json::Value{json::ValueType::String}, "2.0"sv);
+    EXPECT_NE(json::Value{json::ValueType::String}, json::Value{""});
+
+    // Nothing that is not a string equals one. Null is what an absent member reads as.
+    EXPECT_NE(json::Value{json::ValueType::Null}, ""sv);
+    EXPECT_NE(json::Value{json::ValueType::Null}, "2.0"sv);
+    EXPECT_NE(json::Value{2}, "2"sv);
+    EXPECT_NE(json::Value{true}, "true"sv);
+    EXPECT_NE(json::Value{json::ValueType::Object}, ""sv);
+
+    // A literal, a `char const*` and a `std::string` take the same path. Only an embedded null
+    // character tells the two paths apart: the Value comparison stops at it.
+    EXPECT_EQ(json::Value{"2.0"}, "2.0");
+    EXPECT_NE(json::Value{"2.0"}, "2.1");
+    EXPECT_NE(json::Value{}, "2.0");
+    EXPECT_EQ("2.0", json::Value{"2.0"});
+
+    char const* const version = "2.0";
+    EXPECT_EQ(json::Value{"2.0"}, version);
+    EXPECT_NE(json::Value{"2.1"}, version);
+
+    // A null `char const*` reads as empty text, as it does when it builds a Value.
+    char const* const none = nullptr;
+    EXPECT_EQ(json::Value{""}, none);
+    EXPECT_EQ(json::Value{""}, json::Value{none});
+    EXPECT_NE(json::Value{"2.0"}, none);
+    EXPECT_NE(json::Value{json::ValueType::String}, none);
+    EXPECT_NE(json::Value{}, none);
+
+    EXPECT_EQ(json::Value{"2.0"}, std::string{"2.0"});
+    EXPECT_NE(json::Value{"2.0"}, std::string{"2.1"});
+    EXPECT_NE(json::Value{json::ValueType::Null}, std::string{"2.0"});
+    std::string const withNul{"a\0b", 3};
+    EXPECT_NE(json::Value{"a\0b"sv}, withNul);
+    EXPECT_EQ(json::Value{"a\0b"sv}, json::Value{withNul});
+
+    // A `StaticString` compares through Value: it converts to a view only through `char const*`.
+    static constexpr json::StaticString kVersion{"2.0"};
+    EXPECT_EQ(json::Value{"2.0"}, kVersion);
+    EXPECT_NE(json::Value{"2.1"}, kVersion);
+    EXPECT_NE(json::Value{}, kVersion);
+
+    // `nullptr` compares through Value, which stores it as an empty string.
+    EXPECT_EQ(json::Value{""}, nullptr);
+    EXPECT_NE(json::Value{"2.0"}, nullptr);
+    EXPECT_NE(json::Value{}, nullptr);
+
+    // A literal `0` deduces as `int`, which no view accepts, so it compares as a number.
+    // RPCCall.cpp rejects a `transaction_entry` ledger index this way.
+    EXPECT_EQ(json::Value{0}, 0);
+    EXPECT_NE(json::Value{4294967295u}, 0);
+    EXPECT_NE(json::Value{""}, 0);
+    EXPECT_NE(json::Value{2}, 0);
+
+    // A null and an Int are different types, so the comparison is false.
+    EXPECT_NE(json::Value{}, 0);
+}
+
 TEST(JsonValue, bool)
 {
     EXPECT_FALSE(json::Value());
@@ -647,13 +755,14 @@ parseValue(std::string const& doc)
 TEST(JsonValue, parse_double_valid)
 {
     // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
-    for (auto const& [text, expected] :
-         {std::pair{"2.5", 2.5},
-          std::pair{"-3.25e2", -325.0},
-          std::pair{"0.0", 0.0},
-          std::pair{"1E3", 1000.0},
-          std::pair{"-0.5e-1", -0.05},
-          std::pair{"1e300", 1e300}})
+    for (auto const& [text, expected] : {
+             std::pair{"2.5", 2.5},
+             std::pair{"-3.25e2", -325.0},
+             std::pair{"0.0", 0.0},
+             std::pair{"1E3", 1000.0},
+             std::pair{"-0.5e-1", -0.05},
+             std::pair{"1e300", 1e300},
+         })
     {
         auto const v = parseValue(text);
         ASSERT_TRUE(v.has_value()) << text;
@@ -873,7 +982,7 @@ TEST(JsonValue, move)
 TEST(JsonValue, comparisons)
 {
     json::Value a, b;
-    auto testEquals = [&](std::string const& name) {
+    auto const testEquals = [&](std::string const& name) {
         EXPECT_TRUE(a == b);
         EXPECT_TRUE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -891,7 +1000,7 @@ TEST(JsonValue, comparisons)
         EXPECT_FALSE(b > a);
     };
 
-    auto testGreaterThan = [&](std::string const& name) {
+    auto const testGreaterThan = [&](std::string const& name) {
         EXPECT_FALSE(a == b);
         EXPECT_FALSE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -931,7 +1040,7 @@ TEST(JsonValue, compact)
     json::Reader r;
     char const* s(R"JSON({"array": [{"12": 23}, {}, null, false, 0.5]})JSON");
 
-    auto countLines = [](std::string const& str) {
+    auto const countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });
     };
 
@@ -1179,6 +1288,49 @@ TEST(JsonValue, converts_object_type)
     EXPECT_TRUE(val.isConvertibleTo(json::ValueType::Object));
 }
 
+TEST(JsonValue, as_bool)
+{
+    // Null and empty containers are false; non-empty containers are true.
+    EXPECT_FALSE(json::Value().asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::Array).asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::Object).asBool());
+    {
+        json::Value arr(json::ValueType::Array);
+        arr.append(1);
+        EXPECT_TRUE(arr.asBool());
+    }
+    {
+        json::Value obj(json::ValueType::Object);
+        obj["key"] = 1;
+        EXPECT_TRUE(obj.asBool());
+    }
+
+    EXPECT_TRUE(json::Value(true).asBool());
+    EXPECT_FALSE(json::Value(false).asBool());
+
+    EXPECT_FALSE(json::Value(json::Value::Int{0}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::Int{1}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::Int{-1}).asBool());
+
+    // UInt values are read through the unsigned member, including values
+    // above the signed range.
+    EXPECT_FALSE(json::Value(json::Value::UInt{0}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::UInt{1}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::kMaxUInt).asBool());
+
+    // The type-tag constructor initializes the member each type reads.
+    EXPECT_FALSE(json::Value(json::ValueType::Int).asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::UInt).asBool());
+    EXPECT_EQ(json::Value(json::ValueType::UInt).asUInt(), 0u);
+
+    EXPECT_FALSE(json::Value(0.0).asBool());
+    EXPECT_TRUE(json::Value(1.5).asBool());
+
+    // Only the empty string is false.
+    EXPECT_FALSE(json::Value("").asBool());
+    EXPECT_TRUE(json::Value("false").asBool());
+}
+
 TEST(JsonValue, access_members)
 {
     json::Value val;
@@ -1340,14 +1492,16 @@ TEST(JsonValue, iterator)
     }
     {
         // Iterating a const object.
-        json::Value const obj{[] {
-            json::Value obj{json::ValueType::Object};
-            obj["0"] = 0;
-            obj["1"] = 1;
-            obj["2"] = 2;
-            obj["3"] = 3;
-            return obj;
-        }()};
+        json::Value const obj{
+            [] {
+                json::Value obj{json::ValueType::Object};
+                obj["0"] = 0;
+                obj["1"] = 1;
+                obj["2"] = 2;
+                obj["3"] = 3;
+                return obj;
+            }(),
+        };
 
         json::ValueConstIterator i1{obj.begin()};
         json::ValueConstIterator i2{obj.end()};
@@ -1389,7 +1543,7 @@ TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
-        auto nest = [](std::uint32_t depth) {
+        auto const nest = [](std::uint32_t depth) {
             return std::format(
                 R"JSON({{ {}{} }})JSON",
                 repeated(R"JSON("obj": {)JSON", depth),
@@ -1398,20 +1552,20 @@ TEST(JsonValue, nest_limits)
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+            auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
             json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(json::Reader::kNestLimit + 1)};
+            auto const json{nest(json::Reader::kNestLimit + 1)};
             json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
     }
 
-    auto nest = [](std::uint32_t depth) {
+    auto const nest = [](std::uint32_t depth) {
         return std::format(
             R"JSON({{ {}{} }})JSON",
             repeated(R"JSON("array": [{)JSON", depth),
@@ -1420,14 +1574,14 @@ TEST(JsonValue, nest_limits)
 
     {
         // Within array nest limit
-        auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+        auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
         json::Value j;
         EXPECT_TRUE(r.parse(json, j));
     }
 
     {
         // Exceed array nest limit
-        auto json{nest(json::Reader::kNestLimit + 1)};
+        auto const json{nest(json::Reader::kNestLimit + 1)};
         json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }

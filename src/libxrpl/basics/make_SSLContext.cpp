@@ -232,7 +232,7 @@ initAuthenticated(
     std::string const& certFile,
     std::string const& chainFile)
 {
-    auto fmtError = [](boost::system::error_code ec) -> std::string {
+    auto const fmtError = [](boost::system::error_code ec) -> std::string {
         return " [" + std::to_string(ec.value()) + ": " + ec.message() + "]";
     };
 
@@ -335,7 +335,8 @@ getContext(std::string cipherList)
     if (cipherList.empty())
         cipherList = kDefaultCipherList;
 
-    if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
+    if (auto const result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str());
+        result != 1)
         logicError("SSL_CTX_set_cipher_list failed");
 
     c->use_tmp_dh({std::addressof(detail::kDefaultDh), sizeof(kDefaultDh)});

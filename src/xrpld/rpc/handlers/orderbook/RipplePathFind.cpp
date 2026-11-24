@@ -157,7 +157,7 @@ doRipplePathFind(rpc::JsonContext& context)
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
 
-    for (auto& fieldName : jvResult.getMemberNames())
+    for (auto const& fieldName : jvResult.getMemberNames())
         result[fieldName] = std::move(jvResult[fieldName]);
 
     return result;

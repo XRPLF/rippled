@@ -365,7 +365,7 @@ public:
     size() const
     {
         std::size_t ret = 0;
-        for (auto& p : map_)
+        for (auto const& p : map_)
             ret += p.size();
         return ret;
     }

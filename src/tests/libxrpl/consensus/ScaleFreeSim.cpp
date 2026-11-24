@@ -64,7 +64,7 @@ TEST(ScaleFreeSimTest, DISABLED_scale_free_sim)
 
     // txs, start/stop/step, target
     auto peerSelector = makeSelector(network.begin(), network.end(), ranks, sim.rng);
-    auto txSubmitter = makeSubmitter(
+    auto const txSubmitter = makeSubmitter(
         ConstantDistribution{rate.inv()},
         sim.scheduler.now() + quiet,
         sim.scheduler.now() + (simDuration - quiet),

@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -327,10 +328,9 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     auto const sigValid = checkValidity(ctx.registry.get().getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
-    {  // LCOV_EXCL_START
+    {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
         return temINVALID;
-        // LCOV_EXCL_STOP
     }
 
     // Do not add any checks after this point that are relevant for
@@ -755,6 +755,19 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefNO_TICKET;
         }
+
+        // While a TransactionProposal keyed to this Ticket exists, the
+        // Ticket is reserved: only the proposal's own proposed transaction
+        // may consume it, so unrelated activity cannot invalidate the
+        // proposal while signatures are being collected (On-Chain Cosigner spec §4.2.1).
+        // Cancelling the proposal frees the Ticket, so this is a retry, not
+        // a final failure. No proposal can exist before the Cosign amendment,
+        // so the gate only makes that dependency explicit.
+        if (view.rules().enabled(featureCosign) && !proposal::canConsumeTicket(view, tx))
+        {
+            JLOG(j.trace()) << "applyTransaction: ticket " << tSeqProx << " is reserved";
+            return terTICKET_RESERVED;
+        }
     }
 
     return tesSUCCESS;
@@ -835,7 +848,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    auto sleAccount = view.peek(keylet::account(account));
+    auto const sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
         // LCOV_EXCL_START
@@ -866,8 +879,28 @@ Transactor::ticketDelete(
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, sleTicket, 1, j);
 
+    std::uint32_t const ticketSeq{(*sleTicket)[sfTicketSequence]};
+
     // Remove Ticket from ledger.
     view.erase(sleTicket);
+
+    // Once the Ticket is gone, a TransactionProposal keyed to it can never
+    // execute: its proposed transaction would fail with tefNO_TICKET. Clean
+    // up the stale proposal and release its Owner's reserve (On-Chain Cosigner spec §4.5).
+    // The reservation check in checkSeqProxy means this is reached only by
+    // the proposal's own proposed transaction executing (or failing with a
+    // claimed-fee tec), or by AccountDelete sweeping the target account's
+    // Tickets. No proposal can exist before the Cosign amendment, so the gate
+    // only makes that dependency explicit.
+    if (view.rules().enabled(featureCosign))
+    {
+        if (auto const sleProposal = view.peek(keylet::txProposal(account, ticketSeq)))
+        {
+            if (TER const ter = proposal::deleteProposal(view, sleProposal, j); !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -1394,7 +1427,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
                 .id = sponsorID,
                 .keylet = sponsorshipKeylet,
                 .balanceField = sfFeeAmount,
-                .type = FeePayerType::SponsorPreFunded};
+                .type = FeePayerType::SponsorPreFunded,
+            };
         }
 
         // Checked in Transactor::checkSponsor
@@ -1407,7 +1441,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
             .id = sponsorID,
             .keylet = keylet::account(sponsorID),
             .balanceField = sfBalance,
-            .type = FeePayerType::SponsorCoSigned};
+            .type = FeePayerType::SponsorCoSigned,
+        };
     }
 
     AccountID const payerID = tx.getInitiator();
@@ -1416,7 +1451,11 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
     return FeePayer{
-        .id = payerID, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
+        .id = payerID,
+        .keylet = payerAccountKeylet,
+        .balanceField = sfBalance,
+        .type = payerType,
+    };
 }
 
 // The sole purpose of this function is to provide a convenient, named
@@ -1437,7 +1476,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
-    auto typesForResult = [](TER const ter) {
+    auto const typesForResult = [](TER const ter) {
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
         {
@@ -1594,7 +1633,7 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(result != temUNKNOWN, "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
-    if (auto stream = j_.trace())
+    if (auto const stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();

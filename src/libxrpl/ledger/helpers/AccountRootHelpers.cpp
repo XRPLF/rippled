@@ -181,7 +181,7 @@ adjustOwnerCountSigned(
                 view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
             }
 
-            auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+            auto const sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
             if (sponsorshipSle && adjustment > 0)
             {
                 // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new

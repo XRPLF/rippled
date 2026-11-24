@@ -96,7 +96,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // An issuer must only be set if the tx is executed by the minter
-    if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
+    if (auto const iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
         return temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
@@ -146,7 +146,7 @@ NFTokenMint::createNFTokenID(
     taxon = nft::cipheredTaxon(tokenSeq, taxon);
 
     // The values are packed inside a 32-byte buffer, so we need to make sure
-    // that the endianess is fixed.
+    // that the endianness is fixed.
     flags = boost::endian::native_to_big(flags);
     fee = boost::endian::native_to_big(fee);
     taxon = nft::toTaxon(boost::endian::native_to_big(nft::toUInt32(taxon)));

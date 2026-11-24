@@ -157,7 +157,7 @@ STObject::set(SOTemplate const& type)
 void
 STObject::applyTemplate(SOTemplate const& type)
 {
-    auto throwFieldErr = [](std::string const& field, char const* description) {
+    auto const throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
         std::string const text{ss.str()};

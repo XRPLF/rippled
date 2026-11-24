@@ -12,6 +12,7 @@
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -42,7 +43,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
             preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
         return ret;
 
-    auto account = ctx.tx.getAccountID(sfAccount);
+    auto const account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
@@ -87,49 +88,32 @@ Change::preclaim(PreclaimContext const& ctx)
     switch (ctx.tx.getTxnType())
     {
         case ttFEE:
-            if (ctx.view.rules().enabled(featureXRPFees))
+            // The XRPFees feature has been retired, these fields are required now.
+            if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                return temMALFORMED;
+            // The XRPFees feature has been retired, these fields are forbidden now.
+            if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
+                return temMALFORMED;
+            if (ctx.view.rules().enabled(featureSmartEscrow))
             {
-                // The ttFEE transaction format defines these fields as
-                // optional, but once the XRPFees feature is enabled, they are
-                // required.
-                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
-                // The ttFEE transaction format defines these fields as
-                // optional, but once the XRPFees feature is enabled, they are
-                // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFee) ||
-                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    ctx.tx.isFieldPresent(sfReserveBase) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
+                    return temBAD_FEE;
             }
             else
             {
-                // The ttFEE transaction format formerly defined these fields
-                // as required. When the XRPFees feature was implemented, they
-                // were changed to be optional. Until the feature has been
-                // enabled, they are required.
-                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
-                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    !ctx.tx.isFieldPresent(sfReserveBase) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
-                // The ttFEE transaction format defines these fields as
-                // optional, but without the XRPFees feature, they are
-                // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrementDrops))
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
                     return temDISABLED;
             }
-            // The ttFEE transaction format defines these fields as optional,
-            // but they are unconditionally forbidden until FeeVoteImpl is
-            // updated to populate them (SmartEscrow behavioral port).
-            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
-                ctx.tx.isFieldPresent(sfGasPrice))
-                return temDISABLED;
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -162,6 +146,28 @@ void
 Change::preCompute()
 {
     XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
+}
+
+void
+Change::initializeVMFees()
+{
+    FeeSettingsEntryW feeObject(view());
+
+    if (!feeObject)
+    {
+        feeObject.newSLE();
+        feeObject.insert();
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    feeObject.update();
+
+    JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
 }
 
 TER
@@ -240,6 +246,9 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
+
+        if (amendment == featureSmartEscrow)
+            initializeVMFees();
     }
 
     if (newMajorities.empty())
@@ -266,26 +275,18 @@ Change::applyFee()
         feeObject.newSLE();
         feeObject.insert();
     }
-    auto set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
-        feeObject->at(field) = tx[field];
+    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const&... fields) {
+        ((feeObject->at(fields) = tx[fields]), ...);
     };
-    if (view().rules().enabled(featureXRPFees))
+    set(feeObject, ctx_.tx, sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops);
+    // Ensure the old fields are removed
+    feeObject->makeFieldAbsent(sfBaseFee);
+    feeObject->makeFieldAbsent(sfReferenceFeeUnits);
+    feeObject->makeFieldAbsent(sfReserveBase);
+    feeObject->makeFieldAbsent(sfReserveIncrement);
+    if (view().rules().enabled(featureSmartEscrow))
     {
-        set(feeObject, ctx_.tx, sfBaseFeeDrops);
-        set(feeObject, ctx_.tx, sfReserveBaseDrops);
-        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
-        // Ensure the old fields are removed
-        feeObject->makeFieldAbsent(sfBaseFee);
-        feeObject->makeFieldAbsent(sfReferenceFeeUnits);
-        feeObject->makeFieldAbsent(sfReserveBase);
-        feeObject->makeFieldAbsent(sfReserveIncrement);
-    }
-    else
-    {
-        set(feeObject, ctx_.tx, sfBaseFee);
-        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
-        set(feeObject, ctx_.tx, sfReserveBase);
-        set(feeObject, ctx_.tx, sfReserveIncrement);
+        set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
     }
 
     feeObject.update();

@@ -2536,7 +2536,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
         return false;
     for (auto iter(cbegin()), last(cend()), otherLast(other.cend()); iter != last; ++iter)
     {
-        auto otherIter(other.find(extract(*iter)));
+        auto const otherIter(other.find(extract(*iter)));
         if (otherIter == otherLast)
             return false;
     }

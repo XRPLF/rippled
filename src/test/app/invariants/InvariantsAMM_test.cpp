@@ -136,7 +136,7 @@ class InvariantsAMM_test : public InvariantsBase
         PrettyAsset poolAsset{xrpIssue()};
 
         auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
-            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            auto const sle = ac.view().peek(keylet::account(ammAccountID));
             if (!sle)
                 return false;
             ac.view().erase(sle);
@@ -144,7 +144,7 @@ class InvariantsAMM_test : public InvariantsBase
         };
 
         auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
-            auto sle = ac.view().peek(keylet::amm(ammID));
+            auto const sle = ac.view().peek(keylet::amm(ammID));
             if (!sle)
                 return false;
             sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
@@ -162,14 +162,14 @@ class InvariantsAMM_test : public InvariantsBase
         auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
             if (isMPT)
             {
-                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                auto const sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfMPTAmount, 1);
                 ac.view().update(sle);
                 return true;
             }
-            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            auto const sle = ac.view().peek(keylet::account(ammAccountID));
             if (!sle)
                 return false;
             sle->setFieldAmount(sfBalance, XRP(1));
@@ -177,10 +177,10 @@ class InvariantsAMM_test : public InvariantsBase
             return true;
         };
 
-        auto test = [&](auto const txType,
-                        auto&& update,
-                        bool isMPT,
-                        TER error = tecINVARIANT_FAILED) {
+        auto const test = [&](auto const txType,
+                              auto&& update,
+                              bool isMPT,
+                              TER error = tecINVARIANT_FAILED) {
             doInvariantCheck(
                 {{"AMM"}},
                 [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
@@ -211,19 +211,19 @@ class InvariantsAMM_test : public InvariantsBase
             // Under fixCleanup3_4_0 the MPT balance invariants also fire on the
             // second pass, so both IOU and MPT pools now escalate to tef.
             auto const error = TER(tefINVARIANT_FAILED);
-            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            for (auto const txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
                 test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
-            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            for (auto const txType : {ttAMM_BID, ttAMM_VOTE})
             {
                 test(txType, updateAMMPool, isMPT, error);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
-            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            for (auto const txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
             {
                 test(txType, updateAMM, isMPT);
             }

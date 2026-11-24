@@ -15,15 +15,19 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -363,6 +367,35 @@ getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 [[nodiscard]] bool
 checkArraySize(json::Value const& val, unsigned int size);
 
+/**
+ * Reports whether @p reply carries the version 2 envelope: `jsonrpc` equal to
+ * rpc::kJsonRpcVersion and `ripplerpc` equal to rpc::kRippleRpcVersion2, both
+ * present.
+ *
+ * @param reply The reply to inspect.
+ * @return True when both members are present with those values.
+ */
+[[nodiscard]]
+inline bool
+hasEnvelope2(json::Value const& reply)
+{
+    return reply.isMember(jss::jsonrpc) && reply[jss::jsonrpc] == rpc::kJsonRpcVersion &&
+        reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc] == rpc::kRippleRpcVersion2;
+}
+
+/**
+ * Sets the version 2 envelope on @p request: `jsonrpc` to rpc::kJsonRpcVersion
+ * and `ripplerpc` to rpc::kRippleRpcVersion2.
+ *
+ * @param request The request to stamp.
+ */
+inline void
+setEnvelope2(json::Value& request)
+{
+    request[jss::jsonrpc] = rpc::kJsonRpcVersion;
+    request[jss::ripplerpc] = rpc::kRippleRpcVersion2;
+}
+
 // Helper function that returns the owner count on an account.
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
@@ -494,7 +527,7 @@ public:
     waitFor(std::chrono::duration<Rep, Period> const& relTime)
     {
         std::unique_lock<std::mutex> lk(mutex_);
-        auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+        auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
         signaled_ = false;
         return b;
     }
@@ -551,30 +584,36 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
 expectHolding(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     STAmount const& value,
     bool defaultLimits = false);
 
 template <typename... Amts>
 bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, Amts const&... amts)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, Amts const&... amts)
 {
     return expectHolding(env, account, value, false) && expectHolding(env, account, amts...);
 }
 
 bool
-expectHolding(Env& env, AccountID const& account, None const& value);
+expectHolding(Env const& env, AccountID const& account, None const& value);
 
 bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value);
+expectMPT(Env const& env, AccountID const& account, STAmount const& value);
 
 bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch = {});
+
+/**
+ * Return the ledger entries in an account's owner directory.
+ */
+std::vector<SLE::const_pointer>
+ownerDirEntries(ReadView const& view, AccountID const& account);
 
 json::Value
 ledgerEntryRoot(Env& env, Account const& acct);

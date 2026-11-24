@@ -527,7 +527,7 @@ multiSignHelper(
         std::optional<std::string> errorWhat;
         try
         {
-            auto spk = signer.getFieldVL(sfSigningPubKey);
+            auto const spk = signer.getFieldVL(sfSigningPubKey);
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
