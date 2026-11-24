@@ -58,7 +58,7 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@04219bee4958d1443329bc96de74e7c9bcb6322b
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@0af4d43c20d0c38b917830802473628205749d62
     with:
       image_name: xrpld/nix-${{ matrix.distro.name }}
       dockerfile: nix/docker/Dockerfile
