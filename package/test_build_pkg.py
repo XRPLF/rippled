@@ -22,6 +22,8 @@ def test_sanitizer_package_has_the_version_of_the_plain_package() -> None:
         ("3.5.0", "stable"),
         ("3.5.0-b1", "beta"),
         ("3.5.0-b1+hotfix1", "beta"),
+        ("3.5.0-b1+ASAN", "beta"),
+        ("3.5.0-b1+fix.TSAN", "beta"),
         ("3.4.0-custom-1+fix2", "custom"),
         (f"{b.DEV_VERSION}+0123456", "develop"),
     ):

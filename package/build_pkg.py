@@ -177,11 +177,9 @@ def without_sanitizer_metadata(reported: str, variant: str, commit_hash: str) ->
     variant carries it already.
     """
     name = SANITIZER_METADATA[variant]
-    return (
-        reported.removesuffix(f".{name}")
-        .removesuffix(f"+{name}")
-        .removesuffix(f"+{commit_hash}")
-    )
+    if reported.endswith(f".{name}"):
+        return reported.removesuffix(f".{name}").removesuffix(f"+{commit_hash}")
+    return reported.removesuffix(f"+{name}")
 
 
 def check_binaries(build_dir: Path) -> None:
