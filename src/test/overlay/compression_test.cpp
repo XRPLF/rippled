@@ -377,7 +377,7 @@ public:
         auto const& compressed = m.getBuffer(Compressed::On);
         auto const& uncompressed = m.getBuffer(Compressed::Off);
 
-        BEAST_EXPECT(uncompressed.size() > 70);
+BEAST_EXPECT(uncompressed.size() > compression::kHeaderBytes + 70);
         BEAST_EXPECT(compressed.size() == uncompressed.size());
         BEAST_EXPECT(compressed == uncompressed);
     }
