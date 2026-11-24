@@ -28,7 +28,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -1970,13 +1969,13 @@ struct PayChan_test : public beast::unit_test::Suite
 
         auto const inOwnerDir =
             [](ReadView const& view, Account const& acc, SLE::ConstRef chan) -> bool {
-            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            auto const ownerDir = ownerDirEntries(view, acc);
             // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
         };
 
         auto const ownerDirCount = [](ReadView const& view, Account const& acc) -> std::size_t {
-            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            auto const ownerDir = ownerDirEntries(view, acc);
             return std::distance(ownerDir.begin(), ownerDir.end());
         };
 

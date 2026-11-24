@@ -193,6 +193,21 @@ In addition to those guidelines, please start your PR title with one of the foll
 
 First letter after the type prefix should be capitalized, and the type prefix should be followed by a colon and a space. e.g. `feat: Add support for Borrowing Protocol`.
 
+### CI labels
+
+The labels on a pull request select which build configurations CI runs for
+it. `.github/scripts/strategy-matrix/` lists the configurations per event.
+
+- No label: a draft pull request runs no build, and a pull request that is
+  ready for review runs a small set of configurations.
+- "Draft CI": a draft pull request runs the builds as if it were ready for
+  review.
+- "Ready to merge": the pull request runs the configurations the merge queue
+  runs. See below for when to add this label.
+- "Merge CI": the same configurations as "Ready to merge", for a pull request
+  that is not ready to merge yet. It works on a draft as well, and it wins
+  over "Ready to merge" when both are set.
+
 ### "Ready to merge"
 
 A pull request should only have the "Ready to merge" label added when it
@@ -440,6 +455,27 @@ For this reason:
 - Do not put contracts where they can be violated by an external condition
   (e.g. timing, data payload before mandatory validation etc.) as this creates
   bogus bug reports (and causes crashes of Debug builds)
+- Only use `UNREACHABLE` for paths that are truly impossible. Do not use it to
+  avoid writing a test for a path that is rare but reachable. When you exclude
+  an `UNREACHABLE` branch from coverage, wrap it in
+  `LCOV_EXCL_START`/`LCOV_EXCL_STOP`.
+- For a condition that is rare but possible (e.g. a value from a peer that must
+  be positive, but a peer can send a negative one), handle it at runtime and use
+  `SOMETIMES` to tell the fuzzer to try to make it happen:
+
+  ```cpp
+  bool isNegative = value.peek() < 0;
+  SOMETIMES(isNegative, "xrpl::Foo::bar : negative value");
+  if (isNegative)
+  {
+      JLOG(journal.debug()) << "...";
+      return false;
+  }
+  ```
+
+- See `include/xrpl/beast/utility/instrumentation.h` for the full list of
+  macros (`XRPL_ASSERT`, `XRPL_ASSERT_IF`, `ALWAYS`, `REACHABLE`, `SOMETIMES`,
+  `UNREACHABLE`) and when to use each.
 
 ## Unit Tests
 
