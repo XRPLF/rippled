@@ -1507,7 +1507,6 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
     if (!isTecClaim(result))
         return {result, fee, false};
 
-    auto const typesToApply = typesForResult(result);
     std::size_t erased = 0;
     auto const viewJ = ctx_.registry.get().getJournal("View");
     for (auto const& key : keys)
@@ -1519,7 +1518,18 @@ Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
         // A recorded entry can be missing from the reset view: the
         // transaction can create and then erase it.
         auto const sle = view().peek(keylet::unchecked(key));
-        if (!sle || !typesToApply.contains(sle->getType()))
+        if (!sle)
+            continue;
+
+        // The replay is best-effort cleanup. Skip the transaction account's own
+        // offers: offer crossing removes them only because of this transaction.
+        // A later transaction can still remove them.
+        if (sle->getType() == ltOFFER && (*sle)[sfAccount] == accountID_)
+            continue;
+
+        // An AMM trust line is recorded once its balance is zero, which can be
+        // this transaction's change.
+        if (sle->getType() == ltRIPPLE_STATE && sle->getFieldAmount(sfBalance) != beast::kZero)
             continue;
         ++erased;
 
