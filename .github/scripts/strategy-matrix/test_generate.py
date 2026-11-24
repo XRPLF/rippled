@@ -135,16 +135,30 @@ def test_packaged_config_builds_validator_keys() -> None:
     assert not rejected(package=package, events=[g.Event.TAG], **WITH_VALIDATOR_KEYS)
 
 
-def test_packaged_sanitizer_build_is_its_variant() -> None:
-    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
+def test_sanitizer_build_packages_as_its_own_variant() -> None:
+    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie"}
     sanitized = {
+        "compiler": ["gcc", "clang"],
+        "build_type": ["Debug", "Release"],
         "events": [g.Event.TAG],
-        "sanitizers": ["address"],
+        "sanitizers": ["address", "thread"],
         **WITH_VALIDATOR_KEYS,
     }
-    assert not rejected(package=package, **sanitized)
-    assert rejected(package=package, **{**sanitized, "sanitizers": ["thread"]})
-    assert rejected(package={**package, "variant": ""}, **sanitized)
+    assert rejected(package={**package, "variant": "asan"}, **sanitized)
+    linux = g.LinuxFile(
+        image_tag="tag",
+        configs={"debian": [linux_config(package=package, **sanitized)]},
+    )
+    assert [e.package_name for e in g.expand_linux_packaging(linux, g.Event.TAG)] == [
+        "xrpld-gcc-debug-asan",
+        "xrpld-gcc-debug-tsan",
+        "xrpld-gcc-release-asan",
+        "xrpld-gcc-release-tsan",
+        "xrpld-clang-debug-asan",
+        "xrpld-clang-debug-tsan",
+        "xrpld-clang-release-asan",
+        "xrpld-clang-release-tsan",
+    ]
 
 
 def test_disabled_config_is_built_by_no_event() -> None:
@@ -180,22 +194,6 @@ def test_disabled_config_is_named_by_its_entries() -> None:
     )
     platform.disabled = "a reason"
     assert g.entry_names("macos/arm64", platform) == ["macos-arm64-release-nix"]
-
-
-def test_packaged_config_has_one_sanitizer_at_most() -> None:
-    package = {"type": g.PACKAGE_DEB, "image": "debian:trixie", "variant": "asan"}
-    assert not rejected(
-        package=package,
-        events=[g.Event.TAG],
-        sanitizers=["address"],
-        **WITH_VALIDATOR_KEYS,
-    )
-    assert rejected(
-        package=package,
-        events=[g.Event.TAG],
-        sanitizers=["address", "thread"],
-        **WITH_VALIDATOR_KEYS,
-    )
 
 
 # --- invariants over the JSON files -------------------------------------------

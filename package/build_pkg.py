@@ -36,11 +36,20 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-# The build metadata that the binary of each sanitizer variant reports, as
-# cmake/XrplSanitizers.cmake names it.
+# The build metadata that the binary of a sanitizer build reports, as
+# cmake/XrplSanitizers.cmake names it, keyed by the last part of its variant.
 SANITIZER_METADATA = {"asan": "ASAN", "ubsan": "UBSAN", "tsan": "TSAN"}
 
-VARIANTS = ("", "assert", *SANITIZER_METADATA)
+# A sanitizer variant names the compiler, the build type and the sanitizer of
+# its build, such as clang-release-asan.
+SANITIZER_VARIANTS = tuple(
+    f"{compiler}-{build_type}-{sanitizer}"
+    for compiler in ("gcc", "clang")
+    for build_type in ("debug", "release")
+    for sanitizer in SANITIZER_METADATA
+)
+
+VARIANTS = ("", "assert", *SANITIZER_VARIANTS)
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -163,7 +172,7 @@ def without_sanitizer_metadata(reported: str, variant: str) -> str:
     A release channel rejects the sanitizer's metadata, and the name of the
     variant carries it already.
     """
-    name = SANITIZER_METADATA[variant]
+    name = SANITIZER_METADATA[variant.rpartition("-")[2]]
     if reported.endswith(f".{name}"):
         return reported.removesuffix(f".{name}")
     return reported.removesuffix(f"+{name}")
@@ -367,7 +376,7 @@ def main() -> None:
     version = package_version(
         (
             without_sanitizer_metadata(reported, variant)
-            if variant in SANITIZER_METADATA
+            if variant in SANITIZER_VARIANTS
             else reported
         ),
         channel,

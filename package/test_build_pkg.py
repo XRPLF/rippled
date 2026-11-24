@@ -26,7 +26,8 @@ def test_sanitizer_package_has_the_version_of_the_plain_package() -> None:
         ("3.4.0-custom-1+fix2", "custom"),
         (f"{b.DEV_VERSION}+0123456", "develop"),
     ):
-        for variant, name in b.SANITIZER_METADATA.items():
+        for variant in b.SANITIZER_VARIANTS:
+            name = b.SANITIZER_METADATA[variant.rpartition("-")[2]]
             reported = tag + ("." if "+" in tag else "+") + name
             version = b.without_sanitizer_metadata(reported, variant)
             assert version == tag, (tag, variant)

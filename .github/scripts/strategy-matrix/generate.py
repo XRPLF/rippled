@@ -67,6 +67,11 @@ def config_name(
     return "-".join([f"{distro}-{compiler}-{build_type.lower()}-{arch}", *parts])
 
 
+def sanitizer_variant(compiler: str, build_type: str, sanitizer: str) -> str:
+    """Name the package variant of a sanitizer build, as XrplPackaging.cmake does."""
+    return f"{compiler}-{build_type.lower()}-{_SANITIZER_SUFFIX[sanitizer]}"
+
+
 def get_cmake_args(build_type: str, extra_args: str) -> str:
     """Get the full list of CMake arguments for a config."""
     args = _BASE_CMAKE_ARGS.copy()
@@ -168,8 +173,10 @@ class PackageConfig:
     # the config itself builds in.
     image: str
     # A flavour of the package, named xrpld-<variant>, for a config whose
-    # binaries are not the plain release build. A variant needs no counterpart
-    # in the other format.
+    # binaries are not the plain release build. A variant can exist as a DEB
+    # only or as an RPM only. A config with a sanitizer leaves it empty,
+    # because the compiler, the build type and the sanitizer of an entry name
+    # its variant.
     variant: str = ""
 
     def __post_init__(self) -> None:
@@ -204,15 +211,11 @@ class LinuxConfig:
         _check_disabled(self.disabled)
         if isinstance(self.package, dict):
             self.package = PackageConfig(**self.package)
-        assert self.package is None or len(self.sanitizers) <= 1, (
-            f"a config with a 'package' map may list one sanitizer at most; "
-            f"got {self.sanitizers}."
-        )
         if self.package is not None and self.sanitizers:
-            expected = _SANITIZER_SUFFIX.get(self.sanitizers[0], "")
-            assert self.package.variant == expected, (
-                f"a config with sanitizer {self.sanitizers[0]!r} packages as "
-                f"variant {expected!r}, not {self.package.variant!r}."
+            assert not self.package.variant, (
+                f"a config with a sanitizer gets its package variant from its "
+                f"compiler, build type and sanitizer; remove "
+                f"{self.package.variant!r}."
             )
         assert (
             self.package is None or VALIDATOR_KEYS_ARG in self.extra_cmake_args.split()
@@ -402,18 +405,19 @@ def expand_linux_packaging(linux: LinuxFile, event: Event) -> list[PackagingEntr
                 name = config_name(
                     distro, compiler, build_type, arch, cfg.suffix, sanitizer
                 )
+                variant = (
+                    sanitizer_variant(compiler, build_type, sanitizer)
+                    if sanitizer
+                    else cfg.package.variant
+                )
                 entries.append(
                     PackagingEntry(
                         xrpld_artifact_name=f"xrpld-{name}",
                         validator_keys_artifact_name=f"validator-keys-{name}",
                         image=cfg.package.image,
                         package_type=cfg.package.type,
-                        package_variant=cfg.package.variant,
-                        package_name=(
-                            f"{BASE_NAME}-{cfg.package.variant}"
-                            if cfg.package.variant
-                            else BASE_NAME
-                        ),
+                        package_variant=variant,
+                        package_name=f"{BASE_NAME}-{variant}" if variant else BASE_NAME,
                     )
                 )
 
