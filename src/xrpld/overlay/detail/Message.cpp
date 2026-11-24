@@ -97,10 +97,11 @@ Message::compress()
             case protocol::mtHAVE_TRANSACTIONS:
             case protocol::mtSQUELCH:
                 break;
+            // LCOV_EXCL_START
             default:
-                XRPL_ASSERT(
-                    false, "xrpl::Message::compress : unknown message type");
+                UNREACHABLE("xrpl::Message::compress : unknown message type");
                 break;
+                // LCOV_EXCL_STOP
         }
         return false;
     }();
