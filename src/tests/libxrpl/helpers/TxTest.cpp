@@ -7,7 +7,6 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
@@ -174,7 +173,7 @@ TxTest::getOpenLedger() const
     return *openLedger_;
 }
 
-ReadView const&
+Ledger const&
 TxTest::getClosedLedger() const
 {
     return *closedLedger_;
