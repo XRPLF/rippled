@@ -213,6 +213,8 @@ public:
      * key is kept when this view is applied to its parent, and is dropped when
      * this view is discarded. With fixCleanup3_6_0, the transactor erases
      * the recorded entries again after a `tec` reset.
+     *
+     * @param sle The peeked entry to erase.
      */
     virtual void
     erasePersistent(SLE::Ref sle) = 0;
