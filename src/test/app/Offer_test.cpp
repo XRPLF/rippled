@@ -30,6 +30,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -1707,6 +1708,8 @@ public:
 
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         env.require(Owners(alice, 1), Owners(bob, 1));
     }
@@ -1738,6 +1741,8 @@ public:
 
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
     }
 
     void
@@ -1798,9 +1803,11 @@ public:
         // Verify the offer was consumed
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
-        // only 300 XRP should be have been payed since that's all
+        // only 300 XRP should have been paid since that's all
         // that remained in the offer from bob. The alice balance is now
         // 100 USD because another 60 USD were transferred to bob in the second
         // payment
@@ -2262,8 +2269,7 @@ public:
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(jrr.isMember(jss::jsonrpc) && jrr[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(jrr.isMember(jss::ripplerpc) && jrr[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(jrr));
             BEAST_EXPECT(jrr.isMember(jss::id) && jrr[jss::id] == 5);
         }
 
@@ -5228,59 +5234,48 @@ public:
         auto makerXRPBalance = env.balance(maker, XRP).value();
         auto takerXRPBalance = env.balance(taker, XRP).value();
 
-        // tfFillOrKill, TakerPays must be filled
+        // TakerPays must be filled
         {
-            TER const err = features[fixFillOrKill] ? TER(tesSUCCESS) : tecKILLED;
-
             env(offer(maker, XRP(100), usd(100)));
             env.close();
 
-            env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance -= usd(100);
-                takerUSDBalance += usd(100);
-                makerXRPBalance += XRP(100).value();
-                takerXRPBalance -= XRP(100).value();
-            }
+            makerUSDBalance -= usd(100);
+            takerUSDBalance += usd(100);
+            makerXRPBalance += XRP(100).value();
+            takerXRPBalance -= XRP(100).value();
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), XRP(100)));
             env.close();
 
-            env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance += usd(100);
-                takerUSDBalance -= usd(100);
-                makerXRPBalance -= XRP(100).value();
-                takerXRPBalance += XRP(100).value();
-            }
+            makerUSDBalance += usd(100);
+            takerUSDBalance -= usd(100);
+            makerXRPBalance -= XRP(100).value();
+            takerXRPBalance += XRP(100).value();
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), eur(100)));
             env.close();
 
-            env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance += usd(100);
-                takerUSDBalance -= usd(100);
-                makerEURBalance -= eur(100);
-                takerEURBalance += eur(100);
-            }
+            makerUSDBalance += usd(100);
+            takerUSDBalance -= usd(100);
+            makerEURBalance -= eur(100);
+            takerEURBalance += eur(100);
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
@@ -5440,47 +5435,11 @@ public:
     run() override
     {
         testAll(allFeatures - featurePermissionedDEX);
+        testAll(allFeatures);
         testFalseAssert();
     }
 };
 
-class OfferWOSmallQOffers_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
-    }
-};
-
-class OfferAllFeatures_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures);
-    }
-};
-
-class Offer_manual_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        using namespace jtx;
-        FeatureBitset const all{testableAmendments()};
-        FeatureBitset const fillOrKill{fixFillOrKill};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        testAll(all - fillOrKill - permDEX);
-        testAll(all - permDEX);
-        testAll(all);
-    }
-};
-
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, xrpl, 20);
 
 }  // namespace xrpl::test

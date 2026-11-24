@@ -1,10 +1,10 @@
 ignorePaths:
   - build/**
   - src/libxrpl/crypto
+  - cmake/CodeCoverage.cmake # vendored from https://github.com/bilke/cmake-modules
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
-  - cmake/**
   - LICENSE.md
   - .clang-tidy
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
@@ -103,6 +103,7 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -197,6 +198,7 @@ words:
   - mptokens
   - mpts
   - mtgox
+  - mudhra
   - multisig
   - multisign
   - multisigned
@@ -317,7 +319,6 @@ words:
   - sttx
   - stvar
   - stvector
-  - stxchainattestations
   - summands
   - superpeer
   - superpeers
@@ -344,6 +345,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undeserializable
   - unergonomic
   - unfetched
   - unfindable
@@ -370,12 +372,12 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
   - wsrch
   - wthread
-  - xbridge
   - xchain
   - xcrun
   - ximinez

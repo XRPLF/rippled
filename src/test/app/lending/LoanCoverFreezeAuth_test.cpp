@@ -301,8 +301,7 @@ private:
 
         for (bool const deepFreeze : {true, false})
         {
-            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+            Env env(*this);
 
             auto const getCoverBalance = [&](BrokerInfo const& brokerInfo,
                                              auto const& accountField) {
@@ -386,8 +385,7 @@ private:
         Account const borrower{"borrower"};
         auto const iou = issuer["IOU"];
 
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, iou(10'000'000)));
         env(pay(issuer, lender, iou(5'000'000)));
@@ -442,8 +440,7 @@ private:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
@@ -514,8 +511,7 @@ private:
         Account const borrower{"borrower"};
         auto const iou = issuer["IOU"];
 
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, iou(10'000'000)));
         env(pay(issuer, lender, iou(5'000'000)));

@@ -14,6 +14,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -256,6 +257,9 @@ public:
                 else
                 {
                     BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                    BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
+                    BEAST_EXPECT(
+                        lines[jss::result][jss::error_message] == "Invalid field 'transactions'.");
                 }
             }
         }

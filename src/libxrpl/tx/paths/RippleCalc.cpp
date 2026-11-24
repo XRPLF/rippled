@@ -89,8 +89,7 @@ RippleCalc::rippleCalculate(
                 limitQuality,
                 sendMax,
                 domainID,
-                j,
-                nullptr);
+                j);
         }
         catch (std::exception& e)
         {

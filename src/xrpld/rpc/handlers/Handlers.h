@@ -7,12 +7,6 @@
 namespace xrpl {
 
 json::Value
-doAccountInfo(rpc::JsonContext&);
-json::Value
-doAccountLines(rpc::JsonContext&);
-json::Value
-doAccountChannels(rpc::JsonContext&);
-json::Value
 doAccountObjects(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);
@@ -32,8 +26,6 @@ json::Value
 doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);
-json::Value
-doDepositAuthorized(rpc::JsonContext const&);
 json::Value
 doFeature(rpc::JsonContext&);
 json::Value
@@ -68,10 +60,6 @@ json::Value
 doLogRotate(rpc::JsonContext&);
 json::Value
 doManifest(rpc::JsonContext&);
-json::Value
-doNFTBuyOffers(rpc::JsonContext&);
-json::Value
-doNFTSellOffers(rpc::JsonContext&);
 json::Value
 doNoRippleCheck(rpc::JsonContext&);
 json::Value

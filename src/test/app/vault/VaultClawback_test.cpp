@@ -3,7 +3,6 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -51,13 +50,7 @@ private:
         using namespace test::jtx;
         using namespace loan_broker;
         using namespace loan;
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(
-            *this,
-            envconfig(),
-            testableAmendments() - featureLendingProtocolV1_2,
-            nullptr,
-            beast::Severity::Warning);
+        Env env(*this, beast::Severity::Warning);
 
         auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
             auto const sleVault = env.le(vaultKeylet);
@@ -332,8 +325,7 @@ private:
         using namespace test::jtx;
         using namespace loan_broker;
         using namespace loan;
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
         env.enableFeature(fixCleanup3_1_3);
 
         // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
@@ -849,6 +841,7 @@ private:
 
             Env legacyEnv(*this, all_);
             legacyEnv.disableFeature(fixCleanup3_1_3);
+            legacyEnv.disableFeature(featureLendingProtocolV1_2);
             legacyEnv.fund(XRP(10000), issuer, owner, depositor);
             legacyEnv.close();
 
