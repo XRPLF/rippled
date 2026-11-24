@@ -71,9 +71,8 @@ if(pkg_sanitizer)
     else()
         set(pkg_compiler clang)
     endif()
-    string(TOLOWER "${CMAKE_BUILD_TYPE}" pkg_build_type)
     set(pkg_variant_option
-        --variant=${pkg_compiler}-${pkg_build_type}-${pkg_sanitizer}
+        --variant=${pkg_compiler}-$<LOWER_CASE:$<CONFIG>>-${pkg_sanitizer}
     )
 endif()
 
