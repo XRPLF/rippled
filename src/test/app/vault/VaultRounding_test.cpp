@@ -10,6 +10,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -17,6 +18,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -28,6 +30,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -154,9 +157,10 @@ class VaultRounding_test : public VaultTestBase
     void
     forEachVersion(std::function<void(FeatureBitset, bool, std::string const&)> const& body)
     {
-        for (auto const& [base, name] :
-             {std::pair{all_ - featureLendingProtocolV1_2, std::string{"CashBasis"}},
-              std::pair{all_, std::string{"FixedPrecision"}}})
+        for (auto const& [base, name] : {
+                 std::pair{all_ - featureLendingProtocolV1_2, std::string{"CashBasis"}},
+                 std::pair{all_, std::string{"FixedPrecision"}},
+             })
         {
             body(base - fixCleanup3_6_0, false, name + ", pre-fixCleanup3_6_0");
             body(base, true, name + ", post-fixCleanup3_6_0");
@@ -177,10 +181,11 @@ class VaultRounding_test : public VaultTestBase
                 shiftVaultAssets(env, f, 97);
                 BEAST_EXPECT(vaultTotal(env, f.keylet) == 100);
 
-                env(vault.deposit(
-                    {.depositor = f.bob,
-                     .id = f.keylet.key,
-                     .amount = PrettyAsset{f.assetID}(34)}));
+                env(vault.deposit({
+                    .depositor = f.bob,
+                    .id = f.keylet.key,
+                    .amount = PrettyAsset{f.assetID}(34),
+                }));
 
                 std::uint64_t const charged = fixed ? 34 : 33;
                 BEAST_EXPECT(mptBalance(env, f.shareID, f.bob) == 1);
@@ -254,13 +259,14 @@ class VaultRounding_test : public VaultTestBase
                         vaultTotal(env, f.keylet) ==
                         Number{static_cast<std::int64_t>(total + offered)});
 
-                    env(vault.withdraw(
-                            {.depositor = f.bob,
-                             .id = f.keylet.key,
-                             .amount =
-                                 STAmount{
-                                     MPTIssue{f.shareID},
-                                     Number{static_cast<std::int64_t>(offered)}}}),
+                    env(vault.withdraw({
+                            .depositor = f.bob,
+                            .id = f.keylet.key,
+                            .amount =
+                                STAmount{
+                                    MPTIssue{f.shareID},
+                                    Number{static_cast<std::int64_t>(offered)}},
+                        }),
                         Ter(tesSUCCESS));
                     env.close();
                     BEAST_EXPECT(mptBalance(env, f.shareID, f.bob) == 0);
@@ -287,10 +293,11 @@ class VaultRounding_test : public VaultTestBase
                 shiftVaultAssets(env, f, -23);
                 BEAST_EXPECT(vaultTotal(env, f.keylet) == 7);
 
-                env(vault.withdraw(
-                        {.depositor = f.alice,
-                         .id = f.keylet.key,
-                         .amount = PrettyAsset{f.assetID}(1)}),
+                env(vault.withdraw({
+                        .depositor = f.alice,
+                        .id = f.keylet.key,
+                        .amount = PrettyAsset{f.assetID}(1),
+                    }),
                     Ter(fixed ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
                 BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == (fixed ? 30 : 26));
                 BEAST_EXPECT(mptBalance(env, f.assetID, f.alice) == (fixed ? 0 : 1));
@@ -301,18 +308,20 @@ class VaultRounding_test : public VaultTestBase
                 shiftVaultAssets(env, f, -23);
 
                 // fixCleanup3_4_0 already rejects this one on the fixed-shares branch.
-                env(vault.withdraw(
-                        {.depositor = f.alice,
-                         .id = f.keylet.key,
-                         .amount = STAmount{MPTIssue{f.shareID}, Number{1}}}),
+                env(vault.withdraw({
+                        .depositor = f.alice,
+                        .id = f.keylet.key,
+                        .amount = STAmount{MPTIssue{f.shareID}, Number{1}},
+                    }),
                     Ter(tecPRECISION_LOSS));
                 BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 30);
 
                 // The final withdrawal is exempt: it pays out what is left.
-                env(vault.withdraw(
-                        {.depositor = f.alice,
-                         .id = f.keylet.key,
-                         .amount = STAmount{MPTIssue{f.shareID}, Number{30}}}),
+                env(vault.withdraw({
+                        .depositor = f.alice,
+                        .id = f.keylet.key,
+                        .amount = STAmount{MPTIssue{f.shareID}, Number{30}},
+                    }),
                     Ter(tesSUCCESS));
                 BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 0);
                 BEAST_EXPECT(mptBalance(env, f.assetID, f.alice) == 7);
@@ -328,10 +337,11 @@ class VaultRounding_test : public VaultTestBase
             30,
             [&](Env& env, Vault& vault, Fixture const& f) {
                 shiftVaultAssets(env, f, -23);
-                env(vault.withdraw(
-                        {.depositor = f.alice,
-                         .id = f.keylet.key,
-                         .amount = STAmount{MPTIssue{f.shareID}, Number{1}}}),
+                env(vault.withdraw({
+                        .depositor = f.alice,
+                        .id = f.keylet.key,
+                        .amount = STAmount{MPTIssue{f.shareID}, Number{1}},
+                    }),
                     Ter(tecPRECISION_LOSS));
                 BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == 30);
             });
@@ -359,10 +369,11 @@ class VaultRounding_test : public VaultTestBase
                 3,
                 [&](Env& env, Vault& vault, Fixture const& f) {
                     shiftVaultAssets(env, f, 97);
-                    env(vault.withdraw(
-                        {.depositor = f.alice,
-                         .id = f.keylet.key,
-                         .amount = PrettyAsset{f.assetID}(50)}));
+                    env(vault.withdraw({
+                        .depositor = f.alice,
+                        .id = f.keylet.key,
+                        .amount = PrettyAsset{f.assetID}(50),
+                    }));
                     BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == (fixed ? 2 : 1));
                     BEAST_EXPECT(mptBalance(env, f.assetID, f.alice) == (fixed ? 33 : 67));
                 });
@@ -396,11 +407,12 @@ class VaultRounding_test : public VaultTestBase
                     std::optional<STAmount> amount;
                     if (!allShares)
                         amount = asset(67);
-                    env(vault.clawback(
-                            {.issuer = f.issuer,
-                             .id = f.keylet.key,
-                             .holder = f.alice,
-                             .amount = amount}),
+                    env(vault.clawback({
+                            .issuer = f.issuer,
+                            .id = f.keylet.key,
+                            .holder = f.alice,
+                            .amount = amount,
+                        }),
                         Ter(tesSUCCESS));
 
                     std::uint64_t const recovered = fixed ? 66 : 67;
@@ -443,11 +455,12 @@ class VaultRounding_test : public VaultTestBase
                     std::optional<STAmount> amount;
                     if (!allShares)
                         amount = asset(1);
-                    env(vault.clawback(
-                            {.issuer = f.issuer,
-                             .id = f.keylet.key,
-                             .holder = holder,
-                             .amount = amount}),
+                    env(vault.clawback({
+                            .issuer = f.issuer,
+                            .id = f.keylet.key,
+                            .holder = holder,
+                            .amount = amount,
+                        }),
                         Ter(fixed ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS}));
 
                     BEAST_EXPECT(
@@ -481,11 +494,12 @@ class VaultRounding_test : public VaultTestBase
                 3,
                 [&](Env& env, Vault& vault, Fixture const& f) {
                     shiftVaultAssets(env, f, 97);
-                    env(vault.clawback(
-                        {.issuer = f.issuer,
-                         .id = f.keylet.key,
-                         .holder = f.alice,
-                         .amount = PrettyAsset{f.assetID}(50)}));
+                    env(vault.clawback({
+                        .issuer = f.issuer,
+                        .id = f.keylet.key,
+                        .holder = f.alice,
+                        .amount = PrettyAsset{f.assetID}(50),
+                    }));
                     BEAST_EXPECT(mptBalance(env, f.shareID, f.alice) == (fixed ? 2 : 1));
                     BEAST_EXPECT(vaultTotal(env, f.keylet) == (fixed ? 67 : 33));
                 });

@@ -267,7 +267,7 @@ VaultClawback::assetsToClawback(
 
     // It's easy to hit this exception from Number with large enough
     // Scale so we avoid spamming the log and only use debug here.
-    auto const logOverflow = [&]() {
+    auto const logOverflow = [&] {
         JLOG(j_.debug())  //
             << "VaultClawback: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //

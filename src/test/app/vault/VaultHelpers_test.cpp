@@ -596,7 +596,7 @@ private:
         std::uint64_t sharesTotal,
         Number const& lossUnrealized = Number(0))
     {
-        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        auto const vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
         vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
         vault->at(sfShareMPTID) = shareMPT;
         vault->at(sfScale) = std::uint8_t(0);
@@ -604,7 +604,7 @@ private:
         vault->at(sfLossUnrealized) = lossUnrealized;
         associateAsset(*vault, asset);
 
-        auto issuance = std::make_shared<SLE>(keylet::mptokenIssuance(shareMPT));
+        auto const issuance = std::make_shared<SLE>(keylet::mptokenIssuance(shareMPT));
         issuance->at(sfOutstandingAmount) = sharesTotal;
         return {vault, issuance};
     }
