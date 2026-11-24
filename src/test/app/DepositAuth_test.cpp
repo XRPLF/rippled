@@ -28,6 +28,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -1143,8 +1144,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                     ledgerEntryDepositPreauth(env, bob, {{.issuer = issuer, .credType = credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
-                    jDP[jss::result].isMember(jss::error) &&
-                    jDP[jss::result][jss::error] == "entryNotFound");
+                    jDP[jss::result][jss::error] == "entryNotFound" &&
+                    jDP[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDP[jss::result][jss::error_message] == "Entry not found.");
             }
         }
     }
@@ -1232,8 +1234,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                     auto const jDelCred = credentials::ledgerEntry(env, alice, issuer, credType);
                     BEAST_EXPECT(
                         jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                        jDelCred[jss::result].isMember(jss::error) &&
-                        jDelCred[jss::result][jss::error] == "entryNotFound");
+                        jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                        jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                        jDelCred[jss::result][jss::error_message] == "Entry not found.");
                 }
 
                 {
@@ -1283,8 +1286,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 auto const jDelCred = credentials::ledgerEntry(env, gw, issuer, credType);
                 BEAST_EXPECT(
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) &&
-                    jDelCred[jss::result][jss::error] == "entryNotFound");
+                    jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                    jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                    jDelCred[jss::result][jss::error_message] == "Entry not found.");
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, gw) == 0);
@@ -1358,8 +1362,9 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             auto const jDelCred = credentials::ledgerEntry(env, zelda, issuer, credType);
             BEAST_EXPECT(
                 jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                jDelCred[jss::result].isMember(jss::error) &&
-                jDelCred[jss::result][jss::error] == "entryNotFound");
+                jDelCred[jss::result][jss::error] == "entryNotFound" &&
+                jDelCred[jss::result][jss::error_code] == RpcEntryNotFound &&
+                jDelCred[jss::result][jss::error_message] == "Entry not found.");
         }
     }
 
