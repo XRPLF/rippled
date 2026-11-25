@@ -204,7 +204,7 @@ MPTokenIssuanceEntry<ViewT>::canTrade(std::uint8_t depth) const
 {
     if (!this->exists())
         return tecOBJECT_NOT_FOUND;
-    if (!(*this)->isFlag(lsfMPTCanTrade))
+    if (!this->sleRef().isFlag(lsfMPTCanTrade))
         return tecNO_PERMISSION;
 
     auto const& view = this->readView();
@@ -212,7 +212,7 @@ MPTokenIssuanceEntry<ViewT>::canTrade(std::uint8_t depth) const
     // Post-fixCleanup3_2_0: vault shares inherit the underlying
     // asset's tradability. A share whose underlying has been
     // removed from trading cannot itself be placed on the DEX.
-    if (view.rules().enabled(fixCleanup3_2_0) && (*this)->isFieldPresent(sfReferenceHolding))
+    if (view.rules().enabled(fixCleanup3_2_0) && this->sleRef().isFieldPresent(sfReferenceHolding))
     {
         // Defensive depth bound on the inheritance recursion.
         // Unreachable in practice (vault-of-vault-shares
@@ -225,7 +225,7 @@ MPTokenIssuanceEntry<ViewT>::canTrade(std::uint8_t depth) const
             // LCOV_EXCL_STOP
         }
         auto const sleHolding =
-            view.read(keylet::unchecked((*this)->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(this->sleRef().getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
