@@ -1126,7 +1126,8 @@ TEST_F(SHAMapSyncTest, sync)
     {
         std::vector<SHAMapNodeData> a;
 
-        ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
+        ASSERT_TRUE(source.getNodeFat(
+            SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2), kMaxNodesPerRequest));
 
         ASSERT_FALSE(a.empty()) << "NodeSize";
 
@@ -1154,7 +1155,8 @@ TEST_F(SHAMapSyncTest, sync)
             // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
             // should be deterministic
-            if (!source.getNodeFat(it.first, b, randBool(eng_), randInt(eng_, 2)))
+            if (!source.getNodeFat(
+                    it.first, b, randBool(eng_), randInt(eng_, 2), kMaxNodesPerRequest))
                 FAIL() << "Unable to fetch node";
         }
 
@@ -1184,6 +1186,38 @@ TEST_F(SHAMapSyncTest, sync)
     EXPECT_TRUE(source.deepCompare(destination));
 
     destination.invariants();
+}
+
+// A reply holds at most maxNodes nodes however the tree below the node asked for fans out. The cut
+// keeps the order of the uncapped reply, so the requester receives a prefix of what it would
+// otherwise have been sent and asks for the rest on a later round trip.
+TEST_F(SHAMapSyncTest, get_node_fat_stops_at_max_nodes)
+{
+    static constexpr auto kItemCount = 300uz;
+    static constexpr std::uint32_t kDepth = 2;
+    static constexpr std::size_t kCap = 5;
+
+    TestNodeFamily f{j_};
+    SHAMap source{SHAMapType::FREE, f};
+    for (auto i = 0uz; i < kItemCount; ++i)
+        ASSERT_TRUE(source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS()));
+    ASSERT_TRUE(source.setImmutable());
+
+    // Control: with room to spare the same request returns far more than the cap.
+    std::vector<SHAMapNodeData> whole;
+    ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), whole, true, kDepth, kMaxNodesPerRequest));
+    ASSERT_GT(whole.size(), kCap);
+
+    std::vector<SHAMapNodeData> capped;
+    ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), capped, true, kDepth, kCap));
+    ASSERT_EQ(capped.size(), kCap);
+
+    for (auto i = 0uz; i < kCap; ++i)
+    {
+        EXPECT_EQ(capped[i].nodeID, whole[i].nodeID);
+        EXPECT_EQ(capped[i].isLeaf, whole[i].isLeaf);
+        EXPECT_EQ(capped[i].data, whole[i].data);
+    }
 }
 
 // The duplicate verdict also answers for a node that did not need to be added, which is the half
