@@ -356,7 +356,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        vaultSle.update();
+        vaultSle.updateInView();
     }
 
     // Update the LoanBroker object:
@@ -452,7 +452,7 @@ LoanManage::impairLoan(
             return tecLIMIT_EXCEEDED;  // LCOV_EXCL_LINE
         }
     }
-    vaultSle.update();
+    vaultSle.updateInView();
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
@@ -507,7 +507,7 @@ LoanManage::unimpairLoan(
         adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
     }
 
-    vaultSle.update();
+    vaultSle.updateInView();
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
