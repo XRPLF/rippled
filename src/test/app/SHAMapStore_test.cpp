@@ -83,8 +83,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
     // after the health check that gates it, and kFinished once a rotation has
     // run to completion. kExpired is logged by healthWait() when the circuit
     // breaker trips.
-    static constexpr char const* kRotating = "rotating";
-    static constexpr char const* kFinished = "finished rotation";
+    static constexpr char const* kRotating = "ROTATING:";
+    static constexpr char const* kFinished = "FINISHED ROTATION:";
     static constexpr char const* kExpired = "unable to make progress";
 
     // A Logs implementation that records every message the store's own
