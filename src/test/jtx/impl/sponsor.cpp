@@ -60,6 +60,27 @@ transfer(jtx::Account const& account, uint32_t flags, std::optional<UInt256> con
     return jv;
 }
 
+json::Value
+sponsoredAccountCreate(
+    jtx::Account const& account,
+    jtx::Account const& destination,
+    std::optional<STAmount> const& feeAmount,
+    std::optional<STAmount> const& maxFee,
+    std::optional<std::uint32_t> const& remainingOwnerCount)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::SponsoredAccountCreate;
+    jv[jss::Account] = account.human();
+    jv[jss::Destination] = destination.human();
+    if (feeAmount)
+        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
+    if (maxFee)
+        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
+    if (remainingOwnerCount)
+        jv[sfRemainingOwnerCount.jsonName] = *remainingOwnerCount;
+    return jv;
+}
+
 void
 CounterpartySponsor::operator()(Env& env, JTx& jt) const
 {
