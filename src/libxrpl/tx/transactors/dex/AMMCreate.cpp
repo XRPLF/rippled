@@ -287,7 +287,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     // Create ltAMM
     AMMEntryW ammSle(ammKeylet, sb, j);
-    ammSle.newSLE();
+    ammSle.newSle();
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
@@ -303,7 +303,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
     }
-    ammSle.insert();
+    ammSle.insertIntoView();
 
     // Send LPT to LP.
     auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);

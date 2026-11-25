@@ -222,7 +222,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
-    ammSle.update();
+    ammSle.updateInView();
 
     return {tesSUCCESS, true};
 }

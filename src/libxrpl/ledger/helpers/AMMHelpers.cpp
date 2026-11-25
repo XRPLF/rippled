@@ -605,7 +605,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
-    ammSle.erase();
+    ammSle.eraseFromView();
     sb.erase(sleAMMRoot);
 
     return tesSUCCESS;
@@ -730,7 +730,7 @@ verifyAndAdjustLPTokenBalance(
                 lpTokens, ammSle->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
             ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
-            ammSle.update();
+            ammSle.updateInView();
         }
         else
         {
