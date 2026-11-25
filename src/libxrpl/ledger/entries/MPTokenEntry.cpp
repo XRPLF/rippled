@@ -62,7 +62,7 @@ MPTokenEntry<ViewT>::create(
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    mptoken.newSLE();
+    mptoken.newSle();
     (*mptoken)[sfAccount] = account;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = flags;
@@ -70,7 +70,7 @@ MPTokenEntry<ViewT>::create(
 
     addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
 
-    mptoken.insert();
+    mptoken.insertIntoView();
 
     return tesSUCCESS;
 }

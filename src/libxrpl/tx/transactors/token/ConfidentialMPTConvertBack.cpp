@@ -335,7 +335,7 @@ ConfidentialMPTConvertBack::doApply()
     incrementConfidentialVersion(*sleMptoken);
 
     view().update(sleIssuance);
-    sleMptoken.update();
+    sleMptoken.updateInView();
     return tesSUCCESS;
 }
 

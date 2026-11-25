@@ -598,6 +598,110 @@ TEST(JsonValue, compare_strings)
 #pragma pop_macro("DO_COMPARE")
 }
 
+TEST(JsonValue, construct_from_string_view)
+{
+    using namespace std::string_view_literals;
+
+    // The view need not end in a null character.
+    EXPECT_EQ(json::Value{"2.0"sv}.asString(), "2.0");
+    EXPECT_EQ(json::Value{"2.0 and more"sv.substr(0, 3)}.asString(), "2.0");
+    EXPECT_EQ(json::Value{""sv}.asString(), "");
+
+    // A default-constructed view has a null `data()` and yields an empty string value.
+    std::string_view const empty;
+    json::Value const fromEmpty{empty};
+    EXPECT_TRUE(fromEmpty.isString());
+    EXPECT_EQ(fromEmpty.asString(), "");
+    EXPECT_EQ(fromEmpty, ""sv);
+
+    // The characters are copied, not aliased: overwriting the owner leaves the value unchanged.
+    std::string owner{"borrowed"};
+    json::Value const copied{std::string_view{owner}};
+    owner.assign("replaced");
+    EXPECT_EQ(copied.asString(), "borrowed");
+
+    // A string value reads through its first null character only.
+    json::Value const embedded{"a\0b"sv};
+    EXPECT_EQ(embedded.asString(), "a");
+    EXPECT_NE(embedded, "a\0b"sv);
+    EXPECT_EQ(embedded, "a"sv);
+    EXPECT_EQ(embedded, json::Value{"a\0b"sv});
+}
+
+TEST(JsonValue, compare_string_view)
+{
+    // Comparing against a view builds no temporary Value.
+    using namespace std::string_view_literals;
+
+    EXPECT_EQ(json::Value{"2.0"}, "2.0"sv);
+    EXPECT_NE(json::Value{"2.0"}, "2.00"sv);
+    EXPECT_NE(json::Value{"2.0"}, ""sv);
+
+    // The comparison stops at the view's end, not at a null character.
+    EXPECT_EQ(json::Value{"2.0"}, "2.0 and more"sv.substr(0, 3));
+
+    EXPECT_EQ(json::Value{""}, ""sv);
+
+    // A string value holding a null pointer equals nothing, not even the empty view.
+    EXPECT_NE(json::Value{json::ValueType::String}, ""sv);
+    EXPECT_NE(json::Value{json::ValueType::String}, "2.0"sv);
+    EXPECT_NE(json::Value{json::ValueType::String}, json::Value{""});
+
+    // Nothing that is not a string equals one. Null is what an absent member reads as.
+    EXPECT_NE(json::Value{json::ValueType::Null}, ""sv);
+    EXPECT_NE(json::Value{json::ValueType::Null}, "2.0"sv);
+    EXPECT_NE(json::Value{2}, "2"sv);
+    EXPECT_NE(json::Value{true}, "true"sv);
+    EXPECT_NE(json::Value{json::ValueType::Object}, ""sv);
+
+    // A literal, a `char const*` and a `std::string` take the same path. Only an embedded null
+    // character tells the two paths apart: the Value comparison stops at it.
+    EXPECT_EQ(json::Value{"2.0"}, "2.0");
+    EXPECT_NE(json::Value{"2.0"}, "2.1");
+    EXPECT_NE(json::Value{}, "2.0");
+    EXPECT_EQ("2.0", json::Value{"2.0"});
+
+    char const* const version = "2.0";
+    EXPECT_EQ(json::Value{"2.0"}, version);
+    EXPECT_NE(json::Value{"2.1"}, version);
+
+    // A null `char const*` reads as empty text, as it does when it builds a Value.
+    char const* const none = nullptr;
+    EXPECT_EQ(json::Value{""}, none);
+    EXPECT_EQ(json::Value{""}, json::Value{none});
+    EXPECT_NE(json::Value{"2.0"}, none);
+    EXPECT_NE(json::Value{json::ValueType::String}, none);
+    EXPECT_NE(json::Value{}, none);
+
+    EXPECT_EQ(json::Value{"2.0"}, std::string{"2.0"});
+    EXPECT_NE(json::Value{"2.0"}, std::string{"2.1"});
+    EXPECT_NE(json::Value{json::ValueType::Null}, std::string{"2.0"});
+    std::string const withNul{"a\0b", 3};
+    EXPECT_NE(json::Value{"a\0b"sv}, withNul);
+    EXPECT_EQ(json::Value{"a\0b"sv}, json::Value{withNul});
+
+    // A `StaticString` compares through Value: it converts to a view only through `char const*`.
+    static constexpr json::StaticString kVersion{"2.0"};
+    EXPECT_EQ(json::Value{"2.0"}, kVersion);
+    EXPECT_NE(json::Value{"2.1"}, kVersion);
+    EXPECT_NE(json::Value{}, kVersion);
+
+    // `nullptr` compares through Value, which stores it as an empty string.
+    EXPECT_EQ(json::Value{""}, nullptr);
+    EXPECT_NE(json::Value{"2.0"}, nullptr);
+    EXPECT_NE(json::Value{}, nullptr);
+
+    // A literal `0` deduces as `int`, which no view accepts, so it compares as a number.
+    // RPCCall.cpp rejects a `transaction_entry` ledger index this way.
+    EXPECT_EQ(json::Value{0}, 0);
+    EXPECT_NE(json::Value{4294967295u}, 0);
+    EXPECT_NE(json::Value{""}, 0);
+    EXPECT_NE(json::Value{2}, 0);
+
+    // A null and an Int are different types, so the comparison is false.
+    EXPECT_NE(json::Value{}, 0);
+}
+
 TEST(JsonValue, bool)
 {
     EXPECT_FALSE(json::Value());
