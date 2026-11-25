@@ -66,7 +66,7 @@ CredentialEntry<ViewT>::removeFromLedger()
     }
 
     // Remove object from ledger
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }

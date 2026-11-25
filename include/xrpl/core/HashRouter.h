@@ -70,6 +70,13 @@ operator&=(HashRouterFlags& lhs, HashRouterFlags rhs)
     return lhs;
 }
 
+constexpr HashRouterFlags
+operator~(HashRouterFlags flags)
+{
+    return static_cast<HashRouterFlags>(
+        ~static_cast<std::underlying_type_t<HashRouterFlags>>(flags));
+}
+
 constexpr bool
 any(HashRouterFlags flags)
 {
@@ -146,6 +153,17 @@ private:
         setFlags(HashRouterFlags flagsToSet)
         {
             flags_ |= flagsToSet;
+        }
+
+        /**
+         * Clear the given flags, leaving every other flag as it is.
+         *
+         * @param flags The flags to clear.
+         */
+        void
+        clearFlags(HashRouterFlags flags)
+        {
+            flags_ &= ~flags;
         }
 
         /**
@@ -246,6 +264,20 @@ public:
      */
     bool
     setFlags(UInt256 const& key, HashRouterFlags flags);
+
+    /**
+     * Clear flags on a hash.
+     *
+     * A hash without an entry is left without one, so clearing never creates
+     * or refreshes an entry.
+     *
+     * @param key The hash whose flags to clear.
+     * @param flags The flags to clear.
+     * @return `true` if at least one of the flags was set and is now clear,
+     *         `false` if nothing changed.
+     */
+    bool
+    clearFlags(UInt256 const& key, HashRouterFlags flags);
 
     HashRouterFlags
     getFlags(UInt256 const& key);

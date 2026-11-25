@@ -133,7 +133,7 @@ build job produces `validator-keys` next to `xrpld` and uploads it as the
 `validator-keys-<config name>` artifact. The packaging matrix names both
 artifacts (`xrpld_artifact_name` and `validator_keys_artifact_name`) after that
 same config, so a packaged config must keep `-Dvalidator_keys=ON`. Those configs
-are not `minimal`, so `on-pr.yml` only packages once a PR runs the full matrix.
+do not list `pull_request`, so `on-pr.yml` only packages a labeled PR.
 
 `validator-keys` is fetched from an exact commit pinned in
 [`cmake/XrplValidatorKeys.cmake`](../cmake/XrplValidatorKeys.cmake), so a given
