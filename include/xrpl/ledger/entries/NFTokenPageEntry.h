@@ -67,7 +67,7 @@ public:
     [[nodiscard]] std::optional<STArray>
     tokensWithout(UInt256 const& id) const
     {
-        auto arr = (*this)->getFieldArray(sfNFTokens);
+        auto arr = this->sleRef().getFieldArray(sfNFTokens);
 
         auto x = std::ranges::find_if(
             arr, [&id](STObject const& obj) { return (obj[sfNFTokenID] == id); });
