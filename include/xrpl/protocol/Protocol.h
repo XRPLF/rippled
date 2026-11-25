@@ -411,11 +411,11 @@ constexpr std::uint32_t kLegacyLoanRedemptionBuffer = std::chrono::seconds{60}.c
  * one ledger then exists in which the loan can be defaulted while withdrawals
  * are still locked. Impairment becomes possible a full grace period earlier.
  *
- * This is not a guarantee. While very unlikely, a network stall can jump the 
+ * This is not a guarantee. While very unlikely, a network stall can jump the
  * clock from before the end of the grace period to RedemptionDate or later,
  * making default and withdrawal then become possible in the same ledger,
  * because the resolution only rounds a close time and does  not limit how far
- * the clock moves between two ledgers. Close times follow the wall clock. 
+ * the clock moves between two ledgers. Close times follow the wall clock.
  * A larger buffer cannot rule this out, because a stall can outlast any fixed
  * number of seconds.
  *

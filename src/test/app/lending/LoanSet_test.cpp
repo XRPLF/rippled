@@ -20,7 +20,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -1021,9 +1020,8 @@ private:
         // RedemptionDate, closes the ledger, and returns the result recorded in the closed
         // ledger, if there is one. The result on submit is ignored because it is computed from
         // the earlier StartDate and can differ at the boundary.
-        auto const submitLoan = [&, this](
-                                    FeatureBitset const& features,
-                                    std::uint32_t gap) -> std::optional<TER> {
+        auto const submitLoan =
+            [&, this](FeatureBitset const& features, std::uint32_t gap) -> std::optional<TER> {
             Env env(*this, features);
             env.fund(XRP(1'000'000'000), lender, borrower);
             env.close();
@@ -1096,8 +1094,8 @@ private:
         // loan with the shortest grace period, timed so that its StartDate is
         // kLatestStartOffset after SubscriptionDate. Returns the result recorded in the closed
         // ledger, if there is one.
-        auto const submitLoanAtLatestStart =
-            [&, this](std::uint32_t interval) -> std::optional<TER> {
+        auto const submitLoanAtLatestStart = [&,
+                                              this](std::uint32_t interval) -> std::optional<TER> {
             Env env(*this, features);
             env.fund(XRP(1'000'000'000), lender, borrower);
             env.close();
