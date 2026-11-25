@@ -35,7 +35,7 @@ SecretKey::~SecretKey()
     secureErase(buf_, sizeof(buf_));
 }
 
-SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
+SecretKey::SecretKey(std::array<std::uint8_t, kSize> const& key)
 {
     std::memcpy(buf_, key.data(), key.size());
 }
