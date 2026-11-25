@@ -3720,7 +3720,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 ammAlice.deposit(carol_, 1'000'000);
-                // Invlaid Min/Max combination
+                // Invalid Min/Max combination
                 env(ammAlice.bid({
                         .account = carol_,
                         .bidMin = 200,
