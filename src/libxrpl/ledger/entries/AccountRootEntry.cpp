@@ -357,7 +357,7 @@ AccountRootEntry<ViewT>::createPseudoAccount(
 
     // Create pseudo-account.
     AccountRootEntry<ApplyView> account(accountId, view);
-    account.newSLE();
+    account.newSle();
     account->setAccountID(sfAccount, accountId);
     account->setFieldAmount(sfBalance, STAmount{});
 
@@ -377,7 +377,7 @@ AccountRootEntry<ViewT>::createPseudoAccount(
     // Link the pseudo-account with its owner object.
     account->setFieldH256(ownerField, pseudoOwnerKey);
 
-    account.insert();
+    account.insertIntoView();
 
     return account;
 }
