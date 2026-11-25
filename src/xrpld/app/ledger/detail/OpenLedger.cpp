@@ -148,7 +148,7 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            app.getOverlay().relay(txId, msg, *toSkip);
+            app.getOverlay().relay(*tx, msg, *toSkip);
         }
     }
 

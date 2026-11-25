@@ -52,7 +52,7 @@ MPTokenIssuanceDestroy::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     decreaseOwnerCountForObject(view(), accountID_, mpt.mutableRawSle(), 1, j_);
-    mpt.erase();
+    mpt.eraseFromView();
 
     return tesSUCCESS;
 }
