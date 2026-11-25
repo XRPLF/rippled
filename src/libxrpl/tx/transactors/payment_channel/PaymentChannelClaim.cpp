@@ -174,7 +174,7 @@ PaymentChannelClaim::doApply()
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
-        slep.update();
+        slep.updateInView();
     }
 
     if (ctx_.tx.isFlag(tfRenew))
@@ -182,7 +182,7 @@ PaymentChannelClaim::doApply()
         if (src != txAccount)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
-        slep.update();
+        slep.updateInView();
     }
 
     if (ctx_.tx.isFlag(tfClose))
@@ -199,7 +199,7 @@ PaymentChannelClaim::doApply()
         if (!curExpiration || *curExpiration > settleExpiration)
         {
             (*slep)[~sfExpiration] = settleExpiration;
-            slep.update();
+            slep.updateInView();
         }
     }
 

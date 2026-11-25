@@ -58,7 +58,7 @@ PayChannelEntry<ViewT>::removeFromLedger()
     view.update(sle);
 
     // Remove PayChan from ledger
-    this->erase();
+    this->eraseFromView();
     return tesSUCCESS;
 }
 

@@ -79,7 +79,7 @@ PaymentChannelFund::doApply()
                                                                 : TER{temBAD_EXPIRATION};
         }
         (*slep)[~sfExpiration] = *newExpiration;
-        slep.update();
+        slep.updateInView();
     }
 
     auto const sle = ctx_.view().peek(keylet::account(txAccount));
@@ -111,7 +111,7 @@ PaymentChannelFund::doApply()
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    slep.update();
+    slep.updateInView();
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     ctx_.view().update(sle);

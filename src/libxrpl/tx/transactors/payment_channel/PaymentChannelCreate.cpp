@@ -168,7 +168,7 @@ PaymentChannelCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     PayChannelEntryW slep(account, dst, ctx_.tx.getSeqProxy(), ctx_.view());
-    slep.newSLE();
+    slep.newSle();
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
@@ -186,7 +186,7 @@ PaymentChannelCreate::doApply()
         (*slep)[sfSequence] = ctx_.tx.getSeqProxy().value();
     }
 
-    slep.insert();
+    slep.insertIntoView();
 
     // Add PayChan to owner directory
     {
