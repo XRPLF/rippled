@@ -246,7 +246,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             return res;
         }
         ammSle->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
-        ammSle.update();
+        ammSle.updateInView();
         return tesSUCCESS;
     };
 
