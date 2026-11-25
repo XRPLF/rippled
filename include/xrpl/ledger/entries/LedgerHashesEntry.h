@@ -51,7 +51,7 @@ public:
     {
         if (!this->exists())
             return std::nullopt;
-        STVector256 const vec = (*this)->getFieldV256(sfHashes);
+        STVector256 const vec = this->sleRef().getFieldV256(sfHashes);
         if (vec.size() > diff)
             return vec[vec.size() - diff - 1];
         return std::nullopt;

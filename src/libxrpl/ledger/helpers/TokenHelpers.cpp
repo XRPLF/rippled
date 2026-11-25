@@ -813,7 +813,7 @@ directSendNoFeeIOU(
                 j);
         }
 
-        sleRippleState.update();
+        sleRippleState.updateInView();
         return tesSUCCESS;
     }
 

@@ -1453,7 +1453,7 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
  * How many of the participants must agree to reach a given threshold?
  *
  * Note that the number may not precisely yield the requested percentage.
- * For example, with with size = 5 and percent = 70, we return 3, but
+ * For example, with size = 5 and percent = 70, we return 3, but
  * 3 out of 5 works out to 60%. There are no security implications to
  * this.
  *
