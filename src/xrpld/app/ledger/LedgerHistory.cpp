@@ -114,6 +114,13 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 }
 
 std::shared_ptr<Ledger const>
+LedgerHistory::getCachedLedgerByHash(LedgerHash const& hash)
+{
+    auto lockedMaps = ledgerMaps_.lock();
+    return lockedMaps->byHash->fetch(hash);
+}
+
+std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
     std::shared_ptr<Ledger const> ret;

@@ -414,7 +414,7 @@ public:
      * @return True if space is available.
      */
     bool
-    transactionDbHasSpace(Config const& config);
+    transactionDbHasSpace(Config const& config) override;
 
 private:
     std::reference_wrapper<ServiceRegistry> registry_;
@@ -481,16 +481,16 @@ private:
 };
 
 /**
- * @brief setupRelationalDatabase Creates and returns a SQLiteDatabase
- *        instance based on configuration. It's recommended to use it as
- *        a singleton, but it's not enforced (e.g. if you have more than one
- *        database).
+ * @brief setupRelationalDatabase Creates and returns a RelationalDatabase
+ *        instance based on configuration. Checks the [relational_db] section
+ *        for "backend" setting - if "rwdb", creates RWDBDatabase, otherwise
+ *        creates SQLiteDatabase.
  * @param registry The service registry.
  * @param config Config object.
  * @param jobQueue JobQueue object.
- * @return SQLiteDatabase instance.
+ * @return Unique pointer to RelationalDatabase instance.
  */
-SQLiteDatabase
+std::unique_ptr<RelationalDatabase>
 setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl

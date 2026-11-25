@@ -37,6 +37,7 @@ private:
     node_store::DummyScheduler scheduler_;
 
     beast::Journal const j_;
+    bool isNullBackend_{false};
 
     // Written from whichever nodestore reader thread reports the miss, so read back atomically.
     std::atomic<std::size_t> missingBySeqReports_ = 0;
@@ -167,6 +168,18 @@ public:
     clock()
     {
         return clock_;
+    }
+
+    void
+    setNullBackend(bool enable)
+    {
+        isNullBackend_ = enable;
+    }
+
+    [[nodiscard]] bool
+    isNullBackend() const override
+    {
+        return isNullBackend_;
     }
 };
 

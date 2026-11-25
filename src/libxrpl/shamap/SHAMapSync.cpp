@@ -7,6 +7,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -46,6 +47,20 @@ namespace {
 isLeafDepth(unsigned int depth)
 {
     return depth >= SHAMap::kLeafDepth;
+}
+
+/**
+ * Whether this map may consult the shared FullBelowCache.
+ *
+ * In null-backend mode the cache is shared across SHAMaps that do not share
+ * pinned children. A hit skips the subtree, so canonicalizeChild never runs.
+ * Per-inner-node isFullBelowGen stays enabled: it only affects the SHAMap
+ * that set it. Disk-backed Families in the same process are unaffected.
+ */
+bool
+useFullBelowCache(Family const& family)
+{
+    return !family.isNullBackend();
 }
 
 }  // namespace
@@ -226,8 +241,9 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         // The depth test precedes the cache lookup for the same reason it does in addKnownNode():
         // the cache is keyed by node hash and shared across maps, and a hash covers a node's
         // children but not its depth. Skipping the shortcut forgoes an optimization only.
+        // Null-backend mode also skips the shared cache so a hit cannot skip canonicalizeChild.
         else if (
-            !backed_ || isLeafDepth(nodeID.getDepth() + 1) ||
+            !backed_ || isLeafDepth(nodeID.getDepth() + 1) || !useFullBelowCache(f_) ||
             !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
@@ -290,7 +306,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
     if (fullBelow)
     {  // No partial node encountered below this node
         node->setFullBelowGen(mn.generation);
-        if (backed_)
+        if (backed_ && useFullBelowCache(f_))
         {
             f_.getFullBelowCache()->insert(node->getHash().asUInt256());
         }
@@ -658,12 +674,11 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-
         // Depth before the cache: the cache is keyed by node hash and shared across the family, and
         // a hash covers a node's children but not its depth, so the same subtree can be cached as
         // complete at one depth and reached at another. Skipping the shortcut only forgoes an
-        // optimization.
-        if (!isLeafDepth(currNodeID.getDepth() + 1) &&
+        // optimization. Null-backend mode skips the shared cache entirely.
+        if (useFullBelowCache(f_) && !isLeafDepth(currNodeID.getDepth() + 1) &&
             f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();

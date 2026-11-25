@@ -45,6 +45,7 @@
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -2759,16 +2760,45 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
         // VFALCO TODO Move this someplace more sensible so we don't
         //             need to inject the NodeStore interfaces.
         std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
-        auto const nodeObject = app_.getNodeStore().fetchNodeObject(hash, seq);
-        if (!nodeObject)
-            continue;
 
-        protocol::TMIndexedObject& newObj = *reply.add_objects();
-        newObj.set_hash(hash.begin(), hash.size());
-        auto const& data = nodeObject->getData();
-        newObj.set_data(data.data(), data.size());
-        if (obj.has_ledgerseq())
-            newObj.set_ledgerseq(obj.ledgerseq());
+        // Node store first. Null mode stores nothing there, so SHAMap nodes
+        // come from the tree-node cache and ledger headers from resident
+        // ledgers. TMIndexedObject no longer carries a node id, so this
+        // reply cannot walk child links without scanning a whole state tree.
+        auto fill = [&](void const* data, std::size_t size) {
+            protocol::TMIndexedObject& newObj = *reply.add_objects();
+            newObj.set_hash(hash.begin(), hash.size());
+            newObj.set_data(data, size);
+            if (obj.has_ledgerseq())
+                newObj.set_ledgerseq(obj.ledgerseq());
+        };
+
+        if (auto const nodeObject = app_.getNodeStore().fetchNodeObject(hash, seq))
+        {
+            auto const& data = nodeObject->getData();
+            fill(data.data(), data.size());
+            continue;
+        }
+
+        Serializer s;
+        if (auto const treeNode = app_.getNodeFamily().getTreeNodeCache()->fetch(hash))
+        {
+            treeNode->serializeWithPrefix(s);
+            fill(s.getDataPtr(), s.getLength());
+            continue;
+        }
+
+        if (packet.type() == protocol::TMGetObjectByHash::otLEDGER &&
+            app_.getNodeFamily().isNullBackend())
+        {
+            if (auto const ledger = app_.getLedgerMaster().getResidentLedgerByHash(hash))
+            {
+                s.reserve(sizeof(LedgerHeader) + 4);
+                s.add32(HashPrefix::LedgerMaster);
+                addRaw(ledger->header(), s);
+                fill(s.getDataPtr(), s.getLength());
+            }
+        }
     }
 
     // Apply work-proportional charge. `charge()` posts the disconnect
