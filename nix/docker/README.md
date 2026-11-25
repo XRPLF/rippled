@@ -52,10 +52,10 @@ work without `ca-certificates` being installed in the base image.
      workspace with `cargo` to exercise proc-macro dylib loading.
 3. **`tester`** — Start again from a clean `BASE_IMAGE` (no Nix toolchain),
    install only the sanitizer runtime libraries
-   ([`install-sanitizer-libs.sh`](./install-sanitizer-libs.sh)), and run the
-   binaries compiled in `final`. This proves the binaries built with the Nix
-   toolchain actually run on a vanilla base image. On `nixos/nix` this step is
-   skipped (the binaries are patched for a conventional FHS loader).
+   ([`bin/install/sanitizer-libs.sh`](../../bin/install/sanitizer-libs.sh)),
+   and run the binaries compiled in `final`. This proves the binaries built with
+   the Nix toolchain actually run on a vanilla base image. On `nixos/nix` this
+   step is skipped (the binaries are patched for a conventional FHS loader).
 4. **Output** — The final image is gated on the tester succeeding: it copies a
    sentinel file out of `tester`, so a failed test run fails the whole build.
 
@@ -75,9 +75,10 @@ toolchain being present at runtime. Two pieces make that work:
 
 - **An expected dynamic linker in the image.**
   Binaries built in Nix environments reference a dynamic linker from Nix store paths, which won't be present in the base image. However,
-  [`bin/default-loader-path.sh`](../../bin/default-loader-path.sh) reports the
+  [`bin/nix/default-loader-path.sh`](../../bin/nix/default-loader-path.sh) reports the
   expected loader path for the current architecture, so we can patch the binaries
-  to use the correct loader.
+  to use the correct loader. The image ships it as
+  `/usr/local/bin/default-loader-path.sh`.
 
 The build then verifies all of this end to end, and the C++ and Rust programs
 go through the same pipeline: each is compiled in `final`, has its `PT_INTERP`
@@ -91,11 +92,11 @@ whose resulting binary is patched and run like the others.
 
 ## Files
 
-| File                                                                    | Purpose                                                                              |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [`./Dockerfile`](./Dockerfile)                                          | Multi-stage build described above.                                                   |
-| [`./test_files/cpp/`](./test_files/cpp)                                 | C++ sanitizer smoke test: sources + compile/run scripts.                             |
-| [`./test_files/rust/`](./test_files/rust)                               | Rust smoke test: rustc sources + a cargo proc-macro workspace + compile/run scripts. |
-| [`/bin/check-tools.sh`](../../bin/check-tools.sh)                       | Verify every expected tools are present and runnable.                                |
-| [`/bin/default-loader-path.sh`](../../bin/default-loader-path.sh)       | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.            |
-| [`/bin/install-sanitizer-libs.sh`](../../bin/install-sanitizer-libs.sh) | Install `libasan`/`libtsan`/`libubsan` runtimes on the supported base images.        |
+| File                                                                      | Purpose                                                                              |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`./Dockerfile`](./Dockerfile)                                            | Multi-stage build described above.                                                   |
+| [`./test_files/cpp/`](./test_files/cpp)                                   | C++ sanitizer smoke test: sources + compile/run scripts.                             |
+| [`./test_files/rust/`](./test_files/rust)                                 | Rust smoke test: rustc sources + a cargo proc-macro workspace + compile/run scripts. |
+| [`/bin/check-tools.sh`](../../bin/check-tools.sh)                         | Verify every expected tools are present and runnable.                                |
+| [`/bin/nix/default-loader-path.sh`](../../bin/nix/default-loader-path.sh) | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.            |
+| [`/bin/install/sanitizer-libs.sh`](../../bin/install/sanitizer-libs.sh)   | Install `libasan`/`libtsan`/`libubsan` runtimes on the supported base images.        |

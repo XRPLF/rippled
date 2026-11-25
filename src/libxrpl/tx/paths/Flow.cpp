@@ -54,10 +54,9 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
     std::optional<UInt256> const& domainID,
-    beast::Journal j,
-    path::detail::FlowDebugInfo* flowDebugInfo)
+    beast::Journal j)
 {
-    Asset const srcAsset = [&]() -> Asset {
+    Asset const srcAsset = [&] -> Asset {
         if (sendMax)
             return sendMax->asset();
         return deliver.asset().visit(
@@ -140,8 +139,7 @@ flow(
                     limitQuality,
                     sendMax,
                     j,
-                    ammContext,
-                    flowDebugInfo));
+                    ammContext));
         },
         srcAsset.getAmountType(),
         dstAsset.getAmountType());

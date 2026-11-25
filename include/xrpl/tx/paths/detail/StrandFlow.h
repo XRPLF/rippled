@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Concepts.h>
@@ -18,9 +19,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
-#include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
@@ -31,7 +30,6 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -408,7 +406,7 @@ limitOut(
     if (!qf || qf->isConst())
         return remainingOut;
 
-    auto const out = [&]() {
+    auto const out = [&] {
         auto const out = qf->outFromAvgQ(limitQuality);
         if (!out)
             return remainingOut;
@@ -577,7 +575,6 @@ public:
  * @param sendMaxST If present, the maximum STAmount to send
  * @param j Journal to write journal messages to
  * @param ammContext counts iterations with AMM offers
- * @param flowDebugInfo If pointer is non-null, write flow debug info here
  * @return Actual amount in and out from the strands, errors, and payment
  * sandbox
  */
@@ -592,8 +589,7 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
-    AMMContext& ammContext,
-    path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
+    AMMContext& ammContext)
 {
     // Used to track the strand that offers the best quality (output/input
     // ratio)
@@ -646,11 +642,21 @@ flow(
     boost::container::flat_multiset<TOutAmt> savedOuts;
     savedOuts.reserve(maxTries);
 
-    auto sum = [](auto const& col) {
+    // Returns std::nullopt if the aggregate overflows; callers treat that as a
+    // dry path.
+    auto const sum = [](auto const& col) -> std::optional<std::decay_t<decltype(*col.begin())>> {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
             return TResult{beast::kZero};
-        return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+        TResult total = *col.begin();
+        for (auto it = col.begin() + 1; it != col.end(); ++it)
+        {
+            auto const next = checkedStepAddOpt(total, *it);
+            if (!next)
+                return std::nullopt;
+            total = *next;
+        }
+        return total;
     };
 
     // These offers only need to be removed if the payment is not
@@ -670,7 +676,7 @@ flow(
         ammContext.setMultiPath(activeStrands.size() > 1);
 
         // Limit only if one strand and limitQuality
-        auto const limitRemainingOut = [&]() {
+        auto const limitRemainingOut = [&] {
             if (activeStrands.size() == 1 && limitQuality)
             {
                 if (auto const strand = activeStrands.get(0))
@@ -682,8 +688,6 @@ flow(
 
         boost::container::flat_set<UInt256> ofrsToRm;
         std::optional<BestStrand> best;
-        if (flowDebugInfo)
-            flowDebugInfo->newLiquidityPass();
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -711,9 +715,6 @@ flow(
 
             if (!f.success || f.out == beast::kZero)
                 continue;
-
-            if (flowDebugInfo)
-                flowDebugInfo->pushLiquiditySrc(EitherAmount(f.in), EitherAmount(f.out));
 
             XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox && (!remainingIn || f.in <= *remainingIn),
@@ -749,14 +750,16 @@ flow(
         {
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
-            remainingOut = outReq - sum(savedOuts);
+            auto const sumOut = sum(savedOuts);
+            if (!sumOut)
+                return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+            remainingOut = outReq - *sumOut;
             if (sendMax)
-                remainingIn = *sendMax - sum(savedIns);
-
-            if (flowDebugInfo)
             {
-                flowDebugInfo->pushPass(
-                    EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
+                auto const sumIn = sum(savedIns);
+                if (!sumIn)
+                    return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+                remainingIn = *sendMax - *sumIn;
             }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
@@ -777,7 +780,7 @@ flow(
             setUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
-                if (auto ok = sb.peek(keylet::offer(o)))
+                if (auto const ok = sb.peek(keylet::offer(o)))
                     offerDelete(sb, ok, j);
             }
         }
@@ -786,8 +789,12 @@ flow(
             break;
     }
 
-    auto const actualOut = sum(savedOuts);
-    auto const actualIn = sum(savedIns);
+    auto const actualOutOpt = sum(savedOuts);
+    auto const actualInOpt = sum(savedIns);
+    if (!actualOutOpt || !actualInOpt)
+        return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
+    auto const actualOut = *actualOutOpt;
+    auto const actualIn = *actualInOpt;
 
     JLOG(j.trace()) << "Total flow: in: " << to_string(actualIn)
                     << " out: " << to_string(actualOut);
@@ -797,13 +804,10 @@ flow(
      *   TakerPays. We reverse pays and gets because during crossing
      *   we are taking, therefore the owner must deliver the full TakerPays and
      *   the entire TakerGets doesn't have to be spent.
-     *   Pre-fixFillOrKill amendment code fails if the entire TakerGets
-     *   is not spent. fixFillOrKill addresses this issue.
      * 2. If tfSell is also set then the owner must spend the entire TakerGets
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
      */
-    bool const fillOrKillEnabled = baseView.rules().enabled(fixFillOrKill);
 
     if (actualOut != outReq)
     {
@@ -819,13 +823,9 @@ flow(
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
-            // Pre-fixFillOrKill amendment:
-            //   That case is handled below; not here.
-            // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e, case 1.
-            if (offerCrossing == OfferCrossing::No ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            // If partialPayment is false, the caller requires full outReq (payments, or FillOrKill
+            // offers).
+            if (offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
@@ -835,16 +835,10 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing != OfferCrossing::No &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
+    if (!partialPayment && offerCrossing == OfferCrossing::Sell)
     {
         // If we're offer crossing and partialPayment is *not* true, then
-        // we're handling a FillOrKill offer.  In this case remainingIn must
-        // be zero (all funds must be consumed) or else we kill the offer.
-        // Pre-fixFillOrKill amendment:
-        //   Handles both cases 1. and 2.
-        // fixFillOrKill amendment:
-        //   Handles 2. 1. is handled above and falls through for tfSell.
+        // we're handling a FillOrKill offer.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};

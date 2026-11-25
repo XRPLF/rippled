@@ -213,7 +213,7 @@ PaymentChannelCreate::doApply()
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
-    sle.update();
+    sle.updateInView();
 
     return tesSUCCESS;
 }

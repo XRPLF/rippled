@@ -55,7 +55,7 @@ signatureRole(SField const* subField);
  */
 void
 sign(
-    json::Value& jv,
+    json::Value const& jv,
     Account const& account,
     json::Value& sigObject,
     HashPrefix prefix = HashPrefix::TxSign);

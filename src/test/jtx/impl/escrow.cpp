@@ -57,7 +57,7 @@ cancel(AccountID const& account, Account const& from, std::uint32_t seq)
 }
 
 Rate
-rate(Env& env, Account const& account, std::uint32_t const& seq)
+rate(Env const& env, Account const& account, std::uint32_t const& seq)
 {
     auto const sle = env.le(keylet::escrow(account.id(), SeqProxy::rawSequence(seq)));
     if (sle->isFieldPresent(sfTransferRate))

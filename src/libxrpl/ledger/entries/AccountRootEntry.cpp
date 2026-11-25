@@ -29,13 +29,14 @@ AccountRootEntry<ViewT>::reserve(Adjustment adj) const
     auto const j = this->journal();
 
     XRPL_ASSERT(
-        this->exists() && (*this)->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
+        this->exists() && this->sleRef().getType() == ltACCOUNT_ROOT,
+        "xrpl::accountReserve : valid sle");
 
     if (!view.rules().enabled(featureSponsor))
     {
         XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::accountReserve : no account count delta");
         return view.fees().accountReserve(
-            (*this)->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
+            this->sleRef().getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
     }
     std::uint32_t const currentOwnerCount = ownerCount(adj.ownerCountDelta);
     std::uint32_t const currentAccountCount =
@@ -51,13 +52,13 @@ AccountRootEntry<ViewT>::ownerCount(std::int32_t ownerCountAdj) const
     auto const j = this->journal();
 
     XRPL_ASSERT(
-        this->exists() && (*this)->getType() == ltACCOUNT_ROOT,
+        this->exists() && this->sleRef().getType() == ltACCOUNT_ROOT,
         "xrpl::ownerCount : sle is account root");
 
-    AccountID const id = (*this)->getAccountID(sfAccount);
-    std::uint32_t const currentOwnerCount = (*this)->at(sfOwnerCount);
-    std::uint32_t const sponsoredOwnerCount = (*this)->at(sfSponsoredOwnerCount);
-    std::uint32_t const sponsoringOwnerCount = (*this)->at(sfSponsoringOwnerCount);
+    AccountID const id = this->sleRef().getAccountID(sfAccount);
+    std::uint32_t const currentOwnerCount = this->sleRef().at(sfOwnerCount);
+    std::uint32_t const sponsoredOwnerCount = this->sleRef().at(sfSponsoredOwnerCount);
+    std::uint32_t const sponsoringOwnerCount = this->sleRef().at(sfSponsoringOwnerCount);
 
     XRPL_ASSERT(
         currentOwnerCount >= sponsoredOwnerCount,

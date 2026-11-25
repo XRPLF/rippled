@@ -139,7 +139,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret =
-                acct.checkReserve(ctx, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1});
+                acct.checkReserve(ctx, *args.priorBalance, sponsorSle, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return std::unexpected(ret);
     }
@@ -155,7 +155,7 @@ MPTokenIssuanceCreate::create(
         if (!ownerNode)
             return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
+        auto const mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;

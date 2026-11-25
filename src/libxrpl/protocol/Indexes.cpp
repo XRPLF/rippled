@@ -12,8 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
@@ -37,18 +35,33 @@ namespace xrpl {
 // AccountID parameter. Declared in Indexes.h; defined here so the header need
 // not include jss.h.
 std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
-    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
-     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
-     // It's normally impossible to create an item at nftpage_min, but
-     // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftokenPageMin,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::nftokenPageMax,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
+    {
+        {.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+        {
+            .function = &keylet::ownerDir,
+            .expectedLEName = jss::DirectoryNode,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::signerList,
+            .expectedLEName = jss::SignerList,
+            .includeInTests = true,
+        },
+        // It's normally impossible to create an item at nftpage_min, but
+        // test it anyway, since the invariant checks for it.
+        {
+            .function = &keylet::nftokenPageMin,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::nftokenPageMax,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true},
+    },
+};
 
 /**
  * Type-specific prefix for calculating ledger indices.
@@ -90,9 +103,6 @@ enum class LedgerNameSpace : std::uint16_t {
     NftokenBuyOffers = 'h',
     NftokenSellOffers = 'i',
     Amm = 'A',
-    Bridge = 'H',
-    XchainClaimId = 'Q',
-    XchainCreateAccountClaimId = 'K',
     Did = 'I',
     Oracle = 'R',
     MPTokenIssuance = '~',
@@ -110,6 +120,9 @@ enum class LedgerNameSpace : std::uint16_t {
     Contract [[deprecated]] = 'c',
     Generator [[deprecated]] = 'g',
     Nickname [[deprecated]] = 'n',
+    Bridge [[deprecated]] = 'H',
+    XchainClaimId [[deprecated]] = 'Q',
+    XchainCreateAccountClaimId [[deprecated]] = 'K',
 };
 
 template <class... Args>
@@ -177,7 +190,7 @@ getBookBase(Book const& book)
         book.out.value());
 
     // Return with quality 0.
-    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+    auto const k = keylet::quality({ltDIR_NODE, index}, 0);
 
     return k.key;
 }
@@ -240,8 +253,7 @@ skip(LedgerIndex ledger) noexcept
 {
     return {
         ltLEDGER_HASHES,
-        indexHash(
-            LedgerNameSpace::SkipList, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+        indexHash(LedgerNameSpace::SkipList, static_cast<std::uint32_t>(ledger) >> 16)};
 }
 
 Keylet const&
@@ -511,44 +523,6 @@ Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept
 {
     return {ltDELEGATE, indexHash(LedgerNameSpace::Delegate, account, authorizedAccount)};
-}
-
-Keylet
-bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
-{
-    // A door account can support multiple bridges. On the locking chain
-    // there can only be one bridge per lockingChainCurrency. On the issuing
-    // chain there can only be one bridge per issuingChainCurrency.
-    auto const& issue = bridge.issue(chainType);
-    return {ltBRIDGE, indexHash(LedgerNameSpace::Bridge, bridge.door(chainType), issue.currency)};
-}
-
-Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
-{
-    return {
-        ltXCHAIN_OWNED_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
-}
-
-Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
-{
-    return {
-        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainCreateAccountClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
 }
 
 Keylet

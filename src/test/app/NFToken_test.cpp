@@ -19,18 +19,25 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Tuning.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -41,8 +48,12 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -214,27 +225,27 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // A lambda that checks alice's ownerCount, mintedCount, and
         // burnedCount all in one fell swoop.
-        auto checkAliceOwnerMintedBurned = [&env, this, &alice](
-                                               std::uint32_t owners,
-                                               std::uint32_t minted,
-                                               std::uint32_t burned,
-                                               int line) {
-            auto oneCheck = [line, this](char const* type, std::uint32_t found, std::uint32_t exp) {
-                if (found == exp)
-                {
-                    pass();
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss << "Wrong " << type << " count.  Found: " << found << "; Expected: " << exp;
-                    fail(ss.str(), __FILE__, line);
-                }
+        auto const checkAliceOwnerMintedBurned =
+            [&env, this, &alice](
+                std::uint32_t owners, std::uint32_t minted, std::uint32_t burned, int line) {
+                auto const oneCheck =
+                    [line, this](char const* type, std::uint32_t found, std::uint32_t exp) {
+                        if (found == exp)
+                        {
+                            pass();
+                        }
+                        else
+                        {
+                            std::stringstream ss;
+                            ss << "Wrong " << type << " count.  Found: " << found
+                               << "; Expected: " << exp;
+                            fail(ss.str(), __FILE__, line);
+                        }
+                    };
+                oneCheck("owner", ownerCount(env, alice), owners);
+                oneCheck("minted", mintedCount(env, alice), minted);
+                oneCheck("burned", burnedCount(env, alice), burned);
             };
-            oneCheck("owner", ownerCount(env, alice), owners);
-            oneCheck("minted", mintedCount(env, alice), minted);
-            oneCheck("burned", burnedCount(env, alice), burned);
-        };
 
         // alice still does not have enough XRP for the reserve of an NFT
         // page.
@@ -310,15 +321,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // A lambda that checks minter's and alice's ownerCount,
         // mintedCount, and burnedCount all in one fell swoop.
-        auto checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
-                                                 std::uint32_t aliceOwners,
-                                                 std::uint32_t aliceMinted,
-                                                 std::uint32_t aliceBurned,
-                                                 std::uint32_t minterOwners,
-                                                 std::uint32_t minterMinted,
-                                                 std::uint32_t minterBurned,
-                                                 int line) {
-            auto oneCheck =
+        auto const checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
+                                                       std::uint32_t aliceOwners,
+                                                       std::uint32_t aliceMinted,
+                                                       std::uint32_t aliceBurned,
+                                                       std::uint32_t minterOwners,
+                                                       std::uint32_t minterMinted,
+                                                       std::uint32_t minterBurned,
+                                                       int line) {
+            auto const oneCheck =
                 [this](char const* type, std::uint32_t found, std::uint32_t exp, int line) {
                     if (found == exp)
                     {
@@ -457,7 +468,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // Just for sanity's sake we'll check that the current value
             // of sfMintedNFTokens matches what we expect.
-            auto replacement = std::make_shared<SLE>(*sle);
+            auto const replacement = std::make_shared<SLE>(*sle);
             if (replacement->getFieldU32(sfMintedNFTokens) != 1)
                 return false;  // Unexpected test conditions.
 
@@ -1390,7 +1401,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         //  1. creates an alice nft
         //  2. minted by minter and
         //  3. transfers that nft to buyer.
-        auto nftToBuyer = [&env, &alice, &minter1, &buyer](std::uint32_t flags) {
+        auto const nftToBuyer = [&env, &alice, &minter1, &buyer](std::uint32_t flags) {
             UInt256 const nftID{token::getNextID(env, alice, 0u, flags)};
             env(token::mint(minter1, 0u), token::Issuer(alice), Txflags(flags));
             env.close();
@@ -1528,7 +1539,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Set flagOnlyXRP and offers using IOUs are rejected.
         {
             UInt256 const nftOnlyXrpID{
-                token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable)};
+                token::getNextID(env, alice, 0u, tfOnlyXRP | tfTransferable),
+            };
             env(token::mint(alice, 0u), Txflags(tfOnlyXRP | tfTransferable));
             env.close();
 
@@ -1605,7 +1617,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             for (std::uint32_t const xferFee : {0, 1})
             {
                 UInt256 const nftNoAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable, xferFee),
+                };
                 env(token::mint(alice, 0u), token::XferFee(xferFee), Txflags(tfTransferable));
                 env.close();
 
@@ -1645,7 +1658,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 std::uint16_t const transferFee = 10000;  // 10%
 
                 UInt256 const nftAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee),
+                };
 
                 // If the fixRemoveNFTokenAutoTrustLine amendment is active
                 // then this transaction fails.
@@ -1701,7 +1715,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             {
                 std::uint16_t const transferFee = 5000;  // 5%
                 UInt256 const nftNoAutoTrustID{
-                    token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
+                    token::getNextID(env, alice, 0u, tfTransferable, transferFee),
+                };
                 env(token::mint(alice, 0u), token::XferFee(transferFee), Txflags(tfTransferable));
                 env.close();
 
@@ -2464,7 +2479,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             for (int i = 0; i < 10; ++i)
             {
                 // lambda to produce a useful message on error.
-                auto check = [this](std::uint32_t taxon, UInt256 const& nftID) {
+                auto const check = [this](std::uint32_t taxon, UInt256 const& nftID) {
                     nft::Taxon const gotTaxon = nft::getTaxon(nftID);
                     if (nft::toTaxon(taxon) == gotTaxon)
                     {
@@ -2522,7 +2537,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // lambda that returns a randomly generated string which fits
         // the constraints of a URI.  Empty strings may be returned.
         // In the empty string case do not add the URI to the nft.
-        auto randURI = []() {
+        auto const randURI = [] {
             std::string ret;
 
             // About 20% of the returned strings should be empty
@@ -2568,7 +2583,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
 
         // Recover alice's nfts from the ledger.
-        json::Value aliceNFTs = [&env, &alice]() {
+        json::Value aliceNFTs = [&env, &alice] {
             json::Value params;
             params[jss::account] = alice.human();
             params[jss::type] = "state";
@@ -2683,7 +2698,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, minter) == 3);
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
-            // Both the offer creator and and destination should be able to
+            // Both the offer creator and destination should be able to
             // cancel the offers.
             env(token::cancelOffer(buyer, {offerMinterToBuyer}));
             env(token::cancelOffer(minter, {offerMinterToIssuer}));
@@ -3855,7 +3870,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env.close();
 
             // Lambda to check owner count of all accounts is one.
-            auto checkOwnerCountIsOne =
+            auto const checkOwnerCountIsOne =
                 [this, &env](
                     std::initializer_list<std::reference_wrapper<Account const>> accounts,
                     int line) {
@@ -3873,7 +3888,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 };
 
             // Lambda that mints an NFT and returns the nftID.
-            auto mintNFT = [&env, &issuer, &minter](std::uint16_t xferFee = 0) {
+            auto const mintNFT = [&env, &issuer, &minter](std::uint16_t xferFee = 0) {
                 UInt256 const nftID = token::getNextID(env, issuer, 0, tfTransferable, xferFee);
                 env(token::mint(minter, 0),
                     token::Issuer(issuer),
@@ -4070,7 +4085,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // Lambda to set the balance of all passed in accounts to
             // gwXAU(amount).
-            auto setXAUBalance =
+            auto const setXAUBalance =
                 [this, &gw, &gwXAU, &env](
                     std::initializer_list<std::reference_wrapper<Account const>> accounts,
                     int amount,
@@ -4376,7 +4391,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         env.close();
 
         // Lambda that counts the number of buy offers for a given NFT.
-        auto nftBuyOfferCount = [&env](UInt256 const& nftId) -> std::size_t {
+        auto const nftBuyOfferCount = [&env](UInt256 const& nftId) -> std::size_t {
             // We know that in this case not very many offers will be
             // returned, so we skip the marker stuff.
             json::Value params;
@@ -4623,11 +4638,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         env.close();
 
         // A lambda that validates nft_XXX_offers query responses.
-        auto checkOffers = [this, &env, &nftID](
-                               char const* request,
-                               int expectCount,
-                               int expectMarkerCount,
-                               int line) {
+        auto const checkOffers = [this, &env, &nftID](
+                                     char const* request,
+                                     int expectCount,
+                                     int expectMarkerCount,
+                                     int line) {
             int markerCount = 0;
             json::Value allOffers(json::ValueType::Array);
             std::string marker;
@@ -4635,7 +4650,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // The do/while collects results until no marker is returned.
             do
             {
-                json::Value nftOffers = [&env, &nftID, &request, &marker]() {
+                json::Value nftOffers = [&env, &nftID, &request, &marker] {
                     json::Value params;
                     params[jss::nft_id] = to_string(nftID);
 
@@ -4650,18 +4665,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                     if (expect(
                             nftOffers.isMember(jss::result), "expected \"result\"", __FILE__, line))
                     {
-                        if (expect(
-                                nftOffers[jss::result].isMember(jss::error),
-                                "expected \"error\"",
-                                __FILE__,
-                                line))
-                        {
-                            expect(
-                                nftOffers[jss::result][jss::error].asString() == "objectNotFound",
-                                "expected \"objectNotFound\"",
-                                __FILE__,
-                                line);
-                        }
+                        json::Value const& result = nftOffers[jss::result];
+                        expect(
+                            result[jss::error].asString() == "objectNotFound",
+                            "expected \"objectNotFound\"",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_code] == RpcObjectNotFound,
+                            "expected RpcObjectNotFound",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_message] == "The requested object was not found.",
+                            "expected \"The requested object was not found.\"",
+                            __FILE__,
+                            line);
                     }
                     break;
                 }
@@ -4721,7 +4740,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // A lambda that generates sell offers.
         STAmount sellPrice = XRP(0);
-        auto makeSellOffers = [&env, &issuer, &nftID, &sellPrice](STAmount const& limit) {
+        auto const makeSellOffers = [&env, &issuer, &nftID, &sellPrice](STAmount const& limit) {
             // Save a little test time by not closing too often.
             int offerCount = 0;
             while (sellPrice < limit)
@@ -4759,18 +4778,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // A lambda that generates buy offers.
         STAmount buyPrice = XRP(0);
-        auto makeBuyOffers = [&env, &buyer, &issuer, &nftID, &buyPrice](STAmount const& limit) {
-            // Save a little test time by not closing too often.
-            int offerCount = 0;
-            while (buyPrice < limit)
-            {
-                buyPrice += XRP(1);
-                env(token::createOffer(buyer, nftID, buyPrice), token::Owner(issuer));
-                if (++offerCount % 10 == 0)
-                    env.close();
-            }
-            env.close();
-        };
+        auto const makeBuyOffers =
+            [&env, &buyer, &issuer, &nftID, &buyPrice](STAmount const& limit) {
+                // Save a little test time by not closing too often.
+                int offerCount = 0;
+                while (buyPrice < limit)
+                {
+                    buyPrice += XRP(1);
+                    env(token::createOffer(buyer, nftID, buyPrice), token::Owner(issuer));
+                    if (++offerCount % 10 == 0)
+                        env.close();
+                }
+                env.close();
+            };
 
         // There is one buy offer;
         makeBuyOffers(XRP(1));
@@ -4831,7 +4851,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Grab the index of the single offer on each side from the RPC
         // response so we can use it as a marker.
-        auto firstOfferIndex = [this, &env, &nftID](char const* request) {
+        auto const firstOfferIndex = [this, &env, &nftID](char const* request) {
             json::Value params;
             params[jss::nft_id] = to_string(nftID);
             json::Value const result = env.rpc("json", request, to_string(params))[jss::result];
@@ -4842,7 +4862,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         std::string const sellOfferIndex = firstOfferIndex("nft_sell_offers");
         std::string const buyOfferIndex = firstOfferIndex("nft_buy_offers");
 
-        auto queryWithMarker = [&env, &nftID](char const* request, std::string const& marker) {
+        auto const queryWithMarker = [&env, &nftID](
+                                         char const* request, std::string const& marker) {
             json::Value params;
             params[jss::nft_id] = to_string(nftID);
             params[jss::marker] = marker;
@@ -4855,11 +4876,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // Sell-side marker passed to nft_buy_offers.
             json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
         {
             // Buy-side marker passed to nft_sell_offers.
             json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         // A same-side marker is still accepted.  With a single offer on each
@@ -4871,6 +4896,176 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         {
             json::Value const result = queryWithMarker("nft_sell_offers", sellOfferIndex);
             BEAST_EXPECT(!result.isMember(jss::error));
+        }
+    }
+
+    void
+    testNftXxxOffersInvalidParams(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers invalid params");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(10000), issuer, buyer);
+        env.close();
+
+        UInt256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        env(token::createOffer(issuer, nftID, XRP(100)), Txflags(tfSellNFToken));
+        env(token::createOffer(issuer, nftID, XRP(200)), Txflags(tfSellNFToken));
+        env(token::createOffer(buyer, nftID, XRP(50)), token::Owner(issuer));
+        env(token::createOffer(buyer, nftID, XRP(60)), token::Owner(issuer));
+        env.close();
+
+        for (auto const* request : {"nft_buy_offers", "nft_sell_offers"})
+        {
+            auto const query = [&env, request](json::Value const& params) {
+                return env.rpc("json", request, to_string(params))[jss::result];
+            };
+            auto const withField = [&nftID](json::StaticString field, json::Value value) {
+                json::Value params;
+                params[jss::nft_id] = to_string(nftID);
+                params[field] = std::move(value);
+                return params;
+            };
+            auto const expectError = [this](json::Value const& result, std::string const& message) {
+                BEAST_EXPECT(result[jss::error] == "invalidParams");
+                BEAST_EXPECT(result[jss::error_message] == message);
+            };
+
+            expectError(query(json::ValueType::Object), "Missing field 'nft_id'.");
+            for (json::Value const& nftId : {
+                     json::Value{"NOTHEX"},
+                     json::Value{json::ValueType::Array},
+                     json::Value{json::ValueType::Object},
+                 })
+            {
+                json::Value params;
+                params[jss::nft_id] = nftId;
+                expectError(query(params), "Invalid field 'nft_id'.");
+            }
+
+            expectError(
+                query(withField(jss::limit, "1")), "Invalid field 'limit', not unsigned integer.");
+            expectError(
+                query(withField(jss::limit, -1)), "Invalid field 'limit', not unsigned integer.");
+            expectError(query(withField(jss::limit, 0)), "Invalid field 'limit'.");
+            {
+                json::Value const result = query(withField(jss::limit, json::ValueType::Null));
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == 2);
+            }
+            {
+                json::Value const result = query(withField(jss::limit, 1));
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == 1);
+                BEAST_EXPECT(result[jss::limit] == 1);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
+
+            expectError(query(withField(jss::marker, 5)), "Invalid field 'marker', not string.");
+            expectError(query(withField(jss::marker, "NOTHEX")), "Invalid parameters.");
+        }
+    }
+
+    void
+    testNftXxxOffersNonAdminLimit(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers non-admin limit");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(1000000), issuer, buyer);
+        env.close();
+
+        UInt256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        auto const& range = rpc::tuning::kNftOffers;
+        for (auto i = 1u; i <= range.rmax + 1; ++i)
+        {
+            env(token::createOffer(issuer, nftID, XRP(i)), Txflags(tfSellNFToken));
+            env(token::createOffer(buyer, nftID, XRP(i)), token::Owner(issuer));
+            if (i % 5 == 0)
+                env.close();
+        }
+        env.close();
+
+        auto const userQuery = [this, &env, &nftID](char const* request, unsigned int limit) {
+            auto& app = env.app();
+            resource::Charge loadType = resource::kFeeReferenceRpc;
+            resource::Consumer c;
+            rpc::JsonContext context{
+                {
+                    .j = env.journal,
+                    .app = app,
+                    .loadType = loadType,
+                    .netOps = app.getOPs(),
+                    .ledgerMaster = app.getLedgerMaster(),
+                    .consumer = c,
+                    .role = Role::USER,
+                    .coro = {},
+                    .infoSub = {},
+                    .apiVersion = rpc::kApiVersionIfUnspecified,
+                },
+                {},
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+                {},
+            };
+
+            json::Value params;
+            params[jss::command] = request;
+            params[jss::nft_id] = to_string(nftID);
+            params[jss::limit] = limit;
+
+            json::Value result;
+            Gate g;
+            auto const job =
+                app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+                    context.params = std::move(params);
+                    context.coro = coro;
+                    rpc::doCommand(context, result);
+                    g.signal();
+                });
+            if (!BEAST_EXPECT(job))
+                return result;
+
+            using namespace std::chrono_literals;
+            BEAST_EXPECT(g.waitFor(5s));
+            job->join();
+
+            return result;
+        };
+
+        for (auto const* request : {"nft_buy_offers", "nft_sell_offers"})
+        {
+            {
+                json::Value const result = userQuery(request, 1);
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == range.rmin);
+                BEAST_EXPECT(result[jss::limit] == range.rmin);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
+            {
+                json::Value const result = userQuery(request, range.rmax * 2);
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == range.rmax);
+                BEAST_EXPECT(result[jss::limit] == range.rmax);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
         }
     }
 
@@ -5024,7 +5219,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env.close();
 
             auto expectInitialState =
-                [this, &env, &buyer, &minter, &secondarySeller, &broker, &gw, &gwXAU, &gwXPB]() {
+                [this, &env, &buyer, &minter, &secondarySeller, &broker, &gw, &gwXAU, &gwXPB] {
                     // Buyer should have XAU 1000, XPB 0
                     // Minter should have XAU 0, XPB 0
                     // Secondary seller should have XAU 0, XPB 0
@@ -5047,15 +5242,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                     BEAST_EXPECT(env.balance(gw, broker["XPB"]) == gwXPB(0));
                 };
 
-            auto reinitializeTrustLineBalances = [&expectInitialState,
-                                                  &env,
-                                                  &buyer,
-                                                  &minter,
-                                                  &secondarySeller,
-                                                  &broker,
-                                                  &gw,
-                                                  &gwXAU,
-                                                  &gwXPB]() {
+            auto const reinitializeTrustLineBalances = [&expectInitialState,
+                                                        &env,
+                                                        &buyer,
+                                                        &minter,
+                                                        &secondarySeller,
+                                                        &broker,
+                                                        &gw,
+                                                        &gwXAU,
+                                                        &gwXPB] {
                 if (auto const difference = gwXAU(1000) - env.balance(buyer, gwXAU);
                     difference > gwXAU(0))
                     env(pay(gw, buyer, difference));
@@ -5085,19 +5280,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 expectInitialState();
             };
 
-            auto mintNFT = [&env](Account const& minter, int transferFee = 0) {
+            auto const mintNFT = [&env](Account const& minter, int transferFee = 0) {
                 UInt256 const nftID = token::getNextID(env, minter, 0, tfTransferable, transferFee);
                 env(token::mint(minter), token::XferFee(transferFee), Txflags(tfTransferable));
                 env.close();
                 return nftID;
             };
 
-            auto createBuyOffer = [&env](
-                                      Account const& offerer,
-                                      Account const& owner,
-                                      UInt256 const& nftID,
-                                      STAmount const& amount,
-                                      std::optional<TER const> const terCode = {}) {
+            auto const createBuyOffer = [&env](
+                                            Account const& offerer,
+                                            Account const& owner,
+                                            UInt256 const& nftID,
+                                            STAmount const& amount,
+                                            std::optional<TER const> const terCode = {}) {
                 UInt256 const offerID =
                     keylet::nftokenOffer(offerer, SeqProxy::rawSequence(env.seq(offerer))).key;
                 env(token::createOffer(offerer, nftID, amount),
@@ -5107,11 +5302,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 return offerID;
             };
 
-            auto createSellOffer = [&env](
-                                       Account const& offerer,
-                                       UInt256 const& nftID,
-                                       STAmount const& amount,
-                                       std::optional<TER const> const terCode = {}) {
+            auto const createSellOffer = [&env](
+                                             Account const& offerer,
+                                             UInt256 const& nftID,
+                                             STAmount const& amount,
+                                             std::optional<TER const> const terCode = {}) {
                 UInt256 const offerID =
                     keylet::nftokenOffer(offerer, SeqProxy::rawSequence(env.seq(offerer))).key;
                 env(token::createOffer(offerer, nftID, amount),
@@ -5679,8 +5874,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Close the ledger until the ledger sequence is large enough to delete
         // the account (no longer within <Sequence + 256>)
-        auto incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
-            int const delta = [&]() -> int {
+        auto const incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
+            int const delta = [&] -> int {
                 if (env.seq(acct) + 255 > openLedgerSeq(env))
                     return env.seq(acct) - openLedgerSeq(env) + 255;
                 return 0;
@@ -5693,7 +5888,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Close the ledger until the ledger sequence is no longer
         // within <FirstNFTokenSequence + MintedNFTokens + 256>.
-        auto incLgrSeqForFixNftRemint = [&](Env& env, Account const& acct) {
+        auto const incLgrSeqForFixNftRemint = [&](Env& env, Account const& acct) {
             int delta = 0;
             auto const deletableLgrSeq = (*env.le(acct))[~sfFirstNFTokenSequence].value_or(0) +
                 (*env.le(acct))[sfMintedNFTokens] + 255;
@@ -6358,13 +6553,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         auto verifyMetaInAllResponses = [&](auto verifyMeta) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+            };
 
             env.close();
 
-            for (unsigned const apiVersion :
-                 {unsigned{rpc::kApiMinimumSupportedVersion},
-                  unsigned{rpc::kApiMaximumSupportedVersion}})
+            for (unsigned const apiVersion : {
+                     unsigned{rpc::kApiMinimumSupportedVersion},
+                     unsigned{rpc::kApiMaximumSupportedVersion},
+                 })
             {
                 // Test 1: Check tx RPC response
                 json::Value const txResult = env.rpc(apiVersion, "tx", txHash)[jss::result];
@@ -6423,7 +6620,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
+        auto const verifyNFTokenID = [&](UInt256 const& actualNftID) {
             verifyMetaInAllResponses([&](json::Value const& meta) {
                 // Expect nftoken_id field
                 if (!BEAST_EXPECT(meta.isMember(jss::nftoken_id)))
@@ -6438,7 +6635,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
+        auto const verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             // Sort to prepare for comparison
             std::ranges::sort(actualNftIDs);
 
@@ -6474,7 +6671,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
+        auto const verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             verifyMetaInAllResponses([&](json::Value const& meta) {
                 // Expect offer_id field and verify the value
                 if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
@@ -6614,7 +6811,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         // Lambda that mints an NFT and then creates a sell offer
-        auto mintAndCreateSellOffer =
+        auto const mintAndCreateSellOffer =
             [](test::jtx::Env& env, test::jtx::Account const& acct, STAmount const amt) -> UInt256 {
             // acct mints a NFT
             UInt256 const nftId{token::getNextID(env, acct, 0u, tfTransferable)};
@@ -6909,9 +7106,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
         // Otherwise we can't create NFTokens with tfTrustLine enabled.
         FeatureBitset const localFeatures = features - fixRemoveNFTokenAutoTrustLine;
-        for (FeatureBitset feats :
-             {localFeatures - fixEnforceNFTokenTrustline,
-              localFeatures | fixEnforceNFTokenTrustline})
+        for (FeatureBitset feats : {
+                 localFeatures - fixEnforceNFTokenTrustline,
+                 localFeatures | fixEnforceNFTokenTrustline,
+             })
         {
             Env env{*this, feats};
             env.fund(XRP(1000), issuer, becky, cheri, gw);
@@ -6927,14 +7125,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // issuer creates two NFTs: one with and one without AutoTrustLine.
             std::uint16_t const xferFee = 5000;  // 5%
             UInt256 const nftAutoTrustID{
-                token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+                token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee),
+            };
             env(token::mint(issuer, 0u),
                 token::XferFee(xferFee),
                 Txflags(tfTransferable | tfTrustLine));
             env.close();
 
             UInt256 const nftNoAutoTrustID{
-                token::getNextID(env, issuer, 0u, tfTransferable, xferFee)};
+                token::getNextID(env, issuer, 0u, tfTransferable, xferFee),
+            };
             env(token::mint(issuer, 0u), token::XferFee(xferFee), Txflags(tfTransferable));
             env.close();
 
@@ -7087,7 +7287,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // issuer creates two NFTs: one with and one without AutoTrustLine.
         std::uint16_t const xferFee = 5000;  // 5%
         UInt256 const nftAutoTrustID{
-            token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+            token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee),
+        };
         env(token::mint(issuer, 0u),
             token::XferFee(xferFee),
             Txflags(tfTransferable | tfTrustLine));
@@ -7324,7 +7525,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             };
 
             // lambda that checks for the expected URI value of an NFToken
-            auto checkURI = [&accountNFTs, this](Account const& acct, char const* uri, int line) {
+            auto const checkURI = [&accountNFTs, this](
+                                      Account const& acct, char const* uri, int line) {
                 auto const nfts = accountNFTs(acct);
                 if (nfts.size() == 1)
                 {
@@ -7589,6 +7791,8 @@ protected:
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testNftXxxOffersMarkerWrongSide(features);
+        testNftXxxOffersInvalidParams(features);
+        testNftXxxOffersNonAdminLimit(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);

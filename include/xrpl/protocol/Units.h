@@ -427,7 +427,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         static_cast<std::uint64_t>(value.value()),
         static_cast<std::uint64_t>(mul.value()));
 
-    auto quotient = product / div.value();
+    auto const quotient = product / div.value();
 
     if (quotient > kMax)
         return std::nullopt;

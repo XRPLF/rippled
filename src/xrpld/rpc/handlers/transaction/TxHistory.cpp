@@ -31,7 +31,7 @@ doTxHistory(rpc::JsonContext& context)
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
         return rpcError(RpcNoPermission);
 
-    auto trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
+    auto const trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
 
     json::Value obj;
     json::Value& txs = obj[jss::txs];

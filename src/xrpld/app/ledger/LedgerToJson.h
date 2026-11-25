@@ -34,7 +34,7 @@ struct LedgerFill
         Full = 8,
         Binary = 16,
         OwnerFunds = 32,
-        DumpQueue = 64
+        DumpQueue = 64,
     };
 
     ReadView const& ledger;

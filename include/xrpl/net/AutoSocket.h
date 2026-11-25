@@ -103,7 +103,7 @@ public:
     void
     asyncHandshake(HandshakeType type, Callback cbFunc)
     {
-        if ((type == SslSocket::client) || (secure_))
+        if ((type == SslSocket::client) || secure_)
         {
             // must be ssl
             secure_ = true;
