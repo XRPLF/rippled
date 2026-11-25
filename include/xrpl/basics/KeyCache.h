@@ -1,10 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/base_uint.h>
 
 namespace xrpl {
 
-using KeyCache = TaggedCache<UInt256, int, true>;
+/**
+ * TaggedCache in key-only mode, holding no value per key.
+ *
+ * @tparam Key the key type to remember.
+ */
+template <class Key>
+using KeyCache = TaggedCache<Key, int, true>;
 
 }  // namespace xrpl
