@@ -95,8 +95,8 @@ RippleStateEntry<ViewT>::create(
     }
 
     RippleStateEntry sleRippleState(Keylet(ltRIPPLE_STATE, uIndex), view, j);
-    sleRippleState.newSLE();
-    sleRippleState.insert();
+    sleRippleState.newSle();
+    sleRippleState.insertIntoView();
 
     auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
