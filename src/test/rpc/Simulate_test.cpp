@@ -9,7 +9,9 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
@@ -26,8 +28,11 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -1531,6 +1536,149 @@ class Simulate_test : public beast::unit_test::Suite
         BEAST_EXPECT(queueSizeAfter == queueSizeBefore);
     }
 
+    // Simulate `tx` and check that it would have succeeded without being
+    // applied.
+    void
+    simulateSuccess(jtx::Env& env, json::Value const& tx)
+    {
+        json::Value params;
+        params[jss::tx_json] = tx;
+        auto const result = env.rpc("json", "simulate", to_string(params))[jss::result];
+
+        BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(result[jss::applied] == false);
+    }
+
+    void
+    testSimulateOfferCreateDoesNotMutateOrderBookDB()
+    {
+        // Simulating an OfferCreate for a brand-new order book
+        // must not register that book with the shared, process-wide
+        // OrderBookDB, since simulated transactions are not applied.
+        testcase("simulate OfferCreate does not mutate OrderBookDB");
+
+        using namespace jtx;
+        Env env{*this};
+
+        Account const alice("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        IOU const usd = alice["USD"];
+        Asset const asset = usd.issue();
+
+        // Sanity check: no book exists for this brand-new asset yet.
+        BEAST_EXPECT(env.app().getOrderBookDB().getBookSize(asset) == 0);
+        BEAST_EXPECT(!env.app().getOrderBookDB().isBookToXRP(asset));
+
+        simulateSuccess(env, offer(alice, usd(10), XRP(10)));
+
+        // The simulated OfferCreate must not have registered a new order
+        // book in OrderBookDB: a real transaction hasn't been applied yet.
+        BEAST_EXPECT(env.app().getOrderBookDB().getBookSize(asset) == 0);
+        BEAST_EXPECT(!env.app().getOrderBookDB().isBookToXRP(asset));
+
+        // Sanity check that applying the same transaction for real does
+        // register the book -- this proves the checks above would fail
+        // without the TapDryRun guard in OfferCreate::doApply.
+        env(offer(alice, usd(10), XRP(10)));
+        env.close();
+        BEAST_EXPECT(env.app().getOrderBookDB().isBookToXRP(asset));
+    }
+
+    void
+    testSimulateHybridOfferCreateDoesNotMutateOrderBookDB()
+    {
+        // A hybrid offer registers two books: the domain book (from
+        // `applyGuts`) and the open book (from `applyHybrid`). Neither may be
+        // registered when the transaction is only simulated.
+        testcase("simulate hybrid OfferCreate does not mutate OrderBookDB");
+
+        using namespace jtx;
+        Env env{*this};
+
+        PermissionedDEX const pdex(env);
+        Account const& bob = pdex.bob;
+        IOU const& usd = pdex.usd;
+        uint256 const& domainID = pdex.domainID;
+        Asset const asset = usd.issue();
+
+        auto& obDB = env.app().getOrderBookDB();
+
+        // Sanity check: neither the open book nor the domain book exists yet.
+        BEAST_EXPECT(obDB.getBookSize(asset) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.getBookSize(asset, domainID) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset, domainID));
+
+        json::Value tx = offer(bob, usd(10), XRP(10), tfHybrid);
+        tx[sfDomainID] = to_string(domainID);
+
+        simulateSuccess(env, tx);
+
+        BEAST_EXPECT(obDB.getBookSize(asset) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.getBookSize(asset, domainID) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset, domainID));
+
+        // Sanity check that applying the same transaction for real registers
+        // both books.
+        env(tx);
+        env.close();
+        BEAST_EXPECT(obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.isBookToXRP(asset, domainID));
+    }
+
+    void
+    testSimulateAMMCreateDoesNotMutateOrderBookDB()
+    {
+        // AMMCreate registers a book in each direction. Neither may be
+        // registered when the transaction is only simulated.
+        testcase("simulate AMMCreate does not mutate OrderBookDB");
+
+        using namespace jtx;
+        Env env{*this};
+
+        Account const gw("gw");
+        Account const alice("alice");
+        env.fund(XRP(10000), gw, alice);
+        env.close();
+
+        IOU const usd = gw["USD"];
+        env.trust(usd(10000), alice);
+        env(pay(gw, alice, usd(1000)));
+        env.close();
+
+        Asset const asset = usd.issue();
+        auto& obDB = env.app().getOrderBookDB();
+
+        // Sanity check: no book exists for this asset pair yet.
+        BEAST_EXPECT(obDB.getBookSize(asset) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.getBookSize(xrpIssue()) == 0);
+
+        json::Value tx;
+        tx[jss::Account] = alice.human();
+        tx[jss::TransactionType] = jss::AMMCreate;
+        tx[jss::Amount] = XRP(100).value().getJson(JsonOptions::Values::None);
+        tx[jss::Amount2] = usd(100).value().getJson(JsonOptions::Values::None);
+        tx[jss::TradingFee] = 0;
+        tx[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+
+        simulateSuccess(env, tx);
+
+        BEAST_EXPECT(obDB.getBookSize(asset) == 0);
+        BEAST_EXPECT(!obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.getBookSize(xrpIssue()) == 0);
+
+        // Sanity check that applying the same transaction for real registers
+        // both directions of the book.
+        env(tx);
+        env.close();
+        BEAST_EXPECT(obDB.isBookToXRP(asset));
+        BEAST_EXPECT(obDB.getBookSize(xrpIssue()) == 1);
+    }
+
 public:
     void
     run() override
@@ -1551,6 +1699,9 @@ public:
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
         testDryRunQueuing();
+        testSimulateOfferCreateDoesNotMutateOrderBookDB();
+        testSimulateHybridOfferCreateDoesNotMutateOrderBookDB();
+        testSimulateAMMCreateDoesNotMutateOrderBookDB();
     }
 };
 
