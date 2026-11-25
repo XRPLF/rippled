@@ -361,7 +361,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
                     auto const flags = sleRippleState->getFlags();
                     sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
-                    sleRippleState.update();
+                    sleRippleState.updateInView();
                 }
                 return tesSUCCESS;
             });
