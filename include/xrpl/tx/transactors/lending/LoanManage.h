@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -44,7 +45,7 @@ public:
     defaultLoan(
         ApplyView& view,
         SLE::Ref loanSle,
-        SLE::Ref brokerSle,
+        LoanBrokerEntryW& brokerSle,
         SLE::Ref vaultSle,
         beast::Journal j);
 
