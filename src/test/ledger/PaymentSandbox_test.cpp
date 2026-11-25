@@ -20,6 +20,8 @@
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -29,6 +31,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -610,6 +613,79 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
 public:
     void
+    testPersistentDeletes()
+    {
+        testcase("persistent deletes");
+        using namespace jtx;
+
+        Env env(*this);
+        beast::Journal const j = env.journal;
+        Account const gw("gw");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, bob);
+        env.close();
+        auto const k = keylet::offer(bob, SeqProxy::rawSequence(env.seq(bob)));
+        env(offer(bob, usd(10), XRP(10)));
+        env.close();
+
+        ApplyViewImpl av(&*env.current(), TapNone);
+
+        // A normal erase records nothing.
+        {
+            Sandbox sb(&av);
+            BEAST_EXPECT(isTesSuccess(offerDelete(sb, sb.peek(k), j)));
+            BEAST_EXPECT(sb.persistentKeys().empty());
+        }
+
+        // A persistent erase in a discarded sandbox is not kept.
+        {
+            Sandbox sb(&av);
+            BEAST_EXPECT(
+                isTesSuccess(offerDelete(sb, sb.peek(k), j, {.eraseMode = EraseMode::Persistent})));
+            BEAST_EXPECT(sb.persistentKeys().contains(k.key));
+        }
+        BEAST_EXPECT(av.persistentKeys().empty());
+        BEAST_EXPECT(av.exists(k));
+
+        // A persistent erase in an applied sandbox is kept, through nested
+        // payment sandboxes.
+        {
+            PaymentSandbox outer(&av);
+            {
+                PaymentSandbox inner(&outer);
+                BEAST_EXPECT(isTesSuccess(
+                    offerDelete(inner, inner.peek(k), j, {.eraseMode = EraseMode::Persistent})));
+                inner.apply(outer);
+            }
+            BEAST_EXPECT(outer.persistentKeys().contains(k.key));
+            outer.apply(av);
+        }
+        BEAST_EXPECT(av.persistentKeys().contains(k.key));
+        BEAST_EXPECT(!av.exists(k));
+
+        // A persistent erase in an applied plain sandbox is kept.
+        {
+            ApplyViewImpl av2(&*env.current(), TapNone);
+            {
+                Sandbox sb(&av2);
+                BEAST_EXPECT(isTesSuccess(
+                    offerDelete(sb, sb.peek(k), j, {.eraseMode = EraseMode::Persistent})));
+                sb.apply(av2);
+            }
+            BEAST_EXPECT(av2.persistentKeys().contains(k.key));
+            BEAST_EXPECT(!av2.exists(k));
+        }
+
+        // A key can be recorded after a child view erased the entry.
+        {
+            Sandbox sb(&av);
+            sb.markPersistent(k.key);
+            BEAST_EXPECT(sb.persistentKeys().contains(k.key));
+        }
+    }
+
+    void
     run() override
     {
         auto const testAll = [this](FeatureBitset features) {
@@ -628,6 +704,8 @@ public:
         // Test owner count with transactions
         testOwnerCountWithTransaction(sa - featureSponsor);
         testOwnerCountWithTransaction(sa);
+
+        testPersistentDeletes();
     }
 };
 

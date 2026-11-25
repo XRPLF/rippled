@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Keylet.h>
@@ -124,6 +125,30 @@ void
 ApplyViewBase::erase(SLE::Ref sle)
 {
     items_.erase(*base_, sle);
+}
+
+void
+ApplyViewBase::erasePersistent(SLE::Ref sle)
+{
+    items_.erase(*base_, sle);
+    persistent_.insert(sle->key());
+}
+
+void
+ApplyViewBase::markPersistent(uint256 const& key)
+{
+    persistent_.insert(key);
+}
+
+void
+ApplyViewBase::applyPersistent(RawView& to) const
+{
+    if (persistent_.empty())
+        return;
+    // Only views that can themselves be reset or applied carry the keys. An
+    // OpenView target ends the transaction, so the keys are no longer needed.
+    if (auto* const parent = dynamic_cast<ApplyViewBase*>(&to))
+        parent->persistent_.insert(persistent_.begin(), persistent_.end());
 }
 
 void

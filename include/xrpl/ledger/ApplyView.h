@@ -53,6 +53,14 @@ enum ApplyFlags : std::uint32_t {
     TapProposal = 0x2000,
 };
 
+/**
+ * Whether an erase must survive a `tec` reset of the transaction.
+ *
+ * A persistent erase removes an entry that is invalid regardless of the
+ * transaction's outcome, such as an unfunded offer or an expired credential.
+ */
+enum class EraseMode : bool { Normal, Persistent };
+
 constexpr ApplyFlags
 operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
@@ -197,6 +205,21 @@ public:
      */
     virtual void
     erase(SLE::Ref sle) = 0;
+
+    /**
+     * Remove a peeked SLE and record its key as a persistent delete.
+     *
+     * Requirements and effects are the same as for erase(). In addition, the
+     * key is kept when this view is applied to its parent, and is dropped when
+     * this view is discarded. With fixCleanup3_6_0, the transactor can erase
+     * the recorded entries again after a `tec` reset. That cleanup is
+     * best-effort: it handles only some `tec` codes and entry types, and at
+     * most kMaxPersistentDeletes entries. Do not depend on it.
+     *
+     * @param sle The peeked entry to erase.
+     */
+    virtual void
+    erasePersistent(SLE::Ref sle) = 0;
 
     /**
      * Insert a new state SLE

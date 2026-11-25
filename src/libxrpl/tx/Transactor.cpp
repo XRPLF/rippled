@@ -1242,6 +1242,27 @@ Transactor::checkMultiSign(
 
 //------------------------------------------------------------------------------
 
+// The entry types whose deletions a `tec` result keeps.
+static std::unordered_set<LedgerEntryType>
+typesForResult(TER const ter)
+{
+    std::unordered_set<LedgerEntryType> types;
+    if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+    {
+        types.insert(ltOFFER);
+    }
+    else if (ter == tecINCOMPLETE)
+    {
+        types.insert(ltRIPPLE_STATE);
+    }
+    else if (ter == tecEXPIRED)
+    {
+        types.insert(ltNFTOKEN_OFFER);
+        types.insert(ltCREDENTIAL);
+    }
+    return types;
+}
+
 static void
 removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast::Journal viewJ)
 {
@@ -1410,6 +1431,13 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
+std::pair<TER, XRPAmount>
+Transactor::resetKeepResult(TER result, XRPAmount fee)
+{
+    auto const [resetTer, resetFee] = reset(fee);
+    return {isTesSuccess(resetTer) ? result : resetTer, resetFee};
+}
+
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
@@ -1467,32 +1495,82 @@ Transactor::trapTransaction(UInt256 txHash) const
 }
 
 std::tuple<TER, XRPAmount, bool>
+Transactor::replayPersistentDeletes(TER result, XRPAmount fee)
+{
+    JLOG(j_.trace()) << "reapplying persistent deletes because of " << transToken(result);
+
+    // Copy the keys, because reset() replaces the view that holds them.
+    auto const keys = ctx_.persistentKeys();
+
+    std::tie(result, fee) = resetKeepResult(result, fee);
+    // A failed reset replaces the result with a non-tec error.
+    if (!isTecClaim(result))
+        return {result, fee, false};
+
+    auto const typesToApply = typesForResult(result);
+    std::size_t erased = 0;
+    auto const viewJ = ctx_.registry.get().getJournal("View");
+    for (auto const& key : keys)
+    {
+        // One limit covers all entry types.
+        if (erased == kMaxPersistentDeletes)
+            break;
+
+        // A recorded entry can be missing from the reset view: the
+        // transaction can create and then erase it.
+        auto const sle = view().peek(keylet::unchecked(key));
+        if (!sle || !typesToApply.contains(sle->getType()))
+            continue;
+        ++erased;
+
+        switch (sle->getType())
+        {
+            case ltOFFER:
+                offerDelete(view(), sle, viewJ);
+                break;
+            case ltNFTOKEN_OFFER:
+                nft::deleteTokenOffer(view(), sle);
+                break;
+            case ltCREDENTIAL:
+                if (auto const ter = credentials::deleteSLE(view(), sle, viewJ); !isTesSuccess(ter))
+                {
+                    JLOG(viewJ.error()) << "replayPersistentDeletes: failed to delete "
+                                           "expired credential. Err: "
+                                        << transToken(ter);
+                }
+                break;
+            case ltRIPPLE_STATE:
+                if (!isTesSuccess(deleteAMMTrustLine(view(), sle, std::nullopt, viewJ)))
+                {
+                    JLOG(viewJ.error())
+                        << "replayPersistentDeletes: failed to delete AMM trustline";
+                }
+                break;
+            // LCOV_EXCL_START
+            default:
+                UNREACHABLE(
+                    "xrpl::Transactor::replayPersistentDeletes : unexpected "
+                    "type");
+                break;
+                // LCOV_EXCL_STOP
+        }
+    }
+
+    return {result, fee, true};
+}
+
+std::tuple<TER, XRPAmount, bool>
 Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
+    if (view().rules().enabled(fixCleanup3_6_0))
+        return replayPersistentDeletes(result, fee);
+
     JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
     // FIXME: This mechanism for doing work while returning a `tec` is
     //        awkward and very limiting. A more general purpose approach
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
-
-    auto const typesForResult = [](TER const ter) {
-        std::unordered_set<LedgerEntryType> types;
-        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
-        {
-            types.insert(ltOFFER);
-        }
-        else if (ter == tecINCOMPLETE)
-        {
-            types.insert(ltRIPPLE_STATE);
-        }
-        else if (ter == tecEXPIRED)
-        {
-            types.insert(ltNFTOKEN_OFFER);
-            types.insert(ltCREDENTIAL);
-        }
-        return types;
-    };
 
     // Build a list of ledger entry types to collect, based on the
     // result code. Only deleted objects of these types will be
@@ -1531,13 +1609,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     }
 
     // Reset the context, potentially adjusting the fee.
-    {
-        auto const resetResult = reset(fee);
-        if (!isTesSuccess(resetResult.first))
-            result = resetResult.first;
-
-        fee = resetResult.second;
-    }
+    std::tie(result, fee) = resetKeepResult(result, fee);
 
     // Re-apply the collected deletions, but only if the reset succeeded
     // and the post-reset result still allows the same deletion type.
@@ -1641,7 +1713,12 @@ Transactor::operator()()
         bool canApplyTmp = isTesSuccess(result);
 
         if (ctx_.size() > kOversizeMetaDataCap)
+        {
             result = tecOVERSIZE;
+            // The tentative effects must not be applied with this result. On a retry pass under
+            // fixCleanup3_6_0, no branch below resets the view.
+            canApplyTmp = false;
+        }
 
         if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
         {
@@ -1651,8 +1728,12 @@ Transactor::operator()()
             canApplyTmp = false;
         }
         else if (
-            (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-            (result == tecEXPIRED) || isTecClaimHardFail(result, view().flags()))
+            isTecClaimHardFail(result, view().flags()) ||
+            // Before fixCleanup3_6_0, these results are applied even when the
+            // transaction could be retried, so that their deletions are kept.
+            (!view().rules().enabled(fixCleanup3_6_0) &&
+             ((result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
+              (result == tecEXPIRED))))
         {
             // This is and must remain the only place where `canApplyTmp` can change from false to
             // true. Changing from true to false is no problem.
@@ -1682,11 +1763,7 @@ Transactor::operator()()
         // Fee-claim reset: roll the transaction's effects back so that
         // only the fee deduction remains. This is the reset referenced
         // by InvariantScope::ProtocolOnly.
-        auto const resetResult = reset(fee);
-        if (!isTesSuccess(resetResult.first))
-            result = resetResult.first;
-
-        fee = resetResult.second;
+        std::tie(result, fee) = resetKeepResult(result, fee);
 
         // Re-check invariants against the post-reset (fee-claim only)
         // state. The transaction's effects are gone, so the

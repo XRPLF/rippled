@@ -28,13 +28,17 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -45,6 +49,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -5202,6 +5207,177 @@ public:
         pass();
     }
 
+    // Create an offer by `owner` that sells EUR for USD, then make it
+    // unfunded. Return its keylet.
+    static Keylet
+    createUnfundedOffer(
+        jtx::Env& env,
+        jtx::Account const& gw,
+        jtx::Account const& owner,
+        jtx::IOU const& usd,
+        jtx::IOU const& eur)
+    {
+        using namespace jtx;
+        env(trust(owner, eur(100)));
+        env(pay(gw, owner, eur(10)));
+        auto const k = keylet::offer(owner, SeqProxy::rawSequence(env.seq(owner)));
+        env(offer(owner, usd(10), eur(10)));
+        env(pay(owner, gw, eur(10)));
+        env.close();
+        return k;
+    }
+
+    void
+    testPersistentDeleteFillOrKill(FeatureBitset features)
+    {
+        // A killed offer keeps the removal of the unfunded offers that flow
+        // found and then reported on failure.
+        testcase("Persistent delete: fill or kill");
+        using namespace jtx;
+
+        bool const fixEnabled = features[fixCleanup3_6_0];
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice, bob);
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        auto const bobOffer = createUnfundedOffer(env, gw, bob, usd, eur);
+
+        // Apply the killed offer to a copy of the open ledger: first a retry pass, then a final
+        // pass.
+        auto const jt = env.jt(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill));
+        auto const fee = jt.stx->getFieldAmount(sfFee).xrp();
+        auto const acctKey = keylet::account(alice.id());
+        auto const before = env.current()->read(acctKey);
+        OpenView view(*env.current());
+        auto const seqUsed = [&] {
+            return (*view.read(acctKey))[sfSequence] - (*before)[sfSequence];
+        };
+        auto const feePaid = [&] {
+            return (*before)[sfBalance].xrp() - (*view.read(acctKey))[sfBalance].xrp();
+        };
+
+        // With the amendment, the retry pass changes nothing. Before it, the retry pass applies
+        // the failure.
+        auto const retry = xrpl::apply(env.app(), view, *jt.stx, TapRetry, env.journal);
+        BEAST_EXPECT(retry.ter == tecKILLED);
+        BEAST_EXPECT(retry.applied != fixEnabled);
+        BEAST_EXPECT(view.exists(bobOffer) == fixEnabled);
+        BEAST_EXPECT(seqUsed() == (fixEnabled ? 0 : 1));
+        BEAST_EXPECT(feePaid() == (fixEnabled ? XRPAmount{0} : fee));
+
+        // With the amendment, the final pass applies the failure. Before it, the transaction
+        // was already applied, so the final pass fails. Either way, the effects happen once.
+        auto const last = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+        BEAST_EXPECT(last.applied == fixEnabled);
+        BEAST_EXPECT(fixEnabled ? last.ter == tecKILLED : isTefFailure(last.ter));
+        BEAST_EXPECT(!view.exists(bobOffer));
+        BEAST_EXPECT(seqUsed() == 1);
+        BEAST_EXPECT(feePaid() == fee);
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+        BEAST_EXPECT(!env.le(bobOffer));
+    }
+
+    void
+    testPersistentDeleteInsufficientReserve(FeatureBitset features)
+    {
+        // A tecINSUF_RESERVE_OFFER result keeps no deletions: not the
+        // OfferSequence cancel, and not the unfunded offers flow removed.
+        testcase("Persistent delete: insufficient reserve");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(10000), gw, alice, bob);
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+
+        // Leave alice enough XRP for one more offer, but not for a second.
+        auto const fee = env.current()->fees().base;
+        XRPAmount const target = reserve(env, 2) + fee - XRPAmount{1};
+        env(pay(alice, gw, STAmount{env.balance(alice).value().xrp() - fee - target}));
+        env.close();
+
+        auto const aliceSeq = env.seq(alice);
+        auto const aliceOffer = keylet::offer(alice, SeqProxy::rawSequence(aliceSeq));
+        env(offer(alice, XRP(1), usd(1)));
+        env.close();
+        BEAST_EXPECT(env.le(aliceOffer));
+
+        auto const bobOffer = createUnfundedOffer(env, gw, bob, usd, eur);
+
+        auto jv = offer(alice, eur(10), usd(10));
+        jv[sfOfferSequence.jsonName] = aliceSeq;
+        env(jv, Ter(tecINSUF_RESERVE_OFFER));
+        env.close();
+
+        BEAST_EXPECT(env.le(aliceOffer));
+        BEAST_EXPECT(env.le(bobOffer));
+    }
+
+    void
+    testPersistentDeleteLimit(FeatureBitset features)
+    {
+        // With fixCleanup3_6_0, a tec keeps at most kMaxPersistentDeletes
+        // persistent deletes of any type. Before it, the offer limit is
+        // kUnfundedOfferRemoveLimit.
+        testcase("Persistent delete: limit");
+        using namespace jtx;
+
+        bool const fixEnabled = features[fixCleanup3_6_0];
+        constexpr std::uint32_t offerCount = kMaxPersistentDeletes + 88;
+        static_assert(offerCount < kUnfundedOfferRemoveLimit);
+
+        // Bob's trust line remains, plus the offers past the limit.
+        std::uint32_t const remaining = fixEnabled ? offerCount - kMaxPersistentDeletes : 0;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, bob);
+        // Close so that gw's DefaultRipple flag is set before any trust line
+        // is created. Otherwise, the order in which the first close replays
+        // the funding and trust transactions decides whether gw's side of
+        // each line gets NoRipple, which blocks crossing through gw.
+        env.close();
+        env(trust(alice, usd(100)));
+        env(pay(gw, alice, usd(100)));
+        env(trust(bob, eur(1000)));
+        env(pay(gw, bob, eur(10)));
+        env.close();
+
+        for (std::uint32_t i = 0; i < offerCount; ++i)
+        {
+            env(offer(bob, usd(10), eur(10)));
+            if (i % 100 == 99)
+                env.close();
+        }
+        env(pay(bob, gw, eur(10)));
+        env.close();
+        env.require(Owners(bob, offerCount + 1));
+
+        env(offer(alice, eur(10), usd(10)), Txflags(tfFillOrKill), Ter(tecKILLED));
+        env.close();
+
+        env.require(Owners(bob, remaining + 1));
+    }
+
     void
     testFillOrKill(FeatureBitset features)
     {
@@ -5437,6 +5613,13 @@ public:
         testAll(allFeatures - featurePermissionedDEX);
         testAll(allFeatures);
         testFalseAssert();
+
+        for (auto const& features : {allFeatures - fixCleanup3_6_0, allFeatures})
+        {
+            testPersistentDeleteFillOrKill(features);
+            testPersistentDeleteInsufficientReserve(features);
+            testPersistentDeleteLimit(features);
+        }
     }
 };
 

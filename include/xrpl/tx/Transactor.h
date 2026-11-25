@@ -556,6 +556,14 @@ private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
+    /**
+     * Reset the view like reset(), but keep `result` unless the reset itself fails.
+     *
+     * @return `result` (or the reset error) and the fee actually charged.
+     */
+    std::pair<TER, XRPAmount>
+    resetKeepResult(TER result, XRPAmount fee);
+
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
     TER
@@ -563,6 +571,9 @@ private:
 
     std::tuple<TER, XRPAmount, bool>
     processPersistentChanges(TER result, XRPAmount fee);
+
+    std::tuple<TER, XRPAmount, bool>
+    replayPersistentDeletes(TER result, XRPAmount fee);
 
     void trapTransaction(UInt256) const;
 

@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <set>
 
 namespace xrpl {
 
@@ -103,6 +104,16 @@ public:
      */
     void
     discard();
+
+    /**
+     * Keys of entries erased with ApplyView::erasePersistent that were
+     * not discarded.
+     */
+    [[nodiscard]] std::set<uint256> const&
+    persistentKeys() const
+    {
+        return viewRef_.get().persistentKeys();
+    }
 
     /**
      * Apply the transaction result to the base.

@@ -64,7 +64,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            auto const err = deleteSLE(view, sleCred, j);
+            auto const err = deleteSLE(view, sleCred, j, {.eraseMode = EraseMode::Persistent});
             if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
                 return std::unexpected(err);
             foundExpired = true;
@@ -75,7 +75,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j, DeleteSLEOptions options)
 {
     if (!sleCredential)
         return tecNO_ENTRY;
@@ -123,7 +123,14 @@ deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
     }
 
     // Remove object from ledger
-    view.erase(sleCredential);
+    if (options.eraseMode == EraseMode::Persistent)
+    {
+        view.erasePersistent(sleCredential);
+    }
+    else
+    {
+        view.erase(sleCredential);
+    }
 
     return tesSUCCESS;
 }
