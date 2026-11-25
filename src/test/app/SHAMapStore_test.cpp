@@ -302,10 +302,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     }
 
     static bool
-    bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
+    bad(json::Value const& json,
+        std::string const& token,
+        ErrorCodeI error,
+        std::string const& message)
     {
-        return json.isMember(jss::result) && rpc::containsError(json[jss::result]) &&
-            json[jss::result][jss::error_code] == error;
+        return json.isMember(jss::result) && json[jss::result][jss::error] == token &&
+            json[jss::result][jss::error_code] == error &&
+            json[jss::result][jss::error_message] == message;
     }
 
     std::string
@@ -883,7 +887,7 @@ public:
         std::map<std::uint32_t, json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         ledgers.emplace(1, env.rpc("ledger", "1"));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
@@ -895,10 +899,10 @@ public:
         BEAST_EXPECT(goodLedger(env, ledgerTmp, "3"));
 
         ledgerTmp = env.rpc("ledger", "4");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         ledgerTmp = env.rpc("ledger", "100");
-        BEAST_EXPECT(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound"));
 
         auto const firstSeq = waitForReady(env);
         auto lastRotated = firstSeq - 1;
@@ -987,7 +991,7 @@ public:
         // Because advisory_delete is unset,
         // "can_delete" is disabled.
         auto const canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(bad(canDelete, RpcNotEnabled));
+        BEAST_EXPECT(bad(canDelete, "notEnabled", RpcNotEnabled, "Not enabled in configuration."));
 
         // Close ledgers without triggering a rotate
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)

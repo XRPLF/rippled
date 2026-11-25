@@ -24,6 +24,7 @@ on:
       - "!nix/devshell.nix"
       - "!nix/check-tools/**"
       - "bin/check-tools.sh"
+      - "bin/check-distrusted-roots.sh"
       - "bin/nix/default-loader-path.sh"
       - "bin/install/sanitizer-libs.sh"
   workflow_dispatch:
@@ -57,7 +58,7 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@696384b292577293292daed06af0306d1b83bd7d
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@0af4d43c20d0c38b917830802473628205749d62
     with:
       image_name: xrpld/nix-${{ matrix.distro.name }}
       dockerfile: nix/docker/Dockerfile
