@@ -41,7 +41,7 @@ NFTokenPageEntry<ViewT>::changeTokenURI(UInt256 const& id, std::optional<Slice> 
     requires Base::kIsWritable
 {
     // Locate the NFT in the page
-    STArray& arr = (*this)->peekFieldArray(sfNFTokens);
+    STArray& arr = this->sleRef().peekFieldArray(sfNFTokens);
 
     auto const nftIter =
         std::ranges::find_if(arr, [&id](STObject const& obj) { return (obj[sfNFTokenID] == id); });
@@ -58,7 +58,7 @@ NFTokenPageEntry<ViewT>::changeTokenURI(UInt256 const& id, std::optional<Slice> 
         nftIter->makeFieldAbsent(sfURI);
     }
 
-    this->update();
+    this->updateInView();
     return tesSUCCESS;
 }
 
