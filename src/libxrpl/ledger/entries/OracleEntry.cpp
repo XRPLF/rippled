@@ -38,7 +38,7 @@ OracleEntry<ViewT>::removeFromLedger(AccountID const& owner)
 
     std::uint32_t const count = reserveCount();
     decreaseOwnerCountForObject(view, sleOwner, sle, count, this->journal());
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }

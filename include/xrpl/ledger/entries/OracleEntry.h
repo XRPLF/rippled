@@ -48,7 +48,7 @@ public:
     [[nodiscard]] std::uint32_t
     reserveCount() const
     {
-        return calculateOracleReserve((*this)->getFieldArray(sfPriceDataSeries));
+        return calculateOracleReserve(this->sleRef().getFieldArray(sfPriceDataSeries));
     }
 
     /**

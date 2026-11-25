@@ -287,13 +287,13 @@ OracleSet::doApply()
         if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        sle.update();
+        sle.updateInView();
     }
     else
     {
         // create
 
-        sle.newSLE();
+        sle.newSle();
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
@@ -337,7 +337,7 @@ OracleSet::doApply()
         if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        sle.insert();
+        sle.insertIntoView();
     }
 
     return tesSUCCESS;
