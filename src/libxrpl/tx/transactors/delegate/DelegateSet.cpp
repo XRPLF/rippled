@@ -88,7 +88,7 @@ DelegateSet::doApply()
         }
 
         entry->setFieldArray(sfPermissions, permissions);
-        entry.update();
+        entry.updateInView();
         return tesSUCCESS;
     }
 
@@ -105,7 +105,7 @@ DelegateSet::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    entry.newSLE();
+    entry.newSle();
     entry->setAccountID(sfAccount, accountID_);
     entry->setAccountID(sfAuthorize, authAccount);
 
@@ -130,7 +130,7 @@ DelegateSet::doApply()
 
     (*entry)[sfDestinationNode] = *destPage;
 
-    entry.insert();
+    entry.insertIntoView();
     increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), entry.mutableRawSle());
 

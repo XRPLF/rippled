@@ -102,7 +102,7 @@ DelegateEntry<ViewT>::removeFromLedger(AccountID const&)
     decreaseOwnerCountForObject(
         this->applyView(), sleOwner, this->mutableRawSle(), 1, this->journal());
 
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }
