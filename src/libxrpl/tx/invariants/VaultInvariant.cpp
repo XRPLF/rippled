@@ -813,7 +813,7 @@ ValidVault::finalize(
     }
 
     // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
-    // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
+    // NoModifiedImmutableFields in InvariantCheck.cpp.
 
     auto const beforeShares = [&] -> std::optional<Shares> {
         if (beforeVault_.empty())

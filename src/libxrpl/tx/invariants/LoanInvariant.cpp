@@ -117,7 +117,7 @@ ValidLoan::finalize(
         }
 
         // From featureLendingProtocolV1_1 onwards this flag is immutable by way of
-        // NoModifiedUnmodifiableFields.
+        // NoModifiedImmutableFields.
         if (!lpV11Enabled && before &&
             (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))
         {

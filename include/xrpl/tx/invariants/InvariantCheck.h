@@ -403,7 +403,7 @@ public:
  * object is modified. Creation and deletion are ignored.
  *
  */
-class NoModifiedUnmodifiableFields
+class NoModifiedImmutableFields
 {
     // Pair is <before, after>.
     std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
@@ -474,7 +474,7 @@ using InvariantChecks = std::tuple<
     ValidPermissionedDEX,
     ValidBookDirectory,
     ValidAMM,
-    NoModifiedUnmodifiableFields,
+    NoModifiedImmutableFields,
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
