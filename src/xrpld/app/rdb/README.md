@@ -11,10 +11,10 @@ Firstly, the interface `RelationalDatabase` is inherited by the classes `SQLiteD
 
 ## Configuration
 
-The config section `[relational_db]` has a property named `backend` whose value designates which database implementation will be used for node databases. Presently the only valid value for this property is `sqlite`:
+The config section `[sqdb]` has a property named `backend` whose value designates which database implementation will be used for node databases. Presently the only valid value for this property is `sqlite`:
 
 ```
-[relational_db]
+[sqdb]
 backend=sqlite
 ```
 
