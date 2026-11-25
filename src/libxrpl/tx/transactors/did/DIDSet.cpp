@@ -86,12 +86,12 @@ DIDSet::doApply()
         {
             return tecEMPTY_DID;
         }
-        sleDID.update();
+        sleDID.updateInView();
         return tesSUCCESS;
     }
 
     // Create new ledger object otherwise
-    sleDID.newSLE();
+    sleDID.newSle();
     (*sleDID)[sfAccount] = accountID_;
 
     auto const set = [&](auto const& sField) {

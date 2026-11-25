@@ -35,7 +35,7 @@ DIDEntry<ViewT>::addToLedger(AccountID const& owner)
     }
 
     // Add ledger object to ledger
-    this->insert();
+    this->insertIntoView();
 
     // Add ledger object to owner's page
     {
@@ -74,7 +74,7 @@ DIDEntry<ViewT>::removeFromLedger(AccountID const& owner)
     decreaseOwnerCountForObject(view, sleOwner, this->mutableRawSle(), 1, j);
 
     // Remove object from ledger
-    this->erase();
+    this->eraseFromView();
     return tesSUCCESS;
 }
 
