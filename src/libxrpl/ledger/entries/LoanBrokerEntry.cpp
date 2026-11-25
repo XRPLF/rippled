@@ -63,7 +63,7 @@ LoanBrokerEntry<ViewT>::adjustOwnerCount(std::int32_t delta)
         this->applyView(),
         this->mutableRawSle(),
         sfOwnerCount,
-        (*this)->getAccountID(sfAccount),
+        this->sleRef().getAccountID(sfAccount),
         delta,
         this->journal());
 }
