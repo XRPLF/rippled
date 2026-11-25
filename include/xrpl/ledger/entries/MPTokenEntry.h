@@ -80,7 +80,7 @@ public:
     [[nodiscard]] bool
     isAuthorized() const
     {
-        return (*this)->isFlag(lsfMPTAuthorized);
+        return this->sleRef().isFlag(lsfMPTAuthorized);
     }
 
     /**
