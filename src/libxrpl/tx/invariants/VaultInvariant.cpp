@@ -65,6 +65,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     self.assetsDeployed = from[~sfAssetsDeployed].value_or(Number{0});
     self.yieldUnrealized = from[~sfYieldUnrealized].value_or(Number{0});
     self.version = decodeVaultVersion(from[~sfLEVersion]);
@@ -314,7 +315,7 @@ ValidVault::deltaShares(AccountID const& id) const
 bool
 ValidVault::isVaultEmpty(Vault const& vault)
 {
-    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0 && vault.assetsReserved == 0;
 }
 
 bool
@@ -414,6 +415,67 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 }
 
 bool
+ValidVault::finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !afterVault_.empty() && !beforeVault_.empty(),
+        "xrpl::ValidVault::finalizeLoanAccept : loan accept updated a vault");
+    auto const& afterVault = afterVault_[0];
+    auto const& beforeVault = beforeVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    bool result = true;
+
+    // Accepting a pending loan disburses the principal held back in assets
+    // reserved from the vault pseudo-account (to the borrower and, for the
+    // origination fee, to the broker owner). Assets available were already
+    // settled when the pending loan was created, so they must not move now.
+    // LoanAccept does not write the field, so it is compared exactly.
+    if (afterVault.assetsAvailable != beforeVault.assetsAvailable)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets available";
+        result = false;
+    }
+
+    // The proposal booked no interest, so that deleting it cannot move the
+    // share price. A pending loan only exists on a FixedPrecision vault, where
+    // acceptance recognizes the interest into yield unrealized rather than
+    // assets outstanding, so the field must not move.
+    if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets outstanding";
+        result = false;
+    }
+
+    // Only the creation of a pending loan (LoanSet) adds to assets reserved.
+    // A loan accept, like a loan delete, may only release them.
+    if (afterVault.assetsReserved > beforeVault.assetsReserved)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must not increase assets reserved";
+        result = false;
+    }
+
+    // Whatever leaves the pseudo-account must be covered by the release from
+    // assets reserved, so that the vault balance keeps covering assets
+    // available plus assets reserved. The two deltas come from differently
+    // quantized fields, so both are rounded to the vault's scale first.
+    auto const vaultDelta = deltaAssets(afterVault.pseudoId)
+                                .value_or(DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+    auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+    auto const disbursed = roundToAsset(vaultAsset, -vaultDelta.delta, minScale);
+    auto const released =
+        roundToAsset(vaultAsset, beforeVault.assetsReserved - afterVault.assetsReserved, minScale);
+    if (released < disbursed)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan accept must release at least the "
+                           "assets disbursed from the vault";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
 ValidVault::checkTotalsAddUp(
     Vault const& afterVault,
     Vault const& beforeVault,
@@ -478,6 +540,58 @@ ValidVault::checkTotalsAddUp(
 }
 
 bool
+ValidVault::finalizeLoanDelete(ReadView const& view, beast::Journal const& j) const
+{
+    XRPL_ASSERT(
+        !afterVault_.empty() && !beforeVault_.empty(),
+        "xrpl::ValidVault::finalizeLoanDelete : loan delete updated a vault");
+    auto const& afterVault = afterVault_[0];
+    auto const& beforeVault = beforeVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    bool result = true;
+
+    // Only the deletion of a pending loan touches the vault: it returns the
+    // principal held back in assets reserved to the available pool. No cash
+    // moves, so the pseudo-account balance must stay where it is.
+    auto const vaultDelta = deltaAssets(afterVault.pseudoId)
+                                .value_or(DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+    if (vaultDelta.delta != kNumZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not move the vault's assets";
+        result = false;
+    }
+
+    // The delete must not credit assets available by more than it releases
+    // from assets reserved. Assets reserved is exact, but assets available is
+    // a 16-digit STAmount, so on a coarsened vault the credit is rounded to
+    // the live grid, as the pseudo-account balance already was. Allow one
+    // unit of that grid.
+    auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+    auto const released = beforeVault.assetsReserved - afterVault.assetsReserved;
+    auto const credited = afterVault.assetsAvailable - beforeVault.assetsAvailable;
+    if (!lessOrEqualPlusOneUnit(credited, released, vaultAsset, minScale))
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not credit assets available "
+                           "by more than the assets reserved released";
+        result = false;
+    }
+
+    // A pending loan books no interest, so deleting one must not move assets
+    // outstanding: either party can delete at no cost, so any movement would
+    // shift the share price for free. On a coarsened vault the stored total
+    // is a 16-digit floor, and the principal's digits below the live grid
+    // return rounded, so allow one unit of that grid.
+    if (!agreesWithinOneUnit(afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset, minScale))
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not change assets outstanding";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
 ValidVault::finalize(
     STTx const& tx,
     TER const ret,
@@ -505,8 +619,16 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
+
+    // LoanDelete gained MayModifyVault with the two-step flow, where deleting a
+    // pending loan releases the reserved principal back to the vault. While
+    // the two-step flow is disabled it must not modify a vault.
+    bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
+    bool const allowLoanDeleteModify = !isLoanDelete || isTwoStepLoanFlowEnabled(view.rules());
+
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
-          hasPrivilege(tx, Privilege::MayModifyVault)))
+          hasPrivilege(tx, Privilege::MayModifyVault)) ||
+        !allowLoanDeleteModify)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -583,6 +705,12 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets available";
+            result = false;
+        }
+        if (beforeVault.assetsReserved != kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets reserved";
             result = false;
         }
 
@@ -688,24 +816,24 @@ ValidVault::finalize(
         bool const gapExceeded = [&] {
             if (afterVault.version == VaultVersion::FixedPrecision)
             {
-                // FixedPrecision: both LossUnrealized and AssetsDeployed are exact
-                // (never rounded), so compare them directly. AssetsTotal is
-                // just a rounded cache of AssetsAvailable + AssetsDeployed and
-                // is not the reference this check needs.
-                return afterVault.lossUnrealized > afterVault.assetsDeployed;
-            }
-            if (!fix340Enabled)
-            {
+                // FixedPrecision: LossUnrealized, AssetsDeployed, and
+                // AssetsReserved are exact (never rounded), so compare them
+                // directly. AssetsTotal is just a rounded cache of
+                // AssetsAvailable + AssetsDeployed and is not the reference
+                // this check needs.
                 return afterVault.lossUnrealized >
-                    afterVault.assetsTotal - afterVault.assetsAvailable;
+                    afterVault.assetsDeployed - afterVault.assetsReserved;
             }
+            // The loss is bounded by the assets lent out by active loans. Only
+            // a FixedPrecision Vault can hold a pending loan, so there is no
+            // reserved principal to exclude here.
+            Number const lentOut = afterVault.assetsTotal - afterVault.assetsAvailable;
+
+            if (!fix340Enabled)
+                return afterVault.lossUnrealized > lentOut;
 
             auto const s = scale(afterVault.assetsTotal, afterVault.asset);
-            return !lessOrEqualPlusOneUnit(
-                afterVault.lossUnrealized,
-                afterVault.assetsTotal - afterVault.assetsAvailable,
-                afterVault.asset,
-                s);
+            return !lessOrEqualPlusOneUnit(afterVault.lossUnrealized, lentOut, afterVault.asset, s);
         }();
         if (gapExceeded)
         {
@@ -751,6 +879,12 @@ ValidVault::finalize(
             JLOG(j.fatal()) << "Invariant failed: YieldUnrealized must not be negative";
             result = false;
         }
+
+        if (afterVault.assetsReserved > afterVault.assetsDeployed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: assets reserved must not exceed AssetsDeployed";
+            result = false;
+        }
     }
 
     if (fix340Enabled && afterVault.lossUnrealized < kZero)
@@ -771,6 +905,21 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (afterVault.assetsReserved < kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive or zero";
+        result = false;
+    }
+    // Only a FixedPrecision Vault can hold a pending loan (LoanSet refuses the
+    // two-step flow on older versions), so nothing is ever reserved there.
+    else if (
+        afterVault.version != VaultVersion::FixedPrecision && afterVault.assetsReserved != kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be zero on a "
+                           "vault older than FixedPrecision";
+        result = false;
+    }
+
     // Thanks to this check we can simply do `assert(!beforeVault_.empty()` when
     // enforcing invariants on transaction types other than ttVAULT_CREATE
     if (beforeVault_.empty() && txnType != ttVAULT_CREATE)
@@ -781,15 +930,26 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
-    // ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE are the only transactors allowed to
-    // write AssetsDeployed and YieldUnrealized; any new transactor that writes
-    // either field must be added to both allow-lists below.
+    // AssetsDeployed may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and
+    // ttLOAN_DELETE (which reverses the principal a pending loan proposed). YieldUnrealized
+    // may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT (which
+    // recognizes the interest of a pending loan). Any new transactor that writes either
+    // field must be added to the matching allow-list below and to the list documented in
+    // VaultInvariant.h.
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.assetsDeployed != beforeVault_[0].assetsDeployed && txnType != ttLOAN_SET &&
-        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_DELETE)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change AssetsDeployed";
+        result = false;
+    }
+
+    if (!beforeVault_.empty() && afterVault.assetsReserved != beforeVault_[0].assetsReserved &&
+        txnType != ttLOAN_SET && txnType != ttLOAN_ACCEPT && txnType != ttLOAN_DELETE)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change assets reserved";
         result = false;
     }
 
@@ -804,7 +964,7 @@ ValidVault::finalize(
 
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.yieldUnrealized != beforeVault_[0].yieldUnrealized && txnType != ttLOAN_SET &&
-        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_ACCEPT)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change yield "
@@ -860,7 +1020,8 @@ ValidVault::finalize(
                 }
 
                 if (afterVault.assetsAvailable != kZero || afterVault.assetsTotal != kZero ||
-                    afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0 ||
+                    afterVault.assetsReserved != kZero || afterVault.lossUnrealized != kZero ||
+                    updatedShares->sharesTotal != 0 ||
                     (afterVault.version == VaultVersion::FixedPrecision &&
                      (afterVault.assetsDeployed != kZero || afterVault.yieldUnrealized != kZero)))
                 {
@@ -1485,6 +1646,10 @@ ValidVault::finalize(
 
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
+            case ttLOAN_ACCEPT:
+                return finalizeLoanAccept(view, j);
+            case ttLOAN_DELETE:
+                return finalizeLoanDelete(view, j);
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 return true;

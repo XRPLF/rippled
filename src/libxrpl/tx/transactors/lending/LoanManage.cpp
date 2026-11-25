@@ -77,6 +77,13 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
+
+    if (loanSle->isFlag(lsfLoanPending))
+    {
+        JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be managed.";
+        return tecNO_PERMISSION;
+    }
+
     // Impairment only allows certain transitions.
     // 1. Once it's in default, it can't be changed.
     // 2. It can get worse: unimpaired -> impaired -> default
@@ -422,8 +429,8 @@ LoanManage::impairLoan(
     // Update the Vault object (set "paper loss")
     if (fixedPrecision)
     {
-        // adjustVaultBalances's own LU' > AD' check covers the comparison
-        // against AssetsDeployed.
+        // adjustVaultBalances's own LU' > AD' - AR' check covers the comparison against
+        // AssetsDeployed less AssetsReserved.
         if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
             !isTesSuccess(ter))
         {

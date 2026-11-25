@@ -864,6 +864,125 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // Under featureLendingProtocolV1_2, a pending (two-step) loan is
+        // created without sfOwnerNode and LoanAccept adds it when the borrower
+        // accepts. NoModifiedUnmodifiableFields therefore permits LoanAccept
+        // exactly one transition, absent -> present, and treats every other
+        // shape as a bug. Any other transaction type keeps the field fully
+        // immutable.
+        {
+            enum class OwnerNode { Absent, Zero, One };
+            struct Case
+            {
+                TxType txType;
+                OwnerNode before;
+                OwnerNode after;
+                // Unset means the invariant must pass.
+                std::optional<std::string> expected;
+            };
+            constexpr char const* kAcceptMsg =
+                "sfOwnerNode must be added, and only added, by LoanAccept";
+            constexpr char const* kChangedMsg = "OwnerNode changed on immutable ledger entry";
+            auto const cases = std::to_array<Case>({
+                // The single permitted LoanAccept transition.
+                {
+                    .txType = ttLOAN_ACCEPT,
+                    .before = OwnerNode::Absent,
+                    .after = OwnerNode::Zero,
+                    .expected = std::nullopt,
+                },
+                // LoanAccept that never linked the loan into the owner directory.
+                {
+                    .txType = ttLOAN_ACCEPT,
+                    .before = OwnerNode::Absent,
+                    .after = OwnerNode::Absent,
+                    .expected = kAcceptMsg,
+                },
+                // LoanAccept against a loan that already had sfOwnerNode.
+                {
+                    .txType = ttLOAN_ACCEPT,
+                    .before = OwnerNode::Zero,
+                    .after = OwnerNode::Zero,
+                    .expected = kAcceptMsg,
+                },
+                // LoanAccept that moved the loan to a different directory page.
+                {
+                    .txType = ttLOAN_ACCEPT,
+                    .before = OwnerNode::Zero,
+                    .after = OwnerNode::One,
+                    .expected = kAcceptMsg,
+                },
+                // LoanAccept that removed sfOwnerNode.
+                {
+                    .txType = ttLOAN_ACCEPT,
+                    .before = OwnerNode::Zero,
+                    .after = OwnerNode::Absent,
+                    .expected = kAcceptMsg,
+                },
+                // Any other transaction may not add sfOwnerNode, even though
+                // LoanAccept may.
+                {
+                    .txType = ttACCOUNT_SET,
+                    .before = OwnerNode::Absent,
+                    .after = OwnerNode::Zero,
+                    .expected = kChangedMsg,
+                },
+            });
+
+            auto const setOwnerNode = [](SLE::pointer const& sle, OwnerNode value) {
+                switch (value)
+                {
+                    case OwnerNode::Absent:
+                        sle->makeFieldAbsent(sfOwnerNode);
+                        break;
+                    case OwnerNode::Zero:
+                        sle->at(sfOwnerNode) = std::uint64_t{0};
+                        break;
+                    case OwnerNode::One:
+                        sle->at(sfOwnerNode) = std::uint64_t{1};
+                        break;
+                }
+            };
+
+            // The broker owner of the fixture, who is also the borrower here.
+            Account const a1{"A1"};
+            for (auto const& c : cases)
+            {
+                // The permitted transition must come out as tesSUCCESS, so
+                // every other invariant has to be satisfied too. ValidLoan
+                // only accepts a LoanAccept that finalizes a pending loan whose
+                // StartDate is still in the future, and ValidVault one that
+                // modifies the vault.
+                doLoanInvariantCheck(
+                    all_,
+                    STTx{c.txType, [&](STObject& obj) { obj.setAccountID(sfAccount, a1.id()); }},
+                    [&](OpenView& ov, LoanFixture const& f) {
+                        auto const sleLoan = makeLoanSle(f.brokerKeylet.key, 1, f.a1.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        if (c.txType == ttLOAN_ACCEPT)
+                        {
+                            sleLoan->setFieldU32(sfFlags, lsfLoanPending);
+                            sleLoan->setFieldU32(sfStartDate, 0xFFFFFFFFu);
+                        }
+                        setOwnerNode(sleLoan, c.before);
+                        ov.rawInsert(sleLoan);
+                    },
+                    [&](ApplyContext& ac, LoanFixture const& f) {
+                        auto const sleLoan = ac.view().peek(f.loanKeylet);
+                        if (!sleLoan)
+                            return false;
+                        if (c.txType == ttLOAN_ACCEPT)
+                            sleLoan->clearFlag(lsfLoanPending);
+                        setOwnerNode(sleLoan, c.after);
+                        ac.view().update(sleLoan);
+                        return c.txType != ttLOAN_ACCEPT || touchBrokerVault(ac, f.brokerKeylet);
+                    },
+                    c.expected);
+            }
+        }
+
         // Pre-featureLendingProtocolV1_1 sibling of the lsfLoanOverpayment
         // cases above: the same set-once immutability was originally enforced
         // by ValidLoan::finalize, so with V1_1 disabled toggling the flag

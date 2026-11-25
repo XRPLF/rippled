@@ -19,6 +19,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -367,9 +368,9 @@ private:
     }
 
     void
-    testRIPD3459(FeatureBitset features)
+    testRIPD3459(FeatureBitset features, LoanFlow flow)
     {
-        testcase("RIPD-3459 - LoanBroker incorrect debt total");
+        testcase << "RIPD-3459 - LoanBroker incorrect debt total (" << describeFlow(flow) << ")";
 
         using namespace jtx;
 
@@ -384,9 +385,13 @@ private:
             .managementFeeRate = TenthBips16{500},
             .coverRateLiquidation = TenthBips32{0},
         };
+        // account is the borrower and counter is the broker owner (lender),
+        // which both flows require: in the two-step flow the broker owner
+        // proposes on behalf of the named borrower.
         LoanParameters const loanParams{
-            .account = lender,
-            .counter = borrower,
+            .account = borrower,
+            .counter = lender,
+            .flow = flow,
             .principalRequest = Number{100'000, -4},
             .interest = TenthBips32{100'000},
             .payTotal = 10,
@@ -395,6 +400,12 @@ private:
         auto const assetType = AssetType::MPT;
 
         Env env{*this, features};
+        // The two-step flow is only available with the gating amendments enabled.
+        if (flow == LoanFlow::TwoStep && !isTwoStepLoanFlowEnabled(env.current()->rules()))
+        {
+            pass();
+            return;
+        }
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -408,11 +419,27 @@ private:
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
+        // Under featureLendingProtocolV1_1 new Vaults default to
+        // cash-basis, where LoanBroker.DebtTotal tracks only principal
+        // (interest is recognised on payment); pre-V1.1 vaults use
+        // accrual, where DebtTotal tracks principal + interest at
+        // proposal. The post-creation identity is therefore against a
+        // different Loan field per accounting model.
+        bool const cashBasis = features[featureLendingProtocolV1_1];
+
         if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
         {
             if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
             {
-                BEAST_EXPECT(brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
+                if (cashBasis)
+                {
+                    BEAST_EXPECT(brokerSle->at(sfDebtTotal) == loanSle->at(sfPrincipalOutstanding));
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
+                }
             }
         }
 
@@ -1180,7 +1207,8 @@ private:
     {
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
         testRIPD3831(features);
-        testRIPD3459(features);
+        testRIPD3459(features, LoanFlow::OneStep);
+        testRIPD3459(features, LoanFlow::TwoStep);
         testRIPD3902(features);
     }
 
@@ -1192,6 +1220,7 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        runAmendmentSensitive(all_ | featureLendingProtocolV1_1);
     }
 };
 
