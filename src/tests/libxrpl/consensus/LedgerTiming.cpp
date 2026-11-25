@@ -50,14 +50,14 @@ TEST(LedgerTimingTest, get_next_ledger_time_resolution)
 
     // If we never agree on close time, only can increase resolution
     // until hit the max
-    auto decreases = TestRes::run(false, 10);
+    auto const decreases = TestRes::run(false, 10);
     EXPECT_TRUE(decreases.increase == 3);
     EXPECT_TRUE(decreases.decrease == 0);
     EXPECT_TRUE(decreases.equal == 7);
 
     // If we always agree on close time, only can decrease resolution
     // until hit the min
-    auto increases = TestRes::run(false, 100);
+    auto const increases = TestRes::run(false, 100);
     EXPECT_TRUE(increases.increase == 3);
     EXPECT_TRUE(increases.decrease == 0);
     EXPECT_TRUE(increases.equal == 97);

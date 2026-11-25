@@ -105,7 +105,7 @@ Message::compress()
     {
         auto payload = static_cast<void const*>(buffer_.data() + kHeaderBytes);
 
-        auto compressedSize = xrpl::compression::compress(
+        auto const compressedSize = xrpl::compression::compress(
             payload,
             messageBytes,
             [&](std::size_t inSize) {  // size of required compressed buffer
@@ -172,7 +172,7 @@ Message::setHeader(
 {
     auto h = in;
 
-    auto pack = [](std::uint8_t*& in, std::uint32_t size) {
+    auto const pack = [](std::uint8_t*& in, std::uint32_t size) {
         *in++ = static_cast<std::uint8_t>((size >> 24) & 0x0F);  // leftmost 4 are compression bits
         *in++ = static_cast<std::uint8_t>((size >> 16) & 0xFF);
         *in++ = static_cast<std::uint8_t>((size >> 8) & 0xFF);

@@ -228,14 +228,14 @@ public:
 
             auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
 
-            auto getPopulatedManifests =
+            auto const getPopulatedManifests =
                 [](ManifestCache const& cache) -> std::vector<Manifest const*> {
                 std::vector<Manifest const*> result;
                 result.reserve(32);
                 cache.forEachManifest([&result](Manifest const& man) { result.push_back(&man); });
                 return result;
             };
-            auto sort = [](std::vector<Manifest const*> mv) -> std::vector<Manifest const*> {
+            auto const sort = [](std::vector<Manifest const*> mv) -> std::vector<Manifest const*> {
                 std::ranges::sort(mv, [](Manifest const* lhs, Manifest const* rhs) {
                     return lhs->serialized < rhs->serialized;
                 });
@@ -330,14 +330,16 @@ public:
                 auto const pk = derivePublicKey(keyType, sk);
                 auto const kp = randomKeyPair(KeyType::Secp256k1);
                 std::vector<std::string> const nonRevocation = {
-                    makeManifestString(pk, sk, kp.first, kp.second, 0)};
+                    makeManifestString(pk, sk, kp.first, kp.second, 0),
+                };
 
                 BEAST_EXPECT(
                     !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, nonRevocation));
                 BEAST_EXPECT(!loaded.revoked(pk));
 
                 std::vector<std::string> const badSigRevocation = {
-                    makeRevocationString(sk, keyType, true)};
+                    makeRevocationString(sk, keyType, true),
+                };
                 BEAST_EXPECT(
                     !loaded.load(*dbCon, "ValidatorManifests", emptyManifest, badSigRevocation));
                 BEAST_EXPECT(!loaded.revoked(pk));
@@ -496,7 +498,7 @@ public:
         auto const ssk = generateSecretKey(KeyType::Secp256k1, randomSeed());
         auto const spk = derivePublicKey(KeyType::Secp256k1, ssk);
 
-        auto buildManifestObject = [&](std::uint16_t version) {
+        auto const buildManifestObject = [&](std::uint16_t version) {
             STObject st(sfGeneric);
             st[sfSequence] = 3;
             st[sfPublicKey] = pk;
@@ -533,7 +535,8 @@ public:
         std::array<std::uint8_t, 33> const badKey{
             0x99, 0x30, 0xE7, 0xFC, 0x9D, 0x56, 0xBB, 0x25, 0xD6, 0x89, 0x3B,
             0xA3, 0xF3, 0x17, 0xAE, 0x5B, 0xCF, 0x33, 0xB3, 0x29, 0x1B, 0xD6,
-            0x3D, 0xB3, 0x26, 0x54, 0xA3, 0x13, 0x22, 0x2F, 0x7F, 0xD0, 0x20};
+            0x3D, 0xB3, 0x26, 0x54, 0xA3, 0x13, 0x22, 0x2F, 0x7F, 0xD0, 0x20,
+        };
 
         // Short public key:
         std::array<std::uint8_t, 16> const shortKey{
@@ -552,9 +555,10 @@ public:
             0xF3,
             0x17,
             0xAE,
-            0x5B};
+            0x5B,
+        };
 
-        auto toString = [](STObject const& st) {
+        auto const toString = [](STObject const& st) {
             Serializer s;
             st.add(s);
 
@@ -571,10 +575,10 @@ public:
                 auto const ssk = generateSecretKey(sKeyType, randomSeed());
                 auto const spk = derivePublicKey(sKeyType, ssk);
 
-                auto buildManifestObject = [&](std::uint32_t seq,
-                                               std::optional<std::string> domain,
-                                               bool noSigningPublic = false,
-                                               bool noSignature = false) {
+                auto const buildManifestObject = [&](std::uint32_t seq,
+                                                     std::optional<std::string> domain,
+                                                     bool noSigningPublic = false,
+                                                     bool noSignature = false) {
                     STObject st(sfGeneric);
                     st[sfSequence] = seq;
                     st[sfPublicKey] = pk;
@@ -798,7 +802,7 @@ public:
         auto const sk2 = generateSecretKey(KeyType::Secp256k1, randomSeed());
         auto const pk2 = derivePublicKey(KeyType::Secp256k1, sk2);
 
-        auto test = [&](std::string domain) {
+        auto const test = [&](std::string domain) {
             STObject st(sfGeneric);
             st[sfSequence] = 7;
             st[sfPublicKey] = pk1;

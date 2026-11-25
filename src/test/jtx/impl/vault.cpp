@@ -26,7 +26,7 @@ std::tuple<json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
 {
     auto const seqProxy = SeqProxy::rawSequence(env.seq(args.owner));
-    auto keylet = keylet::vault(args.owner.id(), seqProxy);
+    auto const keylet = keylet::vault(args.owner.id(), seqProxy);
     json::Value jv;
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();
@@ -49,13 +49,14 @@ Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
 {
     auto const sub = env.now() + args.subscriptionOffset;
     auto const red = sub + args.investmentWindow;
-    auto [jv, keylet] = create(
-        {.owner = args.owner,
-         .asset = args.asset,
-         .flags = args.flags,
-         .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-         .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
-         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count())});
+    auto [jv, keylet] = create({
+        .owner = args.owner,
+        .asset = args.asset,
+        .flags = args.flags,
+        .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+        .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
+        .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count()),
+    });
     return {jv, keylet, sub};
 }
 

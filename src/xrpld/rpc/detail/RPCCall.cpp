@@ -23,6 +23,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -637,6 +638,16 @@ private:
         return rpcError(RpcInvalidParams);
     }
 
+    /**
+     * Reports whether @p jv is a request this client accepts as JSON-RPC 2.0:
+     * an object whose `jsonrpc` is rpc::kJsonRpcVersion and `ripplerpc` is
+     * rpc::kRippleRpcVersion2, carrying an `id` and a `method`, with `params`
+     * absent, null, an array or an object; or a non-empty array of such
+     * objects.
+     *
+     * @param jv The parsed argument.
+     * @return True when the shape is accepted.
+     */
     bool
     isValidJson2(json::Value const& jv)
     {
@@ -651,8 +662,8 @@ private:
         }
         if (jv.isObject())
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
+            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == rpc::kJsonRpcVersion &&
+                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == rpc::kRippleRpcVersion2 &&
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 return !jv.isMember(jss::params) ||
@@ -1077,7 +1088,7 @@ private:
         json::Reader reader;
         bool const bOffline = jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
         std::optional<std::string> const field = [&jvParams,
-                                                  bOffline]() -> std::optional<std::string> {
+                                                  bOffline] -> std::optional<std::string> {
             if (jvParams.size() < 3)
                 return std::nullopt;
             if (jvParams.size() < 4 && bOffline)
@@ -1750,7 +1761,7 @@ public:
     json::Value
     parseCommand(std::string_view strMethod, json::Value const& jvParams, bool allowAnyCommand)
     {
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
             stream << "Params: " << jvParams;
@@ -1934,7 +1945,7 @@ rpcCmdToJson(
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insertApiVersion = [apiVersion](json::Value& jr) {
+    auto const insertApiVersion = [apiVersion](json::Value& jr) {
         if (jr.isObject() && !jr.isMember(jss::error) && !jr.isMember(jss::api_version))
         {
             jr[jss::api_version] = apiVersion;
@@ -2031,7 +2042,7 @@ rpcClient(
                     setup.client.password,
                     "",
                     // Allow parser to rewrite method.
-                    [&]() -> std::string {
+                    [&] -> std::string {
                         if (jvRequest.isMember(jss::method))
                             return jvRequest[jss::method].asString();
                         return jvRequest.isArray() ? "batch" : args[0];
@@ -2140,7 +2151,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)
 {
-    auto j = logs.journal("HTTPClient");
+    auto const j = logs.journal("HTTPClient");
 
     // Connect to localhost
     if (!quiet)

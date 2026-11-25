@@ -201,7 +201,7 @@ TransfersNotFrozen::recordBalanceChanges(SLE::ConstRef after, STAmount const& ba
 SLE::const_pointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
-    if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
+    if (auto const it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
     {
         return it->second;
     }

@@ -16,7 +16,7 @@ namespace xrpl::metrics {
 void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 {
-    auto add = [&](auto& m, std::uint32_t val) {
+    auto const add = [&](auto& m, std::uint32_t val) {
         std::scoped_lock const lock(mutex);
         m.addMetrics(val);
     };

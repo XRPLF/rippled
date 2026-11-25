@@ -77,7 +77,7 @@ class Submitter
         selector_()->submit(Tx{nextID_++});
         if (scheduler_.now() < stop_)
         {
-            scheduler_.in(asDuration(dist_(g_)), [&]() { submit(); });
+            scheduler_.in(asDuration(dist_(g_)), [&] { submit(); });
         }
     }
 
@@ -91,7 +91,7 @@ public:
         Generator& g)
         : dist_{dist}, stop_{end}, selector_{selector}, scheduler_{s}, g_{g}
     {
-        scheduler_.at(start, [&]() { submit(); });
+        scheduler_.at(start, [&] { submit(); });
     }
 };
 

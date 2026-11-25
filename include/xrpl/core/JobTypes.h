@@ -30,12 +30,12 @@ private:
         using namespace std::chrono_literals;
         int const maxLimit = std::numeric_limits<int>::max();
 
-        auto add = [this](
-                       JobType jt,
-                       std::string name,
-                       int limit,
-                       std::chrono::milliseconds avgLatency,
-                       std::chrono::milliseconds peakLatency) {
+        auto const add = [this](
+                             JobType jt,
+                             std::string name,
+                             int limit,
+                             std::chrono::milliseconds avgLatency,
+                             std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(!map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =

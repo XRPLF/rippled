@@ -11,6 +11,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>

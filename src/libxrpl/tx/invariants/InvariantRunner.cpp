@@ -70,7 +70,8 @@ checkInvariantsHelper(
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
         std::array<bool, sizeof...(Is)> const finalizers{
-            {std::get<Is>(checkers).finalize(ctx.tx, result, fee, ctx.view(), ctx.journal)...}};
+            {std::get<Is>(checkers).finalize(ctx.tx, result, fee, ctx.view(), ctx.journal)...},
+        };
 
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {

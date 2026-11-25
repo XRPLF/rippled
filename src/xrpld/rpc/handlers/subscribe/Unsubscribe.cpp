@@ -51,7 +51,7 @@ doUnsubscribe(rpc::JsonContext& context)
         if (!context.params[jss::streams].isArray())
             return rpcError(RpcInvalidParams);
 
-        for (auto& it : context.params[jss::streams])
+        for (auto const& it : context.params[jss::streams])
         {
             if (!it.isString())
                 return rpcError(RpcStreamMalformed);
@@ -98,7 +98,7 @@ doUnsubscribe(rpc::JsonContext& context)
         }
     }
 
-    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+    auto const accountsProposed = context.params.isMember(jss::accounts_proposed)
         ? jss::accounts_proposed
         : jss::rt_accounts;  // DEPRECATED
     if (context.params.isMember(accountsProposed))
@@ -106,7 +106,7 @@ doUnsubscribe(rpc::JsonContext& context)
         if (!context.params[accountsProposed].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = rpc::parseAccountIds(context.params[accountsProposed]);
+        auto const ids = rpc::parseAccountIds(context.params[accountsProposed]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, true);
@@ -117,7 +117,7 @@ doUnsubscribe(rpc::JsonContext& context)
         if (!context.params[jss::accounts].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = rpc::parseAccountIds(context.params[jss::accounts]);
+        auto const ids = rpc::parseAccountIds(context.params[jss::accounts]);
         if (ids.empty())
             return rpcError(RpcActMalformed);
         context.netOps.unsubAccount(ispSub, ids, false);
@@ -212,7 +212,7 @@ doUnsubscribe(rpc::JsonContext& context)
         if (!context.params[jss::mpt_issuances].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
+        auto const ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
         if (ids.empty())
             return rpcError(RpcInvalidParams);
         context.netOps.unsubMPT(ispSub, ids);
