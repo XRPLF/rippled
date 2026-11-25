@@ -43,19 +43,7 @@ IOUAmount::minPositiveAmount()
 }
 
 void
-IOUAmount::normalize()
-{
-    if (mantissa_ == 0)
-    {
-        *this = beast::kZero;
-        return;
-    }
-
-    Number const v{mantissa_, exponent_};
-    *this = IOUAmount(v);
-}
-
-IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
+IOUAmount::enforceExponentBounds()
 {
     if (exponent_ > kMaxExponent)
     {
@@ -65,6 +53,27 @@ IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
     {
         *this = beast::kZero;
     }
+}
+
+void
+IOUAmount::normalize()
+{
+    if (mantissa_ == 0)
+    {
+        *this = beast::kZero;
+        return;
+    }
+    std::tie(mantissa_, exponent_) =
+        Number::normalizeToRange<kMinMantissa, kMaxMantissa>(mantissa_, exponent_);
+
+    // normalizeToRange only enforces Number's much wider exponent bounds, so
+    // IOUAmount's narrower range still has to be applied on top.
+    enforceExponentBounds();
+}
+
+IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
+{
+    enforceExponentBounds();
 }
 
 IOUAmount&
