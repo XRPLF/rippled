@@ -117,6 +117,13 @@ jobs:
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       VALIDATOR_KEYS_ENABLED: ${{ contains(inputs.cmake_args, '-Dvalidator_keys=ON') }}
       SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
+      ASAN_ENABLED: ${{ contains(inputs.sanitizers, 'address') }}
+      TSAN_ENABLED: ${{ contains(inputs.sanitizers, 'thread') }}
+      UBSAN_ENABLED: ${{ contains(inputs.sanitizers, 'undefinedbehavior') }}
+      # The names of the test logs, which the test steps write to the workspace.
+      XRPL_TESTS_LOG: xrpl-tests.log
+      XRPLD_TESTS_LOG: xrpld-tests.log
+      EMBEDDED_TESTS_LOG: embedded-tests.log
       # The binaries reusable-package.yml consumes. A private repository skips
       # them except on a tag push, which is what produces its release packages.
       PACKAGING_ARTIFACTS_ENABLED: ${{ github.event.repository.visibility == 'public' || startsWith(github.ref, 'refs/tags/') }}
@@ -129,7 +136,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -186,9 +193,6 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ inputs.sanitizers }}
 
       - name: Configure CMake
@@ -234,7 +238,12 @@ jobs:
               ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
+          # The exitcode=0 option stays out of runtime-tsan-options.txt, so that
+          # a local run still fails on a finding. TSan exits with that code after
+          # a crash it caught as well, so abort_on_error=1 turns such a crash
+          # into SIGABRT, which the test driver counts as a failure.
+          TSAN_OPTS="include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp"
+          echo "TSAN_OPTIONS=${TSAN_OPTS}:exitcode=0:abort_on_error=1" >>${GITHUB_ENV}
           echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
           echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
 
@@ -257,20 +266,20 @@ jobs:
       # cache included, since what it holds is what gets uploaded and reused.
       - name: Check the build output for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+        run: ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}"
 
       - name: Check the Conan cache for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+        run: ./bin/nix/check-nix-store-refs.sh "${CONAN_HOME}"
 
       # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
       # images always references the store. Same condition it uses.
       - name: Check for Nix store references (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         run: |
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -283,7 +292,7 @@ jobs:
 
       - name: Upload the binary (Linux)
         if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld
@@ -297,7 +306,7 @@ jobs:
 
       - name: Upload the validator-keys binary
         if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: validator-keys-${{ inputs.config_name }}
           path: |
@@ -308,7 +317,7 @@ jobs:
 
       - name: Upload the test binary (Linux)
         if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: xrpl_tests-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpl_tests
@@ -324,37 +333,44 @@ jobs:
 
       - name: Upload server definitions
         if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: server-definitions
           path: ${{ env.BUILD_DIR }}/server_definitions.json
           retention-days: 3
           if-no-files-found: error
 
-      - name: Check linking (Linux)
+      - name: Check `libstdc++` is statically linked (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
-          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-              echo 'The binary is statically linked.'
+          if [ "$(ldd ./xrpld | grep -E 'libstdc\+\+' | wc -l)" -eq 0 ]; then
+              echo 'libstdc++ is statically linked.'
           else
-              echo 'The binary is dynamically linked.'
+              echo 'libstdc++ is dynamically linked.'
               exit 1
           fi
 
       - name: Verify presence of instrumentation (Linux)
-        if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
+        if: ${{ runner.os == 'Linux' && (env.VOIDSTAR_ENABLED == 'true' || env.SANITIZERS_ENABLED == 'true') }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ./xrpld --version | grep libvoidstar
+          "${GITHUB_WORKSPACE}/.github/scripts/verify-instrumentation.sh"
 
-      - name: Run the separate tests
+      - name: Run the separate tests (xrpl)
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
-          ./xrpl_tests
-          ./xrpld_tests
+          set -o pipefail
+          ./xrpl_tests 2>&1 | tee "${GITHUB_WORKSPACE}/${XRPL_TESTS_LOG}"
+
+      - name: Run the separate tests (xrpld)
+        if: ${{ !inputs.build_only }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        run: |
+          set -o pipefail
+          ./xrpld_tests 2>&1 | tee "${GITHUB_WORKSPACE}/${XRPLD_TESTS_LOG}"
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -365,6 +381,10 @@ jobs:
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
+
+          # Under TSan memory, not core count, is the ceiling: more than 4 jobs
+          # reach the OOM killer (exit 137) or lose contact with the runner.
+          [ "${TSAN_ENABLED}" = "true" ] && BUILD_NPROC=4
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must
@@ -383,7 +403,33 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/${EMBEDDED_TESTS_LOG}"
+
+      # With exitcode=0 the reports sit in the log of a green job, so count them
+      # into an annotation and keep the logs, until a new finding can fail the job.
+      - name: Report the ThreadSanitizer findings
+        if: ${{ !cancelled() && !inputs.build_only && env.TSAN_ENABLED == 'true' }}
+        run: |
+          reports="$(cat "${XRPL_TESTS_LOG}" "${XRPLD_TESTS_LOG}" "${EMBEDDED_TESTS_LOG}" 2>/dev/null | grep 'WARNING: ThreadSanitizer: ' || true)"
+          if [ -z "${reports}" ]; then
+              echo 'No ThreadSanitizer findings.'
+              exit 0
+          fi
+          kinds="$(sed -E 's/^.*WARNING: ThreadSanitizer: //; s/ \(pid=[0-9]+\)$//' <<<"${reports}" |
+              sort | uniq -c | sort -rn |
+              awk '{ count = $1; $1 = ""; sub(/^ /, ""); printf "%s%s %s", (NR > 1 ? ", " : ""), count, $0 }')"
+          echo "::warning title=ThreadSanitizer findings::$(wc -l <<<"${reports}" | tr -d ' ') reports: ${kinds}"
+
+      - name: Upload the ThreadSanitizer logs
+        if: ${{ !cancelled() && !inputs.build_only && env.TSAN_ENABLED == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tsan-logs-${{ inputs.config_name }}
+          path: |
+            ${{ env.XRPL_TESTS_LOG }}
+            ${{ env.XRPLD_TESTS_LOG }}
+            ${{ env.EMBEDDED_TESTS_LOG }}
+          if-no-files-found: ignore
 
       - name: Run Rust tests
         if: ${{ !inputs.build_only }}
@@ -415,9 +461,9 @@ jobs:
         run: |
           cd "${GITHUB_WORKSPACE}"
 
-          if [ -f unittest.log ]; then
-              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
-                  echo "unittest.log present but no failure lines found."
+          if [ -f "${EMBEDDED_TESTS_LOG}" ]; then
+              if ! grep -E "failed" "${EMBEDDED_TESTS_LOG}" | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "${EMBEDDED_TESTS_LOG} present but no failure lines found."
               fi
           elif [ -f build.log ]; then
               # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
@@ -429,7 +475,7 @@ jobs:
                   echo "build.log present but no compile errors found."
               fi
           else
-              echo "unittest.log/build.log not found; something went wrong."
+              echo "${EMBEDDED_TESTS_LOG}/build.log not found; something went wrong."
               exit 1
           fi
       - name: Debug failure (Linux)

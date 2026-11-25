@@ -49,7 +49,7 @@ signatureRole(SField const* subField)
 }
 
 void
-sign(json::Value& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
+sign(json::Value const& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;

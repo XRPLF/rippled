@@ -180,13 +180,12 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = AccountRootEntryR(uDstAccountID, ctx.view);
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        !sleDst)
+    if (!sleDst)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+    if (sleDst->isFlag(lsfDisallowIncomingTrustline) &&
         !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
         return tecNO_PERMISSION;
@@ -323,8 +322,8 @@ TrustSet::doApply()
     auto& sponsorSle = *sponsorExp;
 
     std::optional<AccountRootEntryW> noSponsor;
-    auto getSponsor = [&sponsorSle, &noSponsor, this](
-                          AccountID const& account) -> std::optional<AccountRootEntryW>& {
+    auto const getSponsor = [&sponsorSle, &noSponsor, this](
+                                AccountID const& account) -> std::optional<AccountRootEntryW>& {
         return (sponsorSle && account == accountID_) ? sponsorSle : noSponsor;
     };
 
@@ -350,7 +349,7 @@ TrustSet::doApply()
     bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze);
     bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
 
     auto sleDst = AccountRootEntryW(uDstAccountID, view(), j_);
 
@@ -626,11 +625,12 @@ TrustSet::doApply()
                     ctx_.getApplyViewContext(),
                     preFeeBalance_,
                     sponsorSle,
+                    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                     {},
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -656,7 +656,7 @@ TrustSet::doApply()
             // Reserve is not scaled by load.
             else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -687,7 +687,7 @@ TrustSet::doApply()
     else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.
@@ -704,7 +704,7 @@ TrustSet::doApply()
         !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.

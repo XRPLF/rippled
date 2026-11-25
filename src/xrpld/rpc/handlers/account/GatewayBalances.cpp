@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -93,7 +94,7 @@ doGatewayBalances(rpc::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](json::Value const& j) {
+        auto const addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -151,6 +152,14 @@ doGatewayBalances(rpc::JsonContext& context)
     // Traverse the cold wallet's trust lines
     {
         forEachItem(*ledger, accountID, [&](SLE::ConstRef sle) {
+            if (!sle)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::doGatewayBalances : null SLE");
+                return;
+                // LCOV_EXCL_STOP
+            }
+
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
@@ -249,9 +258,9 @@ doGatewayBalances(rpc::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array,
-                              json::StaticString const& name) {
+    auto const populateResult = [&result](
+                                    std::map<AccountID, std::vector<STAmount>> const& array,
+                                    json::StaticString const& name) {
         if (!array.empty())
         {
             json::Value j;

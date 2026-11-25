@@ -20,7 +20,8 @@ constexpr std::chrono::seconds kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{30},
     std::chrono::seconds{60},
     std::chrono::seconds{90},
-    std::chrono::seconds{120}};
+    std::chrono::seconds{120},
+};
 
 /**
  * Initial resolution of ledger close time.

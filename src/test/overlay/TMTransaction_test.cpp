@@ -22,8 +22,8 @@ class TMTransaction_test : public beast::unit_test::Suite
 
         Env env{*this, envconfig()};
 
-        auto peer = makeCapturePeer(env);
-        auto tx = std::make_shared<protocol::TMTransaction>();
+        auto const peer = makeCapturePeer(env);
+        auto const tx = std::make_shared<protocol::TMTransaction>();
         tx->set_status(protocol::tsNEW);
 
         // Bytes that are not a serialized transaction, so deserialization fails.

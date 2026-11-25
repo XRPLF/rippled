@@ -34,7 +34,7 @@ jobs:
     needs: [determine-files]
     if: ${{ needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.need_full_run == 'true' }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-060957e"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-d3a71b2"
     permissions:
       contents: read
       issues: write
@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: false
 
@@ -73,7 +73,6 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ env.BUILD_TYPE }}
-          log_verbosity: verbose
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
@@ -110,7 +109,7 @@ jobs:
 
       - name: Upload clang-tidy output
         if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ env.OUTPUT_FILE }}
           archive: false
@@ -124,17 +123,23 @@ jobs:
 
       - name: Fix style
         if: ${{ steps.files_changed.outcome != 'success' }}
+        # pre-commit installs every hook's environment, even for hooks that match
+        # no files, and node-based hooks need libatomic, which this image lacks.
+        # Exit code 1 just means hooks modified files or found issues.
+        env:
+          SKIP: prettier,cspell
         run: |
-          pre-commit run --all-files || true
+          git add --update
+          pre-commit run || [ $? -eq 1 ]
 
       - name: Generate git diff
         if: ${{ steps.files_changed.outcome != 'success' }}
         run: |
-          git diff | tee "${DIFF_FILE}"
+          git diff HEAD | tee "${DIFF_FILE}"
 
       - name: Upload clang-tidy diff output
         if: ${{ github.event.repository.visibility == 'public' && steps.files_changed.outcome != 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ env.DIFF_FILE }}
           archive: false
@@ -186,7 +191,7 @@ jobs:
 
       - name: Create issue
         if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
-        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        uses: XRPLF/actions/create-issue@b489c21d53928f7dab4874912fec40e4f6c9e85e
         with:
           title: "Clang-tidy check failed"
           body_file: ${{ env.ISSUE_FILE }}

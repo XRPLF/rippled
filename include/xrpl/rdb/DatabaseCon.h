@@ -178,7 +178,7 @@ public:
     {
         using namespace std::chrono_literals;
         LockedSociSession session = perf::measureDurationAndLog(
-            [&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
+            [&] { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
 
         return session;
     }

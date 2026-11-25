@@ -112,11 +112,12 @@ public:
         int const maxConsumed = 1'000;
         int const evitaOfferCount{maxConsumed + 49};
 
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {"bob", "alice", "carol", "evita"},
-             .maxAmt = 2'000 + evitaOfferCount + 1});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {"bob", "alice", "carol", "evita"},
+            .maxAmt = 2'000 + evitaOfferCount + 1,
+        });
 
         env(pay(gw, "alice", usd(1000)));
         env(pay(gw, "carol", usd(1)));
@@ -188,23 +189,25 @@ public:
         // number of offers consumed by all the steps combined exceeds 1500, the
         // payment stops.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, carol},
-                     .limit = kMaxMpTokenAmount});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {bob},
-                     .limit = kMaxMpTokenAmount});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, carol},
+                    .limit = kMaxMpTokenAmount,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {bob},
+                    .limit = kMaxMpTokenAmount,
+                });
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));
@@ -279,23 +282,25 @@ public:
             testHelper2TokensMix(test);
         }
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, carol},
-                     .limit = kMaxMpTokenAmount});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {bob},
-                     .limit = kMaxMpTokenAmount});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, carol},
+                    .limit = kMaxMpTokenAmount,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {bob},
+                    .limit = kMaxMpTokenAmount,
+                });
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));
