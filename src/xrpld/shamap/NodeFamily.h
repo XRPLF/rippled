@@ -3,6 +3,7 @@
 #include <xrpld/app/main/CollectorManager.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Protocol.h>
@@ -31,7 +32,12 @@ public:
     NodeFamily&
     operator=(NodeFamily&&) = delete;
 
-    NodeFamily(Application& app, CollectorManager& cm);
+    /**
+     * @param app The application whose node store and ledger master the family uses.
+     * @param cm The collector for cache statistics.
+     * @param clock The clock the FullBelowCache and TreeNodeCache age their entries by.
+     */
+    NodeFamily(Application& app, CollectorManager& cm, Stopwatch& clock = stopwatch());
 
     node_store::Database&
     db() override
@@ -65,6 +71,16 @@ public:
 
     void
     sweep() override;
+
+    /**
+     * Sweep the TreeNodeCache, and the FullBelowCache only when haveValidated is true, so a
+     * first sync keeps the FullBelowCache entries it has built.
+     *
+     * @param haveValidated Whether the node has a validated ledger
+     *        (LedgerMaster::haveValidated()).
+     */
+    void
+    sweep(bool haveValidated);
 
     void
     reset() override;
