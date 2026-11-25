@@ -32,6 +32,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/detail/default_ops.hpp>
 
 #include <algorithm>
@@ -1779,6 +1780,137 @@ mulRatio(STAmount const& amt, std::uint32_t num, std::uint32_t den, Number::Roun
         [&](MPTIssue const& issue) -> STAmount {
             return {mulRatio(amt.mpt(), num, den, roundUp), issue};
         });
+}
+
+namespace {
+
+using BigInt = boost::multiprecision::cpp_int;
+
+BigInt
+pow10Big(int n)
+{
+    XRPL_ASSERT(n >= 0, "xrpl::pow10Big : non-negative exponent");
+    return boost::multiprecision::pow(BigInt{10}, static_cast<unsigned>(n));
+}
+
+// Number of decimal digits of a positive integer.
+int
+digitCount(BigInt const& v)
+{
+    return static_cast<int>(v.str().size());
+}
+
+// Rounds (num / den) * 10^shift to an integer, once: down, or up when roundUp and there is a
+// remainder. magnitudeDigits is digits(num) - digits(den), which bounds the size of the quotient.
+BigInt
+roundedQuotient(BigInt const& num, BigInt const& den, int shift, int magnitudeDigits, bool roundUp)
+{
+    // The quotient is below 10^(magnitudeDigits + 1 + shift). Two digits past that it is 0 with
+    // a non-zero remainder, so avoid building a huge power of ten.
+    if (shift < 0 && -shift > magnitudeDigits + 2)
+        return roundUp ? BigInt{1} : BigInt{0};
+
+    BigInt n = num;
+    BigInt d = den;
+    if (shift >= 0)
+    {
+        n *= pow10Big(shift);
+    }
+    else
+    {
+        d *= pow10Big(-shift);
+    }
+
+    BigInt quotient;
+    BigInt remainder;
+    boost::multiprecision::divide_qr(n, d, quotient, remainder);
+    if (roundUp && remainder != 0)
+        ++quotient;
+    return quotient;
+}
+
+}  // namespace
+
+STAmount
+mulDivRound(
+    Number const& a,
+    Number const& b,
+    Number const& c,
+    Asset const& asset,
+    Number::RoundingMode mode,
+    std::optional<int> targetExponent)
+{
+    XRPL_ASSERT(
+        mode == Number::RoundingMode::Upward || mode == Number::RoundingMode::Downward,
+        "xrpl::mulDivRound : directed rounding mode");
+    bool const roundUp = mode == Number::RoundingMode::Upward;
+
+    // Thrown rather than asserted so a release build never casts a negative value to unsigned.
+    if (a.signum() < 0 || b.signum() < 0 || c.signum() < 0)
+        Throw<std::overflow_error>("mulDivRound: negative operand");
+    if (c == beast::kZero)
+        Throw<std::overflow_error>("mulDivRound: division by zero");
+    // A zero Number has the lowest possible exponent, so it is handled before any exponent maths.
+    if (a == beast::kZero || b == beast::kZero)
+        return STAmount{asset};
+
+    BigInt const num = BigInt{a.mantissa()} * BigInt{b.mantissa()};
+    BigInt const den = BigInt{c.mantissa()};
+    int const exponent = a.exponent() + b.exponent() - c.exponent();
+    // The exact value is num / den * 10^exponent. Its magnitude is in (10^(top - 1), 10^(top + 1)).
+    int const magnitudeDigits = digitCount(num) - digitCount(den);
+    int const top = magnitudeDigits + exponent;
+
+    if (asset.integral())
+    {
+        // The result is a whole number of units; a coarser target only widens the grid.
+        int const grid = std::max(targetExponent.value_or(0), 0);
+        // A grid past 10^19 is beyond any amount.
+        if (grid > 19)
+            Throw<std::overflow_error>("mulDivRound: result out of range");
+        // At least 10^(top - 1) units, more than any amount.
+        if (top - 1 - grid >= 20)
+            Throw<std::overflow_error>("mulDivRound: result out of range");
+
+        BigInt const units = roundedQuotient(num, den, exponent - grid, magnitudeDigits, roundUp);
+        if (units == 0)
+            return STAmount{asset};
+        std::uint64_t const limit = asset.native() ? STAmount::kMaxNativeN : kMaxMpTokenAmount;
+        BigInt const value = units * pow10Big(grid);
+        if (value > limit)
+            Throw<std::overflow_error>("mulDivRound: result out of range");
+        return STAmount{asset, static_cast<std::uint64_t>(value), 0, false};
+    }
+
+    // The largest IOU is below 10^(kMaxOffset + 16), so a coarser grid holds no non-zero amount.
+    if (targetExponent && *targetExponent > STAmount::kMaxOffset + 16)
+        Throw<std::overflow_error>("mulDivRound: result out of range");
+
+    // An IOU mantissa has 16 digits. Start at the finest exponent that can fit, where the
+    // quotient has at most 17 digits, and coarsen once if it has 17.
+    int const finest = std::max(top - 16, STAmount::kMinOffset);
+    int grid = std::max(targetExponent.value_or(finest), finest);
+    constexpr std::uint64_t maxMantissa = 10'000'000'000'000'000ULL;
+    BigInt mantissa = roundedQuotient(num, den, exponent - grid, magnitudeDigits, roundUp);
+    if (mantissa > maxMantissa)
+    {
+        ++grid;
+        mantissa = roundedQuotient(num, den, exponent - grid, magnitudeDigits, roundUp);
+        // 10^16 is a 16-digit mantissa at the next exponent, and STAmount drops its zero digit.
+        XRPL_ASSERT(mantissa <= maxMantissa, "xrpl::mulDivRound : coarsened mantissa fits");
+    }
+    if (mantissa == 0)
+        return STAmount{asset};
+    if (grid + digitCount(mantissa) - 16 > STAmount::kMaxOffset)
+        Throw<std::overflow_error>("mulDivRound: result out of range");
+    // A small mantissa at the minimum exponent would be normalized below it, to zero.
+    if (grid + digitCount(mantissa) - 16 < STAmount::kMinOffset)
+    {
+        if (!roundUp)
+            return STAmount{asset};
+        return STAmount{asset, STAmount::kMinValue, STAmount::kMinOffset, false};
+    }
+    return STAmount{asset, static_cast<std::uint64_t>(mantissa), grid, false};
 }
 
 [[nodiscard]] bool

@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -16,6 +17,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -994,6 +996,154 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         checkFixedPrecisionSync(env, keylet, firstDeposit);
     }
 
+    // On a vault where a share is worth exactly one unit, VaultDeposit, VaultWithdraw and
+    // VaultClawback move exactly the requested amount. SharesTotal * 5,005 / AssetsTotal used to be
+    // rounded to 19 digits before it was truncated, which gave 5,004.
+    test::jtx::Account const shareIssuer_{"issuer"};
+    test::jtx::Account const shareOwner_{"owner"};
+    test::jtx::Account const shareHolder_{"holder"};
+
+    struct OneToOneMptVault
+    {
+        Keylet keylet;
+        PrettyAsset asset;
+        Asset share;
+    };
+
+    // An MPT vault into which the holder deposited `deposit`, so it holds `deposit` units and
+    // `deposit` shares. A first deposit into an empty vault mints one share per unit exactly,
+    // without the division that rounds. The holder keeps `spare` more units.
+    OneToOneMptVault
+    setupOneToOneMptVault(test::jtx::Env& env, Number const& deposit, Number const& spare)
+    {
+        using namespace test::jtx;
+
+        env.fund(XRP(1'000'000), shareIssuer_, shareOwner_, shareHolder_);
+        env.close();
+        MPTTester mpt{env, shareIssuer_, kMptInitNoFund};
+        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanClawback});
+        PrettyAsset const asset = mpt.issuanceID();
+        mpt.authorize({.account = shareOwner_});
+        mpt.authorize({.account = shareHolder_});
+        env(pay(shareIssuer_, shareHolder_, asset(deposit + spare)));
+        env.close();
+
+        Vault const vault{env};
+        auto [create, vaultKeylet] = vault.create({.owner = shareOwner_, .asset = asset});
+        env(create);
+        env.close();
+        env(vault.deposit(
+            {.depositor = shareHolder_, .id = vaultKeylet.key, .amount = asset(deposit)}));
+        env.close();
+
+        // Share balances are read through the vault's pseudo-account, the share issuer.
+        auto const vaultSle = env.le(vaultKeylet);
+        env.memoize(Account{"vault", vaultSle->at(sfAccount)});
+        Asset const share = MPTIssue{vaultSle->at(sfShareMPTID)};
+        return {.keylet = vaultKeylet, .asset = asset, .share = share};
+    }
+
+    void
+    testShareCountMovesRequestedAmount()
+    {
+        using namespace test::jtx;
+
+        enum class Op { Deposit, Withdraw, Clawback };
+        struct Row
+        {
+            Op op = Op::Deposit;
+            char const* name = nullptr;
+        };
+        for (auto const& row : {
+                 Row{.op = Op::Deposit, .name = "deposit"},
+                 Row{.op = Op::Withdraw, .name = "withdrawal"},
+                 Row{.op = Op::Clawback, .name = "clawback"},
+             })
+        {
+            testcase(
+                std::string{"A "} + row.name +
+                " of 5,005 on a one-to-one MPT vault moves 5,005 units and 5,005 shares");
+
+            Env env{*this, features()};
+            // A deposit needs the 5,005 units on top of what is already in the vault.
+            auto const setup = setupOneToOneMptVault(
+                env,
+                Number{4'577'096'644'444'257LL},
+                row.op == Op::Deposit ? Number{5'005} : Number{0});
+            Vault const vault{env};
+
+            Number const vaultBefore = snapshotVault(env, setup.keylet, setup.asset).vaultBalance;
+            Number const sharesBefore = env.balance(shareHolder_, setup.share).value();
+            switch (row.op)
+            {
+                case Op::Deposit:
+                    env(vault.deposit({
+                        .depositor = shareHolder_,
+                        .id = setup.keylet.key,
+                        .amount = setup.asset(5'005),
+                    }));
+                    break;
+                case Op::Withdraw:
+                    env(vault.withdraw({
+                        .depositor = shareHolder_,
+                        .id = setup.keylet.key,
+                        .amount = setup.asset(5'005),
+                    }));
+                    break;
+                case Op::Clawback:
+                    env(vault.clawback({
+                        .issuer = shareIssuer_,
+                        .id = setup.keylet.key,
+                        .holder = shareHolder_,
+                        .amount = setup.asset(5'005).value(),
+                    }));
+                    break;
+            }
+            env.close();
+
+            Number const vaultAfter = snapshotVault(env, setup.keylet, setup.asset).vaultBalance;
+            Number const sharesAfter = env.balance(shareHolder_, setup.share).value();
+            Number const units =
+                row.op == Op::Deposit ? vaultAfter - vaultBefore : vaultBefore - vaultAfter;
+            Number const shares =
+                row.op == Op::Deposit ? sharesAfter - sharesBefore : sharesBefore - sharesAfter;
+            BEAST_EXPECTS(
+                units == Number{5'005},
+                std::string{"a "} + row.name + " of 5,005 should move 5,005 units, but moved " +
+                    to_string(units));
+            BEAST_EXPECTS(
+                shares == Number{5'005},
+                std::string{"a "} + row.name + " of 5,005 should move 5,005 shares, but moved " +
+                    to_string(shares));
+        }
+    }
+
+    void
+    testShareCountClawbackOfEverything()
+    {
+        testcase("A clawback of more than the holder has takes all of its shares");
+
+        using namespace test::jtx;
+        Env env{*this, features()};
+        auto const setup = setupOneToOneMptVault(env, Number{6'564'360'495LL}, Number{0});
+        Vault const vault{env};
+
+        env(vault.clawback({
+            .issuer = shareIssuer_,
+            .id = setup.keylet.key,
+            .holder = shareHolder_,
+            .amount = setup.asset(Number{6'564'364'663LL}).value(),
+        }));
+        env.close();
+        Number const sharesLeft = env.balance(shareHolder_, setup.share).value();
+
+        // The clawback is capped at the vault's 6,564,360,495 units, the worth of all the shares.
+        BEAST_EXPECTS(
+            sharesLeft == Number{0},
+            "clawing back more than the holder has should leave 0 shares, but it left " +
+                to_string(sharesLeft));
+    }
+
 public:
     void
     run() override
@@ -1015,6 +1165,8 @@ public:
         testAssetsMaximumRejectedOnExistingVaultAfterV12();
         testOffGridAssetsMaximumReplacedAfterV12();
         testDepositCoarseningRefusedInsteadOfAssociateAssetRounding();
+        testShareCountMovesRequestedAmount();
+        testShareCountClawbackOfEverything();
     }
 };
 
