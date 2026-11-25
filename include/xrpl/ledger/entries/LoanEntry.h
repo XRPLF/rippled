@@ -66,7 +66,8 @@ public:
     [[nodiscard]] Number
     vaultExposureInstantRecognition() const
     {
-        return (*this)->at(sfTotalValueOutstanding) - (*this)->at(sfManagementFeeOutstanding);
+        return this->sleRef().at(sfTotalValueOutstanding) -
+            this->sleRef().at(sfManagementFeeOutstanding);
     }
 
     // Cash-basis (LendingProtocolV1_1) recognition model: the vault's exposure
@@ -76,7 +77,7 @@ public:
     [[nodiscard]] Number
     vaultExposureCashBasis() const
     {
-        return (*this)->at(sfPrincipalOutstanding);
+        return this->sleRef().at(sfPrincipalOutstanding);
     }
 };
 
