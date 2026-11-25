@@ -23,7 +23,7 @@ Json::Json(char const* s) : Json(std::string(s))
 {
 }
 
-Json::Json(json::Value jv) : jv_(std::move(jv))
+Json::Json(::json::Value jv) : jv_(std::move(jv))
 {
 }
 

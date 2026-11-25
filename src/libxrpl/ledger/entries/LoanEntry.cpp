@@ -16,13 +16,13 @@ LoanState
 LoanEntry<ViewT>::state() const
 {
     XRPL_ASSERT(
-        this->exists() && (*this)->getType() == ltLOAN,
+        this->exists() && this->sleRef().getType() == ltLOAN,
         "xrpl::constructLoanState : valid loan SLE");
 
     return constructLoanState(
-        (*this)->at(sfTotalValueOutstanding),
-        (*this)->at(sfPrincipalOutstanding),
-        (*this)->at(sfManagementFeeOutstanding));
+        this->sleRef().at(sfTotalValueOutstanding),
+        this->sleRef().at(sfPrincipalOutstanding),
+        this->sleRef().at(sfManagementFeeOutstanding));
 }
 
 template <typename ViewT>
@@ -32,7 +32,7 @@ LoanEntry<ViewT>::isPaymentLate() const
     auto const& view = this->readView();
     return hasExpired(
         view,
-        (*this)->at(sfNextPaymentDueDate),
+        this->sleRef().at(sfNextPaymentDueDate),
         view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
                                               : ExpiryComparison::Inclusive);
 }
