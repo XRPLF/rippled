@@ -784,7 +784,7 @@ LoanSet::doApply()
     // does
     if (loanSequenceProxy == 0)
         return tecMAX_SEQUENCE_REACHED;
-    brokerSle.update();
+    brokerSle.updateInView();
 
     // Put the loan into the pseudo-account's directory
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))

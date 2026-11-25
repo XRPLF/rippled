@@ -390,7 +390,7 @@ LoanBrokerCoverClawback::doApply()
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     sleBroker->at(sfCoverAvailable) -= clawAmount;
-    sleBroker.update();
+    sleBroker.updateInView();
 
     associateAsset(*sleBroker, vaultAsset);
 
