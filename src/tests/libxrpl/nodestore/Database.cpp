@@ -74,7 +74,7 @@ protected:
     SetUp() override
     {
         nodeParams_.set("type", GetParam());
-        nodeParams_.set("path", nodeDb_.path());
+        nodeParams_.set("path", nodeDb_.path().string());
 
         beast::XorShiftEngine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
@@ -166,7 +166,7 @@ TEST(NodeStoreDatabase, memory_earliest_seq)
     TempDir const nodeDb;
     Section nodeParams;
     nodeParams.set("type", "memory");
-    nodeParams.set("path", nodeDb.path());
+    nodeParams.set("path", nodeDb.path().string());
 
     beast::Journal const journal(TestSink::instance());
 
@@ -313,7 +313,7 @@ TEST_P(DatabaseImportTest, same_backend)
     TempDir const srcDir;
     Section srcParams;
     srcParams.set("type", type);
-    srcParams.set("path", srcDir.path());
+    srcParams.set("path", srcDir.path().string());
 
     auto batch = createPredictableBatch(kNumObjects, kSeedValue);
 
@@ -331,7 +331,7 @@ TEST_P(DatabaseImportTest, same_backend)
         TempDir const destDir;
         Section destParams;
         destParams.set("type", type);
-        destParams.set("path", destDir.path());
+        destParams.set("path", destDir.path().string());
 
         auto dest =
             Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal);
