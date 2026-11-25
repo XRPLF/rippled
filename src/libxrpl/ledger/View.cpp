@@ -13,7 +13,6 @@
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
