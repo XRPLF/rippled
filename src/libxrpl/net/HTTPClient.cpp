@@ -149,7 +149,7 @@ public:
     {
         JLOG(j_.trace()) << "Fetch: " << deqSites_[0];
 
-        auto query = std::make_shared<Query>(
+        auto const query = std::make_shared<Query>(
             deqSites_[0],
             std::to_string(port_),
             boost::asio::ip::resolver_query_base::numeric_service);
@@ -551,7 +551,7 @@ HTTPClient::get(
         complete,
     beast::Journal const& j)
 {
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -571,7 +571,7 @@ HTTPClient::get(
 {
     std::deque<std::string> const deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -591,7 +591,7 @@ HTTPClient::request(
 {
     std::deque<std::string> const deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 

@@ -5,7 +5,6 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -17,6 +16,8 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
+#include <rpcspec/Errors.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -154,7 +155,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
-Status
+::rpc::Status
 callMethod(JsonContext& context, Handler::Method method, std::string_view name, json::Value& result)
 {
     static std::atomic<std::uint64_t> kRequestId{0};
@@ -163,12 +164,12 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v =
+        auto const v =
             context.app.getJobQueue().makeLoadEvent(JtGeneric, std::string{"cmd:"}.append(name));
 
-        auto start = std::chrono::system_clock::now();
+        auto const start = std::chrono::system_clock::now();
         auto ret = method(context, result);
-        auto end = std::chrono::system_clock::now();
+        auto const end = std::chrono::system_clock::now();
 
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
@@ -190,11 +191,11 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
 
 }  // namespace
 
-Status
+::rpc::Status
 doCommand(rpc::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
-    if (auto error = fillHandler(context, handler))
+    if (auto const error = fillHandler(context, handler))
     {
         injectError(error, result);
         return error;

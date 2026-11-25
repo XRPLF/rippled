@@ -47,9 +47,6 @@ STValidation::validationFormat()
         {sfCloseTime,           SoeOptional},
         {sfLoadFee,             SoeOptional},
         {sfAmendments,          SoeOptional},
-        {sfBaseFee,             SoeOptional},
-        {sfReserveBase,         SoeOptional},
-        {sfReserveIncrement,    SoeOptional},
         {sfSigningTime,         SoeRequired},
         {sfSigningPubKey,       SoeRequired},
         {sfSignature,           SoeRequired},
@@ -57,7 +54,6 @@ STValidation::validationFormat()
         {sfCookie,              SoeDefault},
         {sfValidatedHash,       SoeOptional},
         {sfServerVersion,       SoeOptional},
-        // featureXRPFees
         {sfBaseFeeDrops,          SoeOptional},
         {sfReserveBaseDrops,      SoeOptional},
         {sfReserveIncrementDrops, SoeOptional},
@@ -112,7 +108,7 @@ STValidation::isValid() const noexcept
 
         // Log that the signature was never checked, so an operator does not
         // read this as a bad key. The log is guarded because it can throw too.
-        auto reportUncheckable = [this](char const* reason) noexcept {
+        auto const reportUncheckable = [this](char const* reason) noexcept {
             try
             {
                 JLOG(debugLog().error())

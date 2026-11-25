@@ -177,8 +177,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // with identical 96-low-bits are all kept on the same page.
 
         // Lambda that exercises the lopsided splits.
-        auto exerciseLopsided = [this,
-                                 &features](std::initializer_list<std::string_view const> seeds) {
+        auto const exerciseLopsided = [this, &features](
+                                          std::initializer_list<std::string_view const> seeds) {
             Env env{*this, features};
 
             // Eventually all of the NFTokens will be owned by buyer.
@@ -202,7 +202,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
             env.close();
 
-            // All of the accounts create one NFT and and offer that NFT to
+            // All of the accounts create one NFT and offer that NFT to
             // buyer.
             std::vector<UInt256> nftIDs;
             std::vector<UInt256> offers;
@@ -249,7 +249,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // Verify that all the NFTs are owned by buyer.
-            json::Value buyerNFTs = [&env, &buyer]() {
+            json::Value buyerNFTs = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";
@@ -384,7 +384,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
         // the index for the new page.  This test recreates the problem.
 
         // Lambda that exercises the split.
-        auto exercise = [this, &features](std::initializer_list<std::string_view const> seeds) {
+        auto const exercise = [this,
+                               &features](std::initializer_list<std::string_view const> seeds) {
             Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
 
             // Eventually all of the NFTokens will be owned by buyer.
@@ -408,7 +409,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
             env.close();
 
-            // All of the accounts create one NFT and and offer that NFT to
+            // All of the accounts create one NFT and offer that NFT to
             // buyer.
             std::vector<UInt256> nftIDs;
             std::vector<UInt256> offers;
@@ -459,7 +460,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // Verify that all the NFTs are owned by buyer.
-            json::Value buyerNFTs = [&env, &buyer]() {
+            json::Value buyerNFTs = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";
@@ -641,7 +642,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
         env.close();
 
-        // All of the accounts create one NFT and and offer that NFT to buyer.
+        // All of the accounts create one NFT and offer that NFT to buyer.
         std::vector<UInt256> nftIDs;
         std::vector<UInt256> offers;
         offers.reserve(accounts.size());
@@ -700,7 +701,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
 
         // Verify that all the NFTs are owned by buyer.
-        json::Value buyerNFTs = [&env, &buyer]() {
+        json::Value buyerNFTs = [&env, &buyer] {
             json::Value params;
             params[jss::account] = buyer.human();
             params[jss::type] = "state";
@@ -807,7 +808,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
         env.close();
 
-        // All of the accounts create seven consecutive NFTs and and offer
+        // All of the accounts create seven consecutive NFTs and offer
         // those NFTs to buyer.
         std::array<std::vector<UInt256>, 7> nftIDsByPage;
         for (auto& vec : nftIDsByPage)
@@ -905,7 +906,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             std::string marker;
             do
             {
-                json::Value buyerOffers = [&env, &buyer, &marker]() {
+                json::Value buyerOffers = [&env, &buyer, &marker] {
                     json::Value params;
                     params[jss::account] = buyer.human();
                     params[jss::type] = jss::nft_offer;
@@ -959,7 +960,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
 
             // account_objects should no longer return any "nft_offer"s.
-            json::Value remainingOffers = [&env, &buyer]() {
+            json::Value remainingOffers = [&env, &buyer] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = jss::nft_offer;
@@ -978,7 +979,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         std::string marker;
         do
         {
-            json::Value buyerNFTs = [&env, &buyer, &marker]() {
+            json::Value buyerNFTs = [&env, &buyer, &marker] {
                 json::Value params;
                 params[jss::account] = buyer.human();
                 params[jss::type] = "state";

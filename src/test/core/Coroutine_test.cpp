@@ -35,7 +35,7 @@ public:
         waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+            auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -116,7 +116,7 @@ public:
         BEAST_EXPECT(*lv == -1);
 
         Gate g;
-        jq.addJob(JtClient, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&] {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
@@ -155,7 +155,7 @@ public:
             c->join();
         }
 
-        jq.addJob(JtClient, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&] {
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });

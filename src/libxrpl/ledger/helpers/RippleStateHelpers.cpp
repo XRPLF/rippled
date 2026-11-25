@@ -49,7 +49,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -80,7 +80,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -423,7 +423,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (auto const state = view.peek(index))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -516,7 +516,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
+    if (auto const state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 

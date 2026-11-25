@@ -320,7 +320,7 @@ ConfidentialTransferTestBase::reencryptHolderBalances(
 Buffer const&
 ConfidentialTransferTestBase::getBadCiphertext()
 {
-    static Buffer const kBadCiphertext = []() {
+    static Buffer const kBadCiphertext = [] {
         Buffer buf(kEcGamalEncryptedTotalLength);
         std::memset(buf.data(), 0xFF, kEcGamalEncryptedTotalLength);
 
@@ -335,7 +335,7 @@ ConfidentialTransferTestBase::getBadCiphertext()
 Buffer const&
 ConfidentialTransferTestBase::getTrivialCiphertext()
 {
-    static Buffer const kTrivialCiphertext = []() {
+    static Buffer const kTrivialCiphertext = [] {
         Buffer buf(kEcGamalEncryptedTotalLength);
         std::memset(buf.data(), 0, kEcGamalEncryptedTotalLength);
 
@@ -354,7 +354,7 @@ ConfidentialTransferTestBase::getTrivialCiphertext()
 Buffer const&
 ConfidentialTransferTestBase::getTrivialCommitment()
 {
-    static Buffer const kTrivialCommitment = []() {
+    static Buffer const kTrivialCommitment = [] {
         Buffer buf(kEcPedersenCommitmentLength);
         std::memset(buf.data(), 0, kEcPedersenCommitmentLength);
 
@@ -390,7 +390,7 @@ ConfidentialTransferTestBase::getForgedBulletproof(
     std::array<Buffer, 2> const& blindingFactors,
     UInt256 const& contextHash)
 {
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
 
     secp256k1_pubkey h;
     secp256k1_mpt_get_h_generator(ctx, &h);
@@ -415,7 +415,7 @@ ConfidentialTransferTestBase::getForgedSingleBulletproof(
     Buffer const& blindingFactor,
     UInt256 const& contextHash)
 {
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
 
     secp256k1_pubkey h;
     secp256k1_mpt_get_h_generator(ctx, &h);
@@ -458,7 +458,7 @@ ConfidentialTransferTestBase::getForgedConvertBackProof(
     if (amt > realBalance)
         Throw<std::runtime_error>("getForgedConvertBackProof: amt exceeds realBalance");
 
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
     auto const holderPubKey = requireOptional(mpt.getPubKey(holder), "Missing holder pubkey");
     auto const holderPrivKey = requireOptional(mpt.getPrivKey(holder), "Missing holder privkey");
 
@@ -517,7 +517,7 @@ ConfidentialTransferTestBase::getForgedSendProof(
     test::jtx::Account const& dest,
     ConfidentialSendSetup const& setup)
 {
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
 
     secp256k1_pubkey c1;
     std::vector<secp256k1_pubkey> c2Vec(setup.recipients.size());

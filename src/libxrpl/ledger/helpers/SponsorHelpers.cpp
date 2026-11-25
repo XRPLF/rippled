@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -320,6 +321,8 @@ getLedgerEntryOwnerCount(SLE const& sle)
             UNREACHABLE("AccountRoots are not supported by object sponsorship.");
             return 0;
             // LCOV_EXCL_STOP
+        case ltESCROW:
+            return calculateAdditionalReserve(sle[~sfBytecode]);
         default:
             return 1;
     }

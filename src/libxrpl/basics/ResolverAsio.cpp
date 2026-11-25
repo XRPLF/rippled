@@ -298,9 +298,9 @@ public:
             return std::isspace<std::string::value_type>(c, loc);
         };
 
-        auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
+        auto const hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
-        auto portLast =
+        auto const portLast =
             std::ranges::find_if_not(std::ranges::reverse_view(str), findWhitespace).base();
 
         // This should only happen for all-whitespace strings
@@ -318,9 +318,9 @@ public:
             return false;
         };
 
-        auto hostLast = std::find_if(hostFirst, portLast, findPortSeparator);
+        auto const hostLast = std::find_if(hostFirst, portLast, findPortSeparator);
 
-        auto portFirst = std::find_if_not(hostLast, portLast, findPortSeparator);
+        auto const portFirst = std::find_if_not(hostLast, portLast, findPortSeparator);
 
         return make_pair(std::string(hostFirst, hostLast), std::string(portFirst, portLast));
     }

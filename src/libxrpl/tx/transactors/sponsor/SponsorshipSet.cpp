@@ -238,7 +238,7 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
     if (sle->isFieldPresent(sfFeeAmount))
     {
         (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
-        sponsorAccSle.update();
+        sponsorAccSle.updateInView();
     }
 
     view.erase(sle);
@@ -261,7 +261,7 @@ SponsorshipSet::createSponsorship(
     bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
-    auto newSle = std::make_shared<SLE>(sponsorshipKeylet);
+    auto const newSle = std::make_shared<SLE>(sponsorshipKeylet);
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
     // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.
@@ -392,6 +392,7 @@ SponsorshipSet::doApply()
                 ctx_.getApplyViewContext(),
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                 {},
                 tecUNFUNDED);
             !isTesSuccess(ret))
@@ -411,7 +412,7 @@ SponsorshipSet::doApply()
         {
             (*sponsorshipSle)[sfFeeAmount] = newFee;
         }
-        sponsorAccSle.update();
+        sponsorAccSle.updateInView();
     }
 
     if (maxFee)
