@@ -21,7 +21,7 @@ enum class Error {
     UnexpectedTag,
     LongTag,
     LargeSize,
-    PreimageTooLong
+    PreimageTooLong,
 };
 
 std::error_code

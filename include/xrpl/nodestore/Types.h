@@ -28,7 +28,7 @@ enum class Status {
     Unknown = 3,
     BackendError = 4,
 
-    CustomCode = 100
+    CustomCode = 100,
 };
 
 /**

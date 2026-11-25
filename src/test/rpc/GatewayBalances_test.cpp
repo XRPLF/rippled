@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
@@ -10,6 +11,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -31,9 +33,9 @@ public:
             // Gateway account and assets
             Account const alice{"alice"};
             env.fund(XRP(10000), "alice");
-            auto usd = alice["USD"];
-            auto cny = alice["CNY"];
-            auto jpy = alice["JPY"];
+            auto const usd = alice["USD"];
+            auto const cny = alice["CNY"];
+            auto const jpy = alice["JPY"];
 
             // Create a hotwallet
             Account const hw{"hw"};
@@ -85,8 +87,7 @@ public:
             expect(jv[jss::status] == "success");
             if (wsc->version() == 2)
             {
-                expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(hasEnvelope2(jv));
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -102,8 +103,8 @@ public:
                 auto const& hwBalance = balances[hw.human()];
                 expect(hwBalance.isArray(), "hwBalance is not an array");
                 expect(hwBalance.size() == 2);
-                auto c1 = hwBalance[0u][jss::currency];
-                auto c2 = hwBalance[1u][jss::currency];
+                auto const c1 = hwBalance[0u][jss::currency];
+                auto const c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
                 expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
@@ -172,7 +173,12 @@ public:
 
             auto response = jv[jss::result];
             auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const errorCode = apiVersion < 2u ? RpcInvalidHotwallet : RpcInvalidParams;
+            auto const errorMessage =
+                apiVersion < 2u ? "Invalid hotwallet." : "Invalid parameters.";
             BEAST_EXPECT(response[jss::error] == error);
+            BEAST_EXPECT(response[jss::error_code] == errorCode);
+            BEAST_EXPECT(response[jss::error_message] == errorMessage);
         });
     }
 
@@ -201,6 +207,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'account'.");
         });
 
         // The same applies to a non-string "ident".
@@ -212,6 +220,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'ident'.");
         });
     }
 
@@ -226,7 +236,7 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
-        auto usd = alice["USD"];
+        auto const usd = alice["USD"];
 
         // The largest valid STAmount of USD:
         STAmount const maxUSD(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
@@ -315,7 +325,7 @@ public:
     {
         using namespace jtx;
         auto const sa = testableAmendments();
-        for (auto feature : {sa - featurePermissionedDEX, sa})
+        for (auto const feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);

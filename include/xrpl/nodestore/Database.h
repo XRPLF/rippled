@@ -145,6 +145,9 @@ public:
      * If I/O is required, the I/O is scheduled and `true` is returned
      *
      * @note This can be called concurrently.
+     * @note The callback must not throw. It runs on a read thread, or on the
+     *       caller's thread once the queue is closed, which includes the
+     *       stop() call made from the destructor.
      * @param hash The key of the object to retrieve
      * @param ledgerSeq The sequence of the ledger where the
      *         object is stored.
@@ -299,7 +302,7 @@ private:
      *
      * @note This routine will not be called concurrently with itself
      *       or other methods.
-     * @see import
+     * @see importDatabase
      */
     virtual void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;

@@ -8,6 +8,7 @@ on:
     branches:
       - "develop"
       - "release/*"
+      - "staging/*"
     paths:
       - "crates/**/Cargo.toml"
       - "crates/Cargo.lock"
@@ -34,7 +35,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-060957e
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-d3a71b2
     permissions:
       contents: read
       # Needed to open an issue on scheduled failures.
@@ -66,7 +67,7 @@ jobs:
 
       - name: Create issue
         if: ${{ steps.audit.outcome != 'success' && github.event_name == 'schedule' }}
-        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        uses: XRPLF/actions/create-issue@b489c21d53928f7dab4874912fec40e4f6c9e85e
         with:
           title: "cargo audit found vulnerabilities"
           body_file: /tmp/cargo-audit-issue.md

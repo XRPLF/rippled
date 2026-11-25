@@ -43,7 +43,7 @@ Section::append(std::vector<std::string> const& lines)
     lines_.reserve(lines_.size() + lines.size());
     for (auto line : lines)
     {
-        auto removeComment = [](std::string& val) -> bool {
+        auto const removeComment = [](std::string& val) -> bool {
             bool removedTrailing = false;
             auto comment = val.find('#');
             while (comment != std::string::npos)
@@ -144,7 +144,7 @@ BasicConfig::overwrite(std::string const& section, std::string const& key, std::
 void
 BasicConfig::deprecatedClearSection(std::string const& section)
 {
-    auto i = map_.find(section);
+    auto const i = map_.find(section);
     if (i != map_.end())
         i->second = Section(section);
 }

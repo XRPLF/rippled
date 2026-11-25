@@ -179,8 +179,8 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Jo
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (isTesSuccess(res)) ? "AMM object remained on tesSUCCESS"
-                                                    : "AMM object changed on tecINCOMPLETE";
+        std::string const msg = isTesSuccess(res) ? "AMM object remained on tesSUCCESS"
+                                                  : "AMM object changed on tecINCOMPLETE";
         JLOG(j.error()) << "Invariant failed: AMMDelete failed, " << msg;
         if (enforce)
             return false;

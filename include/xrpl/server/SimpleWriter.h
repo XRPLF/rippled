@@ -41,7 +41,7 @@ public:
     }
 
     bool
-    prepare(std::size_t bytes, std::function<void(void)>) override
+    prepare(std::size_t bytes, std::function<void()>) override
     {
         return true;
     }

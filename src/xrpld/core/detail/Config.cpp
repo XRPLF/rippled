@@ -12,6 +12,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -43,6 +44,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
 #include <type_traits>
@@ -131,14 +133,14 @@ kSizedItems
     {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
     {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
     {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
-    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
-}};
+    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}},
+},};
 // clang-format on
 
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr -> bool {
+    [] constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : kSizedItems)
@@ -210,8 +212,8 @@ parseIniFile(std::string const& strInput, bool const bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
-    if (auto it = secSource.find(strSection); it != secSource.end())
-        return &(it->second);
+    if (auto const it = secSource.find(strSection); it != secSource.end())
+        return &it->second;
 
     return nullptr;
 }
@@ -229,6 +231,15 @@ getSingleSection(
     {
         strValue = (*pmtEntries)[0];
         return true;
+    }
+
+    // A repeated section hides the value the operator intended. An empty
+    // section (for example, a header above a commented-out value) keeps the
+    // default.
+    if ((pmtEntries != nullptr) && pmtEntries->size() > 1)
+    {
+        Throw<std::runtime_error>(
+            std::format("[{}] requires exactly one value, not {}", strSection, pmtEntries->size()));
     }
 
     if (pmtEntries != nullptr)
@@ -256,6 +267,64 @@ getEnvVar(char const* name)
 
     return value;
 }
+
+namespace {
+
+/**
+ * A config directory, paired with its data directory.
+ */
+struct Candidate
+{
+    std::filesystem::path configDir;
+    std::filesystem::path dataDir;
+};
+
+/**
+ * List the directories to search for a config file, in order.
+ *
+ * These are the current working directory, then the XDG directories when the
+ * home directory is set, then the system directory.
+ *
+ * @return The candidates, in search order.
+ */
+[[nodiscard]] std::vector<Candidate>
+configCandidates()
+{
+    std::vector<Candidate> candidates;
+
+    // The current working directory, with the databases in a subdirectory.
+    auto const cwd = std::filesystem::current_path();
+    candidates.emplace_back(cwd, cwd / Config::kDatabaseDirName);
+
+    // The XDG config and data directories, which only apply when the home
+    // directory is set. See
+    // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+    if (std::filesystem::path const home = getEnvVar("HOME"); !home.empty())
+    {
+        std::filesystem::path xdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+        if (xdgConfigHome.empty())
+        {
+            // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+            xdgConfigHome = home / ".config";
+        }
+        std::filesystem::path xdgDataHome = getEnvVar("XDG_DATA_HOME");
+        if (xdgDataHome.empty())
+        {
+            // $XDG_DATA_HOME was not set, use default based on $HOME.
+            xdgDataHome = home / ".local" / "share";
+        }
+        candidates.emplace_back(xdgConfigHome / systemName(), xdgDataHome / systemName());
+    }
+
+    // The system config directory, as a last resort.
+    candidates.emplace_back(
+        std::filesystem::path("/etc") / systemName(),
+        std::filesystem::path("/var/lib") / systemName());
+
+    return candidates;
+}
+
+}  // namespace
 
 Config::Config()
     : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
@@ -319,59 +388,29 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     }
     else
     {
-        do
+        auto const candidates = configCandidates();
+
+        // Take the first candidate holding a config file under either name.
+        // When none does, the last candidate's values stand.
+        for (auto const& candidate : candidates)
         {
-            // Check if either of the config files exist in the current working
-            // directory, in which case the databases will be stored in a
-            // subdirectory.
-            configDir = std::filesystem::current_path();
-            dataDir = configDir / kDatabaseDirName;
-            configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
-                break;
-            configFile_ = configDir / kConfigLegacyName;
-            if (std::filesystem::exists(configFile_))
-                break;
+            configDir = candidate.configDir;
+            dataDir = candidate.dataDir;
 
-            // Check if the home directory is set, and optionally the XDG config
-            // and/or data directories, as the config may be there. See
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
-            auto const strHome = getEnvVar("HOME");
-            if (!strHome.empty())
+            bool found = false;
+            for (std::string_view const fileName : {kConfigFileName, kConfigLegacyName})
             {
-                auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-                auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-                if (strXdgConfigHome.empty())
-                {
-                    // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                    strXdgConfigHome = strHome + "/.config";
-                }
-                if (strXdgDataHome.empty())
-                {
-                    // $XDG_DATA_HOME was not set, use default based on $HOME.
-                    strXdgDataHome = strHome + "/.local/share";
-                }
-
-                // Check if either of the config files exist in the XDG config
-                // dir.
-                dataDir = strXdgDataHome + "/" + systemName();
-                configDir = strXdgConfigHome + "/" + systemName();
-                configFile_ = configDir / kConfigFileName;
+                configFile_ = configDir / fileName;
                 if (std::filesystem::exists(configFile_))
+                {
+                    found = true;
                     break;
-                configFile_ = configDir / kConfigLegacyName;
-                if (std::filesystem::exists(configFile_))
-                    break;
+                }
             }
 
-            // As a last resort, check the system config directory.
-            dataDir = "/var/lib/" + systemName();
-            configDir = "/etc/" + systemName();
-            configFile_ = configDir / kConfigFileName;
-            if (std::filesystem::exists(configFile_))
+            if (found)
                 break;
-            configFile_ = configDir / kConfigLegacyName;
-        } while (false);
+        }
     }
 
     // Update default values
@@ -478,7 +517,7 @@ Config::loadFromString(std::string const& fileContents)
 
     // if the user has specified ip:port then replace : with a space.
     {
-        auto replaceColons = [](std::vector<std::string>& strVec) {
+        auto const replaceColons = [](std::vector<std::string>& strVec) {
             static std::regex const kE(":([0-9]+)$");
             for (auto& line : strVec)
             {
@@ -785,7 +824,7 @@ Config::loadFromString(std::string const& fileContents)
 
     if (exists(Sections::kReduceRelay))
     {
-        auto sec = section(Sections::kReduceRelay);
+        auto const sec = section(Sections::kReduceRelay);
 
         /**
          * //////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
@@ -918,7 +957,7 @@ Config::loadFromString(std::string const& fileContents)
         // Both manifest counts parse and validate identically, so read them
         // the same way. Returns nullopt when the key is absent, leaving the
         // built-in default in effect at the use site.
-        auto manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
+        auto const manifestCount = [&sec](char const* key) -> std::optional<std::size_t> {
             std::optional<std::size_t> count;
 
             try
@@ -1028,8 +1067,7 @@ Config::loadFromString(std::string const& fileContents)
                     Sections::kValidatorsFile,
                     validatorsFile.string()));
             }
-            else if (
-                !std::filesystem::is_regular_file(validatorsFile) &&
+            if (!std::filesystem::is_regular_file(validatorsFile) &&
                 !std::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(std::format(
@@ -1107,7 +1145,7 @@ Config::loadFromString(std::string const& fileContents)
             }
         }
 
-        validatorListThreshold = [&]() -> std::optional<std::size_t> {
+        validatorListThreshold = [&] -> std::optional<std::size_t> {
             auto const& listThreshold = section(Sections::kValidatorListThreshold);
             if (listThreshold.lines().empty())
             {
@@ -1115,7 +1153,7 @@ Config::loadFromString(std::string const& fileContents)
             }
             if (listThreshold.values().size() == 1)
             {
-                auto strTemp = listThreshold.values()[0];
+                auto const strTemp = listThreshold.values()[0];
                 auto const listThreshold = beast::lexicalCastThrow<std::size_t>(strTemp);
                 if (listThreshold == 0)
                 {
@@ -1194,7 +1232,7 @@ Config::getDebugLogFile() const
 
     if (!logFile.empty())
     {
-        auto logDir = logFile.parent_path();
+        auto const logDir = logFile.parent_path();
 
         if (!std::filesystem::is_directory(logDir))
         {
@@ -1239,6 +1277,18 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
+    }
+    {
+        // Signed, so a negative value is refused rather than wrapping.
+        std::int64_t temp = 0;
+        if (set(temp, Keys::kGasLimit, section) && temp >= 0 && temp <= kMaxGasLimit)
+            setup.gasLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp >= 0 &&
+            temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice &&
+            temp <= std::numeric_limits<std::uint32_t>::max())
+            setup.gasPrice = static_cast<std::uint32_t>(temp);
     }
     return setup;
 }
@@ -1367,7 +1417,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
     }
     setup.useGlobalPragma = true;
 
-    auto setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
+    auto const setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
         pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
     };
 
