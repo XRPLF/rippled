@@ -53,13 +53,13 @@ getTxReserveSponsorID(STTx const& tx);
 /**
  * Return a mutable SLE for the transaction's reserve sponsor account.
  *
- * @param ctx The apply-view context (view + tx)
+ * @param view The apply view, which carries the transaction
  * @return The sponsor account SLE, a null pointer if the tx is not
  *         reserve-sponsored, or tecINTERNAL if the sponsor account cannot
  *         be loaded (an already-checked invariant).
  */
 std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext ctx);
+getTxReserveSponsor(ApplyView& view);
 
 /**
  * Return a read-only SLE for the transaction's reserve sponsor account.
@@ -82,13 +82,13 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx);
  * the single source of truth for the "sponsor applies to tx.Account only" rule
  * that the sponsor-deriving helper overloads in AccountRootHelpers rely on.
  *
- * @param ctx The apply-view context (view + tx)
+ * @param view The apply view, which carries the transaction
  * @param accountSle The account whose sponsor is being resolved
  * @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
  *         sponsor account cannot be loaded (an already-checked invariant)
  */
 [[nodiscard]] std::expected<SLE::pointer, TER>
-getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle);
+getEffectiveTxReserveSponsor(ApplyView& view, SLE::ConstRef accountSle);
 
 /**
  * Return the AccountID stored in the given sponsor field of a ledger entry, or nullopt if absent.
@@ -135,13 +135,13 @@ addSponsorToLedgerEntry(
  * Stamp the transaction's reserve sponsor onto a newly-created ledger entry.
  *
  * Equivalent to the overload above, but resolves the sponsor via
- * getTxReserveSponsor(ctx) instead of taking it explicitly. A no-op when the
+ * getTxReserveSponsor(view) instead of taking it explicitly. A no-op when the
  * transaction is not reserve-sponsored. The entry is assumed to be owned by
  * the transaction submitter, which is the only account a tx reserve sponsor
  * can cover.
  */
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& field = sfSponsor);
+addSponsorToLedgerEntry(ApplyView& view, SLE::Ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 /**
  * Remove the reserve sponsor field from a ledger entry.

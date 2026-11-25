@@ -506,7 +506,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
 
 TER
 doWithdraw(
-    ApplyViewContext ctx,
+    ApplyView& view,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -519,7 +519,7 @@ doWithdraw(
         destinationAmount.asset() == sourceAmount.asset(),
         "xrpl::doWithdraw : delivered and source amounts use the same asset");
 
-    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+    auto const dstSle = view.read(keylet::account(dstAcct));
 
     // Create a trust line or MPToken for a self-destination only when there
     // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
@@ -528,23 +528,27 @@ doWithdraw(
     // create+delete MPTokens in the same transaction.
     if (dstAcct == senderAcct)
     {
-        if (destinationAmount > beast::kZero || !ctx.view.rules().enabled(fixCleanup3_4_0))
+        if (destinationAmount > beast::kZero || !view.rules().enabled(fixCleanup3_4_0))
         {
             if (auto const ter =
-                    addEmptyHolding(ctx, senderAcct, priorBalance, destinationAmount.asset(), j);
+                    addEmptyHolding(view, senderAcct, priorBalance, destinationAmount.asset(), j);
                 !isTesSuccess(ter) && ter != tecDUPLICATE)
                 return ter;
         }
     }
     else
     {
-        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
+        auto const* tx = view.tx();
+        XRPL_ASSERT(tx != nullptr, "xrpl::doWithdraw : view has a transaction");
+        if (tx == nullptr)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        if (auto err = verifyDepositPreauth(*tx, view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
 
     // Sanity check
     if (accountHolds(
-            ctx.view,
+            view,
             sourceAcct,
             destinationAmount.asset(),
             FreezeHandling::IgnoreFreeze,
@@ -566,25 +570,25 @@ doWithdraw(
             !destinationAmount.native() && sourceAcct != issuer && dstAcct != issuer,
             "xrpl::doWithdraw : transfer fee applies between token holders");
 
-        if (auto const ter = directSendNoFee(ctx.view, sourceAcct, issuer, sourceAmount, false, j);
+        if (auto const ter = directSendNoFee(view, sourceAcct, issuer, sourceAmount, false, j);
             !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
 
-        return directSendNoFee(ctx.view, issuer, dstAcct, destinationAmount, false, j);
+        return directSendNoFee(view, issuer, dstAcct, destinationAmount, false, j);
     }
 
     // A reserve sponsor only covers tx.Account's own objects, so resolve the
     // sponsor against the destination. accountSend can auto-create a holding
     // for dstAcct; keying on the destination ensures a third-party destination's
     // holding is never stamped with the tx's reserve sponsor.
-    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    auto const sponsorSle = getEffectiveTxReserveSponsor(view, dstSle);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, destinationAmount, j, *sponsorSle, WaiveTransferFee::Yes);
+        view, sourceAcct, dstAcct, destinationAmount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER

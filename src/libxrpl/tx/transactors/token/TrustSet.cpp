@@ -315,7 +315,7 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    auto const sponsorExp = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto const sponsorExp = getTxReserveSponsor(ctx_.view());
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
     auto const sponsorSle = *sponsorExp;
@@ -534,7 +534,7 @@ TrustSet::doApply()
             if (view().rules().enabled(featureSponsor))
             {
                 if (auto const ret = checkReserve(
-                        ctx_.getApplyViewContext(),
+                        ctx_.view(),
                         sleLowAccount,
                         preFeeBalance_,
                         lowSponsor,
@@ -576,7 +576,7 @@ TrustSet::doApply()
             if (view().rules().enabled(featureSponsor))
             {
                 if (auto const ret = checkReserve(
-                        ctx_.getApplyViewContext(),
+                        ctx_.view(),
                         sleHighAccount,
                         preFeeBalance_,
                         highSponsor,
@@ -623,7 +623,7 @@ TrustSet::doApply()
             // Reserve is not scaled by load
             else if (
                 auto const ret = checkReserve(
-                    ctx_.getApplyViewContext(),
+                    ctx_.view(),
                     sle,
                     preFeeBalance_,
                     sponsorSle,
@@ -698,7 +698,7 @@ TrustSet::doApply()
     }
     else if (
         auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
+            ctx_.view(),
             sle,
             preFeeBalance_,
             sponsorSle,

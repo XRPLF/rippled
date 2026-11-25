@@ -434,7 +434,7 @@ EscrowFinish::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.getApplyViewContext(),
+                        ctx_.view(),
                         lockedRate,
                         sled,
                         preFeeBalance_,

@@ -308,7 +308,7 @@ TransactionProposalCreate::doApply()
     // it reserves more than a typical ledger entry (5 increments; 10 for a
     // proposed Batch).
     if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
+            ctx_.view(),
             sle,
             preFeeBalance_,
             {.ownerCountDelta = static_cast<int>(ownerCount)},
@@ -336,8 +336,8 @@ TransactionProposalCreate::doApply()
         sleProposal->setFieldU64(sfOwnerNode, *page);
     }
 
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, ownerCount, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleProposal);
+    increaseOwnerCount(ctx_.view(), sle, ownerCount, viewJ);
+    addSponsorToLedgerEntry(ctx_.view(), sleProposal);
     return tesSUCCESS;
 }
 

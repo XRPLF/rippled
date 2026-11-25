@@ -93,17 +93,12 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto txSponsorSle = getTxReserveSponsor(ctx_.view());
     if (!txSponsorSle)
         return txSponsorSle.error();  // LCOV_EXCL_LINE
 
     if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
-            sleSubject,
-            preFeeBalance_,
-            *txSponsorSle,
-            {.ownerCountDelta = 1},
-            j_);
+            ctx_.view(), sleSubject, preFeeBalance_, *txSponsorSle, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -129,8 +124,8 @@ CredentialAccept::doApply()
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
     removeSponsorFromLedgerEntry(sleCred);
 
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
-    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
+    addSponsorToLedgerEntry(ctx_.view(), sleCred);
+    increaseOwnerCount(ctx_.view(), sleSubject, 1, j_);
     view().update(sleCred);
 
     return tesSUCCESS;

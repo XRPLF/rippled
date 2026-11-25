@@ -120,17 +120,14 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 std::expected<MPTID, TER>
-MPTokenIssuanceCreate::create(
-    ApplyViewContext ctx,
-    beast::Journal journal,
-    MPTCreateArgs const& args)
+MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
-    auto const acct = ctx.view.peek(keylet::account(args.account));
+    auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     // A reserve sponsor only covers tx.Account's own objects.
-    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
+    auto const sponsorExp = getEffectiveTxReserveSponsor(view, acct);
     if (!sponsorExp)
         return std::unexpected(sponsorExp.error());  // LCOV_EXCL_LINE
     auto const sponsorSle = *sponsorExp;
@@ -138,7 +135,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkReserve(
-                ctx, acct, *args.priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+                view, acct, *args.priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);
     }
@@ -148,7 +145,7 @@ MPTokenIssuanceCreate::create(
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode = ctx.view.dirInsert(
+        auto const ownerNode = view.dirInsert(
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
@@ -186,7 +183,7 @@ MPTokenIssuanceCreate::create(
             // populate this after the pseudo-account's MPToken /
             // RippleState has been installed. A missing holding here
             // would dangle the pointer and is a programmer error.
-            auto const sleHolding = ctx.view.read(keylet::unchecked(*args.referenceHolding));
+            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
@@ -197,11 +194,11 @@ MPTokenIssuanceCreate::create(
 
         addSponsorToLedgerEntry(mptIssuance, sponsorSle);
 
-        ctx.view.insert(mptIssuance);
+        view.insert(mptIssuance);
     }
 
     // Update owner count.
-    increaseOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
+    increaseOwnerCount(view, acct, sponsorSle, 1, journal);
 
     return mptId;
 }
@@ -211,7 +208,7 @@ MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
     auto const result = create(
-        ctx_.getApplyViewContext(),
+        ctx_.view(),
         j_,
         {
             .priorBalance = preFeeBalance_,

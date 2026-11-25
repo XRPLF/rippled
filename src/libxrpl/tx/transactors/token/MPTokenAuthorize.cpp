@@ -161,7 +161,7 @@ MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
     return authorizeMPToken(
-        ctx_.getApplyViewContext(),
+        ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
         accountID_,

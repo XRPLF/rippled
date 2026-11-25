@@ -631,7 +631,7 @@ holdingExists(ReadView const& view, AccountID const& account, Asset const& asset
 
 TER
 addEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyView& view,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -639,21 +639,21 @@ addEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(ctx, accountID, priorBalance, issue, journal);
+            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }
 
 TER
 removeEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyView& view,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(ctx, accountID, issue, journal);
+            return removeEmptyHolding(view, accountID, issue, journal);
         },
         asset.value());
 }

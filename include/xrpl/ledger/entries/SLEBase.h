@@ -219,24 +219,6 @@ public:
             "xrpl::SLEBase::SLEBase : keylet matches bound entry type");
     }
 
-    /**
-     * Constructor for writable context, for call sites that hold an
-     * ApplyViewContext (peek from ctx.view by keylet).
-     *
-     * ctx.tx is not retained: this exists purely so transactors can pass the
-     * context they already have instead of spelling out ctx.view. If an entry
-     * ever needs the applying transaction, store it here rather than adding
-     * another overload.
-     */
-    explicit SLEBase(
-        Keylet const& key,
-        ApplyViewContext const& ctx,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires kIsWritable
-        : SLEBase(key, ctx.view, j)
-    {
-    }
-
     // --- Common interface (always available) ---
 
     /**

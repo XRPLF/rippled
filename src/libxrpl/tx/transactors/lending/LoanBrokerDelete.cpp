@@ -194,8 +194,8 @@ LoanBrokerDelete::doApply()
         if (fix350Enabled && coverAvailable > beast::kZero &&
             !holdingExists(view(), accountID_, vaultAsset))
         {
-            if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_))
+            if (auto const ter =
+                    addEmptyHolding(ctx_.view(), accountID_, preFeeBalance_, vaultAsset, j_))
                 return ter;
         }
 
@@ -204,7 +204,7 @@ LoanBrokerDelete::doApply()
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(ctx_.view(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto const brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));

@@ -347,7 +347,7 @@ holdingExists(ReadView const& view, AccountID const& account, Asset const& asset
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyView& view,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -355,7 +355,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyView& view,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal);

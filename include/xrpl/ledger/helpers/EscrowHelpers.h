@@ -320,7 +320,7 @@ escrowUnlockPreclaimHelper<MPTIssue>(
 template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
-    ApplyViewContext ctx,
+    ApplyView& view,
     Rate lockedRate,
     SLE::Ref sleDest,
     XRPAmount xrpBalance,
@@ -334,7 +334,7 @@ escrowUnlockApplyHelper(
 template <>
 inline TER
 escrowUnlockApplyHelper<Issue>(
-    ApplyViewContext ctx,
+    ApplyView& view,
     Rate lockedRate,
     SLE::Ref sleDest,
     XRPAmount xrpBalance,
@@ -358,15 +358,15 @@ escrowUnlockApplyHelper<Issue>(
     Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
 
-    if (!ctx.view.exists(trustLineKey) && createAsset)
+    if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
+        auto const sponsorSle = getEffectiveTxReserveSponsor(view, sleDest);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
         if (auto const ret = checkReserve(
-                ctx,
+                view,
                 sleDest,
                 xrpBalance,
                 *sponsorSle,
@@ -385,7 +385,7 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                ctx.view,                            // payment sandbox
+                view,                                // payment sandbox
                 recvLow,                             // is dest low?
                 issuer,                              // source
                 receiver,                            // destination
@@ -406,13 +406,13 @@ escrowUnlockApplyHelper<Issue>(
             return ter;  // LCOV_EXCL_LINE
         }
 
-        ctx.view.update(sleDest);
+        view.update(sleDest);
     }
 
-    if (!ctx.view.exists(trustLineKey) && !receiverIssuer)
+    if (!view.exists(trustLineKey) && !receiverIssuer)
         return tecNO_LINE;
 
-    auto const xferRate = transferRate(ctx.view, amount);
+    auto const xferRate = transferRate(view, amount);
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
         lockedRate = xferRate;
@@ -440,7 +440,7 @@ escrowUnlockApplyHelper<Issue>(
     // of the funds
     if (!createAsset)
     {
-        auto const sleRippleState = ctx.view.peek(trustLineKey);
+        auto const sleRippleState = view.peek(trustLineKey);
         if (!sleRippleState)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -466,7 +466,7 @@ escrowUnlockApplyHelper<Issue>(
     // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
-        auto const ter = directSendNoFee(ctx.view, issuer, receiver, finalAmt, true, journal);
+        auto const ter = directSendNoFee(view, issuer, receiver, finalAmt, true, journal);
         if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
@@ -476,7 +476,7 @@ escrowUnlockApplyHelper<Issue>(
 template <>
 inline TER
 escrowUnlockApplyHelper<MPTIssue>(
-    ApplyViewContext ctx,
+    ApplyView& view,
     Rate lockedRate,
     SLE::Ref sleDest,
     XRPAmount xrpBalance,
@@ -493,31 +493,31 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptID = amount.get<MPTIssue>().getMptID();
     auto const issuanceKey = keylet::mptokenIssuance(mptID);
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
-    if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
+    if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
+        auto const sponsorSle = getEffectiveTxReserveSponsor(view, sleDest);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
         if (auto const ret = checkReserve(
-                ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
+                view, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(ctx.view, mptID, receiver, *sponsorSle, 0);
+        if (auto const ter = createMPToken(view, mptID, receiver, *sponsorSle, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        increaseOwnerCount(ctx.view, sleDest, *sponsorSle, 1, journal);
+        increaseOwnerCount(view, sleDest, *sponsorSle, 1, journal);
     }
 
-    if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
+    if (!view.exists(mptKeylet) && !receiverIssuer)
         return tecNO_PERMISSION;
 
-    auto const xferRate = transferRate(ctx.view, amount);
+    auto const xferRate = transferRate(view, amount);
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
         lockedRate = xferRate;
@@ -534,7 +534,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        if (ctx.view.rules().enabled(fixCleanup3_4_0))
+        if (view.rules().enabled(fixCleanup3_4_0))
         {
             XRPL_ASSERT(
                 lockedRate >= kParityRate,
@@ -555,11 +555,11 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
     }
     return unlockEscrowMPT(
-        ctx.view,
+        view,
         sender,
         receiver,
         finalAmt,
-        ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
 }
 

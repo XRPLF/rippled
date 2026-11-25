@@ -136,7 +136,7 @@ EscrowCancel::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.getApplyViewContext(),
+                        ctx_.view(),
                         kParityRate,
                         ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : escrow.mutableRawSle(),
                         preFeeBalance_,
