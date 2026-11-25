@@ -520,7 +520,7 @@ doWithdraw(
         destinationAmount.asset() == sourceAmount.asset(),
         "xrpl::doWithdraw : delivered and source amounts use the same asset");
 
-    auto dstSle = AccountRootEntryW(dstAcct, ctx.view);
+    auto const dstSle = AccountRootEntryR(dstAcct, ctx.view);
 
     // Create a trust line or MPToken for a self-destination only when there
     // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
