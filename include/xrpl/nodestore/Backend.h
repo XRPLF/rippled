@@ -127,7 +127,7 @@ public:
      * This is usually called during import.
      * @note This routine will not be called concurrently with itself
      *       or other methods.
-     * @see import
+     * @see Database::importDatabase
      */
     virtual void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;

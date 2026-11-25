@@ -49,7 +49,7 @@ public:
 
         using namespace der;
 
-        auto p = parsePreamble(s, ec);
+        auto const p = parsePreamble(s, ec);
         if (ec)
             return nullptr;
 

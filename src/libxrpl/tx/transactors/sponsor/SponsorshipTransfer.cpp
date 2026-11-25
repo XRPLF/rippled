@@ -38,7 +38,7 @@ incrementSponsorCount(AccountRootEntryW& sle, SF_UINT32 const& field, std::uint3
     }
 
     sle->at(field) = currentValue + delta;
-    sle.update();
+    sle.updateInView();
     return tesSUCCESS;
 }
 
@@ -56,7 +56,7 @@ decrementSponsorCount(AccountRootEntryW& sle, SF_UINT32 const& field, std::uint3
     }
 
     sle->at(field) = currentValue - delta;
-    sle.update();
+    sle.updateInView();
     return tesSUCCESS;
 }
 
@@ -498,7 +498,7 @@ SponsorshipTransfer::doApply()
 
             // Account is now sponsored by new sponsor
             sponseeSle->setAccountID(sfSponsor, newSponsorID);
-            sponseeSle.update();
+            sponseeSle.updateInView();
         }
         else if (ctx_.tx.isFlag(tfSponsorshipEnd))
         {
@@ -521,7 +521,7 @@ SponsorshipTransfer::doApply()
                 return ter;
 
             sponseeSle->makeFieldAbsent(sfSponsor);
-            sponseeSle.update();
+            sponseeSle.updateInView();
 
             // Decrement account sponsoring count
             if (auto const ter = decrementSponsorCount(oldSponsorSle, sfSponsoringAccountCount, 1);

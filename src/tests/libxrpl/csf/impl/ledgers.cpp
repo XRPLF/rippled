@@ -117,7 +117,7 @@ LedgerOracle::accept(
         using Entry = InstanceMap::left_value_type;
         it = instances_.left.insert(Entry{next, nextID()}).first;
     }
-    return Ledger(it->second, &(it->first));
+    return Ledger(it->second, &it->first);
 }
 
 std::optional<Ledger>
@@ -126,7 +126,7 @@ LedgerOracle::lookup(Ledger::ID const& id) const
     auto const it = instances_.right.find(id);
     if (it != instances_.right.end())
     {
-        return Ledger(it->first, &(it->second));
+        return Ledger(it->first, &it->second);
     }
     return std::nullopt;
 }

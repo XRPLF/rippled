@@ -374,7 +374,7 @@ public:
         // Test 1: Plaintext client should connect successfully
         std::string const serverAddress = "localhost:" + std::to_string(*grpcPort);
         // NOLINTEND(bugprone-unchecked-optional-access)
-        auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
         BEAST_EXPECT(makeTestGRPCCall(plaintextStub));
     }
@@ -402,14 +402,14 @@ public:
         // NOLINTEND(bugprone-unchecked-optional-access)
 
         // Test 1: Plaintext client should FAIL against TLS server
-        auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
         BEAST_EXPECT(!makeTestGRPCCall(plaintextStub));
 
         // Test 2: TLS client with server CA should succeed
         grpc::SslCredentialsOptions sslOpts;
         sslOpts.pem_root_certs = std::string(kCaCertContent);
-        auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStub));
     }
@@ -442,7 +442,7 @@ public:
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;
         sslOptsNoClient.pem_root_certs = std::string(kCaCertContent);
-        auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
         BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
 
@@ -451,7 +451,7 @@ public:
         sslOptsWithClient.pem_root_certs = std::string(kCaCertContent);
         sslOptsWithClient.pem_cert_chain = std::string(kClientCertContent);
         sslOptsWithClient.pem_private_key = std::string(kClientKeyContent);
-        auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));
     }
@@ -659,12 +659,12 @@ public:
         // Test: TLS client should be able to connect (no client cert required)
         grpc::SslCredentialsOptions sslOpts;
         sslOpts.pem_root_certs = std::string(kCaCertContent);
-        auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStub));
 
         // Insecure client should fail
-        auto insecureStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const insecureStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
         BEAST_EXPECT(!makeTestGRPCCall(insecureStub));
     }
@@ -767,7 +767,7 @@ public:
         using namespace jtx;
 
         // Create an empty file for client CA
-        auto emptyCAPath = getTempDir() / "empty_ca.pem";
+        auto const emptyCAPath = getTempDir() / "empty_ca.pem";
         std::ofstream emptyFile(emptyCAPath);
         emptyFile.close();
 
@@ -819,7 +819,7 @@ public:
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;
         sslOptsNoClient.pem_root_certs = std::string(kCaCertContent);
-        auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
         BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
 
@@ -828,7 +828,7 @@ public:
         sslOptsWithClient.pem_root_certs = std::string(kCaCertContent);
         sslOptsWithClient.pem_cert_chain = std::string(kClientCertContent);
         sslOptsWithClient.pem_private_key = std::string(kClientKeyContent);
-        auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+        auto const tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));
     }

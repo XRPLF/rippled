@@ -224,7 +224,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
             kSharedMemName,
-            boost::interprocess::read_write};
+            boost::interprocess::read_write,
+        };
 
         if (IsParent)
         {
