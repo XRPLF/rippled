@@ -230,7 +230,7 @@ ConfidentialMPTClawback::doApply()
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
     view().update(sleHolderMPToken);
-    sleIssuance.update();
+    sleIssuance.updateInView();
 
     return tesSUCCESS;
 }
