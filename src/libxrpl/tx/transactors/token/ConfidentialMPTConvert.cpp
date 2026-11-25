@@ -377,7 +377,7 @@ ConfidentialMPTConvert::doApply()
         // LCOV_EXCL_STOP
     }
 
-    sleIssuance.update();
+    sleIssuance.updateInView();
     view().update(sleMptoken);
     return tesSUCCESS;
 }
