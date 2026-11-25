@@ -371,7 +371,8 @@ private:
                     BEAST_EXPECT(sleVault);
                     BEAST_EXPECT((*sleVault)[sfScale] == 6);
                 }
-            });
+            },
+            {.features = testableAmendments() - featureLendingProtocolV1_2});
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
@@ -1006,8 +1007,9 @@ private:
 
         {
             testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
+            Env env{
+                *this,
+                testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 
@@ -1025,7 +1027,7 @@ private:
             testcase(
                 "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
                 "VaultVersion::CashBasis");
-            Env env{*this};
+            Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 
@@ -1200,9 +1202,13 @@ private:
         Vault const vault{env};
 
         // Without the fix, rounding an out-of-range AssetsMaximum to the vault
-        // asset throws.
-        TER const createErr = withFix ? TER{temMALFORMED} : TER{tefEXCEPTION};
-        TER const setErr = withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION};
+        // asset throws. FixedPrecision Vaults check AssetsMaximum against the
+        // base grid in preclaim first, which rejects it without throwing.
+        bool const fixedPrecision = features[featureLendingProtocolV1_1] &&
+            features[featureLendingProtocolV1_2] && features[fixCleanup3_4_0];
+        TER const preFixErr = fixedPrecision ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION};
+        TER const createErr = withFix ? TER{temMALFORMED} : preFixErr;
+        TER const setErr = withFix ? TER{tecPRECISION_LOSS} : preFixErr;
 
         auto const test = [&](Asset const& asset, Number const& maxValid, Number const& overMax) {
             {
