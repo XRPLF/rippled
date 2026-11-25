@@ -774,7 +774,7 @@ LoanSet::doApply()
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    vaultSle.update();
+    vaultSle.updateInView();
 
     // Update the balances in the loan broker
     adjustBrokerDebtTotal(brokerSle, vaultSle.rawSle(), debtTotalDelta, vaultScale);

@@ -213,7 +213,7 @@ VaultCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     VaultEntryW vault(accountID_, sequence, view());
-    vault.newSLE();
+    vault.newSle();
 
     if (auto ter = dirLink(view(), accountID_, vault.mutableRawSle()))
         return ter;
@@ -323,7 +323,7 @@ VaultCreate::doApply()
             vault->at(sfRedemptionDate) = tx[sfRedemptionDate];
         }
     }
-    vault.insert();
+    vault.insertIntoView();
 
     // Explicitly create MPToken for the vault owner
     if (auto const err = authorizeMPToken(

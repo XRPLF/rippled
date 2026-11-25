@@ -199,7 +199,7 @@ VaultSet::doApply()
     // Note, we must update Vault object even if only DomainID is being updated
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
-    vault.update();
+    vault.updateInView();
 
     associateAsset(*vault, vaultAsset);
 
