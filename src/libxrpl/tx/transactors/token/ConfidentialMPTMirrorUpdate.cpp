@@ -250,7 +250,7 @@ ConfidentialMPTMirrorUpdate::doApply()
     if (ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount))
     {
         (*sleMptoken)[sfAuditorEncryptedBalance] = ctx_.tx[sfAuditorEncryptedAmount];
-        setAuditorMirrorEpoch(*sleIssuance, *sleMptoken);
+        setAuditorMirrorCurrent(*sleIssuance, *sleMptoken);
     }
 
     view().update(sleMptoken);

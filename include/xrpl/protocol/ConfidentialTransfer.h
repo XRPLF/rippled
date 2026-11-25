@@ -372,7 +372,7 @@ setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken);
  * @param mptoken  The holder's MPToken ledger entry to update.
  */
 void
-setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
+setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Set the holder's MPToken mirror epochs, and the issuer mirror key, to match the issuance's
