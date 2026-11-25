@@ -497,6 +497,15 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
 
+            // An inner txn with a zero Delegate makes zero a required signer,
+            // so the membership check alone does not reject a zero signer.
+            if (signerAccount == beast::kZero)
+            {
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "signer cannot be the zero account.";
+                return temBAD_SIGNER;
+            }
+
             if (numReqSignersMatched >= requiredSigners.size() ||
                 requiredSigners[numReqSignersMatched] != signerAccount)
             {

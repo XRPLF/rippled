@@ -5483,6 +5483,47 @@ class Batch_test : public beast::unit_test::Suite
             BEAST_EXPECT(txResult[jss::error_code] == RpcTxnNotFound);
             BEAST_EXPECT(txResult[jss::error_message] == "Transaction not found.");
         }
+
+        // Delegate is the zero account: zero becomes a required signer, but a
+        // matching zero BatchSigner must still be rejected in preflight.
+        {
+            Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            auto const zero = AccountID{beast::kZero};
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+
+            auto inner = batch::Inner(pay(bob, alice, XRP(1)), bobSeq);
+            inner[jss::Delegate] = toBase58(zero);
+
+            auto jt = env.jtnofill(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, bob, XRP(2)), aliceSeq + 1));
+
+            Serializer msg;
+            serializeBatch(
+                msg,
+                jt.stx->getAccountID(sfAccount),
+                jt.stx->getSeqProxy().value(),
+                tfAllOrNothing,
+                jt.stx->getBatchTransactionIDs());
+            finishMultiSigningData(zero, msg);
+            auto const sig = xrpl::sign(alice.pk(), alice.sk(), msg.slice());
+            auto& signer = jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName];
+            signer[sfAccount.jsonName] = toBase58(zero);
+            signer[sfSigningPubKey.jsonName] = strHex(alice.pk());
+            signer[sfTxnSignature.jsonName] = strHex(Slice{sig.data(), sig.size()});
+
+            env(jt.jv, Ter(temBAD_SIGNER));
+            env.close();
+        }
     }
 
     void
