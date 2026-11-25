@@ -1845,8 +1845,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     testExpiredCredentialAfterPathDry(FeatureBitset features)
     {
         // A payment that passes the domain check with one credential, while a
-        // second credential has expired, and then fails on the path keeps the
-        // expired credential. Only tecEXPIRED keeps credential deletions.
+        // second credential has expired, and then fails on the path. With
+        // fixCleanup3_6_0, the expired credential is deleted. Before it, only
+        // tecEXPIRED keeps credential deletions.
         testcase << "Expired credential after a path failure"
                  << (features[fixCleanup3_6_0] ? " (fixCleanup3_6_0 enabled)"
                                                : " (fixCleanup3_6_0 disabled)");
@@ -1896,7 +1897,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             Ter(tecPATH_PARTIAL));
         env.close();
 
-        BEAST_EXPECT(env.le(expiredKey));
+        BEAST_EXPECT(static_cast<bool>(env.le(expiredKey)) != features[fixCleanup3_6_0]);
     }
 
     void

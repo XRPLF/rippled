@@ -213,8 +213,9 @@ public:
      * key is kept when this view is applied to its parent, and is dropped when
      * this view is discarded. With fixCleanup3_6_0, the transactor can erase
      * the recorded entries again after a `tec` reset. That cleanup is
-     * best-effort: it handles only some `tec` codes and entry types, and at
-     * most kMaxPersistentDeletes entries. Do not depend on it.
+     * best-effort: it handles only some entry types, skips offers whose
+     * removal can depend on the transaction, and erases at most
+     * kMaxPersistentDeletes entries. Do not depend on it.
      *
      * @param sle The peeked entry to erase.
      */

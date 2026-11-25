@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -10,6 +11,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -17,6 +19,7 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -29,6 +32,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -778,14 +782,45 @@ flow(
         best.reset();  // view in best must be destroyed before modifying base view
         if (!ofrsToRm.empty())
         {
-            setUnion(ofrsToRmOnFail, ofrsToRm);
+            bool const fixEnabled = sb.rules().enabled(fixCleanup3_6_0);
             for (auto const& o : ofrsToRm)
             {
+                // With fixCleanup3_6_0, an offer removed after this flow
+                // changed its owner's funds is not kept on failure: an earlier
+                // iteration can make it look unfunded. An expired offer does
+                // not depend on funds. The cleanup is best-effort, so a later
+                // transaction can still remove the other offers.
+                bool const dependsOnFlow =
+                    fixEnabled && std::invoke([&] {
+                        auto const before = baseView.read(keylet::offer(o));
+                        if (!before)
+                            return true;  // LCOV_EXCL_LINE
+                        if (auto const exp = (*before)[~sfExpiration]; exp &&
+                            NetClock::time_point{NetClock::duration{*exp}} <= sb.parentCloseTime())
+                            return false;
+                        auto const owner = (*before)[sfAccount];
+                        auto const& gets = (*before)[sfTakerGets];
+                        auto const funds = [&](ReadView const& v) {
+                            return accountFunds(
+                                v,
+                                owner,
+                                gets,
+                                FreezeHandling::ZeroIfFrozen,
+                                AuthHandling::ZeroIfUnauthorized,
+                                j);
+                        };
+                        return funds(sb) != funds(baseView);
+                    });
+
+                if (!dependsOnFlow)
+                    ofrsToRmOnFail.insert(o);
+
+                auto const eraseMode = dependsOnFlow ? EraseMode::Normal : EraseMode::Persistent;
                 if (auto const ok = sb.peek(keylet::offer(o)))
                 {
-                    offerDelete(sb, ok, j, {.eraseMode = EraseMode::Persistent});
+                    offerDelete(sb, ok, j, {.eraseMode = eraseMode});
                 }
-                else
+                else if (!dependsOnFlow)
                 {
                     // An applied strand sandbox already erased the offer, so
                     // only record its key.
