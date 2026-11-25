@@ -98,6 +98,47 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
         after != nullptr && (before != nullptr || !isDelete),
         "xrpl::ValidVault::visitEntry : some object is available");
 
+    // At this moment we have no way of telling if an MPTokenIssuance holds
+    // vault shares or something else. Save it for finalize.
+    if (before)
+    {
+        if (before->getType() == ltVAULT)
+        {
+            beforeVault_.push_back(Vault::make(*before));
+        }
+        else if (before->getType() == ltMPTOKEN_ISSUANCE)
+        {
+            beforeMPTs_.push_back(Shares::make(*before));
+        }
+    }
+
+    if (!isDelete && after)
+    {
+        if (after->getType() == ltVAULT)
+        {
+            afterVault_.push_back(Vault::make(*after));
+        }
+        else if (after->getType() == ltMPTOKEN_ISSUANCE)
+        {
+            afterMPTs_.push_back(Shares::make(*after));
+        }
+    }
+
+    switch ((before ? before : after)->getType())
+    {
+        case ltMPTOKEN_ISSUANCE:
+        case ltMPTOKEN:
+        case ltACCOUNT_ROOT:
+        case ltRIPPLE_STATE:
+            balanceEntries_.push_back({.isDelete = isDelete, .before = before, .after = after});
+            break;
+        default:;
+    }
+}
+
+void
+ValidVault::addDelta(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+{
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), and
     // preserves value scale (exponent) to round values to the same scale during
@@ -111,13 +152,7 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
     {
         switch (before->getType())
         {
-            case ltVAULT:
-                beforeVault_.push_back(Vault::make(*before));
-                break;
             case ltMPTOKEN_ISSUANCE:
-                // At this moment we have no way of telling if this object holds
-                // vault shares or something else. Save it for finalize.
-                beforeMPTs_.push_back(Shares::make(*before));
                 balanceDelta.delta =
                     static_cast<std::int64_t>(before->getFieldU64(sfOutstandingAmount));
                 // MPTs are ints, so the scale is always 0.
@@ -154,13 +189,7 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
     {
         switch (after->getType())
         {
-            case ltVAULT:
-                afterVault_.push_back(Vault::make(*after));
-                break;
             case ltMPTOKEN_ISSUANCE:
-                // At this moment we have no way of telling if this object holds
-                // vault shares or something else. Save it for finalize.
-                afterMPTs_.push_back(Shares::make(*after));
                 balanceDelta.delta -=
                     Number(static_cast<std::int64_t>(after->getFieldU64(sfOutstandingAmount)));
                 // MPTs are ints, so the scale is always 0.
@@ -203,7 +232,7 @@ ValidVault::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
     // against zero, to avoid missing such updates.
     if (sign != 0)
     {
-        XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
+        XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::addDelta", "scale initialized");
         balanceDelta.delta *= sign;
         deltas_[key] = balanceDelta;
     }
@@ -524,6 +553,9 @@ ValidVault::finalize(
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : single vault invariant");
         return !enforce;  // That's all we can do here
     }
+
+    for (auto const& e : balanceEntries_)
+        addDelta(e.isDelete, e.before, e.after);
 
     auto const txnType = tx.getTxnType();
 
