@@ -92,9 +92,9 @@ getPageForToken(
     {
         STArray const arr;
         NFTokenPageEntryW newPage(last, view);
-        newPage.newSLE();
+        newPage.newSle();
         newPage->setFieldArray(sfNFTokens, arr);
-        newPage.insert();
+        newPage.insertIntoView();
         createCallback(view, owner);
         return newPage;
     }
@@ -187,7 +187,7 @@ getPageForToken(
         : carr[0].getFieldH256(sfNFTokenID);
 
     NFTokenPageEntryW np(base, tokenIDForNewPage, view);
-    np.newSLE();
+    np.newSle();
     XRPL_ASSERT(np->key() > base.key, "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
@@ -199,15 +199,15 @@ getPageForToken(
         if (NFTokenPageEntryW p3(Keylet(ltNFTOKEN_PAGE, *ppm), view); p3)
         {
             p3->setFieldH256(sfNextPageMin, np->key());
-            p3.update();
+            p3.updateInView();
         }
     }
 
-    np.insert();
+    np.insertIntoView();
 
     cp->setFieldArray(sfNFTokens, carr);
     cp->setFieldH256(sfPreviousPageMin, np->key());
-    cp.update();
+    cp.updateInView();
 
     createCallback(view, owner);
 
@@ -259,7 +259,7 @@ changeTokenURI(
         nftIter->makeFieldAbsent(sfURI);
     }
 
-    page.update();
+    page.updateInView();
     return tesSUCCESS;
 }
 
@@ -293,7 +293,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
         (*page)->setFieldArray(sfNFTokens, arr);
     }
 
-    page->update();
+    page->updateInView();
 
     return tesSUCCESS;
 }
@@ -343,13 +343,13 @@ mergePages(ApplyView& view, NFTokenPageEntryW& p1, NFTokenPageEntryW& p2)
             Throw<std::runtime_error>("mergePages: p0 can't be located!");
 
         p0->setFieldH256(sfNextPageMin, p2->key());
-        p0.update();
+        p0.updateInView();
 
         p2->setFieldH256(sfPreviousPageMin, *ppm);
     }
 
-    p2.update();
-    p1.erase();
+    p2.updateInView();
+    p1.eraseFromView();
 
     return true;
 }
@@ -422,7 +422,7 @@ removeToken(
         // pages. Note that this consolidation attempt may actually merge three
         // pages into one!
         curr->setFieldArray(sfNFTokens, arr);
-        curr.update();
+        curr.updateInView();
 
         std::uint32_t cnt = 0;
 
@@ -463,7 +463,7 @@ removeToken(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access) link set above
                 auto newPrev = loadPage(curr, sfPreviousPageMin).value();
                 newPrev->at(sfNextPageMin) = curr->key();
-                newPrev.update();
+                newPrev.updateInView();
             }
             else
             {
@@ -472,8 +472,8 @@ removeToken(
 
             decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
-            curr.update();
-            prev->erase();
+            curr.updateInView();
+            prev->eraseFromView();
             return tesSUCCESS;
         }
 
@@ -488,7 +488,7 @@ removeToken(
             (*prev)->makeFieldAbsent(sfNextPageMin);
         }
 
-        prev->update();
+        prev->updateInView();
     }
 
     if (next)
@@ -503,10 +503,10 @@ removeToken(
             (*next)->makeFieldAbsent(sfPreviousPageMin);
         }
 
-        next->update();
+        next->updateInView();
     }
 
-    curr.erase();
+    curr.eraseFromView();
 
     uint32_t cnt = 1;
 
@@ -746,7 +746,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
                 // LCOV_EXCL_STOP
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
-            newPrev.update();
+            newPrev.updateInView();
         }
         view.erase(page);
         view.insert(nextPage);
