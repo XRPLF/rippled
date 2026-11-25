@@ -32,7 +32,7 @@ LoanEntry<ViewT>::isPaymentLate() const
     auto const& view = this->readView();
     return hasExpired(
         view,
-        (*this)->at(sfNextPaymentDueDate),
+        this->sleRef().at(sfNextPaymentDueDate),
         view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
                                               : ExpiryComparison::Inclusive);
 }
