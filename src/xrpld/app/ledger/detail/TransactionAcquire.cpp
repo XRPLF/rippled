@@ -244,7 +244,9 @@ TransactionAcquire::takeNodesLocked(
 
         chargeLateReply(peer, sl);
 
-        return SHAMapAddNode::duplicate();
+        // Reported as a duplicate while the map is still valid, and as bad once an invalid map
+        // is what failed the set, since that verdict holds for every later reply on this hash.
+        return map_->isValid() ? SHAMapAddNode::duplicate() : SHAMapAddNode::invalid();
     }
 
     // Accumulated across the batch, so a packet ending in one bad node still counts the nodes
@@ -281,8 +283,8 @@ TransactionAcquire::takeNodesLocked(
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
                                           << " from peer " << peer->id();
-                    // addRootNode only rejects a hash mismatch, so the timer will retry with
-                    // another peer.
+                    // addRootNode rejects a hash mismatch and leaves the map valid, so the timer
+                    // owns the retry and picks another peer.
                     peer->charge(resource::kFeeInvalidData, "tx_set root hash mismatch");
                     return san;
                 }
@@ -298,8 +300,24 @@ TransactionAcquire::takeNodesLocked(
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
                                       << " for TX set " << hash_ << " from peer " << peer->id();
-                // A bad node leaves the map sound, so leave that retry to the timer rather than
-                // re-requesting from the peer that just sent us bad data.
+                if (!map_->isValid())
+                {
+                    // The acquisition fails here, and stillNeed() keeps it failed. See
+                    // SHAMap::addKnownNode for why that verdict holds for every peer. Charged
+                    // kFeeMalformedData under the lock that reached the verdict, so the packet
+                    // that earned the fee is the one that pays it. A deterrent only, since the
+                    // same node reaches a map by paths with no sender to charge.
+                    peer->charge(resource::kFeeMalformedData, "tx_set node makes map invalid");
+                    failed_ = true;
+                    done();
+
+                    // The whole batch is discarded, since the nodes ahead of the bad one belong to
+                    // the same impossible tree, and the acquisition is over.
+                    return SHAMapAddNode::invalid();
+                }
+
+                // Any other bad node leaves the map sound, so the timer owns the retry and picks
+                // another peer.
                 peer->charge(resource::kFeeInvalidData, "tx_set node invalid");
                 return san;
             }
@@ -346,7 +364,7 @@ TransactionAcquire::chargeLateReply(std::shared_ptr<Peer> const& peer, ScopedLoc
         peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
 }
 
-void
+bool
 TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
@@ -356,7 +374,13 @@ TransactionAcquire::stillNeed()
     // A running acquisition keeps the wait it has, rather than restarting it for every consensus
     // round that asks for the set again.
     if (!failed_)
-        return;
+        return true;
+
+    // An invalid map keeps the acquisition failed, since that verdict holds for every peer (see
+    // SHAMap::addKnownNode). Reported so the caller stops refreshing this set's retention
+    // window.
+    if (!map_->isValid())
+        return false;
 
     failed_ = false;
 
@@ -369,6 +393,7 @@ TransactionAcquire::stillNeed()
     // handed to the JobQueue is not canceled by that and still runs one invokeOnTimer(), which
     // re-arms this same timer and so folds back into the one chain.
     setTimer(sl);
+    return true;
 }
 
 }  // namespace xrpl

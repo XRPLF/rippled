@@ -53,8 +53,10 @@ public:
      * Add nodes a peer sent us to the set we are acquiring.
      *
      * Charges the peer for data it declines, since only this function holds the
-     * lock that decides the tier. A late reply is bounded by a per-peer
-     * allowance; see lateReplyGranted_.
+     * lock that decides the tier. A node that leaves the map invalid also fails
+     * the acquisition; see SHAMap::addKnownNode for why that verdict is final.
+     * A late reply is bounded by a per-peer allowance; see
+     * lateReplyGranted_.
      *
      * @param data The nodes to add, each with its claimed position.
      * @param peer The peer that sent them, charged here if the data is
@@ -72,13 +74,19 @@ public:
     init(int startPeers);
 
     /**
-     * Resume a timed-out acquisition, or leave a running one alone.
+     * Resume a timed-out acquisition, or leave it alone.
      *
-     * Always clamps the timeout count. An acquisition that failed has its timer
-     * chain stopped, so this also clears the failed flag and restarts the timer;
-     * one that is still running already has a timer pending.
+     * Always clamps the timeout count. An acquisition that failed with
+     * its map still valid has its timer chain stopped, so this also
+     * clears the failed flag and restarts the timer. One that failed
+     * because its map went invalid stays failed; see
+     * SHAMap::addKnownNode for why that verdict holds for every peer.
+     *
+     * @return Whether the set is still worth keeping. False for one whose
+     *         map went invalid, so the caller stops refreshing the window
+     *         that decides when it is swept.
      */
-    void
+    [[nodiscard]] bool
     stillNeed();
 
 protected:
