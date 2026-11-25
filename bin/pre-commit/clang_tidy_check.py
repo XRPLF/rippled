@@ -27,7 +27,7 @@ def clang_tidy_major() -> str | None:
     if not (clang_tidy := shutil.which("clang-tidy")):
         return None
     output = subprocess.run(
-        [clang_tidy, "--version"], capture_output=True, text=True
+        [clang_tidy, "--version"], capture_output=True, text=True, check=False
     ).stdout
     m = re.search(r"LLVM version (\d+)", output)
     return m.group(1) if m else None
@@ -64,7 +64,7 @@ def staged_files(repo_root: Path) -> list[Path]:
     return [repo_root / rel for rel in output.splitlines() if rel]
 
 
-def main():
+def main() -> int:
     if not os.environ.get("TIDY"):
         return 0
 
@@ -105,12 +105,13 @@ def main():
             run_clang_tidy,
             "-quiet",
             "-p",
-            build_dir,
+            str(build_dir),
             "-fix",
             "-format",
             "-allow-no-checks",
         ]
-        + files
+        + [str(f) for f in files],
+        check=False,
     )
     return result.returncode
 

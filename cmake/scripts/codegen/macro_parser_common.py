@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Common utilities for parsing XRP Ledger macro files.
 
@@ -7,13 +6,14 @@ and ledger_entries.macro files using pcpp and pyparsing.
 """
 
 import re
-import shutil
 from pathlib import Path
+from typing import Any
+
 import pyparsing as pp
 from pcpp import Preprocessor
 
 
-def clear_output_directory(directory):
+def clear_output_directory(directory: str | Path) -> None:
     """Clear all generated files from an output directory.
 
     Removes all .h and .cpp files from the directory, but preserves
@@ -34,10 +34,10 @@ def clear_output_directory(directory):
     print(f"Cleared output directory: {dir_path}")
 
 
-class CppCleaner(Preprocessor):
+class CppCleaner(Preprocessor):  # type: ignore[misc]
     """C preprocessor that removes C++ noise while preserving macro calls."""
 
-    def __init__(self, macro_include_name, macro_name):
+    def __init__(self, macro_include_name: str, macro_name: str) -> None:
         """
         Initialize the preprocessor.
 
@@ -47,7 +47,7 @@ class CppCleaner(Preprocessor):
             macro_name: The name of the macro to define so #if !defined() checks pass
                        (e.g., "TRANSACTION" or "LEDGER_ENTRY")
         """
-        super(CppCleaner, self).__init__()
+        super().__init__()
         # Define flags so #if blocks evaluate correctly
         # We set the include flag to 0 so includes are skipped
         self.define(f"{macro_include_name} 0")
@@ -58,18 +58,18 @@ class CppCleaner(Preprocessor):
         # Suppress line directives
         self.line_directive = None
 
-    def on_error(self, file, line, msg):
+    def on_error(self, file: Any, line: int, msg: str) -> None:
         # Ignore #error directives
         pass
 
     def on_include_not_found(
-        self, is_malformed, is_system_include, curdir, includepath
-    ):
+        self, is_malformed: bool, is_system_include: bool, curdir: str, includepath: str
+    ) -> None:
         # Ignore missing headers
         pass
 
 
-def parse_sfields_macro(sfields_path):
+def parse_sfields_macro(sfields_path: str | Path) -> dict[str, dict[str, Any]]:
     """
     Parse sfields.macro to determine which fields are typed vs untyped.
 
@@ -108,7 +108,7 @@ def parse_sfields_macro(sfields_path):
         },
     }
 
-    field_info = {}
+    field_info: dict[str, dict[str, Any]] = {}
 
     with open(sfields_path, "r") as f:
         content = f.read()
@@ -150,7 +150,7 @@ def parse_sfields_macro(sfields_path):
     return field_info
 
 
-def create_field_list_parser():
+def create_field_list_parser() -> pp.ParserElement:
     """Create a pyparsing parser for field lists like '({...})'."""
     # A field identifier (e.g., sfDestination, SoeRequired, SoeMptSupported)
     field_identifier = pp.Word(pp.alphas + "_", pp.alphanums + "_")
@@ -180,7 +180,7 @@ def create_field_list_parser():
     return field_list
 
 
-def parse_field_list(fields_str):
+def parse_field_list(fields_str: str) -> list[dict[str, Any]]:
     """Parse a field list string like '({...})' using pyparsing.
 
     Args:
@@ -196,7 +196,7 @@ def parse_field_list(fields_str):
 
     try:
         result = parser.parse_string(fields_str, parse_all=True)
-        fields = []
+        fields: list[dict[str, Any]] = []
 
         for field_parts in result.fields:
             if len(field_parts) < 2:
@@ -221,7 +221,9 @@ def parse_field_list(fields_str):
         raise ValueError(f"Failed to parse field list: {e}")
 
 
-def enrich_fields_with_type_data(entry_info, field_types):
+def enrich_fields_with_type_data(
+    entry_info: dict[str, Any], field_types: dict[str, dict[str, Any]]
+) -> None:
     """Enrich field information with type data from sfields.macro.
 
     Args:
@@ -246,8 +248,12 @@ def enrich_fields_with_type_data(entry_info, field_types):
 
 
 def generate_from_template(
-    entry_info, output_dir, template_dir, template_name, output_suffix
-):
+    entry_info: dict[str, Any],
+    output_dir: str | Path,
+    template_dir: str | Path,
+    template_name: str,
+    output_suffix: str,
+) -> Path:
     """Generate a file from a Mako template.
 
     Args:
@@ -279,8 +285,12 @@ def generate_from_template(
 
 
 def generate_cpp_class(
-    entry_info, header_dir, template_dir, field_types, template_name
-):
+    entry_info: dict[str, Any],
+    header_dir: str | Path,
+    template_dir: str | Path,
+    field_types: dict[str, dict[str, Any]],
+    template_name: str,
+) -> Path:
     """Generate C++ header file from a Mako template.
 
     Args:
@@ -289,9 +299,14 @@ def generate_cpp_class(
         template_dir: Directory containing Mako templates
         field_types: Dict mapping field names to type information
         template_name: Name of the Mako template file to use
+
+    Returns:
+        Path to the generated header file
     """
     # Enrich field information with type data
     enrich_fields_with_type_data(entry_info, field_types)
 
     # Generate the header file
-    generate_from_template(entry_info, header_dir, template_dir, template_name, ".h")
+    return generate_from_template(
+        entry_info, header_dir, template_dir, template_name, ".h"
+    )

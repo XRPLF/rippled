@@ -8,23 +8,25 @@ classes for each ledger entry type, similar to the transaction wrapper classes.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
-import io
 import argparse
+import io
 from pathlib import Path
+from typing import Any
+
 import pyparsing as pp
 
 # Import common utilities
 from macro_parser_common import (
     CppCleaner,
-    parse_sfields_macro,
-    parse_field_list,
+    clear_output_directory,
     generate_cpp_class,
     generate_from_template,
-    clear_output_directory,
+    parse_field_list,
+    parse_sfields_macro,
 )
 
 
-def create_ledger_entry_parser():
+def create_ledger_entry_parser() -> pp.ParserElement:
     """Create a pyparsing parser for LEDGER_ENTRY macros.
 
     This parser extracts the full LEDGER_ENTRY macro call and parses its arguments
@@ -55,7 +57,7 @@ def create_ledger_entry_parser():
     return macro_parser
 
 
-def parse_ledger_entry_args(args_list):
+def parse_ledger_entry_args(args_list: list[str]) -> dict[str, Any]:
     """Parse the arguments of a LEDGER_ENTRY macro call.
 
     Args:
@@ -88,7 +90,7 @@ def parse_ledger_entry_args(args_list):
     }
 
 
-def parse_macro_file(file_path):
+def parse_macro_file(file_path: str | Path) -> list[dict[str, Any]]:
     """Parse the ledger_entries.macro file and return a list of ledger entry definitions.
 
     Uses pcpp to preprocess the file and pyparsing to parse the LEDGER_ENTRY macros.
@@ -119,7 +121,7 @@ def parse_macro_file(file_path):
     return entries
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate C++ ledger entry classes from ledger_entries.macro"
     )

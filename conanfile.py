@@ -1,5 +1,6 @@
 import os
 import re
+from typing import ClassVar
 
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.env import Environment
@@ -17,7 +18,7 @@ class Xrpl(ConanFile):
     url = "https://github.com/xrplf/rippled"
     description = "The XRP Ledger"
     settings = "os", "compiler", "build_type", "arch"
-    options = {
+    options: ClassVar[dict[str, list[bool]]] = {
         "assertions": [True, False],
         "benchmark": [True, False],
         "coverage": [True, False],
@@ -31,7 +32,7 @@ class Xrpl(ConanFile):
         "xrpld": [True, False],
     }
 
-    requires = [
+    requires: ClassVar[list[str]] = [
         "corrosion/0.6.1",
         "ed25519/2015.03",
         "fast_float/8.2.10",
@@ -43,16 +44,16 @@ class Xrpl(ConanFile):
         "zlib/1.3.2",
     ]
 
-    test_requires = [
+    test_requires: ClassVar[list[str]] = [
         "gtest/1.17.0",
     ]
 
-    tool_requires = [
+    tool_requires: ClassVar[list[str]] = [
         "grpc/<host_version>",
         "protobuf/<host_version>",
     ]
 
-    default_options = {
+    default_options: ClassVar[dict[str, bool | int | str]] = {
         "assertions": False,
         "benchmark": True,
         "coverage": False,
@@ -110,7 +111,9 @@ class Xrpl(ConanFile):
 
     # default_options only reach the host context;
     # give tool_requires (and their dependencies) the same dependency options.
-    default_build_options = {k: v for k, v in default_options.items() if "/" in k}
+    default_build_options: ClassVar[dict[str, bool | int | str]] = {
+        k: v for k, v in default_options.items() if "/" in k
+    }
 
     def set_version(self):
         self.version = self.version or DEV_VERSION

@@ -33,13 +33,13 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
 
 REPO = Path(__file__).resolve().parents[2]
 
-_HOOK_RUNNER = next((cmd for cmd in ("pre-commit", "prek") if shutil.which(cmd)), None)
-if _HOOK_RUNNER is None:
+_found_runner = next((cmd for cmd in ("pre-commit", "prek") if shutil.which(cmd)), None)
+if _found_runner is None:
     sys.exit("error: neither `pre-commit` nor `prek` found on PATH")
+_HOOK_RUNNER: str = _found_runner
 
 RUN_BLOCK_RE = re.compile(r"^(?P<prefix>[ \t]*(?:- )?)run:[ \t]*\|[+-]?[ \t]*$")
 RUN_INLINE_RE = re.compile(
@@ -81,7 +81,7 @@ class MdBashBlock:
     body_indent: int
 
 
-RunItem = Union[BlockRun, InlineRun]
+RunItem = BlockRun | InlineRun
 
 
 def _scan_block_body(
@@ -239,6 +239,7 @@ def shfmt_via_hook(tmp_path: Path) -> tuple[bool, str]:
         cwd=REPO,
         capture_output=True,
         text=True,
+        check=False,
     )
     output = res.stdout + res.stderr
     # shfmt emits parse errors as "<path>:<line>:<col>: <message>".

@@ -73,8 +73,10 @@ class Category(Enum):
     QT_COMMENT = ("qt-comment", "use /** instead of /*!")
     SINGLE_LINE_BLOCK = (
         "single-line-block",
-        "expand one-line /** ... */ to a multi-line block "
-        "(markers @{ @} @cond @endcond @file may stay)",
+        (
+            "expand one-line /** ... */ to a multi-line block "
+            "(markers @{ @} @cond @endcond @file may stay)"
+        ),
     )
     TEXT_ON_OPENER = ("text-on-opener", "move text off the /** opener line")
     BARE_CONTINUATION = ("bare-continuation", 'prefix continuation lines with " * "')
@@ -389,9 +391,12 @@ def check_source(text: str) -> list[Finding]:
             findings.extend(block_findings)
         else:
             # A /* that opens mid-line without closing starts a plain block.
-            if "/*" in raw_line and not stripped.startswith("//"):
-                if "*/" not in raw_line[raw_line.index("/*") + 2 :]:
-                    in_plain_block = True
+            if (
+                "/*" in raw_line
+                and not stripped.startswith("//")
+                and "*/" not in raw_line[raw_line.index("/*") + 2 :]
+            ):
+                in_plain_block = True
             index += 1
     return findings
 
