@@ -1,4 +1,5 @@
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -6,14 +7,17 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -150,7 +154,95 @@ class STValidation_test : public beast::unit_test::Suite
         0xCA, 0x88, 0xA1, 0x2A, 0x20, 0xCF, 0x3C, 0xF9, 0xCE, 0xCF,
     };
 
+    // Re-serialize the fields of a validation in reverse (non-canonical) order.
+    // The signature is unaffected: it is computed over the canonically sorted
+    // fields, so the reordered encoding is still a "valid" validation that only
+    // differs from the canonical one in wire field order.
+    static Blob
+    reorderFields(STValidation const& val)
+    {
+        std::vector<STBase const*> fields;
+        for (std::size_t i = 0; i < val.getCount(); ++i)
+        {
+            STBase const& f = val.peekAtIndex(i);
+            if (f.getSType() != STI_NOTPRESENT && f.getFName().shouldInclude(true))
+                fields.push_back(&f);
+        }
+        std::ranges::sort(fields, [](STBase const* a, STBase const* b) {
+            return a->getFName().fieldCodeMem < b->getFName().fieldCodeMem;
+        });
+
+        Serializer s;
+        for (STBase const* f : std::views::reverse(fields))
+        {
+            f->addFieldID(s);
+            f->add(s);
+        }
+        return s.peekData();
+    }
+
 public:
+    void
+    testCanonicalOrder()
+    {
+        testcase("Deserialization: Canonical Field Order");
+
+        auto const lookup = [](PublicKey const& pk) { return calcNodeID(pk); };
+
+        // Parse a known-good, canonically ordered validation, then rebuild it
+        // with its fields reversed on the wire.
+        SerialIter sit{kPayload8};
+        auto const canonical = std::make_shared<STValidation>(
+            sit,
+            lookup,
+            STValidation::DeserializeOptions{
+                .checkSignature = false,
+                .requireCanonicalOrder = false,
+            });
+        Blob const reordered = reorderFields(*canonical);
+
+        // Sanity: the reordered encoding is genuinely different bytes.
+        BEAST_EXPECT(makeSlice(reordered) != makeSlice(canonical->getSerialized()));
+
+        // Accepted when canonical order is not required.
+        try
+        {
+            SerialIter sitReordered{makeSlice(reordered)};
+            auto const val = std::make_shared<STValidation>(
+                sitReordered,
+                lookup,
+                STValidation::DeserializeOptions{
+                    .checkSignature = false,
+                    .requireCanonicalOrder = false,
+                });
+            BEAST_EXPECT(val);
+            BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));
+            BEAST_EXPECT(val->isFieldPresent(sfSignature));
+        }
+        catch (std::exception const& ex)
+        {
+            fail(std::string("Unexpected exception thrown: ") + ex.what());
+        }
+
+        // Rejected when canonical order is required.
+        try
+        {
+            SerialIter sitReordered{makeSlice(reordered)};
+            auto const val = std::make_shared<STValidation>(
+                sitReordered,
+                lookup,
+                STValidation::DeserializeOptions{
+                    .checkSignature = false,
+                    .requireCanonicalOrder = true,
+                });
+            fail("Expected exception not thrown from reordered validation");
+        }
+        catch (std::exception const& ex)
+        {
+            BEAST_EXPECT(strcmp(ex.what(), "Fields in object are not in canonical order") == 0);
+        }
+    }
+
     void
     testDeserialization()
     {
@@ -347,6 +439,7 @@ public:
     run() override
     {
         testDeserialization();
+        testCanonicalOrder();
     }
 };
 
