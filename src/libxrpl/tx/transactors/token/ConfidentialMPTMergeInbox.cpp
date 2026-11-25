@@ -147,7 +147,7 @@ ConfidentialMPTMergeInbox::doApply()
 
     incrementConfidentialVersion(*sleMptoken);
 
-    sleMptoken.update();
+    sleMptoken.updateInView();
     return tesSUCCESS;
 }
 

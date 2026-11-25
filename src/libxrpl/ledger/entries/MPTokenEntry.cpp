@@ -62,7 +62,7 @@ MPTokenEntry<ViewT>::create(
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    mptoken.newSLE();
+    mptoken.newSle();
     (*mptoken)[sfAccount] = account;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = flags;
@@ -70,7 +70,7 @@ MPTokenEntry<ViewT>::create(
 
     addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
 
-    mptoken.insert();
+    mptoken.insertIntoView();
 
     return tesSUCCESS;
 }
@@ -100,9 +100,9 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
 {
     auto const j = this->journal();
     auto const mptIssue = amount.get<MPTIssue>();
-    auto const holder = (*this)->getAccountID(sfAccount);
+    auto const holder = this->sleRef().getAccountID(sfAccount);
 
-    auto const amt = (*this)->getFieldU64(sfMPTAmount);
+    auto const amt = this->sleRef().getFieldU64(sfMPTAmount);
     auto const pay = amount.mpt().value();
 
     // Underflow check for subtraction
@@ -125,16 +125,16 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
-    if ((*this)->isFieldPresent(sfLockedAmount))
+    if (this->sleRef().isFieldPresent(sfLockedAmount))
     {
         (**this)[sfLockedAmount] += pay;
     }
     else
     {
-        (*this)->setFieldU64(sfLockedAmount, pay);
+        this->sleRef().setFieldU64(sfLockedAmount, pay);
     }
 
-    this->update();
+    this->updateInView();
     return tesSUCCESS;
 }
 
