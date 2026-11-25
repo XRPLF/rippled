@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -414,14 +415,154 @@ public:
         handshake(0, 0);
     }
 
+    template <typename T>
+    void
+    addJunkData(T* victim)
+    {
+        // 2047 - 2099 are field numbers that none of the TM* messages
+        // define. They are valid wire field numbers and avoid protobuf's
+        // reserved 19000-19999 range. Attach both a small varint field and a
+        // large (1000 byte) length-delimited field, so the test also covers a
+        // bulky unknown payload rather than only a trivial one.
+        // These values could be constexpr, but add a little spice by having some repetition.
+        static int field = 2047;
+        int const unknownVarintField = field;
+        int const unknownBlobField = ++field;
+
+        victim->mutable_unknown_fields()->AddVarint(unknownVarintField, 0xBADC0DE);
+        victim->mutable_unknown_fields()->AddLengthDelimited(
+            unknownBlobField, std::string(1000, 'x'));
+
+        BEAST_EXPECT(victim->unknown_fields().field_count() == 2);
+
+        field = ((field + 1) % 53) + 2047;  // wrap around to 2047-2099 range
+    }
+
+    // Round-trip a message that carries protobuf "unknown fields" (fields
+    // present in the wire data whose field numbers are not part of the
+    // message's .proto schema) through the parser, and confirm
+    // parseMessageContent discards them while leaving every known field intact.
+    // Protobuf retains unknown fields on parse by default, so without the
+    // explicit Clear() in parseMessageContent the injected fields would survive
+    // the round-trip.
+    template <typename T>
+    void
+    doUnknownFieldsTest(
+        std::shared_ptr<T> proto,
+        protocol::MessageType mt,
+        Compressed tryCompressed,
+        std::string const& name,
+        std::function<int(T*)> modifyChildren = nullptr)
+    {
+        testcase("Unknown fields cleared: " + name);
+
+        std::shared_ptr<T const> const original = std::make_shared<T const>(*proto);
+        // No unknown fields to start with
+        BEAST_EXPECT(original->unknown_fields().empty());
+        Message mOriginal(*original, mt);
+
+        addJunkData(proto.get());
+        auto const numChildren = modifyChildren ? modifyChildren(proto.get()) : 0;
+
+        // Frame the message exactly as it would be written to the wire,
+        // including the header. The unknown fields are part of the serialized
+        // payload.
+        Message m(*proto, mt);
+        auto const& buffer = m.getBuffer(tryCompressed);
+        // Aside from the protobuf overhead, each modification adds at least 1000 bytes of data
+        BEAST_EXPECT(m.getBufferSize() > mOriginal.getBufferSize() + 1000 * (numChildren + 1));
+
+        boost::beast::multi_buffer buffers;
+        buffers.commit(
+            boost::asio::buffer_copy(buffers.prepare(buffer.size()), boost::asio::buffer(buffer)));
+
+        boost::system::error_code ec;
+        auto const header = xrpl::detail::parseMessageHeader(ec, buffers.data(), buffer.size());
+        if (!BEAST_EXPECT(header))
+            return;
+
+        // clang-tidy doesn't seem to understand that BEAST_EXPECT is a check
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        auto const parsed = xrpl::detail::parseMessageContent<T>(*header, buffers.data());
+        if (!BEAST_EXPECT(parsed))
+            return;
+
+        // The unknown fields should have been stripped during parsing.
+        // clang-tidy doesn't seem to understand that BEAST_EXPECT is a check
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(parsed->unknown_fields().empty());
+        BEAST_EXPECT(parsed->SerializeAsString() == original->SerializeAsString());
+
+        // Every known field is preserved unchanged. Compare against
+        // the original with its unknown field removed: both serialize to the
+        // same bytes if and only if the known fields survived intact.
+        proto->DiscardUnknownFields();
+        BEAST_EXPECT(proto->SerializeAsString() == original->SerializeAsString());
+    }
+
+    void
+    testUnknownFields()
+    {
+        auto logs = std::make_unique<Logs>(beast::Severity::Info);
+
+        // Uncompressed path (T::ParseFromZeroCopyStream).
+        doUnknownFieldsTest(
+            buildGetLedger(), protocol::mtGET_LEDGER, Compressed::Off, "TMGetLedger");
+
+        doUnknownFieldsTest<protocol::TMEndpoints>(
+            buildEndpoints(10),
+            protocol::mtENDPOINTS,
+            Compressed::Off,
+            "TMEndpoints",
+            [&](protocol::TMEndpoints* endpoints) {
+                auto const num = endpoints->endpoints_v2_size();
+                for (int i = 0; i < num; ++i)
+                {
+                    addJunkData(endpoints->mutable_endpoints_v2(i));
+                }
+                return num;
+            });
+        doUnknownFieldsTest<protocol::TMGetObjectByHash>(
+            buildGetObjectByHash(),
+            protocol::mtGET_OBJECTS,
+            Compressed::Off,
+            "TMGetObjectByHash",
+            [&](protocol::TMGetObjectByHash* getObject) {
+                auto const num = getObject->objects_size();
+                for (int i = 0; i < num; ++i)
+                {
+                    addJunkData(getObject->mutable_objects(i));
+                }
+                return num;
+            });
+
+        // Compressed path (decompress + T::ParseFromArray). A large, repetitive
+        // TMLedgerData is compressible, so requesting Compressed::On exercises
+        // the decompression branch of parseMessageContent.
+        doUnknownFieldsTest<protocol::TMLedgerData>(
+            buildLedgerData(500, *logs),
+            protocol::mtLEDGER_DATA,
+            Compressed::On,
+            "TMLedgerData500 (compressed)",
+            [&](protocol::TMLedgerData* ledgerData) {
+                auto const num = ledgerData->nodes_size();
+                for (int i = 0; i < num; ++i)
+                {
+                    addJunkData(ledgerData->mutable_nodes(i));
+                }
+                return num;
+            });
+    }
+
     void
     run() override
     {
         testProtocol();
         testHandshake();
+        testUnknownFields();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
+BEAST_DEFINE_TESTSUITE(compression, overlay, xrpl);
 
 }  // namespace xrpl::test
