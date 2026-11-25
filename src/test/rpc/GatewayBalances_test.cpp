@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
@@ -10,6 +11,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -85,8 +87,7 @@ public:
             expect(jv[jss::status] == "success");
             if (wsc->version() == 2)
             {
-                expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(hasEnvelope2(jv));
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -172,7 +173,12 @@ public:
 
             auto response = jv[jss::result];
             auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const errorCode = apiVersion < 2u ? RpcInvalidHotwallet : RpcInvalidParams;
+            auto const errorMessage =
+                apiVersion < 2u ? "Invalid hotwallet." : "Invalid parameters.";
             BEAST_EXPECT(response[jss::error] == error);
+            BEAST_EXPECT(response[jss::error_code] == errorCode);
+            BEAST_EXPECT(response[jss::error_message] == errorMessage);
         });
     }
 
@@ -201,6 +207,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'account'.");
         });
 
         // The same applies to a non-string "ident".
@@ -212,6 +220,8 @@ public:
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
             BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'ident'.");
         });
     }
 

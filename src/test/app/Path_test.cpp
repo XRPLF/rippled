@@ -33,6 +33,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
@@ -318,7 +319,9 @@ public:
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
-        BEAST_EXPECT(result.isMember(jss::error));
+        BEAST_EXPECT(result[jss::error] == "srcCurMalformed");
+        BEAST_EXPECT(result[jss::error_code] == RpcSrcCurMalformed);
+        BEAST_EXPECT(result[jss::error_message] == "Source currency is malformed.");
 
         // Test rpc::tuning::max_auto_src_cur source currencies.
         for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
@@ -341,7 +344,9 @@ public:
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
-        BEAST_EXPECT(result.isMember(jss::error));
+        BEAST_EXPECT(result[jss::error] == "internal");
+        BEAST_EXPECT(result[jss::error_code] == RpcInternal);
+        BEAST_EXPECT(result[jss::error_message] == "Internal error.");
     }
 
     void

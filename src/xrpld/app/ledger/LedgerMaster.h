@@ -667,12 +667,9 @@ public:
     /**
      * Signals that fetch-pack data arrived, so waiting acquires can use it.
      * At most one handler job is queued at a time.
-     *
-     * @param progress Unused by the current implementation.
-     * @param seq Unused by the current implementation.
      */
     void
-    gotFetchPack(bool progress, std::uint32_t seq);
+    gotFetchPack();
 
     /**
      * Caches one fetch-pack node received from a peer.

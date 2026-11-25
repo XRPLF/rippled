@@ -179,13 +179,12 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        sleDst == nullptr)
+    if (sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+    if (sleDst->isFlag(lsfDisallowIncomingTrustline) &&
         !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
         return tecNO_PERMISSION;
@@ -634,7 +633,7 @@ TrustSet::doApply()
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -660,7 +659,7 @@ TrustSet::doApply()
             // Reserve is not scaled by load.
             else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -691,7 +690,7 @@ TrustSet::doApply()
     else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.
@@ -710,7 +709,7 @@ TrustSet::doApply()
         !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.
