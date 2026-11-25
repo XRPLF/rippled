@@ -219,7 +219,7 @@ VaultDelete::doApply()
     decreaseOwnerCountForObject(view(), owner, vault.mutableRawSle(), 2, j_);
 
     // Destroy the vault.
-    vault.erase();
+    vault.eraseFromView();
 
     return tesSUCCESS;
 }

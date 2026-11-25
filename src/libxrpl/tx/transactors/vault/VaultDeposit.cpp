@@ -372,7 +372,7 @@ VaultDeposit::doApply()
     if (auto const ter = adjustVaultCash(vault.mutableRawSle(), assetsDeposited, j_);
         !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
-    vault.update();
+    vault.updateInView();
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);

@@ -675,7 +675,7 @@ ValidatorList::sendValidatorList(
                 sent = true;
             }
         }
-        // The only way sent wil be false is if the messages was too big, and
+        // The only way sent will be false is if the messages was too big, and
         // thus there will only be one entry without a message
         XRPL_ASSERT(
             sent || messages.size() == 1,

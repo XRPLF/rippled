@@ -32,8 +32,9 @@ template <typename ViewT>
 VaultKind
 VaultEntry<ViewT>::kind() const
 {
-    XRPL_ASSERT(*this && (*this)->getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
-    auto const vaultKind = (*this)->at(~sfVaultKind);
+    XRPL_ASSERT(
+        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
+    auto const vaultKind = this->sleRef().at(~sfVaultKind);
     if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
         return VaultKind::ClosedEnded;
     return VaultKind::OpenEnded;
@@ -44,7 +45,7 @@ VaultPhase
 VaultEntry<ViewT>::phase() const
 {
     XRPL_ASSERT(
-        *this && (*this)->getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
+        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
     return getVaultPhase(
         this->readView(),
         (**this)[~sfVaultKind],
