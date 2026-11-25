@@ -238,7 +238,7 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
     if (sle->isFieldPresent(sfFeeAmount))
     {
         (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
-        sponsorAccSle.update();
+        sponsorAccSle.updateInView();
     }
 
     view.erase(sle);
@@ -416,7 +416,7 @@ SponsorshipSet::doApply()
         {
             (*sponsorshipSle)[sfFeeAmount] = newFee;
         }
-        sponsorAccSle.update();
+        sponsorAccSle.updateInView();
     }
 
     if (maxFee)

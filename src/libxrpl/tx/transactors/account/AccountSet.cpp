@@ -585,7 +585,7 @@ AccountSet::doApply()
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
 
-    sle.update();
+    sle.updateInView();
 
     return tesSUCCESS;
 }

@@ -427,7 +427,7 @@ AccountDelete::doApply()
             return tefINTERNAL;  // LCOV_EXCL_LINE
         }
         sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
-        sponsorSle.update();
+        sponsorSle.updateInView();
 
         // Following line might look redundant, but without it, sfSponsor
         // would end up remaining in after-ltAccountRoot during the
@@ -450,8 +450,8 @@ AccountDelete::doApply()
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    dst.update();
-    src.erase();
+    dst.updateInView();
+    src.eraseFromView();
 
     return tesSUCCESS;
 }

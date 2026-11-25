@@ -1151,7 +1151,7 @@ struct Credentials_test : public beast::unit_test::Suite
         auto sleIssuer = AccountRootEntryW(issuer.id(), av);
         if (!BEAST_EXPECT(sleIssuer))
             return;
-        sleIssuer.erase();
+        sleIssuer.eraseFromView();
         BEAST_EXPECT(!av.exists(keylet::account(issuer.id())));
 
         // Credential still exists before removeExpired

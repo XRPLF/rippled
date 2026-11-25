@@ -766,7 +766,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     sb.erase(ammSle);
-    sleAMMRoot.erase();
+    sleAMMRoot.eraseFromView();
 
     return tesSUCCESS;
 }

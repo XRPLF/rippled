@@ -942,7 +942,7 @@ Transactor::apply()
         if (sle->isFieldPresent(sfAccountTxnID))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
-        sle.update();
+        sle.updateInView();
     }
 
     return doApply();
@@ -1403,7 +1403,7 @@ Transactor::reset(XRPAmount fee)
 
     if (isTesSuccess(ter))
     {
-        txnAcct.update();
+        txnAcct.updateInView();
         if (payerSle != txnAcct.mutableRawSle())
             view().update(payerSle);
     }

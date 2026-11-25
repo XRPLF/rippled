@@ -571,7 +571,7 @@ Payment::doApply()
     if (!sleDst)
     {
         // Create the account.
-        sleDst.newSLE();
+        sleDst.newSle();
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
         sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
@@ -594,17 +594,17 @@ Payment::doApply()
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
             addSponsorToLedgerEntry(sleDst.mutableRawSle(), sponsor.rawSle());
-            sponsor.update();
+            sponsor.updateInView();
         }
 
-        sleDst.insert();
+        sleDst.insertIntoView();
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        sleDst.update();
+        sleDst.updateInView();
     }
 
     bool const mpTokensV2 = view().rules().enabled(featureMPTokensV2);

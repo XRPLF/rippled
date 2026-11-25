@@ -225,7 +225,7 @@ adjustOwnerCountSigned(
 
         view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
         accountSle->at(sfOwnerCount) = adjusted;
-        accountSle.update();
+        accountSle.updateInView();
     }
 }
 

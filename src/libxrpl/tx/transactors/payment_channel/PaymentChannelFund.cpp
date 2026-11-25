@@ -114,7 +114,7 @@ PaymentChannelFund::doApply()
     ctx_.view().update(slep);
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    sle.update();
+    sle.updateInView();
 
     return tesSUCCESS;
 }

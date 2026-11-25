@@ -94,7 +94,7 @@ addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
     }
     std::optional<AccountRootEntryW> noSponsor;
     increaseOwnerCount(ctx.view(), sleAccount, noSponsor, 1, ctx.journal);
-    sleAccount.update();
+    sleAccount.updateInView();
 
     return tesSUCCESS;
 }

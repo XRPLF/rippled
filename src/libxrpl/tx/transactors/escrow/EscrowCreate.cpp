@@ -438,7 +438,7 @@ EscrowCreate::doApply()
     // increment owner count
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, reserveToAdd, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), escrow.mutableRawSle());
-    sle.update();
+    sle.updateInView();
     return tesSUCCESS;
 }
 

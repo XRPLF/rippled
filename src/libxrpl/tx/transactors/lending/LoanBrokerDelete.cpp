@@ -230,7 +230,7 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
-    brokerPseudoSLE.erase();
+    brokerPseudoSLE.eraseFromView();
 
     if (!fix350Enabled)
         decreaseOwnerCountForObject(view(), owner, broker, 2, j_);

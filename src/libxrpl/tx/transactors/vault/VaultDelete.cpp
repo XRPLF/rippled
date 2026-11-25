@@ -194,7 +194,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    vaultPseudoSLE.erase();
+    vaultPseudoSLE.eraseFromView();
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);

@@ -463,7 +463,7 @@ EscrowFinish::doApply()
         }
     }
 
-    sled.update();
+    sled.updateInView();
 
     if (!recycleReserve)
     {

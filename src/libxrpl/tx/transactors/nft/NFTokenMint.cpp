@@ -272,7 +272,7 @@ NFTokenMint::doApply()
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return std::unexpected(tecMAX_SEQUENCE_REACHED);
 
-        root.update();
+        root.updateInView();
         return tokenSeq;
     }();
 
