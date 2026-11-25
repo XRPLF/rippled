@@ -20,30 +20,6 @@ namespace xrpl {
 
 namespace {
 
-// Wraps a Source teardown call so that an exception from one cleanup
-// step does not prevent the subsequent steps from running. Source methods
-// acquire a lock and can throw std::system_error; a throw out of ~InfoSub
-// during stack unwinding would terminate the process. Failures are
-// reported through the Source's Journal so they reach the configured log
-// sinks; JLOG itself cannot throw, so the noexcept guarantee holds.
-template <typename F>
-void
-safeUnsub(std::uint64_t seq, F&& f, beast::Journal j) noexcept
-{
-    try
-    {
-        f();
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j.warn()) << "~InfoSub[seq=" << seq << "]: cleanup step failed: " << e.what();
-    }
-    catch (...)
-    {
-        JLOG(j.warn()) << "~InfoSub[seq=" << seq << "]: cleanup step failed: unknown exception";
-    }
-}
-
 // Number of requested entries not already tracked in `existing`. Only these are
 // charged against the cap, so re-subscribing entries a connection already holds
 // is free.
@@ -73,87 +49,63 @@ countNew(HashSet<T> const& requested, HashSet<T> const& existing)
 // code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 
-InfoSub::InfoSub(Source& source) : source_(source), seq_(assignId())
-{
-}
-
 InfoSub::InfoSub(Source& source, Consumer consumer)
-    : consumer_(consumer), source_(source), seq_(assignId())
+    : seq_(++nextId_), consumer_(std::move(consumer)), source_(source)
 {
 }
 
 InfoSub::~InfoSub()
 {
-    // Stream unsubscribes are O(1): each erases this connection's single seq_
-    // from one stream map, so they are cheap enough to run inline on the
-    // disconnect thread.
-    // Each Source teardown call below acquires a server-side lock and
-    // can throw. Wrap each independent call so partial failure does not
-    // skip the remaining teardown steps.
+    auto const j = source_.journal();
 
-    auto const& j = source_.journal();
+    // Logs and swallows an exception from a single teardown step, so that an
+    // exception from one cleanup step does not prevent subsequent steps from
+    // running and will not escape the destructor, which would terminate the
+    // process.
+    auto const guarded = [&](std::string_view step, auto&& f) noexcept {
+        try
+        {
+            f();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j.warn()) << "~InfoSub[" << seq_ << "]: " << step << " failed: " << e.what();
+        }
+        catch (...)
+        {
+            JLOG(j.warn()) << "~InfoSub[" << seq_ << "]: " << step << " failed: unknown exception";
+        }
+    };
 
-    safeUnsub(seq_, [&] { source_.unsubTransactions(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubRTTransactions(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubLedger(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubManifests(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubServer(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
+    guarded("unsubTransactions", [&] { source_.unsubTransactions(seq_); });
+    guarded("unsubRTTransactions", [&] { source_.unsubRTTransactions(seq_); });
+    guarded("unsubLedger", [&] { source_.unsubLedger(seq_); });
+    guarded("unsubManifests", [&] { source_.unsubManifests(seq_); });
+    guarded("unsubServer", [&] { source_.unsubServer(seq_); });
+    guarded("unsubValidations", [&] { source_.unsubValidations(seq_); });
+    guarded("unsubPeerStatus", [&] { source_.unsubPeerStatus(seq_); });
+    guarded("unsubConsensus", [&] { source_.unsubConsensus(seq_); });
 
-    // MPT subscriptions are torn down inline here, keyed on seq_, like books
-    // below. The set is capped; each unsubMPTInternal takes mptLock_ for a
-    // single O(1) erase and releases it, so a competing MPT publish can
-    // interleave between erases. Use the internal variant so it does not write
-    // back to mptSubscriptions_ on this partially-destroyed object.
+    // The *Internal variants erase one entry under a briefly held lock and do
+    // not write back to this partially destroyed object.
     for (auto const& mptID : mptSubscriptions_)
-    {
-        safeUnsub(seq_, [&] { source_.unsubMPTInternal(seq_, mptID); }, j);
-    }
+        guarded("unsubMPTInternal", [&] { source_.unsubMPTInternal(seq_, mptID); });
 
-    // Book subscriptions are torn down inline here, keyed on seq_, rather than
-    // through the chunked account cleanup below. The book set is not capped, so
-    // it can be large; but each unsubBookInternal takes bookLock_ for a single
-    // O(1) erase and releases it, so even a large set never holds a lock across
-    // the whole loop - a competing book publish can interleave between erases.
-    // The disconnect thread still does O(N) brief acquisitions. Use the internal
-    // variant so it does not write back to bookSubscriptions_ on this
-    // partially-destroyed object.
     for (auto const& book : bookSubscriptions_)
-    {
-        safeUnsub(seq_, [&] { source_.unsubBookInternal(seq_, book); }, j);
-    }
+        guarded("unsubBookInternal", [&] { source_.unsubBookInternal(seq_, book); });
 
-    // Hand the account sets off (by move) to the Source for a chunked,
-    // off-thread teardown keyed on seq_, instead of erasing them inline here.
-    // This keeps the destructor from holding the account lock across a large
-    // erase loop. The job never references this object, which is being
-    // destroyed.
-    //
-    // Moving the sets without holding lock_ is safe: the destructor runs only
-    // when the last shared_ptr to this InfoSub is released, so by the
-    // shared_ptr contract no other thread holds a reference. Subscription maps
-    // store weak_ptrs, so a concurrent publisher must weak_ptr::lock() first;
-    // that succeeds only while a strong reference exists, which cannot overlap
-    // with destruction. No other thread can observe the moved-from sets.
-    //
-    // Wrapped like the steps above: scheduleAccountCleanup enqueues a JobQueue
-    // task, which allocates and locks and so can throw. A throw out of this
-    // noexcept destructor would terminate the process. Skipping the cleanup on
-    // throw is harmless: the account/rt maps hold weak_ptrs that the next
-    // publish prunes once this InfoSub is gone, and any history paging job
-    // self-terminates when its weak sink can no longer be locked.
-    safeUnsub(
-        seq_,
-        [&] {
-            source_.scheduleAccountCleanup(
-                seq_,
-                std::move(realTimeSubscriptions_),
-                std::move(normalSubscriptions_),
-                std::move(accountHistorySubscriptions_));
-        },
-        j);
+    // Account sets can be large, so hand them off for chunked off-thread
+    // removal rather than holding the account lock across the erase loop.
+    // Moving them unlocked is safe: we are in the destructor, so no strong
+    // reference exists and no publisher can lock the weak_ptr. If the enqueue
+    // throws, the next publish prunes the dead weak_ptrs instead.
+    guarded("scheduleAccountCleanup", [&] {
+        source_.scheduleAccountCleanup(
+            seq_,
+            std::move(realTimeSubscriptions_),
+            std::move(normalSubscriptions_),
+            std::move(accountHistorySubscriptions_));
+    });
 }
 
 resource::Consumer&
