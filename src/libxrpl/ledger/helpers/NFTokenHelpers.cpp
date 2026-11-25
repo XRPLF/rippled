@@ -636,7 +636,7 @@ deleteTokenOffer(ApplyView& view, NFTokenOfferEntryW& offer)
 
     decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
-    offer.erase();
+    offer.eraseFromView();
     return true;
 }
 
@@ -975,7 +975,7 @@ tokenOfferCreateApply(
         if (isSellOffer)
             sleFlags |= lsfSellNFToken;
 
-        offer.newSLE();
+        offer.newSle();
         (*offer)[sfOwner] = acctID;
         (*offer)[sfNFTokenID] = nftokenID;
         (*offer)[sfAmount] = amount;
@@ -989,7 +989,7 @@ tokenOfferCreateApply(
         if (dest)
             (*offer)[sfDestination] = *dest;
 
-        offer.insert();
+        offer.insertIntoView();
     }
 
     // Update owner count.
