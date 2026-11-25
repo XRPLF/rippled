@@ -616,6 +616,42 @@ public:
     }
 
     void
+    testReconfigure()
+    {
+        testcase("Reconfigure");
+        using namespace jtx;
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+        auto& txq = env.app().getTxQ();
+        checkMetrics(*this, env, 0, std::nullopt, 0, 3);
+
+        // The maximum queue size is not set before the first ledger closes.
+        auto setup = setupTxQ(env.app().config());
+        setup.minimumTxnInLedgerSA = 4;
+        txq.reconfigure(setup);
+        checkMetrics(*this, env, 0, std::nullopt, 0, 4);
+
+        env.close();
+        checkMetrics(*this, env, 0, 8, 0, 4);
+
+        // New limits apply before the next ledger closes.
+        setup.minimumTxnInLedgerSA = 5;
+        setup.ledgersInQueue = 3;
+        txq.reconfigure(setup);
+        checkMetrics(*this, env, 0, 15, 0, 5);
+
+        // A lower minimum keeps the current expected count.
+        setup.minimumTxnInLedgerSA = 2;
+        txq.reconfigure(setup);
+        checkMetrics(*this, env, 0, 15, 0, 5);
+
+        // The minimum queue size still applies.
+        setup.queueSizeMin = 20;
+        txq.reconfigure(setup);
+        checkMetrics(*this, env, 0, 20, 0, 5);
+    }
+
+    void
     testTecResult()
     {
         using namespace jtx;
@@ -4759,6 +4795,7 @@ public:
         testQueueSeq();
         testQueueTicket();
         testTecResult();
+        testReconfigure();
         testLocalTxRetry();
         testLastLedgerSeq();
         testZeroFeeTxn();

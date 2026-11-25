@@ -2578,6 +2578,57 @@ static RPCCallTestData const kRpcCallTestArray[] = {
     })",
     },
 
+    // config_reload
+    // -------------------------------------------------------------------
+    {
+        "config_reload: one section.",
+        __LINE__,
+        {"config_reload", "transaction_queue"},
+        RPCCallTestData::Exception::NoException,
+        R"({
+    "method" : "config_reload",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "sections" : [ "transaction_queue" ]
+      }
+    ]
+    })",
+    },
+    {
+        "config_reload: two sections.",
+        __LINE__,
+        {"config_reload", "transaction_queue", "ips"},
+        RPCCallTestData::Exception::NoException,
+        R"({
+    "method" : "config_reload",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "sections" : [ "transaction_queue", "ips" ]
+      }
+    ]
+    })",
+    },
+    {
+        "config_reload: too few arguments.",
+        __LINE__,
+        {
+            "config_reload",
+        },
+        RPCCallTestData::Exception::NoException,
+        R"({
+    "method" : "config_reload",
+    "params" : [
+      {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+      }
+    ]
+    })",
+    },
+
     // connect
     // ---------------------------------------------------------------------
     {

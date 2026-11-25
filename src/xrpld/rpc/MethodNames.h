@@ -31,6 +31,7 @@ inline constexpr std::string_view kBookOffers{"book_offers"};
 inline constexpr std::string_view kCanDelete{"can_delete"};
 inline constexpr std::string_view kChannelAuthorize{"channel_authorize"};
 inline constexpr std::string_view kChannelVerify{"channel_verify"};
+inline constexpr std::string_view kConfigReload{"config_reload"};
 inline constexpr std::string_view kConnect{"connect"};
 inline constexpr std::string_view kConsensusInfo{"consensus_info"};
 inline constexpr std::string_view kDepositAuthorized{"deposit_authorized"};
