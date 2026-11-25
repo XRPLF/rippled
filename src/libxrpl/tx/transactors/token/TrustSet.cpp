@@ -641,7 +641,7 @@ TrustSet::doApply()
             }
             else
             {
-                sleRippleState.update();
+                sleRippleState.updateInView();
 
                 JLOG(j_.trace()) << "Modify ripple line";
             }
@@ -667,7 +667,7 @@ TrustSet::doApply()
             }
             else
             {
-                sleRippleState.update();
+                sleRippleState.updateInView();
 
                 JLOG(j_.trace()) << "Modify ripple line";
             }

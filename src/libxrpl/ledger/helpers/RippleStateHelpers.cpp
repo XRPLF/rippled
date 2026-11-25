@@ -215,8 +215,8 @@ trustCreate(
     }
 
     RippleStateEntryW sleRippleState(Keylet(ltRIPPLE_STATE, uIndex), view, j);
-    sleRippleState.newSLE();
-    sleRippleState.insert();
+    sleRippleState.newSle();
+    sleRippleState.insertIntoView();
 
     auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
@@ -328,7 +328,7 @@ trustDelete(
     removeSponsorFromLedgerEntry(sleRippleState.mutableRawSle(), sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    sleRippleState.erase();
+    sleRippleState.eraseFromView();
 
     return tesSUCCESS;
 }
@@ -455,7 +455,7 @@ issueIOU(
                 j);
         }
 
-        state.update();
+        state.updateInView();
 
         return tesSUCCESS;
     }
@@ -549,7 +549,7 @@ redeemIOU(
                 j);
         }
 
-        state.update();
+        state.updateInView();
         return tesSUCCESS;
     }
 
