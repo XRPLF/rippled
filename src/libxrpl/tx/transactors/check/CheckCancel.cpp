@@ -101,7 +101,7 @@ CheckCancel::doApply()
     decreaseOwnerCountForObject(view(), srcId, sleCheck.mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    sleCheck.erase();
+    sleCheck.eraseFromView();
     return tesSUCCESS;
 }
 
