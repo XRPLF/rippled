@@ -82,6 +82,25 @@ HashRouter::shouldProcess(
     return s.shouldProcess(suppressionMap_.clock().now(), txInterval);
 }
 
+bool
+HashRouter::clearFlags(UInt256 const& key, HashRouterFlags flags)
+{
+    XRPL_ASSERT(any(flags), "xrpl::HashRouter::clearFlags : valid input");
+
+    std::scoped_lock const lock(mutex_);
+
+    // Clearing creates no entry and refreshes none, so look the key up without emplace().
+    auto const iter = suppressionMap_.find(key);
+    if (iter == suppressionMap_.end())
+        return false;
+
+    // Report the change that happened rather than the one expected.
+    auto& entry = iter->second;
+    auto const before = entry.getFlags();
+    entry.clearFlags(flags);
+    return entry.getFlags() != before;
+}
+
 HashRouterFlags
 HashRouter::getFlags(UInt256 const& key)
 {
@@ -93,7 +112,7 @@ HashRouter::getFlags(UInt256 const& key)
 bool
 HashRouter::setFlags(UInt256 const& key, HashRouterFlags flags)
 {
-    XRPL_ASSERT(static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
+    XRPL_ASSERT(any(flags), "xrpl::HashRouter::setFlags : valid input");
 
     std::scoped_lock const lock(mutex_);
 
