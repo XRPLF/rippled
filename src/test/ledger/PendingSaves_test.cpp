@@ -1,5 +1,6 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/Protocol.h>
 
 namespace xrpl::test {
 
@@ -8,27 +9,27 @@ struct PendingSaves_test : public beast::unit_test::Suite
     void
     testSaves()
     {
+        constexpr LedgerIndex kSeq = 0;
         PendingSaves ps;
 
         // Basic test
-        BEAST_EXPECT(!ps.pending(0));
-        BEAST_EXPECT(!ps.startWork(0));
-        BEAST_EXPECT(ps.shouldWork(0, true));
-        BEAST_EXPECT(ps.startWork(0));
-        BEAST_EXPECT(ps.pending(0));
-        BEAST_EXPECT(!ps.shouldWork(0, false));
-        ps.finishWork(0);
-        BEAST_EXPECT(!ps.pending(0));
+        BEAST_EXPECT(!ps.pending(kSeq));
+        BEAST_EXPECT(!ps.startWork(kSeq));
+        BEAST_EXPECT(ps.shouldWork(kSeq));
+        BEAST_EXPECT(ps.startWork(kSeq));
+        BEAST_EXPECT(ps.pending(kSeq));
+        BEAST_EXPECT(!ps.shouldWork(kSeq));
+        ps.finishWork(kSeq);
+        BEAST_EXPECT(!ps.pending(kSeq));
 
         // Test work stealing
-        BEAST_EXPECT(ps.shouldWork(0, false));
-        BEAST_EXPECT(ps.pending(0));
-        BEAST_EXPECT(ps.shouldWork(0, true));
-        BEAST_EXPECT(ps.pending(0));
-        BEAST_EXPECT(ps.startWork(0));
-        BEAST_EXPECT(!ps.startWork(0));
-        ps.finishWork(0);
-        BEAST_EXPECT(!ps.pending(0));
+        BEAST_EXPECT(ps.shouldWork(kSeq));
+        BEAST_EXPECT(ps.pending(kSeq));
+        ps.claimWork(kSeq);
+        BEAST_EXPECT(ps.pending(kSeq));
+        BEAST_EXPECT(!ps.startWork(kSeq));
+        ps.finishWork(kSeq);
+        BEAST_EXPECT(!ps.pending(kSeq));
     }
 
     void

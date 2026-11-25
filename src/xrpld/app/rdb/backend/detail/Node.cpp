@@ -22,7 +22,6 @@
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
-#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -278,9 +277,8 @@ saveValidatedLedger(
     {
         JLOG(j.warn()) << "An accepted ledger was missing nodes";
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
-        // Clients can now trust the database for information about this
-        // ledger sequence.
-        app.getPendingSaves().finishWork(seq);
+        // The caller finishes the pending save on every exit. Finishing it here as well would
+        // erase a claim another thread makes between the two calls.
         return false;
     }
 

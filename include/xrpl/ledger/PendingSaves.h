@@ -28,24 +28,11 @@ public:
      *
      * This is called prior to updating the SQLite indexes.
      *
+     * @param seq The sequence of the ledger to save.
      * @return 'true' if work should be done
      */
     bool
-    startWork(LedgerIndex seq)
-    {
-        std::scoped_lock const lock(mutex_);
-
-        auto const it = map_.find(seq);
-
-        if ((it == map_.end()) || it->second)
-        {
-            // Work done or another thread is doing it
-            return false;
-        }
-
-        it->second = true;
-        return true;
-    }
+    startWork(LedgerIndex seq);
 
     /**
      * Finish working on a ledger
@@ -53,66 +40,45 @@ public:
      * This is called after updating the SQLite indexes.
      * The tracking of the work in progress is removed and
      * threads awaiting completion are notified.
+     *
+     * @param seq The sequence of the ledger that was saved.
      */
     void
-    finishWork(LedgerIndex seq)
-    {
-        std::scoped_lock const lock(mutex_);
-
-        map_.erase(seq);
-        await_.notify_all();
-    }
+    finishWork(LedgerIndex seq);
 
     /**
      * Return `true` if a ledger is in the progress of being saved.
+     *
+     * @param seq The sequence of the ledger to look up.
      */
     bool
-    pending(LedgerIndex seq)
-    {
-        std::scoped_lock const lock(mutex_);
-        return map_.contains(seq);
-    }
+    pending(LedgerIndex seq);
 
     /**
-     * Check if a ledger should be dispatched
+     * Schedule the save of a ledger, unless one is scheduled or in progress.
      *
-     * Called to determine whether work should be done or
-     * dispatched. If work is already in progress and the
-     * call is synchronous, wait for work to be completed.
+     * Called before an asynchronous save is dispatched. A synchronous caller
+     * uses claimWork() instead.
      *
-     * @return 'true' if work should be done or dispatched
+     * @param seq The sequence of the ledger to save.
+     * @return Whether the caller should dispatch the save.
      */
     bool
-    shouldWork(LedgerIndex seq, bool isSynchronous)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        do
-        {
-            auto const it = map_.find(seq);
+    shouldWork(LedgerIndex seq);
 
-            if (it == map_.end())
-            {
-                map_.emplace(seq, false);
-                return true;
-            }
-
-            if (!isSynchronous)
-            {
-                // Already dispatched
-                return false;
-            }
-
-            if (!it->second)
-            {
-                // Scheduled, but not dispatched
-                return true;
-            }
-
-            // Already in progress, just need to wait
-            await_.wait(lock);
-
-        } while (true);
-    }
+    /**
+     * Claim the save of a ledger for the caller.
+     *
+     * Waits while another thread is saving the sequence, then marks it as in
+     * progress for the caller. Where shouldWork() followed by startWork() lets
+     * another thread take the work between the two calls, this claim happens
+     * under one lock, so the caller always owns the save when it returns. It
+     * must call finishWork() afterwards.
+     *
+     * @param seq The sequence of the ledger to save.
+     */
+    void
+    claimWork(LedgerIndex seq);
 
     /**
      * Get a snapshot of the pending saves
@@ -120,14 +86,11 @@ public:
      * Each entry in the returned map corresponds to a ledger
      * that is in progress or dispatched. The boolean indicates
      * whether work is currently in progress.
+     *
+     * @return A copy of the pending saves.
      */
     std::map<LedgerIndex, bool>
-    getSnapshot() const
-    {
-        std::scoped_lock const lock(mutex_);
-
-        return map_;
-    }
+    getSnapshot() const;
 };
 
 }  // namespace xrpl
