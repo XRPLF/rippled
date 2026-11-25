@@ -282,7 +282,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         else
         {
             // Default Websocket send queue size limit
-            port.wsQueueLimit = 100;
+            port.wsQueueLimit = 1000;
         }
     }
 
