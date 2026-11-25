@@ -343,7 +343,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto sleAcc = AccountRootEntryR(acc_, ctx.view);
+    auto const sleAcc = AccountRootEntryR(acc_, ctx.view);
     if (!sleAcc)
     {
         JLOG(j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "
