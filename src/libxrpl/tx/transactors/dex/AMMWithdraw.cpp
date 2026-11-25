@@ -880,7 +880,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     if (updateBalance)
     {
         ammSle->setFieldAmount(sfLPTokenBalance, lpTokenBalance);
-        ammSle.update();
+        ammSle.updateInView();
     }
 
     return {ter, true};

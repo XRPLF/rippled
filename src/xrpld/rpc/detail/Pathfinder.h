@@ -29,9 +29,9 @@ namespace xrpl {
 /**
  * Calculates payment paths.
  *
- * The @ref RippleCalc determines the quality of the found paths.
+ * The @ref path::RippleCalc determines the quality of the found paths.
  *
- * @see RippleCalc
+ * @see path::RippleCalc
  */
 class Pathfinder : public CountedObject<Pathfinder>
 {
