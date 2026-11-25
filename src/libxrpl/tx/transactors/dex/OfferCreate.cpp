@@ -1024,7 +1024,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     OfferEntryW sleOffer(offerIndex, sb, j_);
-    sleOffer.newSLE();
+    sleOffer.newSle();
     sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
@@ -1058,7 +1058,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             return {res, true};  // LCOV_EXCL_LINE
     }
 
-    sleOffer.insert();
+    sleOffer.insertIntoView();
 
     if (!bookExisted)
         ctx_.addOrderBook(book);

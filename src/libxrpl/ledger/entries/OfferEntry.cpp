@@ -22,32 +22,32 @@ OfferEntry<ViewT>::removeFromLedger()
         return tesSUCCESS;
 
     auto const offerIndex = this->key();
-    auto const owner = (*this)->getAccountID(sfAccount);
+    auto const owner = this->sleRef().getAccountID(sfAccount);
 
     // Detect legacy directories.
-    UInt256 const uDirectory = (*this)->getFieldH256(sfBookDirectory);
+    UInt256 const uDirectory = this->sleRef().getFieldH256(sfBookDirectory);
 
     ApplyView& view = this->applyView();
 
     if (!view.dirRemove(
-            keylet::ownerDir(owner), (*this)->getFieldU64(sfOwnerNode), offerIndex, false))
+            keylet::ownerDir(owner), this->sleRef().getFieldU64(sfOwnerNode), offerIndex, false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     if (!view.dirRemove(
-            keylet::page(uDirectory), (*this)->getFieldU64(sfBookNode), offerIndex, false))
+            keylet::page(uDirectory), this->sleRef().getFieldU64(sfBookNode), offerIndex, false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    if ((*this)->isFieldPresent(sfAdditionalBooks))
+    if (this->sleRef().isFieldPresent(sfAdditionalBooks))
     {
         XRPL_ASSERT(
-            (*this)->isFlag(lsfHybrid) && (*this)->isFieldPresent(sfDomainID),
+            this->sleRef().isFlag(lsfHybrid) && this->sleRef().isFieldPresent(sfDomainID),
             "xrpl::OfferEntry::removeFromLedger : should be a hybrid domain offer");
 
-        auto const& additionalBookDirs = (*this)->getFieldArray(sfAdditionalBooks);
+        auto const& additionalBookDirs = this->sleRef().getFieldArray(sfAdditionalBooks);
 
         for (auto const& bookDir : additionalBookDirs)
         {
@@ -63,7 +63,7 @@ OfferEntry<ViewT>::removeFromLedger()
 
     decreaseOwnerCountForObject(view, owner, this->mutableRawSle(), 1, this->journal());
 
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }
