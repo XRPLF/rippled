@@ -136,6 +136,30 @@ public:
     }
 
     /**
+     * @brief Get sfDeliverAfter (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDeliverAfter() const
+    {
+        if (hasDeliverAfter())
+            return this->sle_->at(sfDeliverAfter);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDeliverAfter is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDeliverAfter() const
+    {
+        return this->sle_->isFieldPresent(sfDeliverAfter);
+    }
+
+    /**
      * @brief Get sfInvoiceID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -356,6 +380,17 @@ public:
     setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfExpiration] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDeliverAfter (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    CheckBuilder&
+    setDeliverAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDeliverAfter] = value;
         return *this;
     }
 
