@@ -2996,7 +2996,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = -1;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "internal", RpcInternal, "Internal error.");
+                    checkResult(
+                        false,
+                        jv,
+                        0,
+                        "malformedRequest",
+                        RpcInvalidParams,
+                        rpc::expectedFieldMessage(jss::hashes, "hex string"));
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
