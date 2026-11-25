@@ -156,7 +156,7 @@ MPTokenIssuanceCreate::create(
             return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
         MPTokenIssuanceEntryW mptIssuance(mptIssuanceKeylet, ctx.view, journal);
-        mptIssuance.newSLE();
+        mptIssuance.newSle();
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
@@ -199,7 +199,7 @@ MPTokenIssuanceCreate::create(
 
         addSponsorToLedgerEntry(mptIssuance.mutableRawSle(), sponsorSle);
 
-        mptIssuance.insert();
+        mptIssuance.insertIntoView();
     }
 
     // Update owner count.

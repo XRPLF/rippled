@@ -58,7 +58,7 @@ public:
     [[nodiscard]] bool
     isGlobalFrozen() const
     {
-        return (*this)->isFlag(lsfMPTLocked);
+        return this->sleRef().isFlag(lsfMPTLocked);
     }
 
     /**
