@@ -470,8 +470,8 @@ ConfidentialMPTSend::doApply()
     // increment sender version only; receiver version is not modified by incoming sends
     incrementConfidentialVersion(*sleSenderMPToken);
 
-    sleSenderMPToken.update();
-    sleDestinationMPToken.update();
+    sleSenderMPToken.updateInView();
+    sleDestinationMPToken.updateInView();
     return tesSUCCESS;
 }
 

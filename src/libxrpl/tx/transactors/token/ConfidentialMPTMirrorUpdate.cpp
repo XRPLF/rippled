@@ -254,7 +254,7 @@ ConfidentialMPTMirrorUpdate::doApply()
         setAuditorMirrorEpoch(*sleIssuance, *sleMptoken);
     }
 
-    sleMptoken.update();
+    sleMptoken.updateInView();
     return tesSUCCESS;
 }
 
