@@ -15,6 +15,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -370,7 +371,7 @@ private:
         XRPAmount const payFee{
             baseFee *
             ((payment / originalState.periodicPayment) / kLoanPaymentsPerFeeIncrement + 1)};
-        auto loanPayTx =
+        auto const loanPayTx =
             env.json(pay(borrower, keylet.key, STAmount{broker.asset, payment}), Fee(payFee));
         BEAST_EXPECT(to_string(payment) == "3269.349176470588");
         env(loanPayTx, Ter(tesSUCCESS));
@@ -553,7 +554,7 @@ private:
         // so multiple invocations within one scenario cannot interfere.
         // The caller is responsible for invoking testcase(...) before the
         // first runTest call of each scenario.
-        auto runTest = [&](Number vaultDeposit, auto&& body) {
+        auto const runTest = [&](Number vaultDeposit, auto&& body) {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -582,18 +583,21 @@ private:
                 .debtMax = 0,
                 .coverRateMin = TenthBips32{13'370},
                 .coverDeposit = 5'000,
-                .managementFeeRate = TenthBips16{500}};
+                .managementFeeRate = TenthBips16{500},
+            };
 
             BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
 
             body(
                 env,
-                Ctx{.issuer = issuer,
+                Ctx{
+                    .issuer = issuer,
                     .lender = lender,
                     .borrower = borrower,
                     .iou = iou,
                     .broker = broker,
-                    .brokerParams = brokerParams});
+                    .brokerParams = brokerParams,
+                });
         };
 
         // Scenario 1 — LoanPay
@@ -665,7 +669,7 @@ private:
                     return std::nullopt;
                 if (!BEAST_EXPECT(tinyLoanSle->at(sfLoanScale) == -12) ||
                     !BEAST_EXPECT(bigLoanSle->at(sfLoanScale) == -11) ||
-                    !BEAST_EXPECT(getAssetsTotalScale(vaultSle) == -11))
+                    !BEAST_EXPECT(getVaultScale(vaultSle) == -11))
                     return std::nullopt;
 
                 // Use issuer clawback to reduce cover to the minimum the
@@ -792,13 +796,13 @@ private:
 
                 auto const coverAvail = brokerSle->at(sfCoverAvailable);
                 auto const debtTotal = brokerSle->at(sfDebtTotal);
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getVaultScale(vaultSle);
                 auto const debtScale = scale(debtTotal, asset);
 
                 // Sanity: debt scale differs from vault scale for this setup.
                 BEAST_EXPECT(debtScale < vaultScale);
 
-                auto const oldMin = [&]() {
+                auto const oldMin = [&] {
                     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                     return roundToAsset(
                         asset,
@@ -890,7 +894,7 @@ private:
                 auto const vaultSle = env.le(keylet::vault(c.broker.vaultID));
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale = getVaultScale(vaultSle);
                 BEAST_EXPECT(vaultScale == -11);
 
                 // Now try to create a tiny additional loan.  Principal is
@@ -964,7 +968,8 @@ private:
                 .coverRateMin = TenthBips32{0},
                 .coverDeposit = 0,
                 .managementFeeRate = TenthBips16{0},
-                .coverRateLiquidation = TenthBips32{0}};
+                .coverRateLiquidation = TenthBips32{0},
+            };
             BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
             Number const principal{1'012'345, -5};

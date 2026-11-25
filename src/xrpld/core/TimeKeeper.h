@@ -87,7 +87,7 @@ public:
         // code. The compare/exchange only serves as a weak check and
         // should not fail. Even if it does, it's safe to simply just
         // skip the adjustment.
-        closeOffset_.compare_exchange_strong(offset, [by, offset]() {
+        closeOffset_.compare_exchange_strong(offset, [by, offset] {
             // Ignore small offsets and push the close time
             // towards our wall time.
             if (by > 1s)

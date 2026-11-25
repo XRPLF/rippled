@@ -54,7 +54,7 @@ JobQueue::Coro::post()
     }
 
     // sp keeps 'this' alive
-    if (jq_.addJob(type_, name_, [this, sp = shared_from_this()]() { resume(); }))
+    if (jq_.addJob(type_, name_, [this, sp = shared_from_this()] { resume(); }))
     {
         return true;
     }
@@ -130,7 +130,7 @@ inline void
 JobQueue::Coro::join()
 {
     std::unique_lock<std::mutex> lk(mutexRun_);
-    cv_.wait(lk, [this]() { return !running_; });
+    cv_.wait(lk, [this] { return !running_; });
 }
 
 }  // namespace xrpl

@@ -60,8 +60,10 @@ struct MultiApiJson_test : beast::unit_test::Suite
             testcase("forApiVersions, forAllApiVersions");
 
             // Some static data for test inputs
-            static int const kPrimes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
-                                          43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
+            static int const kPrimes[] = {
+                2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
+                43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+            };
             static_assert(std::size(kPrimes) > rpc::kApiMaximumValidVersion);
 
             MultiApiJson<1, 3> s1{};
@@ -146,7 +148,7 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 return !requires {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        []() {});                              // missing parameters
+                        [] {});                                // missing parameters
                 };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
@@ -569,8 +571,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
                 return !requires {
                     v.kVisitor(
                         v,
-                        1,         //
-                        []() {});  // missing parameter
+                        1,       //
+                        [] {});  // missing parameter
                 };
             }(s1));
 
@@ -901,10 +903,10 @@ struct MultiApiJson_test : beast::unit_test::Suite
 
             // Missing parameter
             static_assert([](auto&& v) {
-                return !requires { std::forward<decltype(v)>(v).visit(1, []() {}); };
+                return !requires { std::forward<decltype(v)>(v).visit(1, [] {}); };
             }(s1));
             static_assert([](auto&& v) {
-                return !requires { std::forward<decltype(v)>(v).visit()(1, []() {}); };
+                return !requires { std::forward<decltype(v)>(v).visit()(1, [] {}); };
             }(s1));
 
             // Sanity checks

@@ -144,7 +144,7 @@ enum ErrorCodeI {
     RpcEntryNotFound = 98,
     RpcUnexpectedLedgerType = 99,
 
-    RpcLast = RpcUnexpectedLedgerType  // rpcLAST should always equal the last code.
+    RpcLast = RpcUnexpectedLedgerType,  // rpcLAST should always equal the last code.
 };
 
 /**

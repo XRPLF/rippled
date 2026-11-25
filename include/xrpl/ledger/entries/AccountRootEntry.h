@@ -144,7 +144,7 @@ public:
     [[nodiscard]] bool
     isGlobalFrozen() const
     {
-        return (*this)->isFlag(lsfGlobalFreeze);
+        return this->sleRef().isFlag(lsfGlobalFreeze);
     }
 
     /**
@@ -166,7 +166,7 @@ public:
 
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
-        if ((*this)->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+        if (this->sleRef().isFlag(lsfRequireDestTag) && !hasDestinationTag)
             return tecDST_TAG_NEEDED;  // Cannot send without a tag
 
         return tesSUCCESS;

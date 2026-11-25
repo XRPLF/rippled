@@ -8,6 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -154,11 +155,19 @@ public:
         Account const becky{"becky"};
 
         // Lambda that checks the (error) result of deposit_authorized.
-        auto verifyErr = [this](
-                             json::Value const& result, char const* error, char const* errorMsg) {
+        auto const verifyErr = [this](
+                                   json::Value const& result,
+                                   char const* error,
+                                   ErrorCodeI code,
+                                   char const* errorMsg,
+                                   bool withLedgerFields = false) {
             BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
             BEAST_EXPECT(result[jss::result][jss::error] == error);
+            BEAST_EXPECT(result[jss::result][jss::error_code] == code);
             BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
+            BEAST_EXPECT(
+                result[jss::result].isMember(jss::ledger_current_index) == withLedgerFields);
+            BEAST_EXPECT(result[jss::result].isMember(jss::validated) == withLedgerFields);
         };
 
         Env env(*this);
@@ -167,28 +176,33 @@ public:
             json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::source_account);
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Missing field 'source_account'.");
+            verifyErr(result, "invalidParams", RpcInvalidParams, "Missing field 'source_account'.");
         }
         {
             // Non-string source_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = 7.3;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Invalid field 'source_account', not a string.");
+            verifyErr(
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'source_account', not a string.");
         }
         {
             // Corrupt source_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = "rG1QQv2nh2gr7RCZ!P8YYcBUKCCN633jCn";
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "actMalformed", "Account malformed.");
+            verifyErr(result, "actMalformed", RpcActMalformed, "Account malformed.");
         }
         {
             // Missing destination_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::destination_account);
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Missing field 'destination_account'.");
+            verifyErr(
+                result, "invalidParams", RpcInvalidParams, "Missing field 'destination_account'.");
         }
         {
             // Non-string destination_account field.
@@ -196,40 +210,47 @@ public:
             args[jss::destination_account] = 7.3;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
-                result, "invalidParams", "Invalid field 'destination_account', not a string.");
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'destination_account', not a string.");
         }
         {
             // Corrupt destination_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::destination_account] = "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "actMalformed", "Account malformed.");
+            verifyErr(result, "actMalformed", RpcActMalformed, "Account malformed.");
         }
         {
             // Request an invalid ledger.
             json::Value const args{depositAuthArgs(alice, becky, "-1")};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
-                result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
             json::Value const args{depositAuthArgs(alice, becky, "17")};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "lgrNotFound", "ledgerNotFound");
+            verifyErr(result, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
         {
             // Request a ledger that doesn't exist yet.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::ledger_index] = 17;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "lgrNotFound", "ledgerNotFound");
+            verifyErr(result, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
         {
             // alice is not yet funded.
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "srcActNotFound", "Source account not found.");
+            verifyErr(
+                result, "srcActNotFound", RpcSrcActNotFound, "Source account not found.", true);
         }
         env.fund(XRP(1000), alice);
         env.close();
@@ -237,7 +258,12 @@ public:
             // becky is not yet funded.
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "dstActNotFound", "Destination account not found.");
+            verifyErr(
+                result,
+                "dstActNotFound",
+                RpcDstActNotFound,
+                "Destination account not found.",
+                true);
         }
         env.fund(XRP(1000), becky);
         env.close();
@@ -256,9 +282,11 @@ public:
         jtx::Account const& dst,
         bool authorized,
         std::vector<std::string> credentialIDs = {},
-        std::string_view error = "")
+        std::string_view error = "",
+        ErrorCodeI code = RpcSuccess,
+        std::string_view errorMessage = "")
     {
-        BEAST_EXPECT(result[jss::status] == authorized ? jss::success : jss::error);
+        BEAST_EXPECT(result[jss::status] == (authorized ? jss::success : jss::error));
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
@@ -270,7 +298,16 @@ public:
 
         BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
         if (!error.empty())
+        {
             BEAST_EXPECT(result[jss::error].asString() == error);
+            BEAST_EXPECT(result[jss::error_code] == code);
+            BEAST_EXPECT(result[jss::error_message].asString() == errorMessage);
+
+            bool const withLedgerFields = error == "badCredentials";
+            BEAST_EXPECT(result.isMember(jss::ledger_hash) == withLedgerFields);
+            BEAST_EXPECT(result.isMember(jss::ledger_index) == withLedgerFields);
+            BEAST_EXPECT(result.isMember(jss::validated) == withLedgerFields);
+        }
 
         if (authorized)
         {
@@ -334,7 +371,15 @@ public:
             args[jss::credentials] = json::ValueType::Array;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
-            checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {},
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'credentials', not is non-empty array of CredentialID(hash256).");
         }
 
         {
@@ -348,7 +393,15 @@ public:
             args[jss::credentials].append(3);
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
-            checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {},
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'credentials', not an array of CredentialID(hash256).");
         }
 
         {
@@ -362,7 +415,14 @@ public:
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, {"hello world"}, "invalidParams");
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {"hello world"},
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'credentials', not an array of CredentialID(hash256).");
         }
 
         {
@@ -370,12 +430,14 @@ public:
                 "deposit_authorized with credentials failure: not a credential "
                 "index");
 
-            auto args = depositAuthArgs(
+            auto const args = depositAuthArgs(
                 alice,
                 becky,
                 "validated",
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"});
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                });
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(
@@ -383,9 +445,35 @@ public:
                 alice,
                 becky,
                 false,
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"},
-                "badCredentials");
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                },
+                "badCredentials",
+                RpcBadCredentials,
+                "credentials don't exist");
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials failure: zero "
+                "credential index");
+
+            for (auto const& zero : {std::string("0"), std::string(64, '0')})
+            {
+                auto const args = depositAuthArgs(alice, becky, "validated", {zero});
+
+                auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+                checkCredentialsResponse(
+                    jv[jss::result],
+                    alice,
+                    becky,
+                    false,
+                    {zero},
+                    "badCredentials",
+                    RpcBadCredentials,
+                    "credentials don't exist");
+            }
         }
 
         {
@@ -397,7 +485,14 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", {credIdx}).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, {credIdx}, "badCredentials");
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {credIdx},
+                "badCredentials",
+                RpcBadCredentials,
+                "credentials aren't accepted");
         }
 
         // alice accept credentials
@@ -411,7 +506,14 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", {credIdx, credIdx}).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, {credIdx, credIdx}, "badCredentials");
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {credIdx, credIdx},
+                "badCredentials",
+                RpcBadCredentials,
+                "duplicates in credentials");
         }
 
         {
@@ -434,7 +536,14 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", kCredIds).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, kCredIds, "invalidParams");
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                kCredIds,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'credentials', not array too long.");
         }
 
         {
@@ -481,7 +590,14 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(becky, alice, "validated", {credDiana}).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], becky, alice, false, {credDiana}, "badCredentials");
+                jv[jss::result],
+                becky,
+                alice,
+                false,
+                {credDiana},
+                "badCredentials",
+                RpcBadCredentials,
+                "credentials doesn't belong to the root account");
         }
 
         {
@@ -530,7 +646,14 @@ public:
                     depositAuthArgs(alice, becky, "validated", {credIdx2}).toStyledString());
 
                 checkCredentialsResponse(
-                    jv[jss::result], alice, becky, false, {credIdx2}, "badCredentials");
+                    jv[jss::result],
+                    alice,
+                    becky,
+                    false,
+                    {credIdx2},
+                    "badCredentials",
+                    RpcBadCredentials,
+                    "credentials are expired");
             }
         }
     }
