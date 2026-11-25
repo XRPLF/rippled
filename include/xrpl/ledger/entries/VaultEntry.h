@@ -162,11 +162,11 @@ public:
         if (maybeAmount)
             return *maybeAmount;
 
-        Asset const share = MPTIssue{(*this)->at(sfShareMPTID)};
-        if (account == (*this)->at(sfOwner))
+        Asset const share = MPTIssue{this->sleRef().at(sfShareMPTID)};
+        if (account == this->sleRef().at(sfOwner))
             return STAmount{share};
 
-        return STAmount{(*this)->at(sfAsset)};
+        return STAmount{this->sleRef().at(sfAsset)};
     }
 };
 
