@@ -288,7 +288,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
 
         // Due to the floating point calculations, theoretical and actual
         // qualities are not expected to always be exactly equal. However, they
-        // should always be very close. This function checks that that two
+        // should always be very close. This function checks that two
         // qualities are "close enough".
         auto const compareClose = [](Quality const& q1, Quality const& q2) {
             // relative diff is fabs(a-b)/min(a,b)

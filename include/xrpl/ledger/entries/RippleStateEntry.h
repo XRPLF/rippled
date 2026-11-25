@@ -54,7 +54,8 @@ public:
     [[nodiscard]] STAmount
     creditLimit(AccountID const& account, AccountID const& issuer) const
     {
-        STAmount result = (*this)->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
+        STAmount result =
+            this->sleRef().getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
         result.get<Issue>().account = account;
         return result;
     }
@@ -70,7 +71,7 @@ public:
     [[nodiscard]] STAmount
     creditBalance(AccountID const& account, AccountID const& issuer) const
     {
-        STAmount result = (*this)->getFieldAmount(sfBalance);
+        STAmount result = this->sleRef().getFieldAmount(sfBalance);
         if (account < issuer)
             result.negate();
         result.get<Issue>().account = account;
@@ -87,7 +88,7 @@ public:
     [[nodiscard]] bool
     isIndividualFrozen(AccountID const& account, AccountID const& issuer) const
     {
-        return (*this)->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
+        return this->sleRef().isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
     }
 
     /**
