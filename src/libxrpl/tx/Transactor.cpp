@@ -883,7 +883,7 @@ Transactor::ticketDelete(
     std::uint32_t const ticketSeq{(*ticket)[sfTicketSequence]};
 
     // Remove Ticket from ledger.
-    ticket.erase();
+    ticket.eraseFromView();
 
     // Once the Ticket is gone, a TransactionProposal keyed to it can never
     // execute: its proposed transaction would fail with tefNO_TICKET. Clean

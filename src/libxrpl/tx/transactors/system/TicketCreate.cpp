@@ -99,12 +99,12 @@ TicketCreate::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         TicketEntryW ticket(accountID_, SeqProxy::rawTicket(curTicketSeq), view());
-        ticket.newSLE();
+        ticket.newSle();
 
         ticket->setAccountID(sfAccount, accountID_);
         ticket->setFieldU32(sfTicketSequence, curTicketSeq);
 
-        ticket.insert();
+        ticket.insertIntoView();
 
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), ticket.keylet(), describeOwnerDir(accountID_));
