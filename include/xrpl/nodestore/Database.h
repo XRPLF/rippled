@@ -302,7 +302,7 @@ private:
      *
      * @note This routine will not be called concurrently with itself
      *       or other methods.
-     * @see import
+     * @see importDatabase
      */
     virtual void
     forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
