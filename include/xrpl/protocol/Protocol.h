@@ -315,7 +315,7 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
 /**
  * Maximum Scale for a Vault created before featureLendingProtocolV1_2.
  * Chosen so 1 IOU can always convert to shares:
- * 10^19 > maxMPTokenAmount (2^64-1) > 10^18.
+ * 10^19 > maxMPTokenAmount (2^63-1) > 10^18.
  */
 constexpr std::uint8_t kLegacyVaultMaximumIouScale = 18;
 
