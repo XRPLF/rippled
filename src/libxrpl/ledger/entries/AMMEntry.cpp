@@ -250,7 +250,7 @@ AMMEntry<ViewT>::verifyAndAdjustLPTokenBalance(STAmount const& lpTokens, Account
                 lpTokens, Base::operator->()->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
             Base::operator->()->setFieldAmount(sfLPTokenBalance, lpTokens);
-            this->update();
+            this->updateInView();
         }
         else
         {
