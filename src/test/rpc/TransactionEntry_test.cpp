@@ -17,14 +17,13 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
 namespace xrpl {
 
-class TransactionEntry_test : public beast::unit_test::suite
+class TransactionEntry_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -32,42 +31,77 @@ class TransactionEntry_test : public beast::unit_test::suite
         testcase("Invalid request params");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
 
         {
             // no params
             auto const result = env.client().invoke("transaction_entry", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = 20;
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "lgrNotFound");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(result[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(result[jss::error_message] == "ledgerNotFound");
         }
 
         {
-            Json::Value params{Json::objectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
-            Json::Value params{Json::objectValue};
+            // No ledger selects the current one, not any ledger.
+            json::Value params{json::ValueType::Object};
+            params[jss::tx_hash] =
+                "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05";
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(result[jss::validated] == false);
+        }
+
+        {
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
+        }
+
+        for (auto const type : {json::ValueType::Object, json::ValueType::Array})
+        {
+            json::Value params{json::ValueType::Object};
+            params[jss::ledger] = "closed";
+            params[jss::tx_hash] = json::Value{type};
+            auto const result = env.client().invoke("transaction_entry", params)[jss::result];
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         std::string const txHash{
@@ -76,60 +110,76 @@ class TransactionEntry_test : public beast::unit_test::suite
         // Command line format
         {
             // No arguments
-            Json::Value const result{env.rpc("transaction_entry")};
+            json::Value const result{env.rpc("transaction_entry")};
             BEAST_EXPECT(result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // One argument
-            Json::Value const result{env.rpc("transaction_entry", txHash)};
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            json::Value const result{env.rpc("transaction_entry", txHash)};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // First argument with too few characters
-            Json::Value const result{env.rpc("transaction_entry", txHash.substr(1), "closed")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            json::Value const result{env.rpc("transaction_entry", txHash.substr(1), "closed")};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // First argument with too many characters
-            Json::Value const result{env.rpc("transaction_entry", txHash + "A", "closed")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            json::Value const result{env.rpc("transaction_entry", txHash + "A", "closed")};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Second argument not valid
-            Json::Value const result{env.rpc("transaction_entry", txHash, "closer")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            json::Value const result{env.rpc("transaction_entry", txHash, "closer")};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Ledger index of 0 is not valid
-            Json::Value const result{env.rpc("transaction_entry", txHash, "0")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            json::Value const result{env.rpc("transaction_entry", txHash, "0")};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Three arguments
-            Json::Value const result{env.rpc("transaction_entry", txHash, "closed", "extra")};
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            json::Value const result{env.rpc("transaction_entry", txHash, "closed", "extra")};
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // Valid structure, but transaction not found.
-            Json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
+            json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
             BEAST_EXPECT(!result[jss::result][jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::result][jss::error_message].isNull());
         }
     }
 
@@ -139,39 +189,41 @@ class TransactionEntry_test : public beast::unit_test::suite
         testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
 
-        auto check_tx = [this, &env, apiVersion](
-                            int index,
-                            std::string const txhash,
-                            std::string const expected_json = "",
-                            std::string const expected_ledger_hash = "",
-                            std::string const close_time_iso = "") {
+        auto const checkTx = [this, &env, apiVersion](
+                                 int index,
+                                 std::string const txhash,
+                                 std::string const expectedJson = "",
+                                 std::string const expectedLedgerHash = "",
+                                 std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
-            Json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
-                Json::Value params{Json::objectValue};
-                params[jss::ledger_index] = index;
-                params[jss::tx_hash] = txhash;
-                params[jss::api_version] = apiVersion;
-                return env.client().invoke("transaction_entry", params)[jss::result];
-            }()};
+            json::Value const resIndex{
+                [&env, index, &txhash, apiVersion] {
+                    json::Value params{json::ValueType::Object};
+                    params[jss::ledger_index] = index;
+                    params[jss::tx_hash] = txhash;
+                    params[jss::api_version] = apiVersion;
+                    return env.client().invoke("transaction_entry", params)[jss::result];
+                }(),
+            };
 
             if (!BEAST_EXPECT(resIndex.isMember(jss::tx_json)))
                 return;
 
             BEAST_EXPECT(resIndex[jss::validated] == true);
             BEAST_EXPECT(resIndex[jss::ledger_index] == index);
-            BEAST_EXPECT(resIndex[jss::ledger_hash] == expected_ledger_hash);
+            BEAST_EXPECT(resIndex[jss::ledger_hash] == expectedLedgerHash);
             if (apiVersion > 1)
             {
                 BEAST_EXPECT(resIndex[jss::hash] == txhash);
                 BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::hash));
                 BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::Amount));
 
-                if (BEAST_EXPECT(!close_time_iso.empty()))
-                    BEAST_EXPECT(resIndex[jss::close_time_iso] == close_time_iso);
+                if (BEAST_EXPECT(!closeTimeIso.empty()))
+                    BEAST_EXPECT(resIndex[jss::close_time_iso] == closeTimeIso);
             }
             else
             {
@@ -180,11 +232,11 @@ class TransactionEntry_test : public beast::unit_test::suite
                 BEAST_EXPECT(!resIndex.isMember(jss::close_time_iso));
             }
 
-            if (!expected_json.empty())
+            if (!expectedJson.empty())
             {
-                Json::Value expected;
-                Json::Reader().parse(expected_json, expected);
-                if (RPC::contains_error(expected))
+                json::Value expected;
+                json::Reader().parse(expectedJson, expected);
+                if (rpc::containsError(expected))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)
@@ -206,46 +258,47 @@ class TransactionEntry_test : public beast::unit_test::suite
             // second request using ledger_hash to lookup and verify
             // both responses match
             {
-                Json::Value params{Json::objectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
-                Json::Value const resHash =
+                json::Value const resHash =
                     env.client().invoke("transaction_entry", params)[jss::result];
                 BEAST_EXPECT(resHash == resIndex);
             }
 
             // Use the command line form with the index.
-            Json::Value const clIndex{
-                env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index))};
+            json::Value const clIndex{
+                env.rpc(apiVersion, "transaction_entry", txhash, std::to_string(index)),
+            };
             BEAST_EXPECT(clIndex["result"] == resIndex);
 
             // Use the command line form with the ledger_hash.
-            Json::Value const clHash{env.rpc(
-                apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString())};
+            json::Value const clHash{
+                env.rpc(
+                    apiVersion, "transaction_entry", txhash, resIndex[jss::ledger_hash].asString()),
+            };
             BEAST_EXPECT(clHash["result"] == resIndex);
         };
 
-        Account const A1{"A1"};
-        Account const A2{"A2"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
 
-        env.fund(XRP(10000), A1);
-        auto fund_1_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(
-            fund_1_tx == "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
+        env.fund(XRP(10000), a1);
+        auto const fund1Tx = to_string(env.tx()->getTransactionID());
+        BEAST_EXPECT(fund1Tx == "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
 
-        env.fund(XRP(10000), A2);
-        auto fund_2_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(
-            fund_2_tx == "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
+        env.fund(XRP(10000), a2);
+        auto const fund2Tx = to_string(env.tx()->getTransactionID());
+        BEAST_EXPECT(fund2Tx == "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
 
         env.close();
 
         // these are actually AccountSet txs because fund does two txs and
         // env.tx only reports the last one
-        check_tx(
+        checkTx(
             env.closed()->seq(),
-            fund_1_tx,
+            fund1Tx,
             R"({
             "Account" : "r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf",
             "Fee" : "10",
@@ -255,11 +308,11 @@ class TransactionEntry_test : public beast::unit_test::suite
             "TransactionType" : "AccountSet",
             "TxnSignature" : "3044022007B35E3B99460534FF6BC3A66FBBA03591C355CC38E38588968E87CCD01BE229022071A443026DE45041B55ABB1CC76812A87EA701E475BBB7E165513B4B242D3474",
 })",
-            "ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784",
+            "A1E8FDA5E13F61FBD4F965214654522C0423432565CEF9E38CE233AA776CA250",
             "2000-01-01T00:00:10Z");
-        check_tx(
+        checkTx(
             env.closed()->seq(),
-            fund_2_tx,
+            fund2Tx,
             R"({
             "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
             "Fee" : "10",
@@ -269,25 +322,24 @@ class TransactionEntry_test : public beast::unit_test::suite
             "TransactionType" : "AccountSet",
             "TxnSignature" : "3045022100C8857FC0759A2AC0D2F320684691A66EAD252EAED9EF88C79791BC58BFCC9D860220421722286487DD0ED6BBA626CE6FCBDD14289F7F4726870C3465A4054C2702D7",
 })",
-            "ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784",
+            "A1E8FDA5E13F61FBD4F965214654522C0423432565CEF9E38CE233AA776CA250",
             "2000-01-01T00:00:10Z");
 
-        env.trust(A2["USD"](1000), A1);
+        env.trust(a2["USD"](1000), a1);
         // the trust tx is actually a payment since the trust method
         // refunds fees with a payment after TrustSet..so just ignore the type
         // in the check below
-        auto trust_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(
-            trust_tx == "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
+        auto const trustTx = to_string(env.tx()->getTransactionID());
+        BEAST_EXPECT(trustTx == "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
 
-        env(pay(A2, A1, A2["USD"](5)));
-        auto pay_tx = to_string(env.tx()->getTransactionID());
+        env(pay(a2, a1, a2["USD"](5)));
+        auto const payTx = to_string(env.tx()->getTransactionID());
         env.close();
-        BEAST_EXPECT(pay_tx == "988046D484ACE9F5F6A8C792D89C6EA2DB307B5DDA9864AEBA88E6782ABD0865");
+        BEAST_EXPECT(payTx == "988046D484ACE9F5F6A8C792D89C6EA2DB307B5DDA9864AEBA88E6782ABD0865");
 
-        check_tx(
+        checkTx(
             env.closed()->seq(),
-            trust_tx,
+            trustTx,
             R"({
             "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
             "DeliverMax" : "10",
@@ -299,12 +351,12 @@ class TransactionEntry_test : public beast::unit_test::suite
             "TransactionType" : "Payment",
             "TxnSignature" : "3044022033D9EBF7F02950AF2F6B13C07AEE641C8FEBDD540A338FCB9027A965A4AED35B02206E4E227DCC226A3456C0FEF953449D21645A24EB63CA0BB7C5B62470147FD1D1",
 })",
-            "3A6E375BFDFF029A571AFBB3BC46C4F52963FAF043B406D0E59A7194C1A8F98E",
+            "1508BD19CCB23735A614431CA6E8FE9507A5B7FFF1274C651A0801EF02D0521B",
             "2000-01-01T00:00:20Z");
 
-        check_tx(
+        checkTx(
             env.closed()->seq(),
-            pay_tx,
+            payTx,
             R"({
             "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
             "DeliverMax" :
@@ -321,18 +373,17 @@ class TransactionEntry_test : public beast::unit_test::suite
             "TransactionType" : "Payment",
             "TxnSignature" : "30450221008A722B7F16EDB2348886E88ED4EC682AE9973CC1EE0FF37C93BB2CEC821D3EDF022059E464472031BA5E0D88A93E944B6A8B8DB3E1D5E5D1399A805F615789DB0BED",
 })",
-            "3A6E375BFDFF029A571AFBB3BC46C4F52963FAF043B406D0E59A7194C1A8F98E",
+            "1508BD19CCB23735A614431CA6E8FE9507A5B7FFF1274C651A0801EF02D0521B",
             "2000-01-01T00:00:20Z");
 
-        env(offer(A2, XRP(100), A2["USD"](1)));
-        auto offer_tx = to_string(env.tx()->getTransactionID());
-        BEAST_EXPECT(
-            offer_tx == "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
+        env(offer(a2, XRP(100), a2["USD"](1)));
+        auto const offerTx = to_string(env.tx()->getTransactionID());
+        BEAST_EXPECT(offerTx == "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
 
         env.close();
-        check_tx(
+        checkTx(
             env.closed()->seq(),
-            offer_tx,
+            offerTx,
             R"({
             "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
             "Fee" : "10",
@@ -348,7 +399,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             "TransactionType" : "OfferCreate",
             "TxnSignature" : "304502210093FC93ACB77B4E3DE3315441BD010096734859080C1797AB735EB47EBD541BD102205020BB1A7C3B4141279EE4C287C13671E2450EA78914EFD0C6DB2A18344CD4F2",
 })",
-            "73D6C8E66E0DC22F3E6F7D39BF795A6831BEB412823A986C7CC19470C93557C0",
+            "38FB25254CAB30480E3AC819A456CBA1F3B9C0ACEF51B7320CDD3FFD3ECF61BA",
             "2000-01-01T00:00:30Z");
     }
 
@@ -357,7 +408,7 @@ public:
     run() override
     {
         testBadInput();
-        forAllApiVersions(std::bind_front(&TransactionEntry_test::testRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
     }
 };
 

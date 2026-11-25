@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
@@ -16,7 +17,7 @@
 
 namespace xrpl::test {
 
-class RobustTransaction_test : public beast::unit_test::suite
+class RobustTransaction_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -31,30 +32,28 @@ public:
 
         {
             // RPC subscribe to transactions stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("subscribe", jv);
             BEAST_EXPECT(jv[jss::status] == "success");
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
         }
 
         {
             // Submit past ledger sequence transaction
-            Json::Value payment;
+            json::Value payment;
             payment[jss::secret] = toBase58(generateSeed("alice"));
             payment[jss::tx_json] = pay("alice", "bob", XRP(1));
             payment[jss::tx_json][sfLastLedgerSequence.fieldName] = 1;
             auto jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefMAX_LEDGER");
@@ -65,8 +64,7 @@ public:
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefPAST_SEQ");
@@ -76,8 +74,7 @@ public:
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "terPRE_SEQ");
@@ -87,8 +84,7 @@ public:
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -100,8 +96,7 @@ public:
             jv = wsc->invoke("ledger_accept");
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result].isMember(jss::ledger_current_index));
@@ -122,14 +117,13 @@ public:
 
         {
             // RPC unsubscribe to transactions stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -158,14 +152,13 @@ public:
 
         {
             // Submit normal payment
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -179,7 +172,7 @@ public:
 
         {
             // RPC account_tx
-            Json::Value jv;
+            json::Value jv;
             jv[jss::account] = Account("bob").human();
             jv[jss::ledger_index_min] = -1;
             jv[jss::ledger_index_max] = -1;
@@ -187,8 +180,7 @@ public:
             jv = wsc->invoke("account_tx", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -212,14 +204,13 @@ public:
 
         {
             // Submit normal payment
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -228,8 +219,7 @@ public:
             jv = wsc->invoke("ledger_accept");
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result].isMember(jss::ledger_current_index));
@@ -241,14 +231,13 @@ public:
         {
             {
                 // RPC subscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::status] == "success");
@@ -260,8 +249,7 @@ public:
                 auto jv = wsc->invoke("ledger_accept");
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::result].isMember(jss::ledger_current_index));
@@ -275,14 +263,13 @@ public:
 
             {
                 // RPC unsubscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::status] == "success");
@@ -294,14 +281,13 @@ public:
             wsc = makeWSClient(env.app().config());
             {
                 // RPC subscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::status] == "success");
@@ -313,8 +299,7 @@ public:
                 auto jv = wsc->invoke("ledger_accept");
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::result].isMember(jss::ledger_current_index));
@@ -328,14 +313,13 @@ public:
 
             {
                 // RPC unsubscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
                 {
-                    BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                    BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                    BEAST_EXPECT(hasEnvelope2(jv));
                     BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
                 }
                 BEAST_EXPECT(jv[jss::status] == "success");
@@ -344,7 +328,7 @@ public:
 
         {
             // RPC account_tx
-            Json::Value jv;
+            json::Value jv;
             jv[jss::account] = Account("bob").human();
             jv[jss::ledger_index_min] = -1;
             jv[jss::ledger_index_max] = -1;
@@ -352,8 +336,7 @@ public:
             jv = wsc->invoke("account_tx", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -377,14 +360,13 @@ public:
 
         {
             // RPC subscribe to accounts_proposed stream
-            Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("subscribe", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -392,15 +374,14 @@ public:
 
         {
             // Submit account_set transaction
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = fset("alice", 0);
             jv[jss::tx_json][jss::Fee] = static_cast<int>(env.current()->fees().base.drops());
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -415,14 +396,13 @@ public:
 
         {
             // RPC unsubscribe to accounts_proposed stream
-            Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(hasEnvelope2(jv));
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::status] == "success");

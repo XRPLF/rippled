@@ -1,10 +1,10 @@
 syntax = "proto2";
 package protocol;
 
-// Unused numbers in the list below may have been used previously. Please don't
-// reassign them for reuse unless you are 100% certain that there won't be a
-// conflict. Even if you're sure, it's probably best to assign a new type.
 enum MessageType {
+  // Previously used - don't reuse.
+  reserved 0 to 1, 4, 6 to 14, 16 to 29, 36 to 40, 43 to 54, 61 to 62;
+
   mtMANIFESTS = 2;
   mtPING = 3;
   mtCLUSTER = 5;
@@ -17,7 +17,6 @@ enum MessageType {
   mtHAVE_SET = 35;
   mtVALIDATION = 41;
   mtGET_OBJECTS = 42;
-  mtVALIDATOR_LIST = 54;
   mtSQUELCH = 55;
   mtVALIDATOR_LIST_COLLECTION = 56;
   mtPROOF_PATH_REQ = 57;
@@ -41,10 +40,10 @@ message TMManifest {
 }
 
 message TMManifests {
-  repeated TMManifest list = 1;
+  // Previously used - don't reuse.
+  reserved 2;
 
-  // The manifests sent when a peer first connects to another peer are `history`.
-  optional bool history = 2 [deprecated = true];
+  repeated TMManifest list = 1;
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +98,8 @@ enum TransactionStatus {
 message TMTransaction {
   required bytes rawTransaction = 1;
   required TransactionStatus status = 2;
-  optional uint64 receiveTimestamp = 3;
+  // No longer sent, and never read. Kept so it can be reserved in a later release.
+  optional uint64 receiveTimestamp = 3 [deprecated = true];
   optional bool deferred = 4;  // not applied to open ledger
 }
 
@@ -135,20 +135,15 @@ message TMStatusChange {
 
 // Announce to the network our position on a closing ledger
 message TMProposeSet {
+  // Previously used - don't reuse.
+  reserved 7, 10, 11, 12;
+
   required uint32 proposeSeq = 1;
   required bytes currentTxHash = 2;  // the hash of the ledger we are proposing
   required bytes nodePubKey = 3;
   required uint32 closeTime = 4;
   required bytes signature = 5;  // signature of above fields
   required bytes previousledger = 6;
-  repeated bytes addedTransactions = 10;    // not required if number is large
-  repeated bytes removedTransactions = 11;  // not required if number is large
-
-  // node vouches signature is correct
-  optional bool checkedSignature = 7 [deprecated = true];
-
-  // Number of hops traveled
-  optional uint32 hops = 12 [deprecated = true];
 }
 
 enum TxSetStatus {
@@ -160,14 +155,6 @@ enum TxSetStatus {
 message TMHaveTransactionSet {
   required TxSetStatus status = 1;
   required bytes hash = 2;
-}
-
-// Validator list (UNL)
-message TMValidatorList {
-  required bytes manifest = 1;
-  required bytes blob = 2;
-  required bytes signature = 3;
-  required uint32 version = 4;
 }
 
 // Validator List v2
@@ -186,14 +173,11 @@ message TMValidatorListCollection {
 
 // Used to sign a final closed ledger after reprocessing
 message TMValidation {
+  // Previously used - don't reuse.
+  reserved 2, 3;
+
   // The serialized validation
   required bytes validation = 1;
-
-  // node vouches signature is correct
-  optional bool checkedSignature = 2 [deprecated = true];
-
-  // Number of hops traveled
-  optional uint32 hops = 3 [deprecated = true];
 }
 
 // An array of Endpoint messages
@@ -215,9 +199,10 @@ message TMEndpoints {
 };
 
 message TMIndexedObject {
+  // Previously used - don't reuse.
+  reserved 2, 3;
+
   optional bytes hash = 1;
-  optional bytes nodeID = 2;
-  optional bytes index = 3;
   optional bytes data = 4;
   optional uint32 ledgerSeq = 5;
 }
@@ -234,17 +219,26 @@ message TMGetObjectByHash {
     otTRANSACTIONS = 7;
   }
 
+  // Previously used - don't reuse.
+  reserved 3, 5;
+
   required ObjectType type = 1;
   required bool query = 2;               // is this a query or a reply?
-  optional uint32 seq = 3;               // used to match replies to queries
   optional bytes ledgerHash = 4;         // the hash of the ledger these queries are for
-  optional bool fat = 5;                 // return related nodes
   repeated TMIndexedObject objects = 6;  // the specific objects requested
 }
 
 message TMLedgerNode {
   required bytes nodedata = 1;
-  optional bytes nodeid = 2;  // missing for ledger base data
+
+  // Used when protocol version <2.3. Not set for ledger base data.
+  optional bytes nodeid = 2;
+
+  // Used when protocol version >=2.3. Neither value is set for ledger base data.
+  oneof reference {
+    bytes id = 3;      // Set for inner nodes.
+    uint32 depth = 4;  // Set for leaf nodes.
+  }
 }
 
 enum TMLedgerInfoType {
@@ -291,14 +285,15 @@ message TMLedgerData {
 }
 
 message TMPing {
+  // Previously used - don't reuse.
+  reserved 3, 4;
+
   enum pingType {
     ptPING = 0;  // we want a reply
     ptPONG = 1;  // this is a reply
   }
   required pingType type = 1;
-  optional uint32 seq = 2;       // detect stale replies, ensure other side is reading
-  optional uint64 pingTime = 3;  // know when we think we sent the ping
-  optional uint64 netTime = 4;
+  optional uint32 seq = 2;  // detect stale replies, ensure other side is reading
 }
 
 message TMSquelch {

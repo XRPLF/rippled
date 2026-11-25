@@ -1,6 +1,8 @@
 #pragma once
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
 
@@ -25,20 +27,17 @@ public:
     {
         return mptID_;
     }
-    MPTID const&
+    [[nodiscard]] MPTID const&
     getMptID() const
     {
         return mptID_;
     }
-    bool
-    isZeroBalance() const
+    [[nodiscard]] bool
+    canSend(AccountID const& account) const
     {
-        return zeroBalance_;
-    }
-    bool
-    isMaxedOut() const
-    {
-        return maxedOut_;
+        // A maxed-out issuance only prevents the issuer from creating more
+        // MPT. Holders can still send existing balances.
+        return account == getMPTIssuer(mptID_) ? !maxedOut_ : !zeroBalance_;
     }
 };
 

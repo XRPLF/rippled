@@ -1,140 +1,115 @@
 Our [build instructions][BUILD.md] assume you have a C++ development
 environment complete with Git, Python, Conan, CMake, and a C++ compiler.
-This document exists to help readers set one up on any of the Big Three
-platforms: Linux, macOS, or Windows.
-
-As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [using nix development shell](./nix.md) for more details.
+This document explains how to set one up.
 
 [BUILD.md]: ../../BUILD.md
 
-## Linux
+## Supported development platforms
 
-Package ecosystems vary across Linux distributions,
-so there is no one set of instructions that will work for every Linux user.
-The instructions below are written for Debian 12 (Bookworm).
+- **Linux**: the [Nix development shell](./nix.md),
+  which provides the same toolchain CI uses on any distribution.
+- **macOS** 15 (Sequoia) or newer: the [Nix development shell](./nix.md),
+  or the system [Apple Clang](#macos-apple-clang).
+  CI runs on macOS 26 (Tahoe), but the build defaults `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.
+- **Windows**: best effort, see [Windows](#windows).
 
-```
-export GCC_RELEASE=12
-sudo apt update
-sudo apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \
-  python-is-python3 python3-venv python3-dev curl wget ca-certificates \
-  git build-essential cmake ninja-build libc6-dev
-sudo pip install --break-system-packages conan
+For the platforms supported for running `xrpld`,
+see [Requirements](../install.md#requirements).
 
-sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999
-sudo update-alternatives --install \
-  /usr/bin/gcc gcc /usr/bin/gcc-${GCC_RELEASE} 100 \
-  --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-${GCC_RELEASE} \
-  --slave /usr/bin/gcov gcov /usr/bin/gcov-${GCC_RELEASE} \
-  --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_RELEASE} \
-  --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_RELEASE} \
-  --slave /usr/bin/lto-dump lto-dump /usr/bin/lto-dump-${GCC_RELEASE}
-sudo update-alternatives --auto cc
-sudo update-alternatives --auto gcc
-```
+## Tested compiler versions
 
-If you use different Linux distribution, hope the instruction above can guide
-you in the right direction. We try to maintain compatibility with all recent
-compiler releases, so if you use a rolling distribution like e.g. Arch or CentOS
-then there is a chance that everything will "just work".
+`xrpld` is built in the **C++23** dialect by default, so your toolchain has to
+support it — see [compiler support for C++23][cpp23-support].
+The versions currently tested in CI are:
 
-## macOS
+| Compiler    | Version                         |
+| ----------- | ------------------------------- |
+| GCC         | `gccVersion` in [packages.nix]  |
+| Clang       | `llvmVersion` in [packages.nix] |
+| Apple Clang | 21                              |
+| MSVC        | Visual Studio 2026              |
 
-Open a Terminal and enter the below command to bring up a dialog to install
-the command line developer tools.
-Once it is finished, this command should return a version greater than the
-minimum required (see [BUILD.md][]).
+LLVM tools (`clang-tidy` and `clang-format`)
+come from the same LLVM release as Clang.
 
-```
-clang --version
-```
+### Older compilers
 
-### Install Xcode Specific Version (Optional)
+Older compilers may fail to build the latest `develop` code: the codebase now
+relies on C++23 features and has been adjusted for `clang-tidy`.
+If the latest code doesn't build for you, update your build toolchain first.
 
-If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
-This will likely cause issues building xrpld. You may want to install a specific version of Xcode:
+If updating isn't an option for you, we do accept pull requests that fix builds
+on older compilers, as long as the change is small and doesn't make the code
+harder to read. What we can't promise is that older compilers will keep working:
+only the versions in the table above are tested in CI, and we won't hold back
+the use of C++23 features or add invasive workarounds to keep an untested
+compiler building. Treat support for anything outside the table as best-effort.
 
-1. **Download Xcode**
-   - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
-   - Sign in with your Apple Developer account
-   - Search for an Xcode version that includes **Apple Clang (Expected Version)**
-   - Download the `.xip` file
+## Required tools
 
-2. **Install and Configure Xcode**
+Besides a compiler, building `xrpld` requires
+[Git](https://git-scm.com/downloads),
+[Python](https://www.python.org/downloads/),
+[Conan](https://conan.io/downloads.html),
+and [CMake](https://cmake.org/download/).
+Building with `-Drust=ON` additionally requires a Rust toolchain,
+see [Rust](#rust).
 
-   ```bash
-   # Extract the .xip file and rename for version management
-   # Example: Xcode_16.2.app
+On Linux and macOS, the [Nix development shell](./nix.md) provides all of them
+at the versions CI uses, recorded in [`nix/check-tools/`](../../nix/check-tools).
 
-   # Move to Applications directory
-   sudo mv Xcode_16.2.app /Applications/
+Once they are in place, verify that everything is installed and runnable with:
 
-   # Set as default toolchain (persistent)
-   sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-
-   # Set as environment variable (temporary)
-   export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
-   ```
-
-The command line developer tools should include Git too:
-
-```
-git --version
+```bash
+./bin/check-tools.sh
 ```
 
-Install [Homebrew][],
-use it to install [pyenv][],
-use it to install Python,
-and use it to install Conan:
+## Linux and macOS
 
-[Homebrew]: https://brew.sh/
-[pyenv]: https://github.com/pyenv/pyenv
+Use the [Nix development shell](./nix.md):
+it provides the compiler and every tool CI uses,
+without installing anything system-wide.
 
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew update
-brew install xz
-brew install pyenv
-pyenv install 3.11
-pyenv global 3.11
-eval "$(pyenv init -)"
-pip install 'conan'
-```
+### macOS: Apple Clang
 
-Install CMake with Homebrew too:
+You can also build with the system Apple Clang,
+installing the other [required tools](#required-tools) any way you like
+(or getting them from `nix develop .#apple-clang`).
+Its version is whatever your installed Xcode (or Command Line Tools) provides,
+so check that `clang --version` is at least the [tested one](#tested-compiler-versions).
+If several Xcode versions are installed,
+select one with `sudo xcode-select -s <path>` or the `DEVELOPER_DIR` environment variable.
 
-```
-brew install cmake
-```
+## Windows
 
-## Clang-tidy
+Nix is not available on Windows, so the required tools have to be installed
+manually:
 
-Clang-tidy is required to run static analysis checks locally (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
-It is not required to build the project. Currently this project uses clang-tidy version 21.
+- [Visual Studio 2026](https://visualstudio.microsoft.com/) with the
+  **"Desktop development with C++"** workload — this provides MSVC and the
+  "x64 Native Tools Command Prompt". CI configures CMake with the
+  `Visual Studio 18 2026` generator.
+- [Git for Windows](https://git-scm.com/download/win)
+- recent releases of Python, Conan, and CMake
+- a [Rust toolchain](https://rustup.rs) — only needed to build with
+  `-Drust=ON`, see [Rust](#rust)
 
-### Linux
+## Rust
 
-LLVM 21 is not available in the default Debian 12 (Bookworm) repositories.
-Install it using the official LLVM apt installer:
+The repository contains a Rust workspace in [`crates/`](../../crates), whose
+crates are exposed to C++ through [cxx](https://cxx.rs) bindings. It is **not**
+part of a default build: the CMake `rust` option is OFF by default, and with it
+off no Rust toolchain is needed. It is only required when configuring with
+`-Drust=ON` (which is what CI does), see [Options](../../BUILD.md#options).
 
-```
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 21
-sudo apt install --yes clang-tidy-21
-```
+The toolchain (`cargo`, `rustc`) is pinned to the channel in
+[`rust-toolchain.toml`](../../rust-toolchain.toml) at the repository root. If
+you install Rust with [rustup](https://rustup.rs), that file is picked up
+automatically, and `cargo`/`rustc` in the repository will use the pinned
+version.
 
-Then use `run-clang-tidy-21` when running clang-tidy locally.
+Everything else the Rust build needs on the CMake side comes from Conan along
+with the rest of the dependencies, so there is nothing further to install.
 
-### macOS
-
-Install LLVM 21 via Homebrew:
-
-```
-brew install llvm@21
-```
-
-Then use `run-clang-tidy` from the LLVM 21 Homebrew prefix when running clang-tidy locally.
+[cpp23-support]: https://en.cppreference.com/w/cpp/compiler_support/23
+[packages.nix]: ../../nix/packages.nix

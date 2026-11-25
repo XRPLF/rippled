@@ -1,7 +1,7 @@
 // Auto-generated unit tests for transaction ${name}
 <%
-    required_fields = [f for f in fields if f["requirement"] == "soeREQUIRED"]
-    optional_fields = [f for f in fields if f["requirement"] != "soeREQUIRED"]
+    required_fields = [f for f in fields if f["requirement"] == "SoeRequired"]
+    optional_fields = [f for f in fields if f["requirement"] != "SoeRequired"]
 
     def canonical_expr(field):
         return f"canonical_{field['stiSuffix']}()"
@@ -33,7 +33,7 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("test${name}"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("test${name}"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -101,7 +101,7 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("test${name}FromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("test${name}FromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -168,7 +168,7 @@ TEST(Transactions${name}Tests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
 % if wrong_tx_include == "AccountSet":
@@ -186,7 +186,7 @@ TEST(Transactions${name}Tests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
 % if wrong_tx_include == "AccountSet":
@@ -205,7 +205,7 @@ TEST(Transactions${name}Tests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("test${name}Nullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("test${name}Nullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

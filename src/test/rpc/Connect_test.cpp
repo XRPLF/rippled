@@ -2,11 +2,12 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
 
-class Connect_test : public beast::unit_test::suite
+class Connect_test : public beast::unit_test::Suite
 {
     void
     testErrors()
@@ -22,8 +23,8 @@ class Connect_test : public beast::unit_test::suite
 
             auto const result = env.rpc("json", "connect", "{}");
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
-            BEAST_EXPECT(result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::error] == "notSynced");
+            BEAST_EXPECT(result[jss::result][jss::error_code] == RpcNotSynced);
             BEAST_EXPECT(result[jss::result][jss::error_message] == "Not synced to the network.");
         }
     }

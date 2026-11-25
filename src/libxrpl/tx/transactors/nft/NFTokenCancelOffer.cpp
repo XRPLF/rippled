@@ -9,35 +9,38 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-
 namespace xrpl {
 
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    {
-        auto const& ids = ctx.tx[sfNFTokenOffers];
-        if (ids.empty())
-        {
-            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
-        }
-        if (ids.size() > maxTokenOfferCancelCount)
-        {
-            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
-        }
-    }
+    auto const& offerIds = ctx.tx[sfNFTokenOffers];
+
+    if (offerIds.empty())
+        return temARRAY_EMPTY;
+
+    if (offerIds.size() > kMaxTokenOfferCancelCount)
+        return temARRAY_TOO_LARGE;
+
+    // Zero offer IDs cannot be passed as ledger entry keys.
+    if (ctx.rules.enabled(fixCleanup3_2_0) &&
+        std::ranges::any_of(offerIds, [](UInt256 const& id) { return id.isZero(); }))
+        return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
     // disallow duplicates in the list of offers to cancel.
     STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
     std::ranges::sort(ids);
     if (std::ranges::adjacent_find(ids) != ids.end())
-        return ctx.rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
+        return temDUPLICATE;
 
     return tesSUCCESS;
 }
@@ -49,7 +52,7 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
 
-    auto ret = std::ranges::find_if(ids, [&ctx, &account](uint256 const& id) {
+    auto const ret = std::ranges::find_if(ids, [&ctx, &account](UInt256 const& id) {
         auto const offer = ctx.view.read(keylet::child(id));
 
         // If id is not in the ledger we assume the offer was consumed
@@ -88,7 +91,7 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (auto offer = view().peek(keylet::nftoffer(id));
+        if (auto const offer = view().peek(keylet::nftokenOffer(id));
             offer && !nft::deleteTokenOffer(view(), offer))
         {
             // LCOV_EXCL_START
@@ -100,6 +103,24 @@ NFTokenCancelOffer::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+NFTokenCancelOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

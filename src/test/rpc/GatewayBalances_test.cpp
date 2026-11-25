@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
@@ -10,6 +11,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -17,7 +19,7 @@
 
 namespace xrpl::test {
 
-class GatewayBalances_test : public beast::unit_test::suite
+class GatewayBalances_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -31,44 +33,44 @@ public:
             // Gateway account and assets
             Account const alice{"alice"};
             env.fund(XRP(10000), "alice");
-            auto USD = alice["USD"];
-            auto CNY = alice["CNY"];
-            auto JPY = alice["JPY"];
+            auto const usd = alice["USD"];
+            auto const cny = alice["CNY"];
+            auto const jpy = alice["JPY"];
 
             // Create a hotwallet
             Account const hw{"hw"};
             env.fund(XRP(10000), "hw");
             env.close();
-            env(trust(hw, USD(10000)));
-            env(trust(hw, JPY(10000)));
-            env(pay(alice, hw, USD(5000)));
-            env(pay(alice, hw, JPY(5000)));
+            env(trust(hw, usd(10000)));
+            env(trust(hw, jpy(10000)));
+            env(pay(alice, hw, usd(5000)));
+            env(pay(alice, hw, jpy(5000)));
 
             // Create some clients
             Account const bob{"bob"};
             env.fund(XRP(10000), "bob");
             env.close();
-            env(trust(bob, USD(100)));
-            env(trust(bob, CNY(100)));
-            env(pay(alice, bob, USD(50)));
+            env(trust(bob, usd(100)));
+            env(trust(bob, cny(100)));
+            env(pay(alice, bob, usd(50)));
 
             Account const charley{"charley"};
             env.fund(XRP(10000), "charley");
             env.close();
-            env(trust(charley, CNY(500)));
-            env(trust(charley, JPY(500)));
-            env(pay(alice, charley, CNY(250)));
-            env(pay(alice, charley, JPY(250)));
+            env(trust(charley, cny(500)));
+            env(trust(charley, jpy(500)));
+            env(pay(alice, charley, cny(250)));
+            env(pay(alice, charley, jpy(250)));
 
             Account const dave{"dave"};
             env.fund(XRP(10000), "dave");
             env.close();
-            env(trust(dave, CNY(100)));
-            env(pay(alice, dave, CNY(30)));
+            env(trust(dave, cny(100)));
+            env(pay(alice, dave, cny(30)));
 
             // give the gateway an asset
             env(trust(alice, charley["USD"](50)));
-            env(pay(charley, alice, USD(10)));
+            env(pay(charley, alice, usd(10)));
 
             // freeze dave
             env(trust(alice, dave["CNY"](0), dave, tfSetFreeze));
@@ -77,7 +79,7 @@ public:
 
             auto wsc = makeWSClient(env.app().config());
 
-            Json::Value qry;
+            json::Value qry;
             qry[jss::account] = alice.human();
             qry[jss::hotwallet] = hw.human();
 
@@ -85,8 +87,7 @@ public:
             expect(jv[jss::status] == "success");
             if (wsc->version() == 2)
             {
-                expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(hasEnvelope2(jv));
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -102,8 +103,8 @@ public:
                 auto const& hwBalance = balances[hw.human()];
                 expect(hwBalance.isArray(), "hwBalance is not an array");
                 expect(hwBalance.size() == 2);
-                auto c1 = hwBalance[0u][jss::currency];
-                auto c2 = hwBalance[1u][jss::currency];
+                auto const c1 = hwBalance[0u][jss::currency];
+                auto const c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
                 expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
@@ -161,7 +162,7 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        Json::Value qry2;
+        json::Value qry2;
         qry2[jss::account] = alice.human();
         qry2[jss::hotwallet] = "asdf";
 
@@ -172,7 +173,55 @@ public:
 
             auto response = jv[jss::result];
             auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const errorCode = apiVersion < 2u ? RpcInvalidHotwallet : RpcInvalidParams;
+            auto const errorMessage =
+                apiVersion < 2u ? "Invalid hotwallet." : "Invalid parameters.";
             BEAST_EXPECT(response[jss::error] == error);
+            BEAST_EXPECT(response[jss::error_code] == errorCode);
+            BEAST_EXPECT(response[jss::error_message] == errorMessage);
+        });
+    }
+
+    void
+    testGWBInvalidAccount(FeatureBitset features)
+    {
+        testcase("Gateway Balances with non-string account/ident");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this, features);
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // A non-string "account" must be rejected cleanly with invalidParams
+        // rather than throwing a Json::LogicError that surfaces as internal.
+        json::Value qry;
+        qry[jss::account] = 42;
+        qry[jss::hotwallet] = alice.human();
+
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            qry[jss::api_version] = apiVersion;
+            auto jv = wsc->invoke("gateway_balances", qry);
+            expect(jv[jss::status] == "error");
+            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'account'.");
+        });
+
+        // The same applies to a non-string "ident".
+        json::Value qry2;
+        qry2[jss::ident] = 42;
+
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            qry2[jss::api_version] = apiVersion;
+            auto jv = wsc->invoke("gateway_balances", qry2);
+            expect(jv[jss::status] == "error");
+            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jv[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jv[jss::result][jss::error_message] == "Invalid field 'ident'.");
         });
     }
 
@@ -187,10 +236,10 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
-        auto USD = alice["USD"];
+        auto const usd = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(USD, STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -219,7 +268,7 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        Json::Value query;
+        json::Value query;
         query[jss::account] = alice.human();
         query[jss::hotwallet] = hw.human();
 
@@ -239,8 +288,8 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
 
-        // Ensure MPT is enabled
-        FeatureBitset const features = testable_amendments() | featureMPTokensV1;
+        // testableAmendments() includes MPT
+        FeatureBitset const features = testableAmendments();
         Env env(*this, features);
 
         Account const alice{"alice"};
@@ -258,13 +307,13 @@ public:
         mpt.pay(alice, bob, 1000);
 
         // Bob creates an escrow of MPT to Alice.
-        auto const MPT = mpt["MPT"];
-        env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
+        auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
+        env(escrow::create(bob, alice, MPT(100)), escrow::kFinishTime(env.now() + 10s));
         env.close();
 
         // Query gateway_balances for Bob.
         auto wsc = makeWSClient(env.app().config());
-        Json::Value qry;
+        json::Value qry;
         qry[jss::account] = bob.human();
 
         auto jv = wsc->invoke("gateway_balances", qry);
@@ -275,11 +324,12 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
-        for (auto feature : {sa - featurePermissionedDEX, sa})
+        auto const sa = testableAmendments();
+        for (auto const feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);
+            testGWBInvalidAccount(feature);
         }
         testGWBWithMPT();
         testGWBOverflow();

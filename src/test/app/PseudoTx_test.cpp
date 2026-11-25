@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-struct PseudoTx_test : public beast::unit_test::suite
+struct PseudoTx_test : public beast::unit_test::Suite
 {
     static std::vector<STTx>
     getPseudoTxs(Rules const& rules, std::uint32_t seq)
@@ -30,24 +30,20 @@ struct PseudoTx_test : public beast::unit_test::suite
         res.emplace_back(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
-            if (rules.enabled(featureXRPFees))
+            obj[sfBaseFeeDrops] = XRPAmount{0};
+            obj[sfReserveBaseDrops] = XRPAmount{0};
+            obj[sfReserveIncrementDrops] = XRPAmount{0};
+            if (rules.enabled(featureSmartEscrow))
             {
-                obj[sfBaseFeeDrops] = XRPAmount{0};
-                obj[sfReserveBaseDrops] = XRPAmount{0};
-                obj[sfReserveIncrementDrops] = XRPAmount{0};
-            }
-            else
-            {
-                obj[sfBaseFee] = 0;
-                obj[sfReserveBase] = 0;
-                obj[sfReserveIncrement] = 0;
-                obj[sfReferenceFeeUnits] = 0;
+                obj[sfGasLimit] = 0;
+                obj[sfBytecodeSizeLimit] = 0;
+                obj[sfGasPrice] = 0;
             }
         });
 
         res.emplace_back(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, uint256(2));
+            obj.setFieldH256(sfAmendment, UInt256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
         });
 
@@ -70,7 +66,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     }
 
     void
-    testPrevented(FeatureBitset features)
+    testPrevented(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
         Env env(*this, features);
@@ -82,7 +78,7 @@ struct PseudoTx_test : public beast::unit_test::suite
             BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
                 BEAST_EXPECT(!result.applied && result.ter == temINVALID);
                 return result.applied;
             });
@@ -104,10 +100,9 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
-        FeatureBitset const xrpFees{featureXRPFees};
+        FeatureBitset const all{testableAmendments()};
 
-        testPrevented(all - featureXRPFees);
+        testPrevented(all - featureSmartEscrow);
         testPrevented(all);
         testAllowed();
     }

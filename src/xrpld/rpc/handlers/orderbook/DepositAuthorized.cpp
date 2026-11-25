@@ -1,9 +1,10 @@
+#include <xrpld/rpc/handlers/orderbook/DepositAuthorized.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -11,154 +12,96 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/jss.h>
 
-#include <memory>
+#include <rpcspec/Errors.hpp>
+
+#include <expected>
 #include <set>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
+namespace xrpl::rpc {
 
-// {
-//   source_account : <ident>
-//   destination_account : <ident>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   credentials : [<credentialID>,...]
-// }
-
-Json::Value
-doDepositAuthorized(RPC::JsonContext& context)
+DepositAuthorizedHandler::DepositAuthorizedHandler(JsonContext& context) : context_(context)
 {
-    Json::Value const& params = context.params;
+}
 
-    // Validate source_account.
-    if (!params.isMember(jss::source_account))
-        return RPC::missing_field_error(jss::source_account);
-    if (!params[jss::source_account].isString())
+std::expected<DepositAuthorizedHandler::Output, ::rpc::Status>
+DepositAuthorizedHandler::process(Input const& input) const
+{
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get());
+        status != ::rpc::Status::kOK)
     {
-        return RPC::make_error(
-            rpcINVALID_PARAMS, RPC::expected_field_message(jss::source_account, "a string"));
+        return std::unexpected{status};
     }
+    auto const& ledger = *output.ledger;
 
-    auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
-    if (!srcID)
-        return rpcError(rpcACT_MALFORMED);
-    auto const srcAcct{srcID.value()};
-
-    // Validate destination_account.
-    if (!params.isMember(jss::destination_account))
-        return RPC::missing_field_error(jss::destination_account);
-    if (!params[jss::destination_account].isString())
-    {
-        return RPC::make_error(
-            rpcINVALID_PARAMS, RPC::expected_field_message(jss::destination_account, "a string"));
-    }
-
-    auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
-    if (!dstID)
-        return rpcError(rpcACT_MALFORMED);
-    auto const dstAcct{dstID.value()};
-
-    // Validate ledger.
-    std::shared_ptr<ReadView const> ledger;
-    Json::Value result = RPC::lookupLedger(ledger, context);
-
-    if (!ledger)
-        return result;
+    auto const& srcAccount = input.sourceAccount;
+    auto const& dstAccount = input.destinationAccount;
 
     // If source account is not in the ledger it can't be authorized.
-    if (!ledger->exists(keylet::account(srcAcct)))
+    if (not ledger.exists(keylet::account(srcAccount)))
     {
-        RPC::inject_error(rpcSRC_ACT_NOT_FOUND, result);
-        return result;
+        output.error = RpcSrcActNotFound;
+        return output;
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger->read(keylet::account(dstAcct));
+    auto const sleDest = ledger.read(keylet::account(dstAccount));
     if (!sleDest)
     {
-        RPC::inject_error(rpcDST_ACT_NOT_FOUND, result);
-        return result;
+        output.error = RpcDstActNotFound;
+        return output;
     }
 
-    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
-    bool const credentialsPresent = params.isMember(jss::credentials);
+    bool const reqAuth = sleDest->isFlag(lsfDepositAuth) && (srcAccount != dstAccount);
 
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<std::shared_ptr<SLE const>> lifeExtender;
-    if (credentialsPresent)
+    std::vector<SLE::const_pointer> lifeExtender;
+    if (input.credentials.has_value())
     {
-        auto const& creds(params[jss::credentials]);
-        if (!creds.isArray() || !creds)
+        lifeExtender.reserve(input.credentials->size());
+        for (auto const& credH : *input.credentials)
         {
-            return RPC::make_error(
-                rpcINVALID_PARAMS,
-                RPC::expected_field_message(
-                    jss::credentials, "is non-empty array of CredentialID(hash256)"));
-        }
-        if (creds.size() > maxCredentialsArraySize)
-        {
-            return RPC::make_error(
-                rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));
-        }
-
-        lifeExtender.reserve(creds.size());
-        for (auto const& jo : creds)
-        {
-            if (!jo.isString())
-            {
-                return RPC::make_error(
-                    rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::credentials, "an array of CredentialID(hash256)"));
-            }
-
-            uint256 credH;
-            auto const credS = jo.asString();
-            if (!credH.parseHex(credS))
-            {
-                return RPC::make_error(
-                    rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::credentials, "an array of CredentialID(hash256)"));
-            }
-
-            std::shared_ptr<SLE const> sleCred = ledger->read(keylet::credential(credH));
+            // A zero key names an entry that cannot exist
+            SLE::const_pointer sleCred =
+                credH.isZero() ? nullptr : ledger.read(keylet::credential(credH));
             if (!sleCred)
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials don't exist", result);
-                return result;
+                output.error = ::rpc::Status{RpcBadCredentials, "credentials don't exist"};
+                return output;
             }
 
-            if ((sleCred->getFlags() & lsfAccepted) == 0u)
+            if (!sleCred->isFlag(lsfAccepted))
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
-                return result;
+                output.error = ::rpc::Status{RpcBadCredentials, "credentials aren't accepted"};
+                return output;
             }
 
-            if (credentials::checkExpired(sleCred, ledger->header().parentCloseTime))
+            if (credentials::checkExpired(*sleCred, ledger.header().parentCloseTime))
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials are expired", result);
-                return result;
+                output.error = ::rpc::Status{RpcBadCredentials, "credentials are expired"};
+                return output;
             }
 
-            if ((*sleCred)[sfSubject] != srcAcct)
+            if ((*sleCred)[sfSubject] != srcAccount)
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "credentials doesn't belong to the root account", result);
-                return result;
+                output.error = ::rpc::Status{
+                    RpcBadCredentials,
+                    "credentials doesn't belong to the root account",
+                };
+                return output;
             }
 
             auto [it, ins] = sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
             if (!ins)
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, "duplicates in credentials", result);
-                return result;
+                output.error = ::rpc::Status{RpcBadCredentials, "duplicates in credentials"};
+                return output;
             }
             lifeExtender.push_back(std::move(sleCred));
         }
@@ -166,20 +109,36 @@ doDepositAuthorized(RPC::JsonContext& context)
 
     // If the two accounts are the same OR if that flag is
     // not set, then the deposit should be fine.
-    bool depositAuthorized = true;
+    output.depositAuthorized = true;
     if (reqAuth)
     {
-        depositAuthorized = ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
-            (credentialsPresent && ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
+        output.depositAuthorized = ledger.exists(keylet::depositPreauth(dstAccount, srcAccount)) or
+            (input.credentials.has_value() and
+             ledger.exists(keylet::depositPreauth(dstAccount, sorted)));
     }
 
-    result[jss::source_account] = params[jss::source_account].asString();
-    result[jss::destination_account] = params[jss::destination_account].asString();
-    if (credentialsPresent)
-        result[jss::credentials] = params[jss::credentials];
-
-    result[jss::deposit_authorized] = depositAuthorized;
-    return result;
+    return output;
 }
 
-}  // namespace xrpl
+void
+DepositAuthorizedHandler::writeResult(json::Value& value, Output const& output) const
+{
+    auto const& params = context_.get().params;
+
+    injectLedgerFields(*output.ledger, context_.get(), value);
+
+    if (output.error.has_value())
+    {
+        injectSpecError(value, *output.error);
+        return;
+    }
+
+    value[jss::source_account] = params[jss::source_account].asString();
+    value[jss::destination_account] = params[jss::destination_account].asString();
+    if (params.isMember(jss::credentials))
+        value[jss::credentials] = params[jss::credentials];
+
+    value[jss::deposit_authorized] = output.depositAuthorized;
+}
+
+}  // namespace xrpl::rpc

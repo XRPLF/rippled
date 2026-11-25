@@ -21,7 +21,7 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,6 +36,9 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const dataValue = canonical_VL();
     auto const scaleValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
 
     VaultCreateBuilder builder{
         accountValue,
@@ -51,6 +54,9 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     builder.setWithdrawalPolicy(withdrawalPolicyValue);
     builder.setData(dataValue);
     builder.setScale(scaleValue);
+    builder.setVaultKind(vaultKindValue);
+    builder.setSubscriptionDate(subscriptionDateValue);
+    builder.setRedemptionDate(redemptionDateValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -122,6 +128,30 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasScale());
     }
 
+    {
+        auto const& expected = vaultKindValue;
+        auto const actualOpt = tx.getVaultKind();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultKind should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultKind");
+        EXPECT_TRUE(tx.hasVaultKind());
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+        auto const actualOpt = tx.getSubscriptionDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubscriptionDate should be present";
+        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
+        EXPECT_TRUE(tx.hasSubscriptionDate());
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+        auto const actualOpt = tx.getRedemptionDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionDate should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
+        EXPECT_TRUE(tx.hasRedemptionDate());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -130,7 +160,7 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -145,6 +175,9 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const dataValue = canonical_VL();
     auto const scaleValue = canonical_UINT8();
+    auto const vaultKindValue = canonical_UINT8();
+    auto const subscriptionDateValue = canonical_UINT32();
+    auto const redemptionDateValue = canonical_UINT32();
 
     // Build an initial transaction
     VaultCreateBuilder initialBuilder{
@@ -160,6 +193,9 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setWithdrawalPolicy(withdrawalPolicyValue);
     initialBuilder.setData(dataValue);
     initialBuilder.setScale(scaleValue);
+    initialBuilder.setVaultKind(vaultKindValue);
+    initialBuilder.setSubscriptionDate(subscriptionDateValue);
+    initialBuilder.setRedemptionDate(redemptionDateValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -226,6 +262,27 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfScale");
     }
 
+    {
+        auto const& expected = vaultKindValue;
+        auto const actualOpt = rebuiltTx.getVaultKind();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfVaultKind should be present";
+        expectEqualField(expected, *actualOpt, "sfVaultKind");
+    }
+
+    {
+        auto const& expected = subscriptionDateValue;
+        auto const actualOpt = rebuiltTx.getSubscriptionDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfSubscriptionDate should be present";
+        expectEqualField(expected, *actualOpt, "sfSubscriptionDate");
+    }
+
+    {
+        auto const& expected = redemptionDateValue;
+        auto const actualOpt = rebuiltTx.getRedemptionDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRedemptionDate should be present";
+        expectEqualField(expected, *actualOpt, "sfRedemptionDate");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -233,7 +290,7 @@ TEST(TransactionsVaultCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -247,7 +304,7 @@ TEST(TransactionsVaultCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -261,7 +318,7 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -295,6 +352,12 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getData().has_value());
     EXPECT_FALSE(tx.hasScale());
     EXPECT_FALSE(tx.getScale().has_value());
+    EXPECT_FALSE(tx.hasVaultKind());
+    EXPECT_FALSE(tx.getVaultKind().has_value());
+    EXPECT_FALSE(tx.hasSubscriptionDate());
+    EXPECT_FALSE(tx.getSubscriptionDate().has_value());
+    EXPECT_FALSE(tx.hasRedemptionDate());
+    EXPECT_FALSE(tx.getRedemptionDate().has_value());
 }
 
 }

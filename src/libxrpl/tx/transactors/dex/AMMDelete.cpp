@@ -9,7 +9,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -17,9 +20,6 @@ namespace xrpl {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -41,7 +41,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-    if (lpTokensBalance != beast::zero)
+    if (lpTokensBalance != beast::kZero)
         return tecAMM_NOT_EMPTY;
 
     return tesSUCCESS;
@@ -59,6 +59,19 @@ AMMDelete::doApply()
         sb.apply(ctx_.rawView());
 
     return ter;
+}
+
+void
+AMMDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AMMDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,0 +1,6 @@
+# The Rust static libraries are linked into C++ targets, so the runtime linkage
+# here has to match what the C++ build uses (see cmake/XrplCompiler.cmake).
+
+# Windows builds use the static MSVC runtime.
+[target.'cfg(windows)']
+rustflags = ["-C", "target-feature=+crt-static"]

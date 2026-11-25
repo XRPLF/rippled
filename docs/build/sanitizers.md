@@ -1,15 +1,17 @@
 # Sanitizer Configuration for Xrpld
 
-This document explains how to properly configure and run sanitizers (AddressSanitizer, undefinedbehaviorSanitizer, ThreadSanitizer) with the xrpld project.
+This document explains how to properly configure and run sanitizers (`AddressSanitizer`, `UndefinedBehaviorSanitizer`, `ThreadSanitizer`) with the xrpld project.
 Corresponding suppression files are located in the `sanitizers/suppressions` directory.
+
+> [!CAUTION]
+> Do not mix Address and Thread sanitizers - they are incompatible.
+> Also, we don't yet support MSVC sanitizers, so this is only for Clang/GCC builds.
 
 - [Sanitizer Configuration for Xrpld](#sanitizer-configuration-for-xrpld)
   - [Building with Sanitizers](#building-with-sanitizers)
     - [Summary](#summary)
     - [Build steps:](#build-steps)
       - [Install dependencies](#install-dependencies)
-      - [Call CMake](#call-cmake)
-      - [Build](#build)
   - [Running Tests with Sanitizers](#running-tests-with-sanitizers)
     - [AddressSanitizer (ASAN)](#addresssanitizer-asan)
     - [ThreadSanitizer (TSan)](#threadsanitizer-tsan)
@@ -33,9 +35,13 @@ Corresponding suppression files are located in the `sanitizers/suppressions` dir
 Follow the same instructions as mentioned in [BUILD.md](../../BUILD.md) but with the following changes:
 
 1. Make sure you have a clean build directory.
-2. Set the `SANITIZERS` environment variable before calling conan install and cmake. Only set it once. Make sure both conan and cmake read the same values.
+2. Set the `SANITIZERS` environment variable before calling `conan install`. Only set it once.
    Example: `export SANITIZERS=address,undefinedbehavior`
-3. Optionally use `--profile:all sanitizers` with Conan to build dependencies with sanitizer instrumentation. [!NOTE]Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
+3. Use `--profile:all sanitizers` with Conan to build dependencies with sanitizer instrumentation.
+
+   > [!NOTE]
+   > Building with sanitizer-instrumented dependencies is slower but produces fewer false positives.
+
 4. Set `ASAN_OPTIONS`, `LSAN_OPTIONS`, `UBSAN_OPTIONS` and `TSAN_OPTIONS` environment variables to configure sanitizer behavior when running executables. [More details below](#running-tests-with-sanitizers).
 
 ---
@@ -51,36 +57,13 @@ cd .build
 
 #### Install dependencies
 
-The `SANITIZERS` environment variable is used by both Conan and CMake.
+The `SANITIZERS` environment variable is used during `conan install` command.
 
 ```bash
-export SANITIZERS=address,undefinedbehavior
-# Standard build (without instrumenting dependencies)
-conan install .. --output-folder . --build missing --settings build_type=Debug
-
-# Or with sanitizer-instrumented dependencies (takes longer but fewer false positives)
-conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
+SANITIZERS=address,undefinedbehavior conan install .. --output-folder . --build missing --settings build_type=Debug --profile:all sanitizers
 ```
 
-[!CAUTION]
-Do not mix Address and Thread sanitizers - they are incompatible.
-
-Since you already set the `SANITIZERS` environment variable when running Conan, same values will be read for the next part.
-
-#### Call CMake
-
-```bash
-cmake .. -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -Dtests=ON -Dxrpld=ON
-```
-
-#### Build
-
-```bash
-cmake --build . --parallel 4
-```
+Proceed with the rest of the build instructions as mentioned in [BUILD.md](../../BUILD.md).
 
 ## Running Tests with Sanitizers
 
@@ -98,7 +81,7 @@ export LSAN_OPTIONS="include=sanitizers/suppressions/runtime-lsan-options.txt:su
 
 **Why `detect_container_overflow=0`?**
 
-- Boost intrusive containers (used in `aged_unordered_container`) trigger false positives
+- Boost intrusive containers (used in `AgedUnorderedContainer`) trigger false positives
 - Boost context switching (used in `Workers.cpp`) confuses ASAN's stack tracking
 - Since we usually don't build Boost (because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented xrpld code, it generates false positives.
 - Building dependencies with ASAN instrumentation reduces false positives. But we don't want to instrument dependencies like Boost with ASAN because it is slow (to compile as well as run tests) and not necessary.
@@ -115,6 +98,30 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 ```
 
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
+
+> [!IMPORTANT]
+> The `ubuntu-clang-debug-amd64-tsan` CI config lists only the `schedule` and
+> `workflow_dispatch` events, so TSan runs on the Trigger workflow's weekday
+> schedule and on a manual run of it, not on a pull request, in the merge queue
+> or in a tag build. A finding cannot fail the job yet: `halt_on_error=false`
+> continues past it, and the workflow adds `exitcode=0` to `TSAN_OPTIONS`. The
+> job counts the findings into a warning annotation and uploads the test logs
+> as the `tsan-logs-<config>` artifact. A crash under TSan does fail the job,
+> since the workflow also sets `abort_on_error=1`. Once the findings are known
+> and stable, drop `exitcode=0` so a new one fails the job, and suppress the
+> rest.
+
+> [!IMPORTANT]
+> Check lock order on Linux, where TSan reports
+> `WARNING: ThreadSanitizer: lock-order-inversion (potential deadlock)`. macOS
+> arm64 reports no inversion, even for a double lock of a non-recursive mutex,
+> though it does report races.
+
+> [!TIP]
+> The build defines `XRPL_ASAN`, `XRPL_TSAN` or `XRPL_UBSAN` per active
+> sanitizer (`address`, `thread` or `undefinedbehavior`). Test them with
+> `#ifdef` inside a test body to skip a check that only applies under one
+> sanitizer, so every build still compiles the test.
 
 ### LeakSanitizer (LSan)
 
@@ -162,20 +169,34 @@ More details [here](https://clang.llvm.org/docs/undefinedbehaviorSanitizer.html)
 
 - **Purpose**: Suppress undefinedbehaviorSanitizer errors
 - **Format**: `<error_type>:<pattern>` (e.g., `unsigned-integer-overflow:protobuf`)
-- **Covers**: Intentional overflows in sanitizers/suppressions libraries (protobuf, gRPC, stdlib)
+- **Covers**: Intentional overflows in third-party libraries (protobuf, gRPC, abseil, stdlib, and C libraries such as OpenSSL, secp256k1, ed25519, c-ares, xxHash, lz4, sqlite3)
 - More info [UBSan suppressions](https://clang.llvm.org/docs/SanitizerSpecialCaseList.html).
 
 ### [`tsan.supp`](../../sanitizers/suppressions/tsan.supp)
 
-- **Purpose**: Suppress ThreadSanitizer data race warnings
-- **Format**: `race:<pattern>` where pattern matches function/file names
+- **Purpose**: Suppress ThreadSanitizer warnings
+- **Format**: `<type>:<pattern>` where pattern matches function/file names, and
+  type is `race`, `deadlock`, `signal`, `mutex` or `called_from_lib`
 - **More info**: [ThreadSanitizer suppressions](https://github.com/google/sanitizers/wiki/ThreadSanitizerSuppressions)
 
 ### [`sanitizer-ignorelist.txt`](../../sanitizers/suppressions/sanitizer-ignorelist.txt)
 
 - **Purpose**: Compile-time ignorelist for all sanitizers
 - **Usage**: Passed via `-fsanitize-ignorelist=absolute/path/to/sanitizer-ignorelist.txt`
-- **Format**: `<level>:<pattern>` (e.g., `src:Workers.cpp`)
+- **Format**: `<entity>:<glob>` (e.g. `src:*Workers.cpp`)
+- **Note**: An entry above the first section applies to every sanitizer. An
+  entry below a section header, such as `[address]`, applies to that sanitizer
+  only.
+- **Note**: Not a suppressions file. Clang looks up only the entities `src`,
+  `fun`, `global`, `type` and `mainfile`, so a `race:` or `deadlock:` entry
+  parses but does nothing. Those belong in `tsan.supp`.
+- **Note**: The glob must match the whole absolute path the compiler receives.
+  `src:core/detail/Workers.cpp` matches nothing; `src:*core/detail/Workers.cpp`
+  does.
+- **Note**: To confirm an entry works, compile the file with and without it and
+  compare the calls the sanitizer planted, e.g.
+  `nm -u <file>.o | grep -cE '__tsan_(read|write)'`. Ignore `__tsan_func_entry`
+  and `__tsan_init`, which an ignored file still has.
 
 ## Troubleshooting
 

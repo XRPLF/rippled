@@ -15,59 +15,62 @@
 
 namespace xrpl {
 
-Json::Value
-doLogLevel(RPC::JsonContext& context)
+json::Value
+doLogLevel(rpc::JsonContext& context)
 {
     // log_level
-    if (!context.params.isMember(jss::severity))
+    if (not context.params.isMember(jss::severity))
     {
         // get log severities
-        Json::Value ret(Json::objectValue);
-        Json::Value lev(Json::objectValue);
+        json::Value ret(json::ValueType::Object);
+        json::Value lev(json::ValueType::Object);
 
-        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.getLogs().threshold()));
+        lev[jss::base] = Logs::toString(context.app.getLogs().threshold());
         std::vector<std::pair<std::string, std::string>> const logTable(
-            context.app.getLogs().partition_severities());
+            context.app.getLogs().partitionSeverities());
         for (auto const& [k, v] : logTable)
             lev[k] = v;
 
         ret[jss::levels] = lev;
         return ret;
     }
+    if (not context.params[jss::severity].isString())
+        return rpcError(RpcInvalidParams);
 
-    LogSeverity const sv(Logs::fromString(context.params[jss::severity].asString()));
+    auto const severity = Logs::fromString(context.params[jss::severity].asString());
 
-    if (sv == lsINVALID)
-        return rpcError(rpcINVALID_PARAMS);
+    if (not severity.has_value())
+        return rpcError(RpcInvalidParams);
 
-    auto severity = Logs::toSeverity(sv);
     // log_level severity
-    if (!context.params.isMember(jss::partition))
+    if (not context.params.isMember(jss::partition))
     {
         // set base log threshold
-        context.app.getLogs().threshold(severity);
-        return Json::objectValue;
+        context.app.getLogs().threshold(*severity);
+        return json::ValueType::Object;
     }
 
     // log_level partition severity base?
     if (context.params.isMember(jss::partition))
     {
+        if (not context.params[jss::partition].isString())
+            return rpcError(RpcInvalidParams);
         // set partition threshold
         std::string const partition(context.params[jss::partition].asString());
 
         if (boost::iequals(partition, "base"))
         {
-            context.app.getLogs().threshold(severity);
+            context.app.getLogs().threshold(*severity);
         }
         else
         {
-            context.app.getLogs().get(partition).threshold(severity);
+            context.app.getLogs().get(partition).threshold(*severity);
         }
 
-        return Json::objectValue;
+        return json::ValueType::Object;
     }
 
-    return rpcError(rpcINVALID_PARAMS);
+    return rpcError(RpcInvalidParams);
 }
 
 }  // namespace xrpl

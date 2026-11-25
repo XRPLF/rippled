@@ -21,7 +21,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -34,7 +34,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     auto const maximumAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
 
     MPTokenIssuanceCreateBuilder builder{
         accountValue,
@@ -48,7 +48,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     builder.setMaximumAmount(maximumAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
-    builder.setMutableFlags(mutableFlagsValue);
+    builder.setImmutableFlags(immutableFlagsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -107,11 +107,11 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-        auto const actualOpt = tx.getMutableFlags();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMutableFlags should be present";
-        expectEqualField(expected, *actualOpt, "sfMutableFlags");
-        EXPECT_TRUE(tx.hasMutableFlags());
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = tx.getImmutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+        EXPECT_TRUE(tx.hasImmutableFlags());
     }
 
 }
@@ -122,7 +122,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -135,7 +135,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     auto const maximumAmountValue = canonical_UINT64();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
-    auto const mutableFlagsValue = canonical_UINT32();
+    auto const immutableFlagsValue = canonical_UINT32();
 
     // Build an initial transaction
     MPTokenIssuanceCreateBuilder initialBuilder{
@@ -149,7 +149,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setMaximumAmount(maximumAmountValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
     initialBuilder.setDomainID(domainIDValue);
-    initialBuilder.setMutableFlags(mutableFlagsValue);
+    initialBuilder.setImmutableFlags(immutableFlagsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -204,10 +204,10 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-        auto const actualOpt = rebuiltTx.getMutableFlags();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMutableFlags should be present";
-        expectEqualField(expected, *actualOpt, "sfMutableFlags");
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = rebuiltTx.getImmutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
     }
 
 }
@@ -217,7 +217,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -231,7 +231,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -245,7 +245,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testMPTokenIssuanceCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testMPTokenIssuanceCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -275,8 +275,8 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getMPTokenMetadata().has_value());
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
-    EXPECT_FALSE(tx.hasMutableFlags());
-    EXPECT_FALSE(tx.getMutableFlags().has_value());
+    EXPECT_FALSE(tx.hasImmutableFlags());
+    EXPECT_FALSE(tx.getImmutableFlags().has_value());
 }
 
 }

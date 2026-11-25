@@ -1,19 +1,42 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
 
+#include <memory>
+#include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
+/**
+ * Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ * @param resultIfNoRules What to return if called from outside a Transactor context.
+ */
 bool
-isFeatureEnabled(uint256 const& feature);
+isFeatureEnabled(UInt256 const& feature, bool resultIfNoRules);
+
+/**
+ * Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ *
+ * Returns false if no global Rules object is available. i.e. Outside of
+ * a Transactor context
+ */
+bool
+isFeatureEnabled(UInt256 const& feature);
 
 class DigestAwareReadView;
 
-/** Rules controlling protocol behavior. */
+/**
+ * Rules controlling protocol behavior.
+ */
 class Rules
 {
 private:
@@ -36,12 +59,13 @@ public:
 
     Rules() = delete;
 
-    /** Construct an empty rule set.
-
-        These are the rules reflected by
-        the genesis ledger.
-    */
-    explicit Rules(std::unordered_set<uint256, beast::uhash<>> const& presets);
+    /**
+     * Construct an empty rule set.
+     *
+     * These are the rules reflected by
+     * the genesis ledger.
+     */
+    explicit Rules(std::unordered_set<UInt256, beast::Uhash<>> const& presets);
 
 private:
     // Allow a friend function to construct Rules.
@@ -51,30 +75,30 @@ private:
     friend Rules
     makeRulesGivenLedger(
         DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::uhash<>> const& presets);
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets);
 
     Rules(
-        std::unordered_set<uint256, beast::uhash<>> const& presets,
-        std::optional<uint256> const& digest,
+        std::unordered_set<UInt256, beast::Uhash<>> const& presets,
+        std::optional<UInt256> const& digest,
         STVector256 const& amendments);
 
-    std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<UInt256, beast::Uhash<>> const&
     presets() const;
 
 public:
-    /** Returns `true` if a feature is enabled. */
-    bool
-    enabled(uint256 const& feature) const;
+    /**
+     * Returns `true` if a feature is enabled.
+     */
+    [[nodiscard]] bool
+    enabled(UInt256 const& feature) const;
 
-    /** Returns `true` if two rule sets are identical.
-
-        @note This is for diagnostics.
-    */
+    /**
+     * Returns `true` if two rule sets are identical.
+     *
+     * @note This is for diagnostics.
+     */
     bool
     operator==(Rules const&) const;
-
-    bool
-    operator!=(Rules const& other) const;
 };
 
 std::optional<Rules> const&
@@ -83,12 +107,14 @@ getCurrentTransactionRules();
 void
 setCurrentTransactionRules(std::optional<Rules> r);
 
-/** RAII class to set and restore the current transaction rules
+/**
+ * RAII class to set and restore the current transaction rules
  */
 class CurrentTransactionRulesGuard
 {
 public:
-    explicit CurrentTransactionRulesGuard(Rules r) : saved_(getCurrentTransactionRules())
+    explicit CurrentTransactionRulesGuard(Rules r)
+        : saved_(getCurrentTransactionRules()), scaleGuard_(Number::getMantissaScale())
     {
         setCurrentTransactionRules(std::move(r));
     }
@@ -96,6 +122,9 @@ public:
     ~CurrentTransactionRulesGuard()
     {
         setCurrentTransactionRules(saved_);
+        // Setting the rules also sets the mantissa scale. scaleGuard_ is destroyed after this body
+        // and restores the scale that was active before this guard, which an outer
+        // NumberMantissaScaleGuard may have chosen.
     }
 
     CurrentTransactionRulesGuard() = delete;
@@ -105,6 +134,16 @@ public:
 
 private:
     std::optional<Rules> saved_;
+    NumberMantissaScaleGuard scaleGuard_;
 };
+
+bool
+useRulesGuards(Rules const& rules);
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
 
 }  // namespace xrpl

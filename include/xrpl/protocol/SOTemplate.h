@@ -3,35 +3,47 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
 
+#include <cstddef>
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace xrpl {
 
-/** Kind of element in each entry of an SOTemplate. */
+/**
+ * Kind of element in each entry of an SOTemplate.
+ */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
-    soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
-    soeDEFAULT = 2,   // optional, if present, must not have default value
+    SoeInvalid = -1,
+    SoeRequired = 0,  // required
+    SoeOptional = 1,  // optional, may be present with default value
+    SoeDefault = 2,   // optional, if present, must not have default value
                       // inner object with the default fields has to be
                       // constructed with STObject::makeInnerObject()
 };
 
-/** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
+/**
+ * Amount fields that can support MPT
+ */
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------
 
-/** An element in a SOTemplate. */
+/**
+ * An element in a SOTemplate.
+ */
 class SOElement
 {
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
     void
@@ -57,25 +69,25 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
     }
 
-    SField const&
+    [[nodiscard]] SField const&
     sField() const
     {
         return sField_.get();
     }
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style() const
     {
         return style_;
     }
 
-    SOETxMPTIssue
+    [[nodiscard]] SOETxMPTIssue
     supportMPT() const
     {
         return supportMpt_;
@@ -84,10 +96,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Defines the fields and their attributes within a STObject.
-    Each subclass of SerializedObject will provide its own template
-    describing the available fields and their metadata attributes.
-*/
+/**
+ * Defines the fields and their attributes within a STObject.
+ * Each subclass of SerializedObject will provide its own template
+ * describing the available fields and their metadata attributes.
+ */
 class SOTemplate
 {
 public:
@@ -97,55 +110,61 @@ public:
     SOTemplate&
     operator=(SOTemplate&& other) = default;
 
-    /** Create a template populated with all fields.
-        After creating the template fields cannot be added, modified, or removed.
-    */
+    /**
+     * Create a template populated with all fields.
+     * After creating the template fields cannot be added, modified, or removed.
+     */
     SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {});
 
-    /** Create a template populated with all fields.
-        Note: Defers to the vector constructor above.
-    */
+    /**
+     * Create a template populated with all fields.
+     * Note: Defers to the vector constructor above.
+     */
     SOTemplate(
         std::initializer_list<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     begin() const
     {
         return elements_.cbegin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cbegin() const
     {
         return begin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     end() const
     {
         return elements_.cend();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cend() const
     {
         return end();
     }
 
-    /** The number of entries in this template */
-    std::size_t
+    /**
+     * The number of entries in this template
+     */
+    [[nodiscard]] std::size_t
     size() const
     {
         return elements_.size();
     }
 
-    /** Retrieve the position of a named field. */
-    int
+    /**
+     * Retrieve the position of a named field.
+     */
+    [[nodiscard]] int
     getIndex(SField const&) const;
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style(SField const& sf) const
     {
         return elements_[indices_[sf.getNum()]].style();

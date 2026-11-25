@@ -21,11 +21,12 @@ SOTemplate::SOTemplate(
 }
 
 SOTemplate::SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields)
-    : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
+    : elements_(std::move(uniqueFields))
+    , indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
     //
-    elements_ = std::move(uniqueFields);
+
     std::ranges::move(commonFields, std::back_inserter(elements_));
 
     // Validate and index elements_.

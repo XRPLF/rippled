@@ -6,15 +6,20 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
 #include <cstddef>
@@ -63,30 +68,42 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(hotACCOUNT_NODE);
-        int const tmf = built->txMap().flushDirty(hotTRANSACTION_NODE);
+        int const asf = built->stateMap().flushDirty(NodeObjectType::AccountNode);
+        int const tmf = built->txMap().flushDirty(NodeObjectType::TransactionNode);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
         "xrpl::buildLedgerImpl : valid ledger fees");
-    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
+    // The invariant: a ledger this function returns has both maps immutable, which is what
+    // setAccepted() reports on (see Ledger::setImmutable()). Nothing downstream re-checks it.
+    //
+    // logicError() rather than UNREACHABLE(): the consensus caller acts on this ledger straight
+    // away, so the stop has to name this site in every build rather than only where assertions
+    // are on. See RCLConsensus::Adaptor::buildLCL().
+    if (!built->setAccepted(closeTime, closeResolution, closeTimeCorrect))
+    {
+        // LCOV_EXCL_START
+        logicError("buildLedgerImpl: accepted ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
 
     return built;
 }
 
-/** Apply a set of consensus transactions to a ledger.
-
-  @param app Handle to application
-  @param txns the set of transactions to apply,
-  @param failed set of transactions that failed to apply
-  @param view ledger to apply to
-  @param j Journal for logging
-  @return number of transactions applied; transactions to retry left in txns
-*/
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
 
 std::size_t
 applyTransactions(
@@ -121,7 +138,7 @@ applyTransactions(
                     continue;
                 }
 
-                switch (applyTransaction(app, view, *it->second, certainRetry, tapNONE, j))
+                switch (applyTransaction(app, view, *it->second, certainRetry, TapNone, j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -202,9 +219,11 @@ buildLedger(
                                 << accum.txCount();
             }
             else
+            {
                 JLOG(j.debug()) << "Applied " << applied << " transactions. "
                                 << "Total transactions in ledger (including Inner Batch): "
                                 << accum.txCount();
+            }
         });
 }
 
@@ -223,13 +242,21 @@ buildLedger(
     return buildLedgerImpl(
         replayData.parent(),
         replayLedger->header().closeTime,
-        ((replayLedger->header().closeFlags & sLCF_NoConsensusTime) == 0),
+        ((replayLedger->header().closeFlags & kSLcfNoConsensusTime) == 0),
         replayLedger->header().closeTimeResolution,
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
+            {
+                // Inner batch transactions are applied as part of their outer
+                // Batch transaction, never on their own. Skip them here so they
+                // are not re-applied a second time outside of the batch during
+                // replay.
+                if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+            }
         });
 }
 

@@ -5,17 +5,24 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
+#include <optional>
+
 namespace xrpl::test::jtx {
 
-/** Modify a trust line. */
-Json::Value
+/**
+ * Modify a trust line.
+ */
+json::Value
 trust(Account const& account, STAmount const& amount, std::uint32_t flags = 0);
 
-/** Change flags on a trust line. */
-Json::Value
+/**
+ * Change flags on a trust line.
+ */
+json::Value
 trust(Account const& account, STAmount const& amount, Account const& peer, std::uint32_t flags);
 
-Json::Value
+json::Value
 claw(
     Account const& account,
     STAmount const& amount,

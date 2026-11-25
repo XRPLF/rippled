@@ -22,36 +22,34 @@ namespace xrpl {
 // to enforce this restriction.
 
 template <class EF>
-class scope_exit
+class ScopeExit
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
 
 public:
-    ~scope_exit()
+    ~ScopeExit()
     {
-        if (execute_on_destruction_)
-            exit_function_();
+        if (executeOnDestruction_)
+            exitFunction_();
     }
 
-    scope_exit(scope_exit&& rhs) noexcept(
+    ScopeExit(ScopeExit&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
     {
         rhs.release();
     }
 
-    scope_exit&
-    operator=(scope_exit&&) = delete;
+    ScopeExit&
+    operator=(ScopeExit&&) = delete;
 
     template <class EFP>
-    explicit scope_exit(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, scope_exit> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
-        : exit_function_{std::forward<EFP>(f)}
+    explicit ScopeExit(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> && std::is_constructible_v<EF, EFP>)
+        : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
@@ -59,46 +57,44 @@ public:
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
 template <class EF>
-scope_exit(EF) -> scope_exit<EF>;
+ScopeExit(EF) -> ScopeExit<EF>;
 
 template <class EF>
-class scope_fail
+class ScopeFail
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
-    int uncaught_on_creation_{std::uncaught_exceptions()};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
+    int uncaughtOnCreation_{std::uncaught_exceptions()};
 
 public:
-    ~scope_fail()
+    ~ScopeFail()
     {
-        if (execute_on_destruction_ && std::uncaught_exceptions() > uncaught_on_creation_)
-            exit_function_();
+        if (executeOnDestruction_ && std::uncaught_exceptions() > uncaughtOnCreation_)
+            exitFunction_();
     }
 
-    scope_fail(scope_fail&& rhs) noexcept(
+    ScopeFail(ScopeFail&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
-        , uncaught_on_creation_{rhs.uncaught_on_creation_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
+        , uncaughtOnCreation_{rhs.uncaughtOnCreation_}
     {
         rhs.release();
     }
 
-    scope_fail&
-    operator=(scope_fail&&) = delete;
+    ScopeFail&
+    operator=(ScopeFail&&) = delete;
 
     template <class EFP>
-    explicit scope_fail(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, scope_fail> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
-        : exit_function_{std::forward<EFP>(f)}
+    explicit ScopeFail(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> && std::is_constructible_v<EF, EFP>)
+        : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
@@ -106,121 +102,120 @@ public:
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
 template <class EF>
-scope_fail(EF) -> scope_fail<EF>;
+ScopeFail(EF) -> ScopeFail<EF>;
 
 template <class EF>
-class scope_success
+class ScopeSuccess
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
-    int uncaught_on_creation_{std::uncaught_exceptions()};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
+    int uncaughtOnCreation_{std::uncaught_exceptions()};
 
 public:
-    ~scope_success() noexcept(noexcept(exit_function_()))
+    ~ScopeSuccess() noexcept(noexcept(exitFunction_()))
     {
-        if (execute_on_destruction_ && std::uncaught_exceptions() <= uncaught_on_creation_)
-            exit_function_();
+        if (executeOnDestruction_ && std::uncaught_exceptions() <= uncaughtOnCreation_)
+            exitFunction_();
     }
 
-    scope_success(scope_success&& rhs) noexcept(
+    ScopeSuccess(ScopeSuccess&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
-        , uncaught_on_creation_{rhs.uncaught_on_creation_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
+        , uncaughtOnCreation_{rhs.uncaughtOnCreation_}
     {
         rhs.release();
     }
 
-    scope_success&
-    operator=(scope_success&&) = delete;
+    ScopeSuccess&
+    operator=(ScopeSuccess&&) = delete;
 
     template <class EFP>
-    explicit scope_success(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, scope_success> &&
-            std::is_constructible_v<EF, EFP>>* =
-            0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
-        : exit_function_{std::forward<EFP>(f)}
+    explicit ScopeSuccess(EFP&& f) noexcept(
+        std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeSuccess> &&
+            std::is_constructible_v<EF, EFP>)
+        : exitFunction_{std::forward<EFP>(f)}
     {
     }
 
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
 template <class EF>
-scope_success(EF) -> scope_success<EF>;
+ScopeSuccess(EF) -> ScopeSuccess<EF>;
 
 /**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            scope_unlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
+ * Automatically unlocks and re-locks a unique_lock object.
+ *
+ * This is the reverse of a std::unique_lock object - instead of locking the
+ * mutex for the lifetime of this object, it unlocks it.
+ *
+ * Make sure you don't try to unlock mutexes that aren't actually locked!
+ *
+ * This is essentially a less-versatile boost::reverse_lock.
+ *
+ * e.g. @code
+ *
+ * std::mutex mut;
+ *
+ * for (;;)
+ * {
+ *     std::unique_lock myScopedLock{mut};
+ *     // mut is now locked
+ *
+ *     ... do some stuff with it locked ..
+ *
+ *     while (xyz)
+ *     {
+ *         ... do some stuff with it locked ..
+ *
+ *         scope_unlock unlocker{myScopedLock};
+ *
+ *         // mut is now unlocked for the remainder of this block,
+ *         // and re-locked at the end.
+ *
+ *         ...do some stuff with it unlocked ...
+ *     }  // mut gets locked here.
+ *
+ * }  // mut gets unlocked here
+ * @endcode
+ */
 
 template <class Mutex>
-class scope_unlock
+class ScopeUnlock
 {
-    std::unique_lock<Mutex>* plock;
+    std::unique_lock<Mutex>* plock_;
 
 public:
-    explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true) : plock(&lock)
+    explicit ScopeUnlock(std::unique_lock<Mutex>& lock) noexcept(true) : plock_(&lock)
     {
-        XRPL_ASSERT(plock->owns_lock(), "xrpl::scope_unlock::scope_unlock : mutex must be locked");
-        plock->unlock();
+        XRPL_ASSERT(plock_->owns_lock(), "xrpl::ScopeUnlock::ScopeUnlock : mutex must be locked");
+        plock_->unlock();
     }
 
     // Immovable type
-    scope_unlock(scope_unlock const&) = delete;
-    scope_unlock&
-    operator=(scope_unlock const&) = delete;
+    ScopeUnlock(ScopeUnlock const&) = delete;
+    ScopeUnlock&
+    operator=(ScopeUnlock const&) = delete;
 
-    ~scope_unlock() noexcept(true)
+    ~ScopeUnlock() noexcept(true)
     {
-        plock->lock();
+        plock_->lock();
     }
 };
 
 template <class Mutex>
-scope_unlock(std::unique_lock<Mutex>&) -> scope_unlock<Mutex>;
+ScopeUnlock(std::unique_lock<Mutex>&) -> ScopeUnlock<Mutex>;
 
 }  // namespace xrpl

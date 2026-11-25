@@ -1,27 +1,37 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
+#include <memory>
+#include <string>
+
 namespace xrpl {
 
 /**
-    A transaction that is in a closed ledger.
-
-    Description
-
-    An accepted ledger transaction contains additional information that the
-    server needs to tell clients about the transaction. For example,
-        - The transaction in JSON form
-        - Which accounts are affected
-          * This is used by InfoSub to report to clients
-        - Cached stuff
-*/
+ * A transaction that is in a closed ledger.
+ *
+ * Description
+ *
+ * An accepted ledger transaction contains additional information that the
+ * server needs to tell clients about the transaction. For example,
+ *     - The transaction in JSON form
+ *     - Which accounts are affected
+ *       * This is used by InfoSub to report to clients
+ *     - Cached stuff
+ */
 class AcceptedLedgerTx : public CountedObject<AcceptedLedgerTx>
 {
 public:
@@ -30,58 +40,58 @@ public:
         std::shared_ptr<STTx const> const&,
         std::shared_ptr<STObject const> const&);
 
-    std::shared_ptr<STTx const> const&
+    [[nodiscard]] std::shared_ptr<STTx const> const&
     getTxn() const
     {
-        return mTxn;
+        return txn_;
     }
-    TxMeta const&
+    [[nodiscard]] TxMeta const&
     getMeta() const
     {
-        return mMeta;
+        return meta_;
     }
 
-    boost::container::flat_set<AccountID> const&
+    [[nodiscard]] boost::container::flat_set<AccountID> const&
     getAffected() const
     {
-        return mAffected;
+        return affected_;
     }
 
-    TxID
+    [[nodiscard]] TxID
     getTransactionID() const
     {
-        return mTxn->getTransactionID();
+        return txn_->getTransactionID();
     }
-    TxType
+    [[nodiscard]] TxType
     getTxnType() const
     {
-        return mTxn->getTxnType();
+        return txn_->getTxnType();
     }
-    TER
+    [[nodiscard]] TER
     getResult() const
     {
-        return mMeta.getResultTER();
+        return meta_.getResultTER();
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getTxnSeq() const
     {
-        return mMeta.getIndex();
+        return meta_.getIndex();
     }
-    std::string
+    [[nodiscard]] std::string
     getEscMeta() const;
 
-    Json::Value const&
+    [[nodiscard]] json::Value const&
     getJson() const
     {
-        return mJson;
+        return json_;
     }
 
 private:
-    std::shared_ptr<STTx const> mTxn;
-    TxMeta mMeta;
-    boost::container::flat_set<AccountID> mAffected;
-    Blob mRawMeta;
-    Json::Value mJson;
+    std::shared_ptr<STTx const> txn_;
+    TxMeta meta_;
+    boost::container::flat_set<AccountID> affected_;
+    Blob rawMeta_;
+    json::Value json_;
 };
 
 }  // namespace xrpl

@@ -6,7 +6,7 @@ namespace xrpl {
 
 class Application;
 
-namespace RPC {
+namespace rpc {
 
 class LegacyPathFind
 {
@@ -14,17 +14,17 @@ public:
     LegacyPathFind(bool isAdmin, Application& app);
     ~LegacyPathFind();
 
-    bool
+    [[nodiscard]] bool
     isOk() const
     {
-        return m_isOk;
+        return isOk_;
     }
 
 private:
     static std::atomic<int> inProgress;
 
-    bool m_isOk{false};
+    bool isOk_{false};
 };
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

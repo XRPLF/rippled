@@ -179,7 +179,7 @@ public:
      * @return The previous transaction ID if present, std::nullopt otherwise
      */
     [[nodiscard]]
-    std::optional<uint256>
+    std::optional<UInt256>
     getPreviousTxnID() const
     {
         if (tx_->isFieldPresent(sfPreviousTxnID))
@@ -232,7 +232,7 @@ public:
      * @return The account transaction ID if present, std::nullopt otherwise
      */
     [[nodiscard]]
-    std::optional<uint256>
+    std::optional<UInt256>
     getAccountTxnID() const
     {
         if (tx_->isFieldPresent(sfAccountTxnID))
@@ -450,7 +450,9 @@ public:
     }
 
 protected:
-    /** @brief The underlying transaction object being wrapped. */
+    /**
+     * @brief The underlying transaction object being wrapped.
+     */
     std::shared_ptr<STTx const> tx_;
 };
 

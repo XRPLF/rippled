@@ -16,7 +16,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <stdexcept>
@@ -25,8 +24,8 @@
 
 namespace xrpl::detail {
 
-defaultObject_t defaultObject;
-nonPresentObject_t nonPresentObject;
+DefaultObjectT gDefaultObject;
+NonPresentObjectT gNonPresentObject;
 
 //------------------------------------------------------------------------------
 
@@ -38,19 +37,19 @@ STVar::~STVar()
 STVar::STVar(STVar const& other)
 {
     if (other.p_ != nullptr)
-        p_ = other.p_->copy(max_size, &d_);
+        p_ = other.p_->copy(kMaxSize, &d_);
 }
 
 STVar::STVar(STVar&& other)
 {
-    if (other.on_heap())
+    if (other.onHeap())
     {
         p_ = other.p_;
         other.p_ = nullptr;
     }
     else
     {
-        p_ = other.p_->move(max_size, &d_);
+        p_ = other.p_->move(kMaxSize, &d_);
     }
 }
 
@@ -62,7 +61,7 @@ STVar::operator=(STVar const& rhs)
         destroy();
         if (rhs.p_ != nullptr)
         {
-            p_ = rhs.p_->copy(max_size, &d_);
+            p_ = rhs.p_->copy(kMaxSize, &d_);
         }
         else
         {
@@ -79,25 +78,25 @@ STVar::operator=(STVar&& rhs)
     if (&rhs != this)
     {
         destroy();
-        if (rhs.on_heap())
+        if (rhs.onHeap())
         {
             p_ = rhs.p_;
             rhs.p_ = nullptr;
         }
         else
         {
-            p_ = rhs.p_->move(max_size, &d_);
+            p_ = rhs.p_->move(kMaxSize, &d_);
         }
     }
 
     return *this;
 }
 
-STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
+STVar::STVar(DefaultObjectT, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar(nonPresentObject_t, SField const& name) : STVar(STI_NOTPRESENT, name)
+STVar::STVar(NonPresentObjectT, SField const& name) : STVar(STI_NOTPRESENT, name)
 {
 }
 
@@ -119,7 +118,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 void
 STVar::destroy()
 {
-    if (on_heap())
+    if (onHeap())
     {
         delete p_;
     }
@@ -136,7 +135,7 @@ template <typename... Args>
 void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
-    auto constructWithDepth = [&]<typename T>() {
+    auto const constructWithDepth = [&]<typename T> {
         if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {
             construct<T>(std::forward<Args>(args)...);
@@ -149,8 +148,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         }
         else
         {
-            constexpr bool alwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
-            static_assert(alwaysFalse, "Invalid STVar constructor arguments");
+            static constexpr bool kAlwaysFalse =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static_assert(kAlwaysFalse, "Invalid STVar constructor arguments");
         }
     };
 
@@ -215,9 +215,6 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
             return;
         case STI_ISSUE:
             construct<STIssue>(std::forward<Args>(args)...);
-            return;
-        case STI_XCHAIN_BRIDGE:
-            construct<STXChainBridge>(std::forward<Args>(args)...);
             return;
         case STI_CURRENCY:
             construct<STCurrency>(std::forward<Args>(args)...);

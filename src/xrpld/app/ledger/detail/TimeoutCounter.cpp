@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 
 TimeoutCounter::TimeoutCounter(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::chrono::milliseconds interval,
     QueueJobParameter&& jobParameter,
     beast::Journal journal)
@@ -46,7 +46,7 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        if (auto ptr = wptr.lock())
+        if (auto const ptr = wptr.lock())
         {
             ScopedLockType sl(ptr->mtx_);
             ptr->queueJob(sl);
@@ -70,8 +70,8 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     }
 
     app_.getJobQueue().addJob(
-        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
-            if (auto sptr = wptr.lock(); sptr)
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()] {
+            if (auto const sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });
 }

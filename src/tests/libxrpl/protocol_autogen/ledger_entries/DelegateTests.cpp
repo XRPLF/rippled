@@ -18,12 +18,13 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(DelegateTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const authorizeValue = canonical_ACCOUNT();
     auto const permissionsValue = canonical_ARRAY();
     auto const ownerNodeValue = canonical_UINT64();
+    auto const destinationNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -36,6 +37,7 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
         previousTxnLgrSeqValue
     };
 
+    builder.setDestinationNode(destinationNodeValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -82,6 +84,14 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
     }
 
+    {
+        auto const& expected = destinationNodeValue;
+        auto const actualOpt = entry.getDestinationNode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDestinationNode");
+        EXPECT_TRUE(entry.hasDestinationNode());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -93,12 +103,13 @@ TEST(DelegateTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(DelegateTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const authorizeValue = canonical_ACCOUNT();
     auto const permissionsValue = canonical_ARRAY();
     auto const ownerNodeValue = canonical_UINT64();
+    auto const destinationNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -108,6 +119,7 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
     sle->at(sfAuthorize) = authorizeValue;
     sle->setFieldArray(sfPermissions, permissionsValue);
     sle->at(sfOwnerNode) = ownerNodeValue;
+    sle->at(sfDestinationNode) = destinationNodeValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
 
@@ -180,6 +192,19 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
     }
 
+    {
+        auto const& expected = destinationNodeValue;
+
+        auto const fromSleOpt = entryFromSle.getDestinationNode();
+        auto const fromBuilderOpt = entryFromBuilder.getDestinationNode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDestinationNode");
+        expectEqualField(expected, *fromBuilderOpt, "sfDestinationNode");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -187,7 +212,7 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(DelegateTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -206,7 +231,7 @@ TEST(DelegateTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(DelegateTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -220,4 +245,31 @@ TEST(DelegateTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(DelegateBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(DelegateTests, OptionalFieldsReturnNullopt)
+{
+    UInt256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const authorizeValue = canonical_ACCOUNT();
+    auto const permissionsValue = canonical_ARRAY();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    DelegateBuilder builder{
+        accountValue,
+        authorizeValue,
+        permissionsValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasDestinationNode());
+    EXPECT_FALSE(entry.getDestinationNode().has_value());
+}
 }

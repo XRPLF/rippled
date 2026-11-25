@@ -7,12 +7,15 @@
 
 #include <boost/program_options.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
-/** The cryptographic credentials identifying this server instance.
-
-    @param app The application object
-    @param cmdline The command line parameters passed into the application.
+/**
+ * The cryptographic credentials identifying this server instance.
+ *
+ * @param app The application object
+ * @param cmdline The command line parameters passed into the application.
  */
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline);

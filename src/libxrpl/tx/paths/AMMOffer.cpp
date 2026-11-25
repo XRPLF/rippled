@@ -94,7 +94,7 @@ AMMOffer<TIn, TOut>::limitOut(
     {
         // It turns out that the ceil_out implementation has some slop in
         // it, which ceil_out_strict removes.
-        return quality().ceil_out_strict(offerAmount, limit, roundUp);
+        return quality().ceilOutStrict(offerAmount, limit, roundUp);
     }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
@@ -112,9 +112,9 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
     {
         if (auto const& rules = getCurrentTransactionRules();
             rules && rules->enabled(fixReducedOffersV2))
-            return quality().ceil_in_strict(offerAmount, limit, roundUp);
+            return quality().ceilInStrict(offerAmount, limit, roundUp);
 
-        return quality().ceil_in(offerAmount, limit);
+        return quality().ceilIn(offerAmount, limit);
     }
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
@@ -134,11 +134,13 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
 {
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
     {
+        // LCOV_EXCL_START
         JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed " << to_string(consumed.in)
                         << " " << to_string(consumed.out) << " amounts " << to_string(amounts_.in)
                         << " " << to_string(amounts_.out);
 
         return false;
+        // LCOV_EXCL_STOP
     }
 
     Number const product = balances_.in * balances_.out;
@@ -149,6 +151,7 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
     if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
         return true;
 
+    // LCOV_EXCL_START
     JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in)
                     << " " << to_string(balances_.out) << " new balances "
                     << to_string(newBalances.in) << " " << to_string(newBalances.out)
@@ -156,6 +159,7 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
                     << (product != Number{0} ? to_string((product - newProduct) / product)
                                              : "undefined");
     return false;
+    // LCOV_EXCL_STOP
 }
 
 template class AMMOffer<IOUAmount, IOUAmount>;

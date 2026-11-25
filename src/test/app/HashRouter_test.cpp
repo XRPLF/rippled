@@ -3,6 +3,7 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 
 #include <chrono>
@@ -14,7 +15,7 @@
 
 namespace xrpl::test {
 
-class HashRouter_test : public beast::unit_test::suite
+class HashRouter_test : public beast::unit_test::Suite
 {
     static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
@@ -37,9 +38,9 @@ class HashRouter_test : public beast::unit_test::suite
         HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
         HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
 
-        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
-        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
-        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
+        auto const ukey1 = UInt256{static_cast<std::uint64_t>(key1)};
+        auto const ukey2 = UInt256{static_cast<std::uint64_t>(key2)};
+        auto const ukey3 = UInt256{static_cast<std::uint64_t>(key3)};
 
         // t=0
         router.setFlags(ukey1, HashRouterFlags::PRIVATE1);
@@ -80,10 +81,10 @@ class HashRouter_test : public beast::unit_test::suite
         HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
         HashRouterFlags const key4(HashRouterFlags::PRIVATE4);
 
-        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
-        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
-        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
-        auto const ukey4 = uint256{static_cast<std::uint64_t>(key4)};
+        auto const ukey1 = UInt256{static_cast<std::uint64_t>(key1)};
+        auto const ukey2 = UInt256{static_cast<std::uint64_t>(key2)};
+        auto const ukey3 = UInt256{static_cast<std::uint64_t>(key3)};
+        auto const ukey4 = UInt256{static_cast<std::uint64_t>(key4)};
 
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
@@ -161,10 +162,10 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        uint256 const key1(1);
-        uint256 const key2(2);
-        uint256 const key3(3);
-        uint256 const key4(4);
+        UInt256 const key1(1);
+        UInt256 const key2(2);
+        UInt256 const key3(3);
+        UInt256 const key4(4);
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
         HashRouterFlags flags(HashRouterFlags::BAD);  // This value is ignored
@@ -190,7 +191,7 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        uint256 const key1(1);
+        UInt256 const key1(1);
         BEAST_EXPECT(router.setFlags(key1, HashRouterFlags::PRIVATE1));
         BEAST_EXPECT(!router.setFlags(key1, HashRouterFlags::PRIVATE1));
         BEAST_EXPECT(router.setFlags(key1, HashRouterFlags::PRIVATE2));
@@ -204,7 +205,7 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(50s, 1s), stopwatch);
 
-        uint256 const key1(1);
+        UInt256 const key1(1);
 
         std::optional<std::set<HashRouter::PeerShortID>> peers;
 
@@ -247,7 +248,7 @@ class HashRouter_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
         HashRouter router(getSetup(5s, 1s), stopwatch);
-        uint256 const key(1);
+        UInt256 const key(1);
         HashRouter::PeerShortID const peer = 1;
         HashRouterFlags flags = HashRouterFlags::UNDEFINED;
 
@@ -267,39 +268,39 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config const cfg;
             // default
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
         }
         {
             Config cfg;
             // non-default
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "600");
-            h.set("relay_time", "15");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "600");
+            h.set(Keys::kRelayTime, "15");
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 600s);
             BEAST_EXPECT(setup.relayTime == 15s);
         }
         {
             Config cfg;
             // equal
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "400");
-            h.set("relay_time", "400");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "400");
+            h.set(Keys::kRelayTime, "400");
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 400s);
             BEAST_EXPECT(setup.relayTime == 400s);
         }
         {
             Config cfg;
             // wrong order
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "60");
-            h.set("relay_time", "120");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "60");
+            h.set(Keys::kRelayTime, "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -313,12 +314,12 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // too small hold
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "10");
-            h.set("relay_time", "120");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "10");
+            h.set(Keys::kRelayTime, "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -333,12 +334,12 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // too small relay
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "500");
-            h.set("relay_time", "6");
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "500");
+            h.set(Keys::kRelayTime, "6");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -352,10 +353,10 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // garbage
-            auto& h = cfg.section("hashrouter");
-            h.set("hold_time", "alice");
-            h.set("relay_time", "bob");
-            auto const setup = setup_HashRouter(cfg);
+            auto& h = cfg.section(Sections::kHashrouter);
+            h.set(Keys::kHoldTime, "alice");
+            h.set(Keys::kRelayTime, "bob");
+            auto const setup = setupHashRouter(cfg);
             // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);

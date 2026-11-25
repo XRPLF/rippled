@@ -1,19 +1,30 @@
 {
-  "architecture": [
+  "platform": "windows/amd64",
+  "runner": ["self-hosted", "Windows", "dev-box-windows-2026"],
+  "configs": [
     {
-      "platform": "windows/amd64",
-      "runner": ["self-hosted", "Windows", "devbox"]
-    }
-  ],
-  "os": [
+      "build_type": "Release",
+      "events": [
+        "pull_request",
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
+    },
     {
-      "distro_name": "windows",
-      "distro_version": "",
-      "compiler_name": "",
-      "compiler_version": "",
-      "image_sha": ""
+      "build_type": "Debug",
+      "build_only": true,
+      "events": [
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     }
-  ],
-  "build_type": ["Debug", "Release"],
-  "cmake_args": [""]
+  ]
 }

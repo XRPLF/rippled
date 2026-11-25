@@ -4,9 +4,10 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -14,7 +15,7 @@
 
 namespace xrpl::test {
 
-class ManifestRPC_test : public beast::unit_test::suite
+class ManifestRPC_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -27,6 +28,8 @@ public:
         {
             // manifest with no public key
             auto const info = env.rpc("json", "manifest", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'public_key'.");
         }
         {
@@ -36,6 +39,8 @@ public:
                 "manifest",
                 "{ \"public_key\": "
                 "\"abcdef12345\"}");
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Invalid parameters.");
         }
     }
@@ -48,7 +53,7 @@ public:
         using namespace jtx;
         std::string const key = "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
         Env env{*this, envconfig([&key](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATORS).append(key);
+                    cfg->section(Sections::kValidators).append(key);
                     return cfg;
                 })};
         {

@@ -10,7 +10,6 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -145,7 +144,7 @@ public:
      * @return Reference to the derived builder for method chaining.
      */
     Derived&
-    setAccountTxnID(uint256 const& value)
+    setAccountTxnID(UInt256 const& value)
     {
         object_[sfAccountTxnID] = value;
         return static_cast<Derived&>(*this);
@@ -158,7 +157,7 @@ public:
      * @return Reference to the derived builder for method chaining.
      */
     Derived&
-    setPreviousTxnID(uint256 const& value)
+    setPreviousTxnID(UInt256 const& value)
     {
         object_[sfPreviousTxnID] = value;
         return static_cast<Derived&>(*this);
@@ -250,10 +249,10 @@ protected:
         // Set the signing public key
         object_.setFieldVL(sfSigningPubKey, publicKey.slice());
 
-        // Build the signing data: HashPrefix::txSign + serialized object
+        // Build the signing data: HashPrefix::TxSign + serialized object
         // (without signing fields)
         Serializer s;
-        s.add32(HashPrefix::txSign);
+        s.add32(HashPrefix::TxSign);
         object_.addWithoutSigningFields(s);
 
         // Sign and set the signature

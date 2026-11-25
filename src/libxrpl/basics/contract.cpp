@@ -10,13 +10,13 @@
 namespace xrpl {
 
 void
-LogThrow(std::string const& title)
+logThrow(std::string const& title)
 {
     JLOG(debugLog().warn()) << title;
 }
 
 [[noreturn]] void
-LogicError(std::string const& s) noexcept
+logicError(std::string const& s) noexcept
 {
     // LCOV_EXCL_START
     JLOG(debugLog().fatal()) << s;

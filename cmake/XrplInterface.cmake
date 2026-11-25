@@ -1,3 +1,4 @@
+# cspell:words comdlg odbccp oleaut shlwapi wsuggest
 #[===================================================================[
    xrpld compile options/settings via an interface library
 #]===================================================================]
@@ -23,7 +24,6 @@ target_compile_definitions(
         BOOST_FILESYSTEM_NO_DEPRECATED
         >
         $<$<NOT:$<BOOL:${boost_show_deprecated}>>:
-        BOOST_COROUTINES2_NO_DEPRECATION_WARNING
         BOOST_BEAST_ALLOW_DEPRECATED
         BOOST_FILESYSTEM_DEPRECATED
         >

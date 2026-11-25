@@ -56,12 +56,12 @@ deserializePrefixedHeader(Slice data, bool hasHash)
     return deserializeHeader(data + 4, hasHash);
 }
 
-uint256
+UInt256
 calculateLedgerHash(LedgerHeader const& info)
 {
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
-        HashPrefix::ledgerMaster,
+        HashPrefix::LedgerMaster,
         std::uint32_t(info.seq),
         std::uint64_t(info.drops.drops()),
         info.parentHash,

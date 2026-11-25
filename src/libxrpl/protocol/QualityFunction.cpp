@@ -13,7 +13,7 @@ namespace xrpl {
 QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag)
     : m_(0), b_(0), quality_(quality)
 {
-    if (quality.rate() <= beast::zero)
+    if (quality.rate() <= beast::kZero)
         Throw<std::runtime_error>("QualityFunction quality rate is 0.");
     b_ = 1 / quality.rate();
 }
@@ -30,15 +30,30 @@ QualityFunction::combine(QualityFunction const& qf)
 std::optional<Number>
 QualityFunction::outFromAvgQ(Quality const& quality)
 {
-    if (m_ != 0 && quality.rate() != beast::zero)
+    if (m_ != 0 && quality.rate() != beast::kZero)
     {
-        saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::upward));
+        SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Upward));
         auto const out = (1 / quality.rate() - b_) / m_;
         if (out <= 0)
             return std::nullopt;
         return out;
     }
-    return std::nullopt;
+    // The sole caller (StrandFlow::limitOut) only invokes this on a non-const
+    // quality function, so m_ != 0 here, and a real payment/offer never yields
+    // a zero-rate limit quality (it would divide by zero above). This fallback
+    // is therefore unreachable in practice.
+    return std::nullopt;  // LCOV_EXCL_LINE
+}
+
+bool
+QualityFunction::satisfiesAvgQ(Quality const& quality, Number const& out) const
+{
+    // satisfiesAvgQ is only reached from StrandFlow::limitOut *after*
+    // outFromAvgQ returned a value, which requires a non-zero rate. So a
+    // zero-rate quality never reaches here; this guard is defensive.
+    if (quality.rate() == beast::kZero)
+        return false;  // LCOV_EXCL_LINE
+    return m_ * out + b_ >= 1 / quality.rate();
 }
 
 }  // namespace xrpl

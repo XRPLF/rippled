@@ -2,8 +2,17 @@
 
 #include <xrpld/app/main/CollectorManager.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
+
+#include <cstdint>
+#include <memory>
+#include <mutex>
 
 namespace xrpl {
 
@@ -24,13 +33,13 @@ public:
 
     NodeFamily(Application& app, CollectorManager& cm);
 
-    NodeStore::Database&
+    node_store::Database&
     db() override
     {
         return db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] node_store::Database const&
     db() const override
     {
         return db_;
@@ -61,17 +70,17 @@ public:
     reset() override;
 
     void
-    missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& hash) override;
+    missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& hash) override;
 
     void
-    missingNodeAcquireByHash(uint256 const& hash, std::uint32_t seq) override
+    missingNodeAcquireByHash(UInt256 const& hash, std::uint32_t seq) override
     {
         acquire(hash, seq);
     }
 
 private:
     Application& app_;
-    NodeStore::Database& db_;
+    node_store::Database& db_;
     beast::Journal const j_;
 
     std::shared_ptr<FullBelowCache> fbCache_;
@@ -82,7 +91,7 @@ private:
     std::mutex maxSeqMutex_;
 
     void
-    acquire(uint256 const& hash, std::uint32_t seq);
+    acquire(UInt256 const& hash, std::uint32_t seq);
 };
 
 }  // namespace xrpl

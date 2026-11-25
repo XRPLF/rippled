@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Json {
+namespace json {
 
 // value.h
 using Int = int;
@@ -11,4 +11,4 @@ class ValueIteratorBase;
 class ValueIterator;
 class ValueConstIterator;
 
-}  // namespace Json
+}  // namespace json

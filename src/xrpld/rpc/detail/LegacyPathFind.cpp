@@ -9,31 +9,31 @@
 
 #include <atomic>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 {
     if (isAdmin)
     {
         ++inProgress;
-        m_isOk = true;
+        isOk_ = true;
         return;
     }
 
-    auto const& jobCount = app.getJobQueue().getJobCountGE(jtCLIENT);
-    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
+    auto const& jobCount = app.getJobQueue().getJobCountGE(JtClient);
+    if (jobCount > tuning::kMaxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
     {
         int prevVal = inProgress.load();
-        if (prevVal >= Tuning::maxPathfindsInProgress)
+        if (prevVal >= tuning::kMaxPathfindsInProgress)
             return;
 
         if (inProgress.compare_exchange_strong(
                 prevVal, prevVal + 1, std::memory_order_release, std::memory_order_relaxed))
         {
-            m_isOk = true;
+            isOk_ = true;
             return;
         }
     }
@@ -41,10 +41,10 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 
 LegacyPathFind::~LegacyPathFind()
 {
-    if (m_isOk)
+    if (isOk_)
         --inProgress;
 }
 
 std::atomic<int> LegacyPathFind::inProgress(0);
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

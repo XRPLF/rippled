@@ -98,13 +98,13 @@ STArray::getFullText() const
     for (auto const& obj : v_)
     {
         if (!first)
-            r += ",";
+            r += ',';
 
         r += obj.getFullText();
         first = false;
     }
 
-    r += "]";
+    r += ']';
     return r;
 }
 
@@ -117,25 +117,25 @@ STArray::getText() const
     for (STObject const& o : v_)
     {
         if (!first)
-            r += ",";
+            r += ',';
 
         r += o.getText();
         first = false;
     }
 
-    r += "]";
+    r += ']';
     return r;
 }
 
-Json::Value
+json::Value
 STArray::getJson(JsonOptions p) const
 {
-    Json::Value v = Json::arrayValue;
+    json::Value v = json::ValueType::Array;
     for (auto const& object : v_)
     {
         if (object.getSType() != STI_NOTPRESENT)
         {
-            Json::Value& inner = v.append(Json::objectValue);
+            json::Value& inner = v.append(json::ValueType::Object);
             inner[object.getFName().getJsonName()] = object.getJson(p);
         }
     }

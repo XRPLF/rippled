@@ -1,9 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyStateTable.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <optional>
 
 namespace xrpl::detail {
 
@@ -22,75 +32,75 @@ public:
     ApplyViewBase(ReadView const* base, ApplyFlags flags);
 
     // ReadView
-    bool
+    [[nodiscard]] bool
     open() const override;
 
-    LedgerHeader const&
+    [[nodiscard]] LedgerHeader const&
     header() const override;
 
-    Fees const&
+    [[nodiscard]] Fees const&
     fees() const override;
 
-    Rules const&
+    [[nodiscard]] Rules const&
     rules() const override;
 
-    bool
+    [[nodiscard]] bool
     exists(Keylet const& k) const override;
 
-    std::optional<key_type>
+    [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
-    slesUpperBound(uint256 const& key) const override;
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
     txsEnd() const override;
 
-    bool
+    [[nodiscard]] bool
     txExists(key_type const& key) const override;
 
-    tx_type
+    [[nodiscard]] TxType
     txRead(key_type const& key) const override;
 
     // ApplyView
 
-    ApplyFlags
+    [[nodiscard]] ApplyFlags
     flags() const override;
 
-    std::shared_ptr<SLE>
+    SLE::pointer
     peek(Keylet const& k) override;
 
     void
-    erase(std::shared_ptr<SLE> const& sle) override;
+    erase(SLE::Ref sle) override;
 
     void
-    insert(std::shared_ptr<SLE> const& sle) override;
+    insert(SLE::Ref sle) override;
 
     void
-    update(std::shared_ptr<SLE> const& sle) override;
+    update(SLE::Ref sle) override;
 
     // RawView
 
     void
-    rawErase(std::shared_ptr<SLE> const& sle) override;
+    rawErase(SLE::Ref sle) override;
 
     void
-    rawInsert(std::shared_ptr<SLE> const& sle) override;
+    rawInsert(SLE::Ref sle) override;
 
     void
-    rawReplace(std::shared_ptr<SLE> const& sle) override;
+    rawReplace(SLE::Ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;

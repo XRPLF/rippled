@@ -14,12 +14,12 @@ namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
-class ClosureCounter_test : public beast::unit_test::suite
+class ClosureCounter_test : public beast::unit_test::Suite
 {
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j{env_.app().getJournal("ClosureCounter_test")};
+    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::Severity::Disabled};
+    beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
 
     void
     testConstruction()
@@ -32,7 +32,7 @@ class ClosureCounter_test : public beast::unit_test::suite
 
             int evidence = 0;
             // Make sure voidCounter.wrap works with an rvalue closure.
-            auto wrapped = voidCounter.wrap([&evidence]() { ++evidence; });
+            auto wrapped = voidCounter.wrap([&evidence] { ++evidence; });
             BEAST_EXPECT(voidCounter.count() == 1);
             BEAST_EXPECT(evidence == 0);
             BEAST_EXPECT(wrapped);
@@ -205,7 +205,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(strCounter.count() == 0);
 
             auto wrapped = strCounter.wrap([](TrackedString&& in) {
-                // Note that none of the compilers noticed that in was
+                // Note that kNone of the compilers noticed that in was
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.
@@ -234,7 +234,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         ClosureCounter<void> voidCounter;
         BEAST_EXPECT(voidCounter.count() == 0);
         {
-            auto wrapped1 = voidCounter.wrap([]() {});
+            auto const wrapped1 = voidCounter.wrap([] {});
             BEAST_EXPECT(voidCounter.count() == 1);
             {
                 // Copy should increase reference count.
@@ -242,11 +242,11 @@ class ClosureCounter_test : public beast::unit_test::suite
                 BEAST_EXPECT(voidCounter.count() == 2);
                 {
                     // Move should increase reference count.
-                    auto wrapped3(std::move(wrapped2));
+                    auto const wrapped3(std::move(wrapped2));
                     BEAST_EXPECT(voidCounter.count() == 3);
                     {
                         // An additional closure also increases count.
-                        auto wrapped4 = voidCounter.wrap([]() {});
+                        auto const wrapped4 = voidCounter.wrap([] {});
                         BEAST_EXPECT(voidCounter.count() == 4);
                     }
                     BEAST_EXPECT(voidCounter.count() == 3);
@@ -259,7 +259,7 @@ class ClosureCounter_test : public beast::unit_test::suite
 
         // Join with 0 count should not stall.
         using namespace std::chrono_literals;
-        voidCounter.join("testWrap", 1ms, j);
+        voidCounter.join("testWrap", 1ms, j_);
 
         // Wrapping a closure after join() should return std::nullopt.
         BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
@@ -272,15 +272,15 @@ class ClosureCounter_test : public beast::unit_test::suite
         ClosureCounter<void> voidCounter;
         BEAST_EXPECT(voidCounter.count() == 0);
 
-        auto wrapped = (voidCounter.wrap([]() {}));
+        auto wrapped = (voidCounter.wrap([] {}));
         BEAST_EXPECT(voidCounter.count() == 1);
 
         // Calling join() now should stall, so do it on a different thread.
         std::atomic<bool> threadExited{false};
-        std::thread localThread([&voidCounter, &threadExited, this]() {
+        std::thread localThread([&voidCounter, &threadExited, this] {
             // Should stall after calling join.
             using namespace std::chrono_literals;
-            voidCounter.join("testWaitOnJoin", 1ms, j);
+            voidCounter.join("testWaitOnJoin", 1ms, j_);
             threadExited.store(true);
         });
 

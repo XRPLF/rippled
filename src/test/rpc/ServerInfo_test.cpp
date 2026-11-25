@@ -3,22 +3,23 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format/free_funcs.hpp>
-
+#include <format>
 #include <memory>
 
 namespace xrpl::test {
 
 namespace validator_data {
-static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+static auto const kPublicKey = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
 
-static auto const token =
+static auto const kToken =
     "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n"
     "QzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl\n"
     "c3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n"
@@ -29,19 +30,20 @@ static auto const token =
     "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n";
 }  // namespace validator_data
 
-class ServerInfo_test : public beast::unit_test::suite
+class ServerInfo_test : public beast::unit_test::Suite
 {
 public:
     static std::unique_ptr<Config>
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
-        boost::format toLoad(R"xrpldConfig(
+        auto const toLoad = std::format(
+            R"xrpldConfig(
 [validator_token]
-%1%
+{}
 
 [validators]
-%2%
+{}
 
 [port_grpc]
 ip = 0.0.0.0
@@ -52,9 +54,11 @@ ip = 0.0.0.0
 port = 50052
 protocol = wss2
 admin = 127.0.0.1
-)xrpldConfig");
+)xrpldConfig",
+            validator_data::kToken,
+            validator_data::kPublicKey);
 
-        p->loadFromString(boost::str(toLoad % validator_data::token % validator_data::public_key));
+        p->loadFromString(toLoad);
 
         setupConfigForUnitTests(*p);
 
@@ -108,12 +112,12 @@ admin = 127.0.0.1
             Env env(*this, makeValidatorConfig());
             auto const& config = env.app().config();
 
-            auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
-            auto const grpc_port = config[SECTION_PORT_GRPC].get<unsigned int>("port");
-            auto const ws_port = config["port_ws"].get<unsigned int>("port");
-            BEAST_EXPECT(grpc_port);
-            BEAST_EXPECT(rpc_port);
-            BEAST_EXPECT(ws_port);
+            auto const rpcPort = config[Sections::kPortRpc].get<unsigned int>(Keys::kPort);
+            auto const grpcPort = config[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
+            auto const wsPort = config[Sections::kPortWs].get<unsigned int>(Keys::kPort);
+            BEAST_EXPECT(grpcPort);
+            BEAST_EXPECT(rpcPort);
+            BEAST_EXPECT(wsPort);
 
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
@@ -121,7 +125,7 @@ admin = 127.0.0.1
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
             BEAST_EXPECT(
                 result[jss::result][jss::info][jss::pubkey_validator] ==
-                validator_data::public_key);
+                validator_data::kPublicKey);
 
             auto const& ports = result[jss::result][jss::info][jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 3);
@@ -130,19 +134,19 @@ admin = 127.0.0.1
                 auto const& proto = port[jss::protocol];
                 BEAST_EXPECT(proto.isArray());
                 auto const p = port[jss::port].asUInt();
-                BEAST_EXPECT(p == rpc_port || p == ws_port || p == grpc_port);
-                if (p == grpc_port)
+                BEAST_EXPECT(p == rpcPort || p == wsPort || p == grpcPort);
+                if (p == grpcPort)
                 {
                     BEAST_EXPECT(proto.size() == 1);
                     BEAST_EXPECT(proto[0u].asString() == "grpc");
                 }
-                if (p == rpc_port)
+                if (p == rpcPort)
                 {
                     BEAST_EXPECT(proto.size() == 2);
                     BEAST_EXPECT(proto[0u].asString() == "http");
                     BEAST_EXPECT(proto[1u].asString() == "ws2");
                 }
-                if (p == ws_port)
+                if (p == wsPort)
                 {
                     BEAST_EXPECT(proto.size() == 1);
                     BEAST_EXPECT(proto[0u].asString() == "ws");
@@ -150,11 +154,35 @@ admin = 127.0.0.1
             }
         }
     }
+    void
+    testLogLevelParameterTypes()
+    {
+        testcase("log_level parameter types");
 
+        using namespace test::jtx;
+
+        Env env(*this);
+
+        auto const testInvalidParams = [&](json::Value const& params) {
+            auto const result = env.rpc("json", "log_level", to_string(params))[jss::result];
+
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+        };
+
+        json::Value invalidSeverity(json::ValueType::Object);
+        invalidSeverity[jss::severity] = 5;
+        testInvalidParams(invalidSeverity);
+
+        json::Value invalidPartition(json::ValueType::Object);
+        invalidPartition[jss::severity] = "warn";
+        invalidPartition[jss::partition] = 5;
+        testInvalidParams(invalidPartition);
+    }
     void
     run() override
     {
         testServerInfo();
+        testLogLevelParameterTypes();
     }
 };
 

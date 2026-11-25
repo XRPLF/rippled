@@ -10,7 +10,7 @@
 
 namespace xrpl {
 
-struct STAccount_test : public beast::unit_test::suite
+struct STAccount_test : public beast::unit_test::Suite
 {
     void
     testSTAccount()

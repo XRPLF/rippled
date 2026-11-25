@@ -3,20 +3,18 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/RawView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <map>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -50,21 +48,21 @@ DeferredCredits::creditIOU(
         amount.holds<Issue>(), "xrpl::detail::DeferredCredits::creditIOU : amount is for Issue");
 
     auto const k = makeKeyIOU(sender, receiver, amount.get<Issue>().currency);
-    auto i = creditsIOU_.find(k);
+    auto const i = creditsIOU_.find(k);
     if (i == creditsIOU_.end())
     {
         ValueIOU v;
 
         if (sender < receiver)
         {
-            v.highAcctCredits = amount;
-            v.lowAcctCredits = amount.zeroed();
+            v.lowAcctDebits = amount;
+            v.highAcctDebits = amount.zeroed();
             v.lowAcctOrigBalance = preCreditSenderBalance;
         }
         else
         {
-            v.highAcctCredits = amount.zeroed();
-            v.lowAcctCredits = amount;
+            v.lowAcctDebits = amount.zeroed();
+            v.highAcctDebits = amount;
             v.lowAcctOrigBalance = -preCreditSenderBalance;
         }
 
@@ -76,11 +74,11 @@ DeferredCredits::creditIOU(
         auto& v = i->second;
         if (sender < receiver)
         {
-            v.highAcctCredits += amount;
+            v.lowAcctDebits += amount;
         }
         else
         {
-            v.lowAcctCredits += amount;
+            v.highAcctDebits += amount;
         }
     }
 }
@@ -106,7 +104,7 @@ DeferredCredits::creditMPT(
     auto const& mptID = mptIssue.getMptID();
     bool const isSenderIssuer = sender == issuer;
 
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
     if (i == creditsMPT_.end())
     {
         IssuerValueMPT v;
@@ -157,7 +155,7 @@ DeferredCredits::issuerSelfDebitMPT(
     std::int64_t origBalance)
 {
     auto const& mptID = issue.getMptID();
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
 
     if (i == creditsMPT_.end())
     {
@@ -173,10 +171,10 @@ DeferredCredits::issuerSelfDebitMPT(
 }
 
 void
-DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
+DeferredCredits::ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCounts const& next)
 {
     auto const v = std::max(cur, next);
-    auto r = ownerCounts_.emplace(id, v);
+    auto const r = ownerCounts_.emplace(id, v);
     if (!r.second)
     {
         auto& mapVal = r.first->second;
@@ -184,10 +182,10 @@ DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_
     }
 }
 
-std::optional<std::uint32_t>
+std::optional<OwnerCounts>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
-    auto i = ownerCounts_.find(id);
+    auto const i = ownerCounts_.find(id);
     if (i != ownerCounts_.end())
         return i->second;
     return std::nullopt;
@@ -203,7 +201,7 @@ DeferredCredits::adjustmentsIOU(
     std::optional<AdjustmentIOU> result;
 
     KeyIOU const k = makeKeyIOU(main, other, currency);
-    auto i = creditsIOU_.find(k);
+    auto const i = creditsIOU_.find(k);
     if (i == creditsIOU_.end())
         return result;
 
@@ -211,18 +209,18 @@ DeferredCredits::adjustmentsIOU(
 
     if (main < other)
     {
-        result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
+        result.emplace(v.lowAcctDebits, v.highAcctDebits, v.lowAcctOrigBalance);
         return result;
     }
 
-    result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+    result.emplace(v.highAcctDebits, v.lowAcctDebits, -v.lowAcctOrigBalance);
     return result;
 }
 
 auto
 DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional<AdjustmentMPT>
 {
-    auto i = creditsMPT_.find(mptID);
+    auto const i = creditsMPT_.find(mptID);
     if (i == creditsMPT_.end())
         return std::nullopt;
     return i->second;
@@ -233,20 +231,20 @@ DeferredCredits::apply(DeferredCredits& to)
 {
     for (auto const& i : creditsIOU_)
     {
-        auto r = to.creditsIOU_.emplace(i);
+        auto const r = to.creditsIOU_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;
             auto const& fromVal = i.second;
-            toVal.lowAcctCredits += fromVal.lowAcctCredits;
-            toVal.highAcctCredits += fromVal.highAcctCredits;
+            toVal.lowAcctDebits += fromVal.lowAcctDebits;
+            toVal.highAcctDebits += fromVal.highAcctDebits;
             // Do not update the orig balance, it's already correct
         }
     }
 
     for (auto const& i : creditsMPT_)
     {
-        auto r = to.creditsMPT_.emplace(i);
+        auto const r = to.creditsMPT_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;
@@ -270,7 +268,7 @@ DeferredCredits::apply(DeferredCredits& to)
 
     for (auto const& i : ownerCounts_)
     {
-        auto r = to.ownerCounts_.emplace(i);
+        auto const r = to.ownerCounts_.emplace(i);
         if (!r.second)
         {
             auto& toVal = r.first->second;
@@ -324,7 +322,7 @@ PaymentSandbox::balanceHookIOU(
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
     adjustedAmt.get<Issue>().account = amount.getIssuer();
 
-    if (isXRP(issuer) && adjustedAmt < beast::zero)
+    if (isXRP(issuer) && adjustedAmt < beast::kZero)
     {
         // A calculated negative XRP balance is not an error case. Consider a
         // payment snippet that credits a large XRP amount and then debits the
@@ -394,10 +392,10 @@ PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_
     return STAmount{issue};
 }
 
-std::uint32_t
-PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
+OwnerCounts
+PaymentSandbox::ownerCountHook(AccountID const& account, OwnerCounts const& count) const
 {
-    std::uint32_t result = count;
+    OwnerCounts result = count;
     for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.ownerCount(account))
@@ -437,16 +435,14 @@ PaymentSandbox::issuerSelfDebitHookMPT(
     std::uint64_t amount,
     std::int64_t origBalance)
 {
-    XRPL_ASSERT(amount > 0, "PaymentSandbox::issuerSelfDebitHookMPT: amount must be > 0");
-
     tab_.issuerSelfDebitMPT(issue, amount, origBalance);
 }
 
 void
 PaymentSandbox::adjustOwnerCountHook(
     AccountID const& account,
-    std::uint32_t cur,
-    std::uint32_t next)
+    OwnerCounts const& cur,
+    OwnerCounts const& next)
 {
     tab_.ownerCount(account, cur, next);
 }
@@ -464,131 +460,6 @@ PaymentSandbox::apply(PaymentSandbox& to)
     XRPL_ASSERT(ps_ == &to, "xrpl::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
-}
-
-std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>
-PaymentSandbox::balanceChanges(ReadView const& view) const
-{
-    using key_t = std::tuple<AccountID, AccountID, Currency>;
-    // Map of delta trust lines. As a special case, when both ends of the trust
-    // line are the same currency, then it's delta currency for that issuer. To
-    // get the change in XRP balance, Account == root, issuer == root, currency
-    // == XRP
-    std::map<key_t, STAmount> result;
-
-    // populate a dictionary with low/high/currency/delta. This can be
-    // compared with the other versions payment code.
-    auto each = [&result](
-                    uint256 const& key,
-                    bool isDelete,
-                    std::shared_ptr<SLE const> const& before,
-                    std::shared_ptr<SLE const> const& after) {
-        STAmount oldBalance;
-        STAmount newBalance;
-        AccountID lowID;
-        AccountID highID;
-
-        // before is read from prev view
-        if (isDelete)
-        {
-            if (!before)
-                return;
-
-            auto const bt = before->getType();
-            switch (bt)
-            {
-                case ltACCOUNT_ROOT:
-                    lowID = xrpAccount();
-                    highID = (*before)[sfAccount];
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = oldBalance.zeroed();
-                    break;
-                case ltRIPPLE_STATE:
-                    lowID = (*before)[sfLowLimit].getIssuer();
-                    highID = (*before)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = oldBalance.zeroed();
-                    break;
-                case ltOFFER:
-                    // TBD
-                    break;
-                default:
-                    break;
-            }
-        }
-        else if (!before)
-        {
-            // insert
-            auto const at = after->getType();
-            switch (at)
-            {
-                case ltACCOUNT_ROOT:
-                    lowID = xrpAccount();
-                    highID = (*after)[sfAccount];
-                    newBalance = (*after)[sfBalance];
-                    oldBalance = newBalance.zeroed();
-                    break;
-                case ltRIPPLE_STATE:
-                    lowID = (*after)[sfLowLimit].getIssuer();
-                    highID = (*after)[sfHighLimit].getIssuer();
-                    newBalance = (*after)[sfBalance];
-                    oldBalance = newBalance.zeroed();
-                    break;
-                case ltOFFER:
-                    // TBD
-                    break;
-                default:
-                    break;
-            }
-        }
-        else
-        {
-            // modify
-            auto const at = after->getType();
-            XRPL_ASSERT(
-                at == before->getType(),
-                "xrpl::PaymentSandbox::balanceChanges : after and before "
-                "types matching");
-            switch (at)
-            {
-                case ltACCOUNT_ROOT:
-                    lowID = xrpAccount();
-                    highID = (*after)[sfAccount];
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = (*after)[sfBalance];
-                    break;
-                case ltRIPPLE_STATE:
-                    lowID = (*after)[sfLowLimit].getIssuer();
-                    highID = (*after)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = (*after)[sfBalance];
-                    break;
-                case ltOFFER:
-                    // TBD
-                    break;
-                default:
-                    break;
-            }
-        }
-        // The following are now set, put them in the map
-        auto delta = newBalance - oldBalance;
-        auto const cur = newBalance.get<Issue>().currency;
-        result[std::make_tuple(lowID, highID, cur)] = delta;
-        auto r = result.emplace(std::make_tuple(lowID, lowID, cur), delta);
-        if (r.second)
-        {
-            r.first->second += delta;
-        }
-
-        delta.negate();
-        r = result.emplace(std::make_tuple(highID, highID, cur), delta);
-        if (r.second)
-        {
-            r.first->second += delta;
-        }
-    };
-    items_.visit(view, each);
-    return result;
 }
 
 XRPAmount

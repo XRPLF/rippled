@@ -9,19 +9,19 @@
 
 namespace xrpl::test::jtx {
 
-Json::Value
-regkey(Account const& account, disabled_t)
+json::Value
+regkey(Account const& account, DisabledT)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SetRegularKey;
     return jv;
 }
 
-Json::Value
+json::Value
 regkey(Account const& account, Account const& signer)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv["RegularKey"] = to_string(signer.id());
     jv[jss::TransactionType] = jss::SetRegularKey;

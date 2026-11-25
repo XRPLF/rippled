@@ -24,7 +24,7 @@ textTime(
     char const* unitName,
     std::chrono::seconds unitVal)
 {
-    auto i = seconds.time_since_epoch() / unitVal;
+    auto const i = seconds.time_since_epoch() / unitVal;
 
     if (i == 0)
         return;
@@ -35,19 +35,19 @@ textTime(
         text += ", ";
 
     text += std::to_string(i);
-    text += " ";
+    text += ' ';
     text += unitName;
 
     if (i > 1)
-        text += "s";
+        text += 's';
 }
 
-Json::Value
+json::Value
 getCountsJson(Application& app, int minObjectCount)
 {
-    auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
+    auto const objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     for (auto const& [k, v] : objectCounts)
     {
@@ -76,7 +76,7 @@ getCountsJson(Application& app, int minObjectCount)
         {
             std::size_t const c = app.getOPs().getLocalTxCount();
             if (c > 0)
-                ret[jss::local_txs] = static_cast<Json::UInt>(c);
+                ret[jss::local_txs] = static_cast<json::UInt>(c);
         }
     }
 
@@ -85,7 +85,7 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.getCachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
-    ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
+    ret[jss::AL_size] = json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] = static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
@@ -110,8 +110,8 @@ getCountsJson(Application& app, int minObjectCount)
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value
-doGetCounts(RPC::JsonContext& context)
+json::Value
+doGetCounts(rpc::JsonContext& context)
 {
     int minCount = 10;
 

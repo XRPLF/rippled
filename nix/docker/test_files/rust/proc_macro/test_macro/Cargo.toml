@@ -1,0 +1,8 @@
+[package]
+name = "test_macro"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+echo_macro = { path = "../echo_macro" }

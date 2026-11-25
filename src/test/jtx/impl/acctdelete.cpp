@@ -13,10 +13,10 @@
 namespace xrpl::test::jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
-Json::Value
+json::Value
 acctdelete(jtx::Account const& account, jtx::Account const& dest)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfDestination.jsonName] = dest.human();
     jv[sfTransactionType.jsonName] = jss::AccountDelete;
@@ -32,7 +32,7 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     using namespace jtx;
     auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t { return env.current()->seq(); };
 
-    int const delta = [&]() -> int {
+    int const delta = [&] -> int {
         if (env.seq(acc) + 255 > openLedgerSeq(env))
             return env.seq(acc) - openLedgerSeq(env) + 255 - margin;
         return 0;
