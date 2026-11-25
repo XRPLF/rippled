@@ -159,7 +159,7 @@ VaultDelete::doApply()
     }
     decreaseOwnerCountForObject(view(), pseudoAcct, mpt.mutableRawSle(), 1, j_);
 
-    mpt.erase();
+    mpt.eraseFromView();
 
     // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))
