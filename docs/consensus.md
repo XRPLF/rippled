@@ -565,7 +565,7 @@ template <class Adaptor>
 class Consensus
 {
 public:
-    Consensus(clock_type, Adaptor &, beast::journal);
+    Consensus(ClockType, Adaptor &, beast::journal);
 
     // Kick-off the next round of consensus.
     void startRound(
