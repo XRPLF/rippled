@@ -1,6 +1,7 @@
 #include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
@@ -17,6 +18,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -30,12 +32,14 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/lending/LoanSet.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -44,6 +48,27 @@ namespace xrpl::test {
 class LoanSet_test : public LoanTestBase
 {
 private:
+    // Submits a transaction, closes the ledger, and returns the result recorded in the closed
+    // ledger. Returns std::nullopt when the transaction is not in the closed ledger, which
+    // happens when it fails without claiming a fee, for example with a tem, tef or ter result.
+    //
+    // Build the transaction with Ter(std::ignore) when the result on submit can differ from
+    // the one in the closed ledger.
+    static std::optional<TER>
+    submitAndGetClosedLedgerResult(jtx::Env& env, jtx::JTx const& jt)
+    {
+        env.submit(jt);
+        env.close();
+        if (!jt.stx)
+            return std::nullopt;
+
+        auto const meta = env.closed()->txRead(jt.stx->getTransactionID()).second;
+        if (!meta)
+            return std::nullopt;
+
+        return TER::fromInt((*meta)[sfTransactionResult]);
+    }
+
     void
     testLoanSet(FeatureBitset features)
     {
@@ -816,8 +841,10 @@ private:
         // featureLendingProtocolV1_1 is excluded from `all_` by convention (see the comment on
         // `all_`), so callers must opt in. Closed-ended vaults are gated on this amendment; without
         // it VaultCreate returns temDISABLED and every follow-on txn sees tecNO_ENTRY.
-        auto const withEnv = [&, this](auto&& body) {
-            Env env(*this, testableAmendments() | featureLendingProtocolV1_1);
+        FeatureBitset const postFix{testableAmendments() | featureLendingProtocolV1_1};
+
+        auto const withEnv = [&, this](FeatureBitset const& features, auto&& body) {
+            Env env(*this, features);
             env.fund(XRP(1'000'000'000), issuer, lender, borrower);
             env.close();
             PrettyAsset const asset{xrpIssue(), 1'000'000};
@@ -837,7 +864,7 @@ private:
 
         // 1. Rejected during Subscription: the broker is created in Subscription (skipPhaseAdvance
         // = true), then LoanSet is attempted before advancing past SubscriptionDate.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
+        withEnv(postFix, [&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env,
                 asset,
@@ -848,7 +875,7 @@ private:
 
         // 2. Rejected during Redemption: broker is set up normally (which lands the vault in
         // Investment), then advance the clock past RedemptionDate before attempting LoanSet.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
+        withEnv(postFix, [&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             BEAST_EXPECT(broker.redemptionDate.has_value());
@@ -859,16 +886,15 @@ private:
         });
 
         // 3. Accepted during Investment when the schedule comfortably fits before RedemptionDate.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
+        withEnv(postFix, [&](Env& env, PrettyAsset const& asset) {
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             setLoan(env, broker, tesSUCCESS);
         });
 
-        // 4. Rejected during Investment when the loan's final payment would land fewer than
-        // kLoanRedemptionBuffer seconds before RedemptionDate. Use a tight redemptionOffset and a
-        // schedule whose final payment is well past that boundary.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
+        // 4. Rejected during Investment when the schedule ends well past RedemptionDate. Use a
+        // tight redemptionOffset and a schedule whose final payment is far beyond it.
+        withEnv(postFix, [&](Env& env, PrettyAsset const& asset) {
             constexpr std::uint32_t kRedemptionOffset = 3u * 24u * 3600u;
             auto const broker = createVaultAndBroker(
                 env,
@@ -888,44 +914,192 @@ private:
             env.close();
         });
 
-        // 5. Boundary: a finalPayment exactly kLoanRedemptionBuffer seconds before
-        // RedemptionDate is accepted; one second later is rejected. Uses payTotal = 1 so
-        // finalPayment = startDate + interval.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
-            auto const broker = createVaultAndBroker(
-                env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
-            BEAST_EXPECT(broker.redemptionDate.has_value());
-
-            auto const startDate = env.now().time_since_epoch().count();
-            auto const acceptInterval = *broker.redemptionDate - kLoanRedemptionBuffer - startDate;
-            env(set(lender, broker.brokerID, broker.asset(100).value()),
-                kCounterparty(borrower),
-                Sig(sfCounterpartySignature, borrower),
-                Fee(env.current()->fees().base * 5),
-                kPaymentTotal(1u),
-                kPaymentInterval(acceptInterval),
-                Ter(tesSUCCESS));
-            env.close();
-
-            auto const rejectInterval = *broker.redemptionDate - (kLoanRedemptionBuffer - 1) -
-                env.now().time_since_epoch().count();
-            env(set(lender, broker.brokerID, broker.asset(100).value()),
-                kCounterparty(borrower),
-                Sig(sfCounterpartySignature, borrower),
-                Fee(env.current()->fees().base * 5),
-                kPaymentTotal(1u),
-                kPaymentInterval(rejectInterval),
-                Ter(tecNO_PERMISSION));
-            env.close();
-        });
-
-        // 6. A vault whose Investment window is exactly kMinInvestmentPeriod can originate a
+        // 5. A vault whose Investment window is exactly the minimum can originate a
         // minimum-interval, single-payment loan at the start of Investment, and rejects the same
-        // schedule once StartDate no longer leaves kLoanRedemptionBuffer before RedemptionDate.
+        // schedule once StartDate no longer leaves the required gap before RedemptionDate.
         // Do not pin an unrounded wall-clock instant: Env::close rounds to the close-time
         // resolution. Read env.now() (the same clock LoanSet::preclaim uses) and assert the
-        // buffer relationship before each LoanSet.
-        withEnv([&](Env& env, PrettyAsset const& asset) {
+        // gap relationship before each LoanSet.
+        //
+        // With fixCleanup3_6_0 the schedule also has to fit the grace period and the wider
+        // buffer, and the minimum Investment window grows to match.
+        struct MinPeriodCase
+        {
+            FeatureBitset features;
+            std::uint32_t minInvestmentPeriod{};
+            // Seconds a minimum loan needs between StartDate and RedemptionDate.
+            std::uint32_t minScheduleLength{};
+        };
+        for (auto const& testCase : {
+                 MinPeriodCase{
+                     .features = postFix - fixCleanup3_6_0,
+                     .minInvestmentPeriod = kLegacyMinInvestmentPeriod,
+                     .minScheduleLength =
+                         lending::kMinLoanPaymentInterval + kLegacyLoanRedemptionBuffer,
+                 },
+                 MinPeriodCase{
+                     .features = postFix,
+                     .minInvestmentPeriod = kMinInvestmentPeriod,
+                     .minScheduleLength = lending::kMinLoanPaymentInterval +
+                         lending::kMinLoanGracePeriod + kLoanRedemptionBuffer,
+                 },
+             })
+        {
+            withEnv(testCase.features, [&](Env& env, PrettyAsset const& asset) {
+                auto const broker = createVaultAndBroker(
+                    env,
+                    asset,
+                    lender,
+                    BrokerParameters{
+                        .vaultKind = VaultKind::ClosedEnded,
+                        .subscriptionOffset = 300u,
+                        .redemptionOffset = testCase.minInvestmentPeriod,
+                        .skipPhaseAdvance = true,
+                    });
+                BEAST_EXPECT(broker.subscriptionDate.has_value());
+                BEAST_EXPECT(broker.redemptionDate.has_value());
+
+                auto const red = *broker.redemptionDate;
+                auto const startDate = [&] { return env.now().time_since_epoch().count(); };
+                auto const minLoan = [&](TER expected) {
+                    env(set(lender, broker.brokerID, broker.asset(100).value()),
+                        kCounterparty(borrower),
+                        Sig(sfCounterpartySignature, borrower),
+                        Fee(env.current()->fees().base * 5),
+                        kPaymentTotal(1u),
+                        kPaymentInterval(lending::kMinLoanPaymentInterval),
+                        kGracePeriod(lending::kMinLoanGracePeriod),
+                        Ter(expected));
+                    env.close();
+                };
+
+                // First Investment ledger: the minimum schedule still clears the gap.
+                env.close(Tp{D{*broker.subscriptionDate + 1}});
+                BEAST_EXPECT(startDate() > *broker.subscriptionDate);
+                BEAST_EXPECT(startDate() + testCase.minScheduleLength <= red);
+                minLoan(tesSUCCESS);
+
+                // Still Investment, but the minimum schedule no longer clears the gap.
+                while (startDate() + testCase.minScheduleLength <= red)
+                    env.close();
+                BEAST_EXPECT(startDate() < red);
+                minLoan(tecNO_PERMISSION);
+            });
+        }
+    }
+
+    // The maturity bound of a closed-ended LoanSet, at its exact boundary.
+    //
+    // Before fixCleanup3_6_0 only the final payment has to precede RedemptionDate, by
+    // kLegacyLoanRedemptionBuffer seconds, and the grace period is ignored. With the fix the
+    // final grace period has to end kLoanRedemptionBuffer seconds before RedemptionDate, so
+    // the loan can be defaulted before withdrawals open.
+    void
+    testLoanSetClosedEndedMaturityBound()
+    {
+        testcase("LoanSet closed-ended: maturity bound");
+        using namespace jtx;
+        using namespace loan;
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        FeatureBitset const postFix{testableAmendments() | featureLendingProtocolV1_1};
+        FeatureBitset const preFix{postFix - fixCleanup3_6_0};
+        constexpr std::uint32_t kGrace = 3600u;
+        // Every loan has more than one payment, and a grace period that differs from its
+        // interval. A bound that ignores the payment count, multiplies the grace period by it,
+        // or mixes up the interval and the grace period then gives a different result.
+        constexpr std::uint32_t kPayments = 2u;
+        // The Investment period before `gap` is added. Ledger close times are multiples of the
+        // close time resolution, and every resolution is an even number of seconds. With an
+        // even period the time from StartDate to the final due date is even as well, so it
+        // splits into kPayments equal intervals.
+        constexpr std::uint32_t kInvestmentPeriod = 365u * 24u * 3600u;
+
+        // Submits a loan whose final payment is due `gap` seconds before the vault's
+        // RedemptionDate, closes the ledger, and returns the result recorded in the closed
+        // ledger, if there is one. The result on submit is ignored because it is computed from
+        // the earlier StartDate and can differ at the boundary.
+        auto const submitLoan =
+            [&, this](FeatureBitset const& features, std::uint32_t gap) -> std::optional<TER> {
+            Env env(*this, features);
+            env.fund(XRP(1'000'000'000), lender, borrower);
+            env.close();
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            auto const broker = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                BrokerParameters{
+                    .vaultKind = VaultKind::ClosedEnded,
+                    .redemptionOffset = kInvestmentPeriod + gap,
+                });
+            auto const finalDueDate = *broker.redemptionDate - gap;
+            // LoanSet takes StartDate from the clock of the closing ledger.
+            auto const startDate = getClosingLedgerTime(env).time_since_epoch().count();
+            auto const interval = (finalDueDate - startDate) / kPayments;
+
+            return submitAndGetClosedLedgerResult(
+                env,
+                env.jt(
+                    set(lender, broker.brokerID, broker.asset(100).value()),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    kPaymentTotal(kPayments),
+                    kPaymentInterval(interval),
+                    kGracePeriod(kGrace),
+                    Ter(std::ignore)));
+        };
+
+        auto const preFixAtBound = submitLoan(preFix, kLegacyLoanRedemptionBuffer);
+        auto const preFixInsideBound = submitLoan(preFix, kLegacyLoanRedemptionBuffer - 1);
+        auto const postFixAtBound = submitLoan(postFix, kGrace + kLoanRedemptionBuffer);
+        auto const postFixInsideBound = submitLoan(postFix, kGrace + kLoanRedemptionBuffer - 1);
+        // The tightest schedule the legacy bound accepts.
+        auto const postFixAtLegacyBound = submitLoan(postFix, kLegacyLoanRedemptionBuffer);
+
+        BEAST_EXPECT(preFixAtBound == tesSUCCESS);
+        BEAST_EXPECT(preFixInsideBound == tecNO_PERMISSION);
+        BEAST_EXPECT(postFixAtBound == tesSUCCESS);
+        BEAST_EXPECT(postFixInsideBound == tecNO_PERMISSION);
+        BEAST_EXPECT(postFixAtLegacyBound == tecNO_PERMISSION);
+    }
+
+    // kMinInvestmentPeriod is sized for the coarsest close time resolution. On such a ledger
+    // the first loan of a vault can start as late as two resolutions after SubscriptionDate,
+    // and a vault with the shortest Investment period still has to fit the shortest loan after
+    // that StartDate.
+    //
+    // Env always closes ledgers at the finest resolution, so the test closes ledgers until
+    // StartDate reaches the same instant instead. The schedule check only looks at StartDate,
+    // so it cannot tell the two apart.
+    void
+    testLoanSetClosedEndedMinInvestmentPeriod()
+    {
+        testcase("LoanSet closed-ended: minimum Investment period at the coarsest resolution");
+        using namespace jtx;
+        using namespace loan;
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        FeatureBitset const features{testableAmendments() | featureLendingProtocolV1_1};
+        // Seconds from SubscriptionDate to the latest StartDate of a loan originated in the
+        // first Investment ledger. It takes up to one resolution for the ledger clock to pass
+        // SubscriptionDate, and one more for the ledger that holds the LoanSet to close.
+        constexpr std::uint32_t kLatestStartOffset =
+            (2 * std::ranges::max(kLedgerPossibleTimeResolutions)).count();
+
+        // Creates a vault with the shortest Investment period and submits a single-payment
+        // loan with the shortest grace period, timed so that its StartDate is
+        // kLatestStartOffset after SubscriptionDate. Returns the result recorded in the closed
+        // ledger, if there is one.
+        auto const submitLoanAtLatestStart = [&,
+                                              this](std::uint32_t interval) -> std::optional<TER> {
+            Env env(*this, features);
+            env.fund(XRP(1'000'000'000), lender, borrower);
+            env.close();
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
             auto const broker = createVaultAndBroker(
                 env,
                 asset,
@@ -936,34 +1110,31 @@ private:
                     .redemptionOffset = kMinInvestmentPeriod,
                     .skipPhaseAdvance = true,
                 });
-            BEAST_EXPECT(broker.subscriptionDate.has_value());
-            BEAST_EXPECT(broker.redemptionDate.has_value());
+            // LoanSet takes StartDate from the clock of the closing ledger.
+            NetClock::time_point const latestStart{
+                NetClock::duration{*broker.subscriptionDate + kLatestStartOffset}};
+            while (getClosingLedgerTime(env) < latestStart)
+                env.close();
 
-            auto const red = *broker.redemptionDate;
-            auto const startDate = [&] { return env.now().time_since_epoch().count(); };
-            auto const minLoan = [&](TER expected) {
-                env(set(lender, broker.brokerID, broker.asset(100).value()),
+            return submitAndGetClosedLedgerResult(
+                env,
+                env.jt(
+                    set(lender, broker.brokerID, broker.asset(100).value()),
                     kCounterparty(borrower),
                     Sig(sfCounterpartySignature, borrower),
                     Fee(env.current()->fees().base * 5),
                     kPaymentTotal(1u),
-                    kPaymentInterval(LoanSet::kMinPaymentInterval),
-                    Ter(expected));
-                env.close();
-            };
+                    kPaymentInterval(interval),
+                    kGracePeriod(lending::kMinLoanGracePeriod),
+                    Ter(std::ignore)));
+        };
 
-            // First Investment ledger: the minimum schedule still clears the buffer.
-            env.close(Tp{D{*broker.subscriptionDate + 1}});
-            BEAST_EXPECT(startDate() > *broker.subscriptionDate);
-            BEAST_EXPECT(startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red);
-            minLoan(tesSUCCESS);
+        auto const shortestLoan = submitLoanAtLatestStart(lending::kMinLoanPaymentInterval);
+        // A loan one second longer does not fit, so the period has no slack.
+        auto const longerLoan = submitLoanAtLatestStart(lending::kMinLoanPaymentInterval + 1);
 
-            // Still Investment, but the minimum schedule no longer clears the buffer.
-            while (startDate() + LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer <= red)
-                env.close();
-            BEAST_EXPECT(startDate() < red);
-            minLoan(tecNO_PERMISSION);
-        });
+        BEAST_EXPECT(shortestLoan == tesSUCCESS);
+        BEAST_EXPECT(longerLoan == tecNO_PERMISSION);
     }
 
     // LoanSet used to call canAddHolding unconditionally, so an existing
@@ -1190,6 +1361,8 @@ public:
             testLoanSet(features);
 
         testLoanSetClosedEnded();
+        testLoanSetClosedEndedMaturityBound();
+        testLoanSetClosedEndedMinInvestmentPeriod();
         testFixedPrecisionLoanSet();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);

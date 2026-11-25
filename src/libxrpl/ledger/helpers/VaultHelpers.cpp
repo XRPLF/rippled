@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -788,12 +790,61 @@ isValidVaultKind(STTx const& tx)
         *kindField == std::to_underlying(VaultKind::ClosedEnded);
 }
 
+// kLoanRedemptionBuffer and kMinInvestmentPeriod are fixed numbers in
+// Protocol.h, which cannot see the ledger close time resolutions. The checks
+// below tie each number to the limits it is derived from, as described where
+// the constants are declared.
+//
+// Transaction validity depends on both numbers. If a check fails because one
+// of the limits changed, the number must not simply be updated to match. Such
+// a change needs an amendment.
+static_assert(
+    std::chrono::seconds{kLoanRedemptionBuffer} ==
+    std::ranges::max(kLedgerPossibleTimeResolutions) + std::chrono::seconds{1});
+static_assert(
+    std::chrono::seconds{kMinInvestmentPeriod} ==
+    2 * std::ranges::max(kLedgerPossibleTimeResolutions) +
+        std::chrono::seconds{
+            lending::kMinLoanPaymentInterval + lending::kMinLoanGracePeriod +
+            kLoanRedemptionBuffer});
+
 [[nodiscard]] bool
-isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red)
+isValidClosedEndedGap(Rules const& rules, std::uint32_t sub, std::uint32_t red)
 {
     auto const s = static_cast<std::int64_t>(sub);
     auto const r = static_cast<std::int64_t>(red);
-    return r >= s + kMinInvestmentPeriod && r < s + kMaxInvestmentPeriod;
+    // The longer floor leaves room for the grace period and the wider buffer
+    // that isValidClosedEndedLoanSchedule requires under the same amendment.
+    auto const minPeriod =
+        rules.enabled(fixCleanup3_6_0) ? kMinInvestmentPeriod : kLegacyMinInvestmentPeriod;
+    return r >= s + minPeriod && r < s + kMaxInvestmentPeriod;
+}
+
+[[nodiscard]] bool
+isValidClosedEndedLoanSchedule(
+    Rules const& rules,
+    std::uint32_t startDate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentTotal,
+    std::uint32_t gracePeriod,
+    std::uint32_t redemptionDate)
+{
+    auto const finalDueDate =
+        std::uint64_t{startDate} + (std::uint64_t{paymentInterval} * paymentTotal);
+
+    // finalDueDate fits in 64 bits for any input, but adding the grace period
+    // and the buffer to it can wrap. The time left before RedemptionDate is
+    // compared against them instead.
+    if (finalDueDate > redemptionDate)
+        return false;
+    auto const timeToRedemption = redemptionDate - finalDueDate;
+
+    if (!rules.enabled(fixCleanup3_6_0))
+        return timeToRedemption >= kLegacyLoanRedemptionBuffer;
+
+    // A loan can be defaulted only after its grace period ends, so the grace
+    // period has to fit before RedemptionDate as well.
+    return timeToRedemption >= std::uint64_t{gracePeriod} + kLoanRedemptionBuffer;
 }
 
 [[nodiscard]] VaultPhase

@@ -20,6 +20,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -51,6 +52,7 @@
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -3021,16 +3023,15 @@ class InvariantsVault_test : public InvariantsBase
                     "RedemptionDate";
 
         // A newly-created loan against a closed-ended vault must satisfy StartDate +
-        // PaymentInterval * PaymentRemaining + kLoanRedemptionBuffer <= RedemptionDate.
-        // LoanSet::preclaim enforces the same bound; this test synthesises a loan whose
-        // final payment is still before RedemptionDate (so the old unbuffered check would
-        // pass) but inside the buffer zone.
+        // PaymentInterval * PaymentRemaining + GracePeriod + kLoanRedemptionBuffer <=
+        // RedemptionDate. LoanSet::preclaim enforces the same bound; this test synthesises a
+        // loan whose final payment is still before RedemptionDate (so an unbuffered check
+        // would pass) but inside the buffer zone.
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
             {
-                "closed-ended loan final payment must precede RedemptionDate by at least "
-                "kLoanRedemptionBuffer",
+                "closed-ended loan schedule ends too close to RedemptionDate",
             },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
@@ -3091,6 +3092,144 @@ class InvariantsVault_test : public InvariantsBase
                 env.close(Tp{D{sub + 1}});
                 return true;
             });
+
+        testcase << "Vault loan set - closed-ended schedule bound with and without "
+                    "fixCleanup3_6_0";
+
+        // The bound depends on fixCleanup3_6_0. With the fix the final grace period must end
+        // kLoanRedemptionBuffer seconds before RedemptionDate. Without it the grace period is
+        // ignored and the final due date must precede RedemptionDate by
+        // kLegacyLoanRedemptionBuffer seconds. Each case puts a new loan one second inside the
+        // bound that applies to it, or exactly on it. The grace period is longer than both
+        // buffers, so a check that drops the grace term, reads it from the wrong field or applies
+        // the wrong rules flips the outcome of at least one case. The loan also has several
+        // payments and an interval that differs from the grace period, so a check that ignores
+        // the payment count or mixes up the interval and the grace period flips one as well.
+        //
+        // The last case sets every schedule field to its maximum. The final due date, the grace
+        // period and the buffer then add up to more than 64 bits can hold, so a check that sums
+        // them wraps to a small number and accepts a loan that ends far past RedemptionDate.
+        {
+            constexpr std::uint32_t kInterval = 60;
+            constexpr std::uint32_t kPayments = 3;
+            constexpr std::uint32_t kGrace = 600;
+            constexpr std::uint32_t kMaxField = std::numeric_limits<std::uint32_t>::max();
+            std::string const scheduleLog =
+                "closed-ended loan schedule ends too close to RedemptionDate";
+
+            struct Schedule
+            {
+                std::uint32_t startDate;
+                std::uint32_t interval;
+                std::uint32_t payments;
+                std::uint32_t grace;
+            };
+            // Builds a schedule whose final due date is dueToRedemption seconds before the
+            // vault's RedemptionDate.
+            auto const makeScheduleDueBefore = [](std::uint32_t dueToRedemption) {
+                return [dueToRedemption](std::uint32_t redemptionDate) {
+                    return Schedule{
+                        .startDate = redemptionDate - dueToRedemption - (kInterval * kPayments),
+                        .interval = kInterval,
+                        .payments = kPayments,
+                        .grace = kGrace,
+                    };
+                };
+            };
+
+            struct Case
+            {
+                std::string name;
+                FeatureBitset features;
+                // Builds the loan's schedule from the vault's RedemptionDate.
+                std::function<Schedule(std::uint32_t)> makeSchedule;
+                bool expectFailure;
+            };
+            auto const cases = std::to_array<Case>({
+                {
+                    .name = "grace period ends inside the buffer",
+                    .features = all_,
+                    .makeSchedule = makeScheduleDueBefore(kGrace + kLoanRedemptionBuffer - 1),
+                    .expectFailure = true,
+                },
+                {
+                    .name = "grace period ends exactly at the buffer",
+                    .features = all_,
+                    .makeSchedule = makeScheduleDueBefore(kGrace + kLoanRedemptionBuffer),
+                    .expectFailure = false,
+                },
+                {
+                    .name = "legacy: final due date inside the buffer",
+                    .features = all_ - fixCleanup3_6_0,
+                    .makeSchedule = makeScheduleDueBefore(kLegacyLoanRedemptionBuffer - 1),
+                    .expectFailure = true,
+                },
+                {
+                    .name = "legacy: grace period is ignored",
+                    .features = all_ - fixCleanup3_6_0,
+                    .makeSchedule = makeScheduleDueBefore(kLegacyLoanRedemptionBuffer),
+                    .expectFailure = false,
+                },
+                {
+                    .name = "schedule too long for 64 bits",
+                    .features = all_,
+                    .makeSchedule =
+                        [](std::uint32_t) {
+                            return Schedule{
+                                .startDate = kMaxField,
+                                .interval = kMaxField,
+                                .payments = kMaxField,
+                                .grace = kMaxField,
+                            };
+                        },
+                    .expectFailure = true,
+                },
+            });
+
+            for (auto const& c : cases)
+            {
+                Env env{*this, c.features};
+                Account const a1{"A1"};
+                env.fund(XRP(1000), a1);
+                auto const keys = createClosedXrpBroker(a1, env);
+                if (!keys)
+                    continue;
+                auto const& [vaultKeylet, brokerKeylet] = *keys;
+
+                OpenView ov{*env.current()};
+                STTx const tx{ttLOAN_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                // ValidVault::finalizeLoanSet needs the vault among the modified entries.
+                auto const sleVault = ac.view().peek(vaultKeylet);
+                if (!BEAST_EXPECT(sleVault))
+                    continue;
+                ac.view().update(sleVault);
+                auto const schedule = c.makeSchedule(sleVault->at(sfRedemptionDate));
+
+                auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                sleLoan->at(sfStartDate) = schedule.startDate;
+                sleLoan->at(sfPaymentInterval) = schedule.interval;
+                sleLoan->at(sfPaymentRemaining) = schedule.payments;
+                sleLoan->at(sfGracePeriod) = schedule.grace;
+                sleLoan->at(sfTotalValueOutstanding) = Number(100);
+                ac.view().insert(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    continue;
+
+                std::ignore = transactor->checkInvariants(
+                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+
+                BEAST_EXPECTS(
+                    sink.messages().str().contains(scheduleLog) == c.expectFailure, c.name);
+            }
+        }
     }
 
     // Minimal impaired-loan setup for testVaultLossExceedsGap.  Kept

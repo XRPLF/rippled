@@ -203,6 +203,22 @@ constexpr TenthBips32 kMaxOverpaymentInterestRate = percentageToTenthBips(100);
 static_assert(kMaxOverpaymentInterestRate == TenthBips32(100'000u));
 
 /**
+ * The shortest PaymentInterval a loan may have, in seconds.
+ *
+ * The shortest Investment phase of a closed-ended vault is calculated from
+ * this value, so it should not be changed without an amendment.
+ */
+constexpr std::uint32_t kMinLoanPaymentInterval = 60;
+
+/**
+ * The shortest GracePeriod a loan may have, in seconds.
+ *
+ * The shortest Investment phase of a closed-ended vault is calculated from
+ * this value, so it should not be changed without an amendment.
+ */
+constexpr std::uint32_t kMinLoanGracePeriod = 60;
+
+/**
  * LoanPay transaction cost will be one base fee per X combined payments
  *
  * The number of payments is estimated based on the Amount paid and the Loan's
@@ -373,23 +389,83 @@ enum class VaultPhase : std::uint8_t {
 
 /**
  * Minimum gap between a closed-ended loan's final scheduled payment and the
- * vault's RedemptionDate. LoanSet rejects a schedule whose final payment is
- * fewer than this many seconds before RedemptionDate.
+ * vault's RedemptionDate before fixCleanup3_6_0. The gap ignores the loan's
+ * GracePeriod and is shorter than the coarsest ledger close time resolution,
+ * so the ledger clock can step from the final due date straight into
+ * Redemption.
+ *
+ * The schedule is checked only when a loan is created. A loan created before
+ * fixCleanup3_6_0 therefore keeps this gap after the fix activates.
  */
-constexpr std::uint32_t kLoanRedemptionBuffer = std::chrono::seconds{60}.count();
+constexpr std::uint32_t kLegacyLoanRedemptionBuffer = std::chrono::seconds{60}.count();
 
 /**
- * Bounds on the length of a closed-ended vault's Investment phase
- * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
- * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod.
+ * Minimum gap between the end of a closed-ended loan's final grace period and
+ * the vault's RedemptionDate. With fixCleanup3_6_0, LoanSet rejects a schedule
+ * unless StartDate + PaymentInterval * PaymentTotal + GracePeriod plus this
+ * many seconds is at or before RedemptionDate.
  *
- * 180s is enough to originate a loan that uses the minimum payment interval
- * and kLoanRedemptionBuffer after StartDate, which is strictly after
- * SubscriptionDate. The interval and buffer need not be equal; only their
- * sum plus one second must fit in this floor.
+ * The buffer is one second longer than the coarsest ledger close time
+ * resolution, which is 120 seconds. While consecutive ledgers close no more
+ * than 120 seconds apart, the ledger clock cannot step over the gap. At least
+ * one ledger then exists in which the loan can be defaulted while withdrawals
+ * are still locked. Impairment becomes possible a full grace period earlier.
+ *
+ * This is not a guarantee. While very unlikely, a network stall can jump the
+ * clock from before the end of the grace period to RedemptionDate or later,
+ * making default and withdrawal then become possible in the same ledger,
+ * because the resolution only rounds a close time and does  not limit how far
+ * the clock moves between two ledgers. Close times follow the wall clock.
+ * A larger buffer cannot rule this out, because a stall can outlast any fixed
+ * number of seconds.
+ *
+ * This header cannot see the close time resolutions, so the value is a fixed
+ * number. A static_assert in VaultHelpers.cpp checks it against them.
  */
-constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{180}.count();
-// This is 946708560 seconds which 30 x 365.2425 days (the average length of a Gregorian year).
+constexpr std::uint32_t kLoanRedemptionBuffer = std::chrono::seconds{121}.count();
+
+/**
+ * Lower bound on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate) before fixCleanup3_6_0. 180s fits a loan
+ * that uses the minimum payment interval and kLegacyLoanRedemptionBuffer only
+ * when StartDate is at most 60 seconds after SubscriptionDate.
+ *
+ * StartDate can be up to two close time resolutions after SubscriptionDate,
+ * as described at kMinInvestmentPeriod. The loan therefore always fits at
+ * resolutions up to 30 seconds. At 60 seconds or more StartDate is at least
+ * 61 seconds after SubscriptionDate, and can be 240 seconds after it, so a
+ * vault with this period cannot fund any loan. kMinInvestmentPeriod allows for
+ * that delay.
+ */
+constexpr std::uint32_t kLegacyMinInvestmentPeriod = std::chrono::seconds{180}.count();
+
+/**
+ * Lower bound on the length of a closed-ended vault's Investment phase
+ * (RedemptionDate - SubscriptionDate). At vault creation the gap must satisfy
+ * kMinInvestmentPeriod <= gap < kMaxInvestmentPeriod. Before fixCleanup3_6_0
+ * the lower bound is kLegacyMinInvestmentPeriod.
+ *
+ * The bound is the shortest period in which the vault can still fund the
+ * shortest loan that isValidClosedEndedLoanSchedule accepts. It is the sum of:
+ *
+ * 1. The latest StartDate of a loan originated in the first Investment ledger.
+ *    LoanSet needs the parent close time to be past SubscriptionDate, which
+ *    takes up to one close time resolution. StartDate is then one more
+ *    resolution after the parent close time. Both are counted at the coarsest
+ *    resolution, which gives 240 seconds.
+ * 2. lending::kMinLoanPaymentInterval, which is 60 seconds.
+ * 3. lending::kMinLoanGracePeriod, which is 60 seconds.
+ * 4. kLoanRedemptionBuffer, which is 121 seconds.
+ *
+ * A static_assert in VaultHelpers.cpp checks the value against this sum.
+ */
+constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{481}.count();
+
+/**
+ * Upper bound on the length of a closed-ended vault's Investment phase. This
+ * is 946708560 seconds, which is 30 x 365.2425 days (the average length of a
+ * Gregorian year).
+ */
 constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
 /**

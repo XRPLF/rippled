@@ -545,15 +545,52 @@ isValidVaultKind(STTx const& tx);
 /**
  * Returns true iff the (SubscriptionDate, RedemptionDate) gap of a
  * closed-ended vault satisfies
- * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. The arithmetic
- * is performed in std::int64_t so that @p sub near UINT32_MAX does not
- * overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
+ * kMinInvestmentPeriod <= (red - sub) < kMaxInvestmentPeriod. Before
+ * fixCleanup3_6_0 the lower bound is kLegacyMinInvestmentPeriod. The
+ * arithmetic is performed in std::int64_t so that @p sub near UINT32_MAX does
+ * not overflow. Shared by VaultCreate::preflight and the ValidVault invariant.
  *
+ * @param rules The rules that select the lower bound.
  * @param sub The value of sfSubscriptionDate.
  * @param red The value of sfRedemptionDate.
  */
 [[nodiscard]] bool
-isValidClosedEndedGap(std::uint32_t sub, std::uint32_t red);
+isValidClosedEndedGap(Rules const& rules, std::uint32_t sub, std::uint32_t red);
+
+/**
+ * Returns true iff a closed-ended vault with the given RedemptionDate may fund
+ * a loan with the given schedule. Shared by LoanSet::preclaim and the
+ * ValidLoan invariant.
+ *
+ * With fixCleanup3_6_0 the final grace period must end at least
+ * kLoanRedemptionBuffer seconds before RedemptionDate:
+ * startDate + paymentInterval * paymentTotal + gracePeriod +
+ * kLoanRedemptionBuffer <= redemptionDate. The loan can then be impaired and
+ * defaulted in a ledger that still locks withdrawals, unless the ledger clock
+ * jumps over the gap as described at kLoanRedemptionBuffer.
+ *
+ * Before fixCleanup3_6_0 the grace period is ignored and only the final due
+ * date must precede RedemptionDate by kLegacyLoanRedemptionBuffer seconds.
+ *
+ * The final due date is computed in std::uint64_t, where it cannot overflow.
+ * The grace period and the buffer are then compared against the time left
+ * before RedemptionDate, so no input can wrap the check.
+ *
+ * @param rules The rules that select the bound.
+ * @param startDate The value of sfStartDate.
+ * @param paymentInterval The value of sfPaymentInterval.
+ * @param paymentTotal The number of scheduled payments.
+ * @param gracePeriod The value of sfGracePeriod.
+ * @param redemptionDate The value of sfRedemptionDate.
+ */
+[[nodiscard]] bool
+isValidClosedEndedLoanSchedule(
+    Rules const& rules,
+    std::uint32_t startDate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentTotal,
+    std::uint32_t gracePeriod,
+    std::uint32_t redemptionDate);
 
 /**
  * Returns the current lifecycle phase of a vault. Open-ended

@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
@@ -65,12 +66,13 @@ public:
     static constexpr std::uint32_t kDefaultPaymentTotal = 1;
     static_assert(kDefaultPaymentTotal >= kMinPaymentTotal);
 
-    static constexpr std::uint32_t kMinPaymentInterval = 60;
     static constexpr std::uint32_t kDefaultPaymentInterval = 60;
-    static_assert(kDefaultPaymentInterval >= kMinPaymentInterval);
+    static_assert(kDefaultPaymentInterval >= lending::kMinLoanPaymentInterval);
 
+    // A grace period may not be longer than the payment interval.
     static constexpr std::uint32_t kDefaultGracePeriod = 60;
-    static_assert(kDefaultGracePeriod >= kMinPaymentInterval);
+    static_assert(kDefaultGracePeriod >= lending::kMinLoanGracePeriod);
+    static_assert(kDefaultGracePeriod <= kDefaultPaymentInterval);
 };
 
 //------------------------------------------------------------------------------

@@ -33,7 +33,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <cstdint>
 #include <optional>
@@ -142,10 +141,10 @@ private:
                     loanSetFee,
                     Ter(temINVALID));
 
-                // grace period less than default minimum
+                // grace period less than the minimum
                 env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                     Sig(sfCounterpartySignature, lender),
-                    kGracePeriod(LoanSet::kDefaultGracePeriod - 1),
+                    kGracePeriod(lending::kMinLoanGracePeriod - 1),
                     loanSetFee,
                     Ter(temINVALID));
 

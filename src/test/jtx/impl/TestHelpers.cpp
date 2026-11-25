@@ -25,6 +25,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -32,6 +33,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Quality.h>
@@ -87,6 +89,25 @@ std::uint32_t
 ownerCount(Env const& env, Account const& account)
 {
     return env.ownerCount(account);
+}
+
+NetClock::time_point
+getClosingLedgerTime(Env& env)
+{
+    auto const parent = env.closed();
+    auto const& header = parent->header();
+    // Ledger rounds the time given to the close when its parent has no close time. That time
+    // is not known here, so the result cannot be predicted.
+    if (header.closeTime == NetClock::time_point{})
+    {
+        Throw<std::runtime_error>(
+            "getClosingLedgerTime: the closed ledger has no close time, close a ledger first");
+    }
+
+    // Mirrors how Ledger sets the close time of a ledger whose parent has a close time.
+    auto const resolution = getNextLedgerTimeResolution(
+        header.closeTimeResolution, getCloseAgree(header), header.seq + 1);
+    return header.closeTime + resolution;
 }
 
 /* Token (IOU/MPT) Locking */

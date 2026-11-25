@@ -43,11 +43,16 @@
 
 namespace xrpl {
 
-// StartDate is strictly after SubscriptionDate. A min-gap vault must still
-// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
-// buffer constants are independent; only their sum (plus the +1 for a
-// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
-static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
+// The floor before fixCleanup3_6_0 is a fixed number. The check below confirms
+// that it fits a minimum-interval loan plus kLegacyLoanRedemptionBuffer when
+// StartDate is one second after SubscriptionDate. It does not allow for the
+// close time resolution, which can put StartDate up to 240 seconds after
+// SubscriptionDate, so the loan fits only at resolutions up to 30 seconds.
+// kMinInvestmentPeriod, which replaces it, allows for that delay and is
+// checked against the limits it depends on in VaultHelpers.cpp.
+static_assert(
+    kLegacyMinInvestmentPeriod >=
+    lending::kMinLoanPaymentInterval + kLegacyLoanRedemptionBuffer + 1);
 
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -134,12 +139,13 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     auto const paymentInterval = tx[~sfPaymentInterval];
-    if (!validNumericMinimum(paymentInterval, LoanSet::kMinPaymentInterval))
-        return temINVALID;  // Grace period is between min default value and payment interval
+    if (!validNumericMinimum(paymentInterval, kMinLoanPaymentInterval))
+        return temINVALID;
+    // The grace period is between its minimum and the payment interval.
     if (auto const gracePeriod = tx[~sfGracePeriod]; !validNumericRange(
             gracePeriod,
             paymentInterval.value_or(LoanSet::kDefaultPaymentInterval),
-            kDefaultGracePeriod))
+            kMinLoanGracePeriod))
     {
         return temINVALID;
     }
@@ -228,6 +234,20 @@ LoanSet::getValueFields()
     return kValueFields;
 }
 
+// Returns the StartDate of a loan created in the given view.
+//
+// The value depends on the kind of view. A ledger that is being built sets its
+// closeTime to the parent close time plus one close time resolution before any
+// transaction is applied, as an estimate of its own close time. The open
+// ledger copies the header of its parent, so its closeTime is still the parent
+// close time.
+//
+// preclaim and doApply both call this function, so the schedule that preclaim
+// checks is always the one that doApply stores. The result from the open
+// ledger is computed from a StartDate one resolution (10 to 120 seconds)
+// earlier than the one the closed ledger uses. A schedule that ends within
+// that distance of a limit can succeed in the open ledger and fail in the
+// closed one.
 static std::uint32_t
 getStartDate(ReadView const& view)
 {
@@ -240,6 +260,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const& tx = ctx.tx;
     auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
     auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
+    auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
     {
         // Check for numeric overflow of the schedule before we load any
@@ -253,7 +274,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
-        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDefaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
         // mostly so that unit tests can test that specific case.
@@ -339,13 +359,16 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
         if (phase == VaultPhase::Investment)
         {
-            auto const finalPayment =
-                std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
-            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
+            if (!isValidClosedEndedLoanSchedule(
+                    ctx.view.rules(),
+                    getStartDate(ctx.view),
+                    interval,
+                    total,
+                    grace,
+                    vault->at(sfRedemptionDate)))
             {
                 JLOG(ctx.j.warn())
-                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
-                    << " seconds before the vault's redemption date.";
+                    << "Loan schedule ends too close to the vault's redemption date.";
                 return tecNO_PERMISSION;
             }
         }

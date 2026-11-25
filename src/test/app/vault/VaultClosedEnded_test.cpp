@@ -34,8 +34,10 @@
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <source_location>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -43,6 +45,12 @@ namespace xrpl {
 class VaultClosedEnded_test : public VaultTestBase
 {
 private:
+    // An Investment period that is a multiple of every close time resolution, so a test can
+    // park the ledger clock exactly on RedemptionDate. kMinInvestmentPeriod is not such a
+    // multiple.
+    static constexpr std::uint32_t kGridInvestmentPeriod = 3600u;
+    static_assert(kGridInvestmentPeriod >= kMinInvestmentPeriod);
+
     // VaultCreate malformation and happy paths for closed-ended vaults, plus the
     // featureLendingProtocolV1_1 gate.
     void
@@ -238,6 +246,42 @@ private:
             }
         });
 
+        // fixCleanup3_6_0 raises the lower bound of the gap from kLegacyMinInvestmentPeriod to
+        // kMinInvestmentPeriod, so that a minimum loan still fits once LoanSet also requires
+        // the grace period and the wider redemption buffer.
+        {
+            // Submits a closed-ended VaultCreate with the given gap and returns its result.
+            auto const createWithGap = [&](FeatureBitset features, std::uint32_t gap) -> TER {
+                Env env{*this, features};
+                Account const owner{"owner"};
+                env.fund(XRP(1000), owner);
+                env.close();
+                Vault const vault{env};
+                auto const sub = env.now().time_since_epoch().count() + 60;
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = sub + gap,
+                });
+                env(tx, Ter(std::ignore));
+                return env.ter();
+            };
+            FeatureBitset const preFix{testableAmendments() - fixCleanup3_6_0};
+            FeatureBitset const postFix{testableAmendments()};
+
+            auto const preFixAtLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod);
+            auto const preFixBelowLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod - 1);
+            auto const postFixAtLegacyMin = createWithGap(postFix, kLegacyMinInvestmentPeriod);
+            auto const postFixAtMin = createWithGap(postFix, kMinInvestmentPeriod);
+
+            BEAST_EXPECT(preFixAtLegacyMin == tesSUCCESS);
+            BEAST_EXPECT(preFixBelowLegacyMin == temMALFORMED);
+            BEAST_EXPECT(postFixAtLegacyMin == temMALFORMED);
+            BEAST_EXPECT(postFixAtMin == tesSUCCESS);
+        }
+
         // Happy path: gap one second less than MAX_INVESTMENT_PERIOD is
         // accepted (upper bound is exclusive).
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
@@ -401,7 +445,7 @@ private:
 
         Asset const asset = xrpIssue();
         auto const [vault, keylet, sub, red] =
-            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod);
+            makeClosedEndedVault(env, owner, asset, 60u, kGridInvestmentPeriod);
 
         // Pre-seed shares during Subscription so the depositor has capital to
         // withdraw at the Redemption boundary below.
@@ -497,7 +541,7 @@ private:
         // VaultKind::OpenEnded before it looks at any dates.
         auto const ledgerTime = Tp{D{30}} + env.closed()->header().closeTimeResolution;
         checkPhaseAt(ledgerTime);
-        checkPhaseAt(ledgerTime + std::chrono::seconds{kMinInvestmentPeriod});
+        checkPhaseAt(ledgerTime + std::chrono::seconds{kGridInvestmentPeriod});
         checkPhaseAt(
             ledgerTime + std::chrono::seconds{kMaxInvestmentPeriod} -
             env.closed()->header().closeTimeResolution);
@@ -519,7 +563,7 @@ private:
 
         Asset const asset = xrpIssue();
         auto const [vault, keylet, sub, red] =
-            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod);
+            makeClosedEndedVault(env, owner, asset, 60u, kGridInvestmentPeriod);
 
         auto const deposit =
             [&](TER expected, std::source_location const& loc = std::source_location::current()) {
@@ -564,9 +608,10 @@ private:
 
         Asset const asset = xrpIssue();
         // Widen the Investment window so a single-payment loan (min payment
-        // interval 60s plus kLoanRedemptionBuffer) fits before RedemptionDate.
+        // interval 60s, grace period 60s and kLoanRedemptionBuffer) fits before
+        // RedemptionDate.
         auto const [vault, keylet, sub, red] =
-            makeClosedEndedVault(env, owner, asset, 60u, kMinInvestmentPeriod + 3600u);
+            makeClosedEndedVault(env, owner, asset, 60u, kGridInvestmentPeriod);
 
         // Deposit XRP(100) in Subscription so the depositor's shares are
         // worth XRP(100). The vault holds XRP(100) with
@@ -643,8 +688,8 @@ private:
 
         auto const closedEnded = std::to_underlying(VaultKind::ClosedEnded);
         Asset const asset = xrpIssue();
-        // Widen the Investment window so a single-payment loan (min payment interval
-        // 60s plus kLoanRedemptionBuffer) fits before RedemptionDate with headroom.
+        // Widen the Investment window so a single-payment loan (min payment interval 60s,
+        // grace period 60s and kLoanRedemptionBuffer) fits before RedemptionDate with headroom.
         auto const [vault, keylet, sub, red] =
             makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
 
@@ -804,7 +849,7 @@ private:
 
         Asset const asset = xrpIssue();
         auto const [vault, keylet, sub, red] =
-            makeClosedEndedVault(env, owner, asset, 300u, kMinInvestmentPeriod + 3600u);
+            makeClosedEndedVault(env, owner, asset, 300u, kGridInvestmentPeriod);
 
         env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
         env.close();
@@ -846,6 +891,148 @@ private:
 
         env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
         env.close();
+    }
+
+    // The ledger clock is the parent ledger's close time, which advances by up to one close
+    // time resolution per ledger, and the resolution can be as coarse as 120s.
+    //
+    // Before fixCleanup3_6_0 a loan's final payment may be due only 60s before RedemptionDate.
+    // The clock can then step from the due date straight into Redemption, so the first ledger
+    // in which the loan can be impaired is also the first one that allows withdrawals. A
+    // borrower who holds shares can withdraw at the unimpaired price in that ledger.
+    //
+    // With the fix the final grace period has to end kLoanRedemptionBuffer before
+    // RedemptionDate, which is one second more than the coarsest resolution. A step of up to
+    // 120s from the last ledger in which the loan cannot be impaired or defaulted then lands
+    // in a ledger that still locks withdrawals.
+    void
+    testVaultLoanManageableBeforeRedemption()
+    {
+        testcase("closed-ended vault: loan is manageable before Redemption opens");
+        using namespace test::jtx;
+        using namespace loan_broker;
+        using namespace loan;
+
+        struct Outcome
+        {
+            // LoanManage in the last ledger in which the loan cannot be managed yet.
+            TER manageAtBoundary;
+            // VaultWithdraw and LoanManage in the next ledger, which closes one jump later.
+            TER withdrawAfterJump;
+            TER manageAfterJump;
+        };
+
+        static constexpr std::uint32_t kGrace = 60u;
+
+        // Originates the tightest single-payment loan the vault accepts, parks the ledger
+        // clock on the last second at which LoanManage with `manageFlag` is still too soon,
+        // and then closes one ledger `jump` seconds later. Returns nullopt if the loan did not
+        // end up with the intended due date.
+        auto const runScenario = [this](
+                                     FeatureBitset features,
+                                     std::uint32_t manageFlag,
+                                     std::uint32_t jump) -> std::optional<Outcome> {
+            // Seconds LoanSet requires between the loan's due date and RedemptionDate.
+            std::uint32_t const requiredGap = features[fixCleanup3_6_0]
+                ? kGrace + kLoanRedemptionBuffer
+                : kLegacyLoanRedemptionBuffer;
+
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const borrower{"borrower"};
+            env.fund(XRP(10'000), owner, depositor, borrower);
+            env.close();
+
+            // Env closes ledgers on the close time resolution grid. This gap puts the due date
+            // on the grid, so the clock can be parked on it exactly.
+            Asset const asset = xrpIssue();
+            auto const [vault, vaultKeylet, sub, red] =
+                makeClosedEndedVault(env, owner, asset, 60u, kGridInvestmentPeriod + requiredGap);
+            env(vault.deposit(
+                {.depositor = depositor, .id = vaultKeylet.key, .amount = XRP(100).value()}));
+            env.close();
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(loan_broker::set(owner, vaultKeylet.key));
+            env.close();
+            closeToTime(env, Tp{D{sub}} + getLedgerTimeResolution(env));
+
+            // LoanSet takes StartDate from the clock of the closing ledger, which is one
+            // resolution after its parent's close time.
+            std::uint32_t const startDate = getClosingLedgerTime(env).time_since_epoch().count();
+            std::uint32_t const dueDate = red - requiredGap;
+            env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(kGrace),
+                kPaymentInterval(dueDate - startDate),
+                kPaymentTotal(1),
+                Sig(sfCounterpartySignature, owner),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1u));
+            auto const loanSle = env.le(loanKeylet);
+            if (!loanSle || loanSle->at(sfNextPaymentDueDate) != dueDate)
+                return std::nullopt;
+
+            // Impairment needs the clock to be past the due date. Default needs it to be past
+            // the grace period as well.
+            std::uint32_t const boundary = manageFlag == tfLoanDefault ? dueDate + kGrace : dueDate;
+            closeToTime(env, Tp{D{boundary}});
+            env(manage(owner, loanKeylet.key, manageFlag), Ter(std::ignore));
+            auto const manageAtBoundary = env.ter();
+
+            closeToTime(env, Tp{D{boundary + jump}});
+            env(vault.withdraw(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = XRP(1).value()}),
+                Ter(std::ignore));
+            auto const withdrawAfterJump = env.ter();
+            env(manage(owner, loanKeylet.key, manageFlag), Ter(std::ignore));
+            auto const manageAfterJump = env.ter();
+
+            return Outcome{
+                .manageAtBoundary = manageAtBoundary,
+                .withdrawAfterJump = withdrawAfterJump,
+                .manageAfterJump = manageAfterJump,
+            };
+        };
+
+        FeatureBitset const postFix{testableAmendments()};
+        FeatureBitset const preFix{postFix - fixCleanup3_6_0};
+
+        // Before the fix a 60s step from the due date lands in Redemption: the withdrawal
+        // succeeds in the first ledger in which the loan can be impaired.
+        {
+            auto const outcome = runScenario(preFix, tfLoanImpair, 60u);
+
+            if (BEAST_EXPECT(outcome))
+            {
+                // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                BEAST_EXPECT(outcome->manageAtBoundary == tecTOO_SOON);
+                BEAST_EXPECT(outcome->withdrawAfterJump == tesSUCCESS);
+                BEAST_EXPECT(outcome->manageAfterJump == tesSUCCESS);
+                // NOLINTEND(bugprone-unchecked-optional-access)
+            }
+        }
+
+        // With the fix a step of 60s, 90s or 120s lands in a ledger in which the loan can be
+        // impaired or defaulted and withdrawals are still locked.
+        for (auto const manageFlag : {tfLoanImpair, tfLoanDefault})
+        {
+            for (auto const jump : {60u, 90u, 120u})
+            {
+                auto const outcome = runScenario(postFix, manageFlag, jump);
+
+                if (BEAST_EXPECT(outcome))
+                {
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                    BEAST_EXPECT(outcome->manageAtBoundary == tecTOO_SOON);
+                    BEAST_EXPECT(outcome->withdrawAfterJump == tecTOO_SOON);
+                    BEAST_EXPECT(outcome->manageAfterJump == tesSUCCESS);
+                    // NOLINTEND(bugprone-unchecked-optional-access)
+                }
+            }
+        }
     }
 
     // Two concurrent loans against the same closed-ended vault in Investment
@@ -1016,6 +1203,7 @@ public:
         testVaultWithdrawClosedEnded();
         testVaultClosedEndedLifecycle();
         testVaultLoanLatePaymentAfterInvestment();
+        testVaultLoanManageableBeforeRedemption();
         testVaultClosedEndedMultipleLoans();
         testVaultClawbackClosedEndedPhases();
     }
