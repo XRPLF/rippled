@@ -489,34 +489,22 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     {
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
-        // Batch signers must be strictly ascending and match the required
-        // signers exactly; since both are sorted, each must be the next
-        // required signer.
-        AccountID lastBatchSigner{beast::kZero};
+        // Batch signers must match the required signers exactly. Both are
+        // sorted, so each signer must be the next required signer. This also
+        // rejects unsorted and duplicate signers, and the outer account, which
+        // is never a required signer.
         for (auto const& signer : signers)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
-            if (signerAccount == outerAccount)
-            {
-                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "signer cannot be the outer account: " << signerAccount;
-                return temBAD_SIGNER;
-            }
 
-            if (lastBatchSigner == signerAccount)
+            // An inner txn with a zero Delegate makes zero a required signer,
+            // so the membership check alone does not reject a zero signer.
+            if (signerAccount == beast::kZero)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "duplicate signer found: " << signerAccount;
+                                    << "signer cannot be the zero account.";
                 return temBAD_SIGNER;
             }
-
-            if (lastBatchSigner > signerAccount)
-            {
-                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "unsorted signers array: " << signerAccount;
-                return temBAD_SIGNER;
-            }
-            lastBatchSigner = signerAccount;
 
             if (numReqSignersMatched >= requiredSigners.size() ||
                 requiredSigners[numReqSignersMatched] != signerAccount)
