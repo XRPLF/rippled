@@ -116,7 +116,7 @@ public:
     [[nodiscard]] bool
     isAuthorized(AccountID const& account, AccountID const& issuer) const
     {
-        return (*this)->isFlag((account > issuer) ? lsfLowAuth : lsfHighAuth);
+        return this->sleRef().isFlag((account > issuer) ? lsfLowAuth : lsfHighAuth);
     }
 };
 
