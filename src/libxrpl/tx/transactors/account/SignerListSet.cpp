@@ -24,6 +24,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -247,7 +248,7 @@ SignerListSet::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::kMinMultiSigners || signerCount > STTx::kMaxMultiSigners)
+        if (!checkBounds(signerCount, STTx::kMinMultiSigners, STTx::kMaxMultiSigners))
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;

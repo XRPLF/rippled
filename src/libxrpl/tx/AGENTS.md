@@ -13,3 +13,7 @@ New (or deleted) invariant checks must be amendment-gated: they introduce (or re
 See [transactors/AGENTS.md](./transactors/AGENTS.md) for conventions on writing the amendment-gated code itself.
 
 A change to transaction/signing behavior that's visible through the public API also needs an `API-CHANGELOG.md` entry — see [../../xrpld/rpc/AGENTS.md](../../xrpld/rpc/AGENTS.md) for the full rule.
+
+## Preflight helpers
+
+When writing transactor preflight logic, prefer the helpers in [`include/xrpl/tx/helpers/PreflightHelpers.h`](../../../include/xrpl/tx/helpers/PreflightHelpers.h) over ad-hoc checks. If the same check pattern shows up in more than one transactor, add a new helper there rather than inlining it.

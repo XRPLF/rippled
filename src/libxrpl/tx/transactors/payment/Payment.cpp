@@ -35,6 +35,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -144,7 +145,7 @@ Payment::preflight(PreflightContext const& ctx)
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
     // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
-        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(domainID))
         return temMALFORMED;
 
     bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
@@ -184,13 +185,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && maxSourceAmount <= beast::kZero)
+    if (hasMax && !isPositiveAmount(maxSourceAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (dstAmount <= beast::kZero)
+    if (!isPositiveAmount(dstAmount))
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
@@ -459,8 +460,8 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMaxPathLength;
+        if (!checkSize(paths, kMaxPathSize) || std::ranges::any_of(paths, [](STPath const& path) {
+                return !checkSize(path, kMaxPathLength);
             }))
         {
             // Open view: the soft tel (unchanged). Inner batch txns are claimed

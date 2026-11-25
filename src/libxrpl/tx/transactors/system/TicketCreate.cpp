@@ -15,6 +15,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/helpers/PreflightHelpers.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,7 +33,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < kMinValidCount || count > kMaxValidCount)
+        !checkBounds(count, kMinValidCount, kMaxValidCount))
         return temINVALID_COUNT;
 
     return tesSUCCESS;
