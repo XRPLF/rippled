@@ -52,6 +52,8 @@ static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemp
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureLendingProtocolV1_2) && ctx.tx.isFieldPresent(sfLoanSequence))
+        return false;
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
@@ -303,6 +305,13 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
                               "of the LoanBroker.";
         return tecNO_PERMISSION;
+    }
+    // A LoanSequence pins the Loan this transaction creates.
+    if (auto const loanSequence = tx[~sfLoanSequence];
+        loanSequence && *loanSequence != brokerSle->at(sfLoanSequence))
+    {
+        JLOG(ctx.j.warn()) << "LoanSequence does not match the LoanBroker.";
+        return tecLOAN_SEQUENCE;
     }
     auto const brokerPseudo = brokerSle->at(sfAccount);
 

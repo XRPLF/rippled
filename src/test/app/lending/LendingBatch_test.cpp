@@ -5,6 +5,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/offer.h>
@@ -23,6 +24,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -39,6 +41,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 namespace xrpl::test {
 
@@ -831,6 +834,78 @@ private:
         }
     }
 
+    void
+    testLoanSetSequenceGuardsEscrows(FeatureBitset features)
+    {
+        // Escrows built for a predicted Loan and the LoanSet that creates it,
+        // in one tfAllOrNothing batch: a LoanSequence that no longer matches
+        // the broker fails the LoanSet and rolls the escrows back.
+        testcase("LoanSet LoanSequence guards escrows in a batch");
+
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Account const other{"other"};
+        env.fund(XRP(100'000'000), lender, borrower, other);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, asset, lender);
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        std::uint32_t const seq = brokerSle->at(sfLoanSequence);
+
+        auto const submit = [&](std::uint32_t loanSequence) -> std::uint32_t {
+            auto const borrowerSeq = env.seq(borrower);
+            auto const finishAfter = env.now().time_since_epoch().count() + 86400;
+            auto escrowA = escrow::create(borrower, lender, XRP(100));
+            escrowA[sfFinishAfter.jsonName] = finishAfter;
+            auto escrowB = escrow::create(borrower, lender, XRP(200));
+            escrowB[sfFinishAfter.jsonName] = finishAfter;
+            auto loanSetTx = loanSetInner(env, borrower, broker.brokerID, lender, asset(1'000), 2);
+            loanSetTx[sfLoanSequence.jsonName] = loanSequence;
+
+            env(batch::outer(borrower, borrowerSeq, batch::calcBatchFee(env, 1, 3), tfAllOrNothing),
+                batch::Inner(escrowA, borrowerSeq + 1),
+                batch::Inner(escrowB, borrowerSeq + 2),
+                batch::Inner(loanSetTx, borrowerSeq + 3),
+                batch::Sig(lender),
+                Ter(tesSUCCESS));
+            env.close();
+            return borrowerSeq;
+        };
+        auto const loanBorrower = [&](std::uint32_t s) -> std::optional<AccountID> {
+            if (auto const sle = env.le(keylet::loan(broker.brokerID, SeqProxy::rawSequence(s))))
+                return sle->at(sfBorrower);
+            return std::nullopt;
+        };
+        auto const escrowAt = [&](std::uint32_t s) {
+            return env.le(keylet::escrow(borrower.id(), SeqProxy::rawSequence(s)));
+        };
+
+        // Another LoanSet takes the predicted sequence first.
+        env(loan::set(other, broker.brokerID, asset(1'000).number()),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const s1 = submit(seq);
+        BEAST_EXPECT(!escrowAt(s1 + 1));
+        BEAST_EXPECT(!escrowAt(s1 + 2));
+        BEAST_EXPECT(!loanBorrower(seq + 1));
+        BEAST_EXPECT(loanBorrower(seq) == other.id());
+        if (auto const sle = env.le(broker.brokerKeylet()); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->at(sfLoanSequence) == seq + 1);
+
+        auto const s2 = submit(seq + 1);
+        BEAST_EXPECT(escrowAt(s2 + 1));
+        BEAST_EXPECT(escrowAt(s2 + 2));
+        BEAST_EXPECT(loanBorrower(seq + 1) == borrower.id());
+    }
+
 public:
     void
     run() override
@@ -846,6 +921,7 @@ public:
             testDefaultAndCoverWithdraw(features);
             testIndependentVaultChain(features);
             testIndependentLoanChain(features);
+            testLoanSetSequenceGuardsEscrows(features);
         }
         testClosedEndedVaultLifecycle(lendingBatch | featureLendingProtocolV1_1);
         testLoanLifecycleOpenEndedVault(lendingBatch);
