@@ -188,14 +188,15 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
     auto const j = this->journal();
 
     bool const accountIsIssuer = account == issuer;
-    if (!accountIsIssuer && (*this)->at(sfBalance)->iou() != beast::kZero)
+    if (!accountIsIssuer && this->sleRef().at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
-    if ((*this)->isFlag(lsfLowReserve))
+    if (this->sleRef().isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto const sleLowAccount = view.peek(keylet::account((*this)->at(sfLowLimit)->getIssuer()));
+        auto const sleLowAccount =
+            view.peek(keylet::account(this->sleRef().at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -206,15 +207,15 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
-        (*this)->clearFlag(lsfLowReserve);
+        this->sleRef().clearFlag(lsfLowReserve);
         removeSponsorFromLedgerEntry(this->mutableRawSle(), sfLowSponsor);
     }
 
-    if ((*this)->isFlag(lsfHighReserve))
+    if (this->sleRef().isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
         auto const sleHighAccount =
-            view.peek(keylet::account((*this)->at(sfHighLimit)->getIssuer()));
+            view.peek(keylet::account(this->sleRef().at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -225,12 +226,12 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
-        (*this)->clearFlag(lsfHighReserve);
+        this->sleRef().clearFlag(lsfHighReserve);
         removeSponsorFromLedgerEntry(this->mutableRawSle(), sfHighSponsor);
     }
 
     return this->removeFromLedger(
-        (*this)->at(sfLowLimit)->getIssuer(), (*this)->at(sfHighLimit)->getIssuer());
+        this->sleRef().at(sfLowLimit)->getIssuer(), this->sleRef().at(sfHighLimit)->getIssuer());
 }
 
 template class RippleStateEntry<ReadView>;
