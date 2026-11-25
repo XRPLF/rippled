@@ -35,7 +35,7 @@ NFTokenOfferEntry<ViewT>::removeFromLedger()
 
     decreaseOwnerCount(this->applyView(), owner, {}, 1, this->journal());
 
-    this->erase();
+    this->eraseFromView();
     return true;
 }
 
