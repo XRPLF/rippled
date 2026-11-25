@@ -10,7 +10,7 @@ namespace beast {
 /**
  * Manual clock implementation.
  *
- * This concrete class implements the @ref abstract_clock interface and
+ * This concrete class implements the @ref AbstractClock interface and
  * allows the time to be advanced manually, mainly for the purpose of
  * providing a clock in unit tests.
  *

@@ -1251,7 +1251,7 @@ directSendNoFeeMPT(
                 return tecPATH_DRY;
         }
         (*sleIssuance)[sfOutstandingAmount] += amt;
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
     else
     {
@@ -1276,7 +1276,7 @@ directSendNoFeeMPT(
         if (outstanding >= amt)
         {
             sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
-            sleIssuance.update();
+            sleIssuance.updateInView();
         }
         else
         {
