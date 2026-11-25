@@ -222,7 +222,7 @@ defaultLoanFixedPrecision(
 
     brokerSle->at(sfDebtTotal) -= principalOutstanding;
     brokerSle->at(sfCoverAvailable) -= coverAmount;
-    brokerSle.update();
+    brokerSle.updateInView();
 
     loanSle->setFlag(lsfLoanDefault);
     loanSle->at(sfTotalValueOutstanding) = 0;
@@ -375,7 +375,7 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
         coverAvailableProxy -= defaultCovered;
-        brokerSle.update();
+        brokerSle.updateInView();
     }
 
     // Update the Loan object:

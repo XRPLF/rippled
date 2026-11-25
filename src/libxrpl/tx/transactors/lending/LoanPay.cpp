@@ -499,7 +499,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // LoanBroker object state changes
-    brokerSle.update();
+    brokerSle.updateInView();
 
     Number const assetsAvailableBefore = *vaultSle->at(sfAssetsAvailable);
     Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
