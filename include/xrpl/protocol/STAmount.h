@@ -696,6 +696,16 @@ divRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundU
 STAmount
 divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
+/**
+ * Returns amt * num / den, rounded in the requested direction.
+ *
+ * Dispatches to the XRPAmount, IOUAmount or MPTAmount overload. XRP and MPT
+ * results are exact; an IOU result is rounded to the 16-digit mantissa in the
+ * requested direction. Only Upward and Downward are supported.
+ */
+[[nodiscard]] STAmount
+mulRatio(STAmount const& amt, std::uint32_t num, std::uint32_t den, Number::RoundingMode rounding);
+
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
 // VFALCO TODO Return a Quality object

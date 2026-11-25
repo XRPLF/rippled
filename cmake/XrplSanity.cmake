@@ -23,11 +23,8 @@ if(NOT is_multiconfig)
     endif()
 endif()
 
-if(is_clang) # both Clang and AppleClang
-    if(
-        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
-        AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0
-    )
+if(is_llvm_clang)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0)
         message(FATAL_ERROR "This project requires clang 16 or later")
     endif()
 elseif(is_gcc)
@@ -66,7 +63,7 @@ endif()
 if(voidstar AND NOT is_amd64)
     message(
         FATAL_ERROR
-        "The voidstar library only supported on amd64/x86_64. Detected archictecture was: ${CMAKE_SYSTEM_PROCESSOR}"
+        "The voidstar library only supported on amd64/x86_64. Detected architecture was: ${CMAKE_SYSTEM_PROCESSOR}"
     )
 endif()
 
