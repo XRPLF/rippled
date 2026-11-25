@@ -6,6 +6,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
@@ -21,6 +22,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -72,9 +74,22 @@ ConsensusTransSetSF::gotNode(
 std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
+    // Both arms answer for their own data, as getNode()'s postcondition requires. A caller adopts
+    // the hash this was asked for, so the digest is computed here.
     Blob nodeData;
     if (nodeCache_.retrieve(nodeHash, nodeData))
-        return nodeData;
+    {
+        // Only the cache's filing ties the blob to this key, so the digest is taken here.
+        if (sha512Half(makeSlice(nodeData)) == nodeHash.asUInt256())
+            return nodeData;
+
+        // No lock spans the read and the drop. insert() keeps a live entry, so no writer can
+        // replace this one, but a sweep or another drop may remove it and a writer refile the key
+        // before del() runs. That costs one cache miss and nothing else.
+        // The transaction arm below reads a different store, which may hold this key.
+        nodeCache_.del(nodeHash, false);
+        JLOG(j_.warn()) << "Cached node " << nodeHash << " does not hash to its key, dropped it";
+    }
 
     auto const txn = app_.getMasterTransaction().fetchFromCache(nodeHash.asUInt256());
 
@@ -82,14 +97,22 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     {
         // this is a transaction, and we have it
         JLOG(j_.trace()) << "Node in our acquiring TX set is TXN we have";
+        auto const& stx = txn->getSTransaction();
+
+        // This serialization has to reproduce the node hash asked for, so the identity is tested
+        // here. A transaction's id is the digest of exactly the bytes serialized below and is held
+        // on the transaction, so the test reads it rather than digesting them again.
+        if (stx->getTransactionID() != nodeHash.asUInt256())
+        {
+            JLOG(j_.warn()) << "Transaction for node " << nodeHash
+                            << " does not serialize to it, discarding it";
+            return std::nullopt;
+        }
+
         Serializer s;
         s.add32(HashPrefix::TransactionId);
-        txn->getSTransaction()->add(s);
-        XRPL_ASSERT(
-            sha512Half(s.slice()) == nodeHash.asUInt256(),
-            "xrpl::ConsensusTransSetSF::getNode : transaction hash match");
-        nodeData = s.peekData();
-        return nodeData;
+        stx->add(s);
+        return std::move(s.modData());
     }
 
     return std::nullopt;
