@@ -169,10 +169,10 @@ public:
         requires Base::kIsWritable
     {
         if (!this->applyView().dirRemove(
-                keylet::ownerDir(ammAccountID), (**this)[sfOwnerNode], (*this)->key(), false))
+                keylet::ownerDir(ammAccountID), (**this)[sfOwnerNode], this->sleRef().key(), false))
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-        this->erase();
+        this->eraseFromView();
 
         return tesSUCCESS;
     }
