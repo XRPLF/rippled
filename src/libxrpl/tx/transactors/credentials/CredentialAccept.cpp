@@ -128,7 +128,7 @@ CredentialAccept::doApply()
 
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred.mutableRawSle());
     increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
-    sleCred.update();
+    sleCred.updateInView();
 
     return tesSUCCESS;
 }
