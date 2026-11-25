@@ -1,6 +1,7 @@
 #pragma once
 
 #include <test/jtx/PeerStub.h>
+#include <tests/libxrpl/shamap/DeepChain.h>
 
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/overlay/Peer.h>
@@ -13,8 +14,6 @@
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
-
-#include <tests/libxrpl/shamap/DeepChain.h>
 
 #include <xrpl.pb.h>
 

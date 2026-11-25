@@ -1,3 +1,5 @@
+#include <tests/libxrpl/helpers/TestNodeFamily.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -13,7 +15,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <gtest/gtest.h>
-#include <shamap/common.h>
 
 #include <cstdint>
 #include <memory>

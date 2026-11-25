@@ -1,3 +1,5 @@
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -24,7 +26,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <algorithm>
 #include <chrono>

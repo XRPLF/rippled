@@ -1,10 +1,10 @@
 #pragma once
 
-#include <xrpl/consensus/ConsensusProposal.h>
+#include <tests/libxrpl/csf/Tx.h>
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/ledgers.h>
 
-#include <csf/Tx.h>
-#include <csf/Validation.h>
-#include <csf/ledgers.h>
+#include <xrpl/consensus/ConsensusProposal.h>
 
 namespace xrpl::test::csf {
 /**

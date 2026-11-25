@@ -1,10 +1,11 @@
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/ledger/EntryTestHelpers.h>
+
 #include <xrpl/protocol/Indexes.h>
 
 #include <gtest/gtest.h>
-#include <helpers/Account.h>
-#include <ledger/EntryTestHelpers.h>
 
 namespace xrpl::test {
 

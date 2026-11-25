@@ -897,7 +897,7 @@ Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSetT const& txSe
 
     now_ = now;
 
-    auto id = txSet.id();
+    auto const id = txSet.id();
 
     // If we've already processed this transaction set since requesting
     // it from the network, there is nothing to do now
@@ -1624,7 +1624,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
 
     if (ourNewSet)
     {
-        auto newID = ourNewSet->id();
+        auto const newID = ourNewSet->id();
 
         result_->txns = std::move(*ourNewSet);
 
