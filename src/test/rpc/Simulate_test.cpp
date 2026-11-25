@@ -5,12 +5,14 @@
 #include <test/jtx/batch.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
@@ -30,6 +32,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -1475,6 +1478,59 @@ class Simulate_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testDryRunQueuing()
+    {
+        testcase("Dry-run transaction queuing during fee escalation");
+
+        using namespace jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(1000000), alice, bob);
+        env.close();
+
+        // Fill the open ledger to trigger fee escalation
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+        for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
+            env(noop(alice));
+
+        // Verify escalation is active: a low-fee tx gets queued
+        auto const baseFee = env.current()->fees().base.drops();
+        env(noop(bob), Fee(baseFee * 2), Ter(terQUEUED));
+
+        auto const queueSizeBefore = env.app().getTxQ().getMetrics(*env.current()).txCount;
+        BEAST_EXPECT(queueSizeBefore == 1);
+
+        // Call simulate with a fee above base but below escalated
+        {
+            json::Value tx;
+            tx[jss::Account] = alice.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[jss::Fee] = std::to_string(baseFee * 2);
+
+            json::Value params;
+            params[jss::tx_json] = tx;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            auto const result = resp[jss::result];
+
+            // Fixed: simulate should return telCAN_NOT_QUEUE, not terQUEUED
+            BEAST_EXPECT(result[jss::engine_result] == "telCAN_NOT_QUEUE");
+        }
+
+        // Verify the queue did not grow - the dry-run tx was not added
+        auto const queueSizeAfter = env.app().getTxQ().getMetrics(*env.current()).txCount;
+
+        // Correct behavior: queue size should remain at 1
+        BEAST_EXPECT(queueSizeAfter == queueSizeBefore);
+    }
+
 public:
     void
     run() override
@@ -1494,6 +1550,7 @@ public:
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
+        testDryRunQueuing();
     }
 };
 
