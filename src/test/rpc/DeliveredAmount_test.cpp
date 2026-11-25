@@ -4,7 +4,6 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
@@ -20,11 +19,11 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <string>
-#include <utility>
 
 namespace xrpl::test {
 
@@ -207,9 +206,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            auto cfg = envconfig();
-            cfg->fees.referenceFee = 10;
-            Env env(*this, std::move(cfg));
+            Env env(*this, XRPAmount(10));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
@@ -297,9 +294,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            auto cfg = envconfig();
-            cfg->fees.referenceFee = 10;
-            Env env(*this, std::move(cfg));
+            Env env(*this, XRPAmount(10));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
