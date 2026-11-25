@@ -123,6 +123,30 @@ public:
     }
 
     /**
+     * @brief Get sfData (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getData() const
+    {
+        if (hasData())
+            return this->sle_->at(sfData);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasData() const
+    {
+        return this->sle_->isFieldPresent(sfData);
+    }
+
+    /**
      * @brief Get sfLoanOriginationFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -694,6 +718,17 @@ public:
     setBorrower(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfBorrower] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfData (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfData] = value;
         return *this;
     }
 

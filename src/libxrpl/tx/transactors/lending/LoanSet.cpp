@@ -739,6 +739,12 @@ LoanSet::doApply()
     setLoanField(~sfCloseInterestRate);
     setLoanField(~sfOverpaymentInterestRate);
     setLoanField(~sfGracePeriod, kDefaultGracePeriod);
+    // LendingProtocolV1_2 stores the transaction's Data on the Loan.
+    if (view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        if (auto const data = tx[~sfData])
+            loan->at(sfData) = *data;
+    }
     // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;

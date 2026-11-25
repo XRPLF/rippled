@@ -35,6 +35,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1181,6 +1182,75 @@ private:
         BEAST_EXPECT(env.ownerCount(borrower) == ownerCount);
     }
 
+    void
+    testLoanSetData()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        testcase("LoanSet Data on the Loan ledger entry");
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        auto const check =
+            [&](FeatureBitset features, std::optional<std::string> const& data, bool stored) {
+                Env env{*this, features};
+                env.fund(XRP(3'000'000), lender);
+                env.fund(XRP(100'000), borrower);
+                env.close();
+
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                BrokerInfo const broker = createVaultAndBroker(env, xrpAsset, lender);
+                auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+                if (!BEAST_EXPECT(brokerSle))
+                    return;
+                auto const loanKeylet = keylet::loan(
+                    broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+                auto const principal = broker.asset(1'000).number();
+                auto const loanFee = Fee(env.current()->fees().base * 2);
+                if (data)
+                {
+                    env(set(borrower, broker.brokerID, principal),
+                        kData(*data),
+                        Sig(sfCounterpartySignature, lender),
+                        loanFee);
+                }
+                else
+                {
+                    env(set(borrower, broker.brokerID, principal),
+                        Sig(sfCounterpartySignature, lender),
+                        loanFee);
+                }
+                env.close();
+
+                auto const loan = env.le(loanKeylet);
+                if (!BEAST_EXPECT(loan))
+                    return;
+                if (stored)
+                {
+                    BEAST_EXPECT(loan->isFieldPresent(sfData) && checkVL(loan, sfData, *data));
+                }
+                else
+                {
+                    BEAST_EXPECT(!loan->isFieldPresent(sfData));
+                }
+            };
+
+        // all_ already holds LendingProtocolV1_2, so the off cases subtract it.
+        FeatureBitset const v12{all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+        FeatureBitset const v11{(all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1};
+        FeatureBitset const v10{all_ - featureLendingProtocolV1_2};
+
+        check(v12, "Hello", true);
+        check(v12, std::string(kMaxDataPayloadLength, 'X'), true);
+        check(v12, "", false);
+        check(v12, std::nullopt, false);
+        check(v11, "Hello", false);
+        check(v10, "Hello", false);
+    }
+
 public:
     void
     run() override
@@ -1191,6 +1261,7 @@ public:
 
         testLoanSetClosedEnded();
         testFixedPrecisionLoanSet();
+        testLoanSetData();
         testLoanSetExistingLineAfterIssuerClearsDefaultRipple();
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
