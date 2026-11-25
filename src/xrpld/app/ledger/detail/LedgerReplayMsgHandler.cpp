@@ -222,9 +222,18 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack transactions
     auto const& txMap = ledger->txMap();
-    txMap.visitLeaves([&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
-        reply.add_transaction(txNode->data(), txNode->size());
-    });
+    if (!txMap.visitLeaves([&](boost::intrusive_ptr<SHAMapItem const> const& txNode) {
+            reply.add_transaction(txNode->data(), txNode->size());
+        }))
+    {
+        // The transaction list above is incomplete, so name the missing nodes instead.
+        // The ledger itself is present, and an error reply carries no partial payload.
+        JLOG(journal_.debug()) << "getReplayDelta: Incomplete tx map for ledger " << ledgerHash;
+        reply.clear_transaction();
+        reply.clear_ledgerheader();
+        reply.set_error(protocol::TMReplyError::reNO_NODE);
+        return reply;
+    }
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
                            << txMap.getHash().asUInt256();

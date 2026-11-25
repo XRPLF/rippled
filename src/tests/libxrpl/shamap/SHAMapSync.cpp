@@ -94,13 +94,7 @@ protected:
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
     {
-        static constexpr auto kWordsPerState = 3uz;
-
-        Serializer s;
-
-        for (auto word = 0uz; word < kWordsPerState; ++word)
-            s.add32(randInt<std::uint32_t>(eng_));
-        return makeShamapitem(s.getSHA512Half(), s.slice());
+        return makeRandomAccountStateItem(eng_);
     }
 
     bool
