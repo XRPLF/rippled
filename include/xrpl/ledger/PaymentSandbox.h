@@ -161,7 +161,7 @@ public:
     {
     }
 
-    PaymentSandbox(ApplyView const* base) : ApplyViewBase(base, base->flags())
+    PaymentSandbox(ApplyView const* base) : ApplyViewBase(base, base->flags(), base->tx())
     {
     }
 
@@ -181,11 +181,12 @@ public:
     //        one of these constructors or invariants will be broken.
     /** @{ */
     explicit PaymentSandbox(PaymentSandbox const* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+        : ApplyViewBase(base, base->flags(), base->tx()), ps_(base)
     {
     }
 
-    explicit PaymentSandbox(PaymentSandbox* base) : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox* base)
+        : ApplyViewBase(base, base->flags(), base->tx()), ps_(base)
     {
     }
     /** @} */

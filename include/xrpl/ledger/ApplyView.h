@@ -166,6 +166,16 @@ public:
     flags() const = 0;
 
     /**
+     * Returns the transaction being applied, or nullptr if there is none.
+     *
+     * A view built on another ApplyView inherits its transaction, the same
+     * way it inherits the flags. A view built directly on a ReadView (for
+     * example, in RPC path finding) has no transaction.
+     */
+    [[nodiscard]] virtual STTx const*
+    tx() const = 0;
+
+    /**
      * Prepare to modify the SLE associated with key.
      *
      * Effects:

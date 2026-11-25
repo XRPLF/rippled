@@ -3,6 +3,8 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -118,6 +120,32 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     Ledger next(prev, prev.header().closeTime + prev.header().closeTimeResolution);
     open.apply(next);
     EXPECT_EQ(next.header().drops, prev.header().drops - keptBurn);
+}
+
+TEST_F(ApplyContextTests, views_carry_the_transaction)
+{
+    ASSERT_NE(tx_, nullptr);
+    OpenView open(&env_.getClosedLedger());
+    ApplyContext ctx(env_.getServiceRegistry(), open, *tx_, tesSUCCESS, fee_, TapNone);
+    EXPECT_EQ(ctx.view().tx(), tx_.get());
+
+    // Child views built on an ApplyView inherit the transaction.
+    Sandbox sb(&ctx.view());
+    EXPECT_EQ(sb.tx(), tx_.get());
+    PaymentSandbox psb(&sb);
+    EXPECT_EQ(psb.tx(), tx_.get());
+    PaymentSandbox const nested(&psb);
+    EXPECT_EQ(nested.tx(), tx_.get());
+
+    // A view built directly on a ReadView has no transaction.
+    Sandbox const readOnly(&open, TapNone);
+    EXPECT_EQ(readOnly.tx(), nullptr);
+    PaymentSandbox const readOnlyPayment(&open, TapNone);
+    EXPECT_EQ(readOnlyPayment.tx(), nullptr);
+
+    // A discard keeps the transaction.
+    ctx.discard();
+    EXPECT_EQ(ctx.view().tx(), tx_.get());
 }
 
 }  // namespace xrpl::test

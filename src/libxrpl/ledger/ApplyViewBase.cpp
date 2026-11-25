@@ -8,6 +8,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <memory>
@@ -15,7 +16,8 @@
 
 namespace xrpl::detail {
 
-ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
+ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags, STTx const* tx)
+    : flags_(flags), base_(base), tx_(tx)
 {
 }
 
@@ -112,6 +114,12 @@ ApplyFlags
 ApplyViewBase::flags() const
 {
     return flags_;
+}
+
+STTx const*
+ApplyViewBase::tx() const
+{
+    return tx_;
 }
 
 SLE::pointer
