@@ -1,5 +1,6 @@
 
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
@@ -16,7 +17,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -941,41 +941,43 @@ struct Escrow_test : public beast::unit_test::Suite
 
             // Now, try to fulfill using the same sequence of
             // malformed conditions.
+            TER const malformedCondTer =
+                features[fixCleanup3_5_0] ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR};
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs - 1}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp, cs - 2}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 1, cs - 1}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 1, cs - 3}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 2, cs - 2}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{cp + 2, cs - 3}),
                 escrow::kFulfillment(Slice{fp, fs}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(malformedCondTer));
 
             // Now, using the correct kCondition, try malformed fulfillments:
             env(escrow::finish("bob", "alice", seq),
@@ -1043,11 +1045,13 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(escrow::kCb3),
                 escrow::kCancelTime(env.now() + 1s));
 
+            TER const emptyCondTer =
+                features[fixCleanup3_5_0] ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR};
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(Slice{}),
                 escrow::kFulfillment(Slice{}),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(emptyCondTer));
             env(escrow::finish("bob", "alice", seq),
                 escrow::kCondition(escrow::kCb3),
                 escrow::kFulfillment(Slice{}),
@@ -1057,7 +1061,7 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(Slice{}),
                 escrow::kFulfillment(escrow::kFb3),
                 Fee(150 * baseFee),
-                Ter(tecCRYPTOCONDITION_ERROR));
+                Ter(emptyCondTer));
 
             // Assemble finish that is missing the Condition or the Fulfillment
             // since either both must be present, or neither can:
@@ -1082,10 +1086,13 @@ struct Escrow_test : public beast::unit_test::Suite
             env.fund(XRP(5000), "alice", "bob");
 
             std::array<std::uint8_t, 45> const cb = {
-                {0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52, 0x92, 0x67,
-                 0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED,
-                 0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
-                 0x81, 0x03, 0x06, 0x34, 0xD2, 0x82, 0x02, 0x03, 0xC8}};
+                {
+                    0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52, 0x92, 0x67,
+                    0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED,
+                    0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
+                    0x81, 0x03, 0x06, 0x34, 0xD2, 0x82, 0x02, 0x03, 0xC8,
+                },
+            };
 
             // FIXME: this transaction should, eventually, return temDISABLED
             //        instead of temMALFORMED.
@@ -1093,6 +1100,41 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCondition(cb),
                 escrow::kCancelTime(env.now() + 1s),
                 Ter(temMALFORMED));
+        }
+        {  // Test finish with a malformed condition
+            Env env(*this, features);
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            env.close();
+
+            auto const seq = env.seq("alice");
+            env(escrow::create("alice", "carol", XRP(1000)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            // Does not deserialize as a condition.
+            std::array<std::uint8_t, 3> const malformed = {{0x78, 0x78, 0x78}};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const bobBalance = env.balance("bob");
+            bool const fixEnabled = features[fixCleanup3_5_0];
+            auto const jt = env.jt(
+                escrow::finish("bob", "alice", seq),
+                escrow::kCondition(malformed),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(150 * baseFee));
+            env(jt, Ter(fixEnabled ? TER{temMALFORMED} : TER{tecCRYPTOCONDITION_ERROR}));
+            // Run preflight on the same transaction again, now with the
+            // HashRouter flag cached. The result must not change.
+            auto const pf =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(pf.ter == (fixEnabled ? TER{temMALFORMED} : TER{tesSUCCESS}));
+            env.close();
+
+            // Before the fix, the transaction is included and charges a fee.
+            env.require(
+                Balance("bob", fixEnabled ? bobBalance : bobBalance - drops(150 * baseFee)));
+            BEAST_EXPECT(env.le(keylet::escrow(Account("alice").id(), SeqProxy::rawSequence(seq))));
         }
     }
 
@@ -1124,7 +1166,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(aa);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1141,7 +1183,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1155,13 +1197,13 @@ struct Escrow_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1175,7 +1217,7 @@ struct Escrow_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1208,13 +1250,13 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1223,7 +1265,7 @@ struct Escrow_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1236,13 +1278,13 @@ struct Escrow_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1251,7 +1293,7 @@ struct Escrow_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
 
@@ -1261,13 +1303,13 @@ struct Escrow_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq))));
 
-                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
+                auto const aod = ownerDirEntries(*env.current(), alice);
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
+                auto const bod = ownerDirEntries(*env.current(), bruce);
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
                 BEAST_EXPECT(
                     // NOLINTNEXTLINE(modernize-use-ranges)
@@ -1276,7 +1318,7 @@ struct Escrow_test : public beast::unit_test::Suite
                     // NOLINTNEXTLINE(modernize-use-ranges)
                     std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
+                auto const cod = ownerDirEntries(*env.current(), carol);
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 0);
             }
         }
@@ -1482,7 +1524,7 @@ struct Escrow_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        Account const dillon{"dillon "};
+        Account const dillon{"dillon"};
         Account const zelda{"zelda"};
 
         char const credType[] = "abcde";
@@ -1639,6 +1681,9 @@ public:
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - fixCleanup3_5_0);
+        testWithFeats(all - featureSmartEscrow);
+        testWithFeats(all - featureTokenEscrow - featureSmartEscrow);
         testTags(all - fixIncludeKeyletFields);
     }
 };

@@ -196,7 +196,7 @@ void
 PropertyStream::Source::removeAll()
 {
     std::scoped_lock const _(lock_);
-    for (auto iter = children_.begin(); iter != children_.end();)
+    for (auto const iter = children_.begin(); iter != children_.end();)
     {
         std::scoped_lock const cl((*iter)->lock_);
         remove(*(*iter));
@@ -220,7 +220,7 @@ PropertyStream::Source::write(PropertyStream& stream)
 
     std::scoped_lock const _(lock_);
 
-    for (auto& child : children_)
+    for (auto const& child : children_)
         child.source().write(stream);
 }
 
@@ -321,7 +321,7 @@ PropertyStream::Source::findOneDeep(std::string const& name)
         return found;
 
     std::scoped_lock const _(lock_);
-    for (auto& s : children_)
+    for (auto const& s : children_)
     {
         found = s.source().findOneDeep(name);
         if (found != nullptr)
@@ -352,7 +352,7 @@ PropertyStream::Source*
 PropertyStream::Source::findOne(std::string const& name)
 {
     std::scoped_lock const _(lock_);
-    for (auto& s : children_)
+    for (auto const& s : children_)
     {
         if (s.source().name_ == name)
             return &s.source();

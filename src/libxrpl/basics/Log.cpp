@@ -259,7 +259,7 @@ Logs::format(
 
     output = xrpl::to_string(std::chrono::system_clock::now());
 
-    output += " ";
+    output += ' ';
     if (!partition.empty())
         output += partition + ":";
 
@@ -302,7 +302,7 @@ Logs::format(
 
     // Attempt to prevent sensitive information from appearing in log files by
     // redacting it with asterisks.
-    auto scrubber = [&output](char const* token) {
+    auto const scrubber = [&output](char const* token) {
         auto first = output.find(token);
 
         // If we have found the specified token, then attempt to isolate the

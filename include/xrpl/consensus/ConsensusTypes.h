@@ -59,7 +59,7 @@ enum class ConsensusMode {
      * if we entered the round observing, but is used to indicate we did
      * have the wrongLedger at some point.
      */
-    SwitchedLedger
+    SwitchedLedger,
 };
 
 inline std::string
@@ -222,7 +222,7 @@ medianCloseOffset(ConsensusCloseTimes const& times)
 
     // Accumulate weight in time order; the first bin to reach halfWeight is
     // the (lower) weighted median. Returns true once that bin is found.
-    auto step = [&](time_point t, std::int64_t w) {
+    auto const step = [&](time_point t, std::int64_t w) {
         XRPL_ASSERT(tally < halfWeight, "xrpl::medianCloseOffset::step : median not yet found");
         tally += w;
         if (tally >= halfWeight)
@@ -267,7 +267,7 @@ enum class ConsensusState {
     No,       ///< We do not have consensus
     MovedOn,  ///< The network has consensus without us
     Expired,  ///< Consensus time limit has hard-expired
-    Yes       ///< We have consensus along with the network
+    Yes,      ///< We have consensus along with the network
 };
 
 /**

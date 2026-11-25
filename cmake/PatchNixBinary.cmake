@@ -17,7 +17,7 @@
    (runtime libraries resolved through the rpath) are skipped too.
    Everywhere else `patch_nix_binary` is a no-op.
 
-   The default loader is resolved by bin/default-loader-path.sh.
+   The default loader is resolved by bin/nix/default-loader-path.sh.
 #]===================================================================]
 
 include_guard(GLOBAL)
@@ -25,7 +25,7 @@ include_guard(GLOBAL)
 include(CompilationEnv)
 
 # Resolves the system default ELF loader path for the current architecture.
-set(_loader_path_script "${CMAKE_SOURCE_DIR}/bin/default-loader-path.sh")
+set(_loader_path_script "${CMAKE_SOURCE_DIR}/bin/nix/default-loader-path.sh")
 
 if(
     is_linux
