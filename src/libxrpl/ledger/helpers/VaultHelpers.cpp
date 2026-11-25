@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -787,6 +789,24 @@ isValidVaultKind(STTx const& tx)
     return *kindField == std::to_underlying(VaultKind::OpenEnded) ||
         *kindField == std::to_underlying(VaultKind::ClosedEnded);
 }
+
+// kLoanRedemptionBuffer and kMinInvestmentPeriod are fixed numbers in
+// Protocol.h, which cannot see the ledger close time resolutions. The checks
+// below tie each number to the limits it is derived from, as described where
+// the constants are declared.
+//
+// Transaction validity depends on both numbers. If a check fails because one
+// of the limits changed, the number must not simply be updated to match. Such
+// a change needs an amendment.
+static_assert(
+    std::chrono::seconds{kLoanRedemptionBuffer} ==
+    std::ranges::max(kLedgerPossibleTimeResolutions) + std::chrono::seconds{1});
+static_assert(
+    std::chrono::seconds{kMinInvestmentPeriod} ==
+    2 * std::ranges::max(kLedgerPossibleTimeResolutions) +
+        std::chrono::seconds{
+            lending::kMinLoanPaymentInterval + lending::kMinLoanGracePeriod +
+            kLoanRedemptionBuffer});
 
 [[nodiscard]] bool
 isValidClosedEndedGap(Rules const& rules, std::uint32_t sub, std::uint32_t red)

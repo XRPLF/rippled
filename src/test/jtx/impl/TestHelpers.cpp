@@ -94,9 +94,17 @@ ownerCount(Env const& env, Account const& account)
 NetClock::time_point
 getClosingLedgerTime(Env& env)
 {
-    // Mirrors how Ledger sets the close time of a ledger that follows a closed one.
     auto const parent = env.closed();
     auto const& header = parent->header();
+    // Ledger rounds the time given to the close when its parent has no close time. That time
+    // is not known here, so the result cannot be predicted.
+    if (header.closeTime == NetClock::time_point{})
+    {
+        Throw<std::runtime_error>(
+            "getClosingLedgerTime: the closed ledger has no close time, close a ledger first");
+    }
+
+    // Mirrors how Ledger sets the close time of a ledger whose parent has a close time.
     auto const resolution = getNextLedgerTimeResolution(
         header.closeTimeResolution, getCloseAgree(header), header.seq + 1);
     return header.closeTime + resolution;

@@ -411,7 +411,12 @@ ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
  * The close time recorded in the accepted ledger can differ from the returned value, for
  * example when Env::close is given a time further ahead.
  *
+ * The closed ledger must already have a close time. A new Env starts with a closed ledger whose
+ * close time is zero, and the next ledger then takes its close time from the time given to
+ * Env::close instead. Close at least one ledger before calling this function.
+ *
  * @param env The test environment.
+ * @throws std::runtime_error if the closed ledger has no close time.
  */
 [[nodiscard]] NetClock::time_point
 getClosingLedgerTime(Env& env);

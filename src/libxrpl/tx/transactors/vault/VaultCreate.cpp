@@ -168,12 +168,14 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
-    // preflight enforces red >= sub + kMinInvestmentPeriod for closed-ended
-    // vaults, so a past RedemptionDate always implies a strictly-earlier,
-    // equally-past SubscriptionDate. The RedemptionDate arm below is therefore
-    // defensive: it cannot be the sole cause of tecEXPIRED. It is kept to
-    // preserve the invariant locally in case the preflight gap check is ever
-    // weakened.
+    // preflight enforces red >= sub + the minimum investment period for
+    // closed-ended vaults. That minimum is kMinInvestmentPeriod once
+    // fixCleanup3_6_0 is enabled and kLegacyMinInvestmentPeriod before it.
+    // Both are positive, so a past RedemptionDate always implies a
+    // strictly-earlier, equally-past SubscriptionDate. The RedemptionDate arm
+    // below is therefore defensive: it cannot be the sole cause of tecEXPIRED.
+    // It is kept to preserve the invariant locally in case the preflight gap
+    // check is ever weakened.
     if (hasExpired(ctx.view, ctx.tx[~sfSubscriptionDate]) ||
         hasExpired(ctx.view, ctx.tx[~sfRedemptionDate]))
         return tecEXPIRED;

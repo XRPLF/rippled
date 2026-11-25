@@ -271,13 +271,11 @@ private:
             FeatureBitset const preFix{testableAmendments() - fixCleanup3_6_0};
             FeatureBitset const postFix{testableAmendments()};
 
-            // Act
             auto const preFixAtLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod);
             auto const preFixBelowLegacyMin = createWithGap(preFix, kLegacyMinInvestmentPeriod - 1);
             auto const postFixAtLegacyMin = createWithGap(postFix, kLegacyMinInvestmentPeriod);
             auto const postFixAtMin = createWithGap(postFix, kMinInvestmentPeriod);
 
-            // Assert
             BEAST_EXPECT(preFixAtLegacyMin == tesSUCCESS);
             BEAST_EXPECT(preFixBelowLegacyMin == temMALFORMED);
             BEAST_EXPECT(postFixAtLegacyMin == temMALFORMED);
@@ -934,7 +932,6 @@ private:
                                      FeatureBitset features,
                                      std::uint32_t manageFlag,
                                      std::uint32_t jump) -> std::optional<Outcome> {
-            // Arrange
             // Seconds LoanSet requires between the loan's due date and RedemptionDate.
             std::uint32_t const requiredGap = features[fixCleanup3_6_0]
                 ? kGrace + kLoanRedemptionBuffer
@@ -985,7 +982,6 @@ private:
             env(manage(owner, loanKeylet.key, manageFlag), Ter(std::ignore));
             auto const manageAtBoundary = env.ter();
 
-            // Act
             closeToTime(env, Tp{D{boundary + jump}});
             env(vault.withdraw(
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = XRP(1).value()}),
@@ -1007,10 +1003,8 @@ private:
         // Before the fix a 60s step from the due date lands in Redemption: the withdrawal
         // succeeds in the first ledger in which the loan can be impaired.
         {
-            // Act
             auto const outcome = runScenario(preFix, tfLoanImpair, 60u);
 
-            // Assert
             if (BEAST_EXPECT(outcome))
             {
                 // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -1027,10 +1021,8 @@ private:
         {
             for (auto const jump : {60u, 90u, 120u})
             {
-                // Act
                 auto const outcome = runScenario(postFix, manageFlag, jump);
 
-                // Assert
                 if (BEAST_EXPECT(outcome))
                 {
                     // NOLINTBEGIN(bugprone-unchecked-optional-access)

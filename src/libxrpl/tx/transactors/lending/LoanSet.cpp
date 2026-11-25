@@ -43,10 +43,13 @@
 
 namespace xrpl {
 
-// The floor before fixCleanup3_6_0 is a fixed number. It has to fit a
-// minimum-interval loan plus kLegacyLoanRedemptionBuffer after a StartDate
-// that is strictly after SubscriptionDate. kMinInvestmentPeriod, which replaces
-// it, is calculated from the limits it depends on and needs no check.
+// The floor before fixCleanup3_6_0 is a fixed number. The check below confirms
+// that it fits a minimum-interval loan plus kLegacyLoanRedemptionBuffer when
+// StartDate is one second after SubscriptionDate. It does not allow for the
+// close time resolution, which can put StartDate up to 240 seconds after
+// SubscriptionDate, so the loan fits only at resolutions up to 30 seconds.
+// kMinInvestmentPeriod, which replaces it, allows for that delay and is
+// checked against the limits it depends on in VaultHelpers.cpp.
 static_assert(
     kLegacyMinInvestmentPeriod >=
     lending::kMinLoanPaymentInterval + kLegacyLoanRedemptionBuffer + 1);
@@ -231,6 +234,20 @@ LoanSet::getValueFields()
     return kValueFields;
 }
 
+// Returns the StartDate of a loan created in the given view.
+//
+// The value depends on the kind of view. A ledger that is being built sets its
+// closeTime to the parent close time plus one close time resolution before any
+// transaction is applied, as an estimate of its own close time. The open
+// ledger copies the header of its parent, so its closeTime is still the parent
+// close time.
+//
+// preclaim and doApply both call this function, so the schedule that preclaim
+// checks is always the one that doApply stores. The result from the open
+// ledger is computed from a StartDate one resolution (10 to 120 seconds)
+// earlier than the one the closed ledger uses. A schedule that ends within
+// that distance of a limit can succeed in the open ledger and fail in the
+// closed one.
 static std::uint32_t
 getStartDate(ReadView const& view)
 {

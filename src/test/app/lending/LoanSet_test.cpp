@@ -1,6 +1,7 @@
 #include <test/app/lending/LoanTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
@@ -37,6 +38,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -47,6 +49,27 @@ namespace xrpl::test {
 class LoanSet_test : public LoanTestBase
 {
 private:
+    // Submits a transaction, closes the ledger, and returns the result recorded in the closed
+    // ledger. Returns std::nullopt when the transaction is not in the closed ledger, which
+    // happens when it fails without claiming a fee, for example with a tem, tef or ter result.
+    //
+    // Build the transaction with Ter(std::ignore) when the result on submit can differ from
+    // the one in the closed ledger.
+    static std::optional<TER>
+    submitAndGetClosedLedgerResult(jtx::Env& env, jtx::JTx const& jt)
+    {
+        env.submit(jt);
+        env.close();
+        if (!jt.stx)
+            return std::nullopt;
+
+        auto const meta = env.closed()->txRead(jt.stx->getTransactionID()).second;
+        if (!meta)
+            return std::nullopt;
+
+        return TER::fromInt((*meta)[sfTransactionResult]);
+    }
+
     void
     testLoanSet(FeatureBitset features)
     {
@@ -996,9 +1019,11 @@ private:
 
         // Submits a loan whose final payment is due `gap` seconds before the vault's
         // RedemptionDate, closes the ledger, and returns the result recorded in the closed
-        // ledger. The result on submit is ignored because it is computed from the earlier
-        // StartDate and can differ at the boundary.
-        auto const submitLoan = [&, this](FeatureBitset const& features, std::uint32_t gap) -> TER {
+        // ledger, if there is one. The result on submit is ignored because it is computed from
+        // the earlier StartDate and can differ at the boundary.
+        auto const submitLoan = [&, this](
+                                    FeatureBitset const& features,
+                                    std::uint32_t gap) -> std::optional<TER> {
             Env env(*this, features);
             env.fund(XRP(1'000'000'000), lender, borrower);
             env.close();
@@ -1016,19 +1041,19 @@ private:
             auto const startDate = getClosingLedgerTime(env).time_since_epoch().count();
             auto const interval = (finalDueDate - startDate) / kPayments;
 
-            env(set(lender, broker.brokerID, broker.asset(100).value()),
-                kCounterparty(borrower),
-                Sig(sfCounterpartySignature, borrower),
-                Fee(env.current()->fees().base * 5),
-                kPaymentTotal(kPayments),
-                kPaymentInterval(interval),
-                kGracePeriod(kGrace),
-                Ter(std::ignore));
-            env.close();
-            return TER::fromInt((*env.meta())[sfTransactionResult]);
+            return submitAndGetClosedLedgerResult(
+                env,
+                env.jt(
+                    set(lender, broker.brokerID, broker.asset(100).value()),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    kPaymentTotal(kPayments),
+                    kPaymentInterval(interval),
+                    kGracePeriod(kGrace),
+                    Ter(std::ignore)));
         };
 
-        // Act
         auto const preFixAtBound = submitLoan(preFix, kLegacyLoanRedemptionBuffer);
         auto const preFixInsideBound = submitLoan(preFix, kLegacyLoanRedemptionBuffer - 1);
         auto const postFixAtBound = submitLoan(postFix, kGrace + kLoanRedemptionBuffer);
@@ -1036,7 +1061,6 @@ private:
         // The tightest schedule the legacy bound accepts.
         auto const postFixAtLegacyBound = submitLoan(postFix, kLegacyLoanRedemptionBuffer);
 
-        // Assert
         BEAST_EXPECT(preFixAtBound == tesSUCCESS);
         BEAST_EXPECT(preFixInsideBound == tecNO_PERMISSION);
         BEAST_EXPECT(postFixAtBound == tesSUCCESS);
@@ -1071,8 +1095,9 @@ private:
         // Creates a vault with the shortest Investment period and submits a single-payment
         // loan with the shortest grace period, timed so that its StartDate is
         // kLatestStartOffset after SubscriptionDate. Returns the result recorded in the closed
-        // ledger.
-        auto const submitLoanAtLatestStart = [&, this](std::uint32_t interval) -> TER {
+        // ledger, if there is one.
+        auto const submitLoanAtLatestStart =
+            [&, this](std::uint32_t interval) -> std::optional<TER> {
             Env env(*this, features);
             env.fund(XRP(1'000'000'000), lender, borrower);
             env.close();
@@ -1093,24 +1118,23 @@ private:
             while (getClosingLedgerTime(env) < latestStart)
                 env.close();
 
-            env(set(lender, broker.brokerID, broker.asset(100).value()),
-                kCounterparty(borrower),
-                Sig(sfCounterpartySignature, borrower),
-                Fee(env.current()->fees().base * 5),
-                kPaymentTotal(1u),
-                kPaymentInterval(interval),
-                kGracePeriod(lending::kMinLoanGracePeriod),
-                Ter(std::ignore));
-            env.close();
-            return TER::fromInt((*env.meta())[sfTransactionResult]);
+            return submitAndGetClosedLedgerResult(
+                env,
+                env.jt(
+                    set(lender, broker.brokerID, broker.asset(100).value()),
+                    kCounterparty(borrower),
+                    Sig(sfCounterpartySignature, borrower),
+                    Fee(env.current()->fees().base * 5),
+                    kPaymentTotal(1u),
+                    kPaymentInterval(interval),
+                    kGracePeriod(lending::kMinLoanGracePeriod),
+                    Ter(std::ignore)));
         };
 
-        // Act
         auto const shortestLoan = submitLoanAtLatestStart(lending::kMinLoanPaymentInterval);
         // A loan one second longer does not fit, so the period has no slack.
         auto const longerLoan = submitLoanAtLatestStart(lending::kMinLoanPaymentInterval + 1);
 
-        // Assert
         BEAST_EXPECT(shortestLoan == tesSUCCESS);
         BEAST_EXPECT(longerLoan == tecNO_PERMISSION);
     }

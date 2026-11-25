@@ -69,6 +69,11 @@ ValidLoan::finalize(
         // LoanSet::preclaim gate and only fires on loan creation. Once the loan exists, its
         // StartDate, PaymentInterval and GracePeriod are immutable and PaymentRemaining only
         // decreases, so the bound is preserved.
+        //
+        // The bound a loan keeps is the one in force when it was created. A loan created before
+        // fixCleanup3_6_0 is not checked again when the fix activates, so it can still end only
+        // kLegacyLoanRedemptionBuffer seconds before RedemptionDate. The schedule is immutable,
+        // which leaves no way to widen the gap for such a loan.
         if (!before && isTesSuccess(result))
         {
             auto const broker = view.read(keylet::loanBroker(after->at(sfLoanBrokerID)));
