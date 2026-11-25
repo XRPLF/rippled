@@ -127,8 +127,8 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
  * Return an object representing a serialized SHAMap Node ID
  *
  * @param s A string of bytes
- * @param data a non-null pointer to a buffer of @param size bytes.
- * @param size the size, in bytes, of the buffer pointed to by @param data.
+ * @param data a non-null pointer to a buffer of @p size bytes.
+ * @param size the size, in bytes, of the buffer pointed to by @p data.
  * @return A seated optional if the buffer contained a serialized SHAMap
  *         node ID and an unseated optional otherwise.
  */

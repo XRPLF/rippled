@@ -1261,7 +1261,7 @@ directSendNoFeeMPT(
                 return tecINSUFFICIENT_FUNDS;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] = senderBalance - amt;
-            sle.update();
+            sle.updateInView();
         }
         else
         {
@@ -1294,7 +1294,7 @@ directSendNoFeeMPT(
             }
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
-            sle.update();
+            sle.updateInView();
         }
         else
         {
