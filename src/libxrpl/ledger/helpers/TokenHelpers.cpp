@@ -809,7 +809,7 @@ directSendNoFeeIOU(
                 bSenderHigh ? uReceiverID : uSenderID, bSenderHigh ? uSenderID : uReceiverID);
         }
 
-        sleRippleState.update();
+        sleRippleState.updateInView();
         return tesSUCCESS;
     }
 

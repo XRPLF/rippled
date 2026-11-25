@@ -207,8 +207,8 @@ trustCreate(
     }
 
     RippleStateEntryW sleRippleState(Keylet(ltRIPPLE_STATE, uIndex), view, j);
-    sleRippleState.newSLE();
-    sleRippleState.insert();
+    sleRippleState.newSle();
+    sleRippleState.insertIntoView();
 
     auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
@@ -408,7 +408,7 @@ issueIOU(
                 bSenderHigh ? account : issue.account, bSenderHigh ? issue.account : account);
         }
 
-        state.update();
+        state.updateInView();
 
         return tesSUCCESS;
     }
@@ -498,7 +498,7 @@ redeemIOU(
                 bSenderHigh ? issue.account : account, bSenderHigh ? account : issue.account);
         }
 
-        state.update();
+        state.updateInView();
         return tesSUCCESS;
     }
 
