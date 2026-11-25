@@ -281,19 +281,52 @@ You can then build and test as usual, with the generated `xrpld` binary containi
 
 See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 
+## Formal verification
+
+The `formal_verification` option (needs `xrpld` and `tests`) links a Lean 4
+model into `xrpld` and builds the suite that checks it against the C++. `xrpld`
+needs only the `lean4` package; `mathlib4`, a prebuilt mathlib, is only used by
+the `lean4_proofs` target that checks the proofs. Both come from the `xrplf`
+remote. Run this from `nix develop .#formal-verification` on Linux, as the
+prebuilt `lean4` binaries are built in the Nix CI environment and use its loader.
+With Apple Clang it needs GNU ar (`brew install binutils`, or set `LEAN_AR`):
+lake archives through a response file, which Apple's `ar` cannot read.
+
+```bash
+conan install .. --output-folder . --build missing --settings build_type=Release --profile:all ci -o formal_verification=True
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification=ON ..
+cmake --build . --target xrpld && ./xrpld --unittest=formal_verification
+cmake --build . --target lean4_proofs
+```
+
+The remote has `lean4` and `mathlib4` binaries only for the configurations CI
+builds, which on Linux record the Nix environment's glibc in their package ID
+through the `ci` profile. So on Linux, without `--profile:all ci`, Conan builds
+both from source, and mathlib takes hours.
+
+`nix develop .#formal-verification` also provides `lean` and `lake` from
+nixpkgs for proof work. nixpkgs builds Lean without the upstream githash, which
+lake keys its build traces on, so the shell sets `LEAN_GITHASH` to the official
+release's value (see `nix/packages.nix`) to keep mathlib's prebuilt oleans
+valid. The CMake build always uses the `lean4` package's toolchain.
+
+See [formal_verification/README.md](./formal_verification/README.md) for what
+is in the Lean project and how to work on it.
+
 ## Options
 
-| Option           | Default Value | Description                                                                   |
-| ---------------- | ------------- | ----------------------------------------------------------------------------- |
-| `assert`         | OFF           | Force enabling assertions.                                                    |
-| `coverage`       | OFF           | Prepare the coverage report.                                                  |
-| `rust`           | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
-| `tests`          | OFF           | Build tests.                                                                  |
-| `unity`          | OFF           | Configure a unity build.                                                      |
-| `verify_headers` | ON            | Make the `verify-headers` target available to compile each header on its own. |
-| `xrpld`          | OFF           | Build the xrpld application, and not just the libxrpl library.                |
-| `werr`           | OFF           | Treat compilation warnings as errors                                          |
-| `wextra`         | OFF           | Enable additional compilation warnings                                        |
+| Option                | Default Value | Description                                                                   |
+| --------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `assert`              | OFF           | Force enabling assertions.                                                    |
+| `coverage`            | OFF           | Prepare the coverage report.                                                  |
+| `formal_verification` | OFF           | Link the Lean 4 model into xrpld and build its tests (requires `tests`).      |
+| `rust`                | OFF           | Build the Rust crates and the C++ code that depends on them.                  |
+| `tests`               | OFF           | Build tests.                                                                  |
+| `unity`               | OFF           | Configure a unity build.                                                      |
+| `verify_headers`      | ON            | Make the `verify-headers` target available to compile each header on its own. |
+| `xrpld`               | OFF           | Build the xrpld application, and not just the libxrpl library.                |
+| `werr`                | OFF           | Treat compilation warnings as errors                                          |
+| `wextra`              | OFF           | Enable additional compilation warnings                                        |
 
 [Unity builds][unity-build] may be faster for the first build (at the cost of much more
 memory) since they concatenate sources into fewer translation units. Non-unity
