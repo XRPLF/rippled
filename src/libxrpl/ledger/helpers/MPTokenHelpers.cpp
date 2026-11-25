@@ -206,7 +206,7 @@ authorizeMPToken(
 
             decreaseOwnerCountForObject(ctx.view, sleAcct, sleMpt.mutableRawSle(), 1, journal);
 
-            sleMpt.erase();
+            sleMpt.eraseFromView();
             return tesSUCCESS;
         }
 
@@ -248,14 +248,14 @@ authorizeMPToken(
         }
 
         MPTokenEntryW mptoken(mptIssuanceID, account, ctx.view, journal);
-        mptoken.newSLE();
+        mptoken.newSle();
         if (auto ter = dirLink(ctx.view, account, mptoken.mutableRawSle()))
             return ter;  // LCOV_EXCL_LINE
 
         (*mptoken)[sfAccount] = account;
         (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
         (*mptoken)[sfFlags] = 0;
-        mptoken.insert();
+        mptoken.insertIntoView();
 
         // Update owner count.
         increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
@@ -297,7 +297,7 @@ authorizeMPToken(
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
 
-    sleMpt.update();
+    sleMpt.updateInView();
     return tesSUCCESS;
 }
 
@@ -744,7 +744,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
             sle->setFieldU64(sfLockedAmount, pay);
         }
 
-        sle.update();
+        sle.updateInView();
     }
 
     // 1. Increase the Issuance EscrowedAmount
@@ -854,7 +854,7 @@ unlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         (*sle)[sfMPTAmount] += delta;
-        sle.update();
+        sle.updateInView();
     }
     else
     {
@@ -914,7 +914,7 @@ unlockEscrowMPT(
     {
         sle->setFieldU64(sfLockedAmount, newLocked);
     }
-    sle.update();
+    sle.updateInView();
 
     // Note: The gross amount is the amount that was locked, the net
     // amount is the amount that is being unlocked. The difference is the fee

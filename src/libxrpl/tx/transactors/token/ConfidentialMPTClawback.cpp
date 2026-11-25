@@ -229,7 +229,7 @@ ConfidentialMPTClawback::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
-    sleHolderMPToken.update();
+    sleHolderMPToken.updateInView();
     view().update(sleIssuance);
 
     return tesSUCCESS;

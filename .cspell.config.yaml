@@ -1,10 +1,10 @@
 ignorePaths:
   - build/**
   - src/libxrpl/crypto
+  - cmake/CodeCoverage.cmake # vendored from https://github.com/bilke/cmake-modules
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
-  - cmake/**
   - LICENSE.md
   - .clang-tidy
   - nix/check-tools/*.txt # generated, and full of Nix store hashes
@@ -158,6 +158,7 @@ words:
   - keylet
   - keylets
   - keyvadb
+  - kuznetsss
   - kwarg
   - kwargs
   - ledgerentry
@@ -203,6 +204,7 @@ words:
   - multisign
   - multisigned
   - Nakamoto
+  - nbougalis
   - nftid
   - nftoffer
   - nftoken
@@ -372,6 +374,7 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
