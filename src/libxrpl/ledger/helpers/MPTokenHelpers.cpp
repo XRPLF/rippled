@@ -695,7 +695,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
             sleIssuance->setFieldU64(sfLockedAmount, pay);
         }
 
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
     return tesSUCCESS;
 }
@@ -753,7 +753,7 @@ unlockEscrowMPT(
         {
             sleIssuance->setFieldU64(sfLockedAmount, newLocked);
         }
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
 
     if (issuer != receiver)
@@ -796,7 +796,7 @@ unlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
 
     if (issuer == sender)
@@ -859,7 +859,7 @@ unlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
     return tesSUCCESS;
 }

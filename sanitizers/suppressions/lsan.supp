@@ -1,4 +1,4 @@
-# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppressions.
 
 # Suppress leaks detected by asan in boost code.
 leak:boost::asio
