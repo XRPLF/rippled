@@ -37,7 +37,11 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
+    container:
+      image: ${{ matrix.image }}
+      # TSan re-executes itself with ASLR disabled when the kernel's address
+      # layout does not suit it, which Docker's default seccomp profile blocks.
+      options: ${{ endsWith(matrix.package_name, '-tsan') && '--security-opt seccomp=unconfined' || '' }}
     timeout-minutes: 5
 
     steps:

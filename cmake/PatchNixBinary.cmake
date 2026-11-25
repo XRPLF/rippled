@@ -13,8 +13,9 @@
    the plain Nix dev shells set it, since their binaries link a newer glibc
    and must not be retargeted to the system loader.
 
-   Non-Nix builds (a system compiler, already using the system loader) and sanitizer builds
-   (runtime libraries resolved through the rpath) are skipped too.
+   Non-Nix builds (a system compiler, already using the system loader) and gcc sanitizer
+   builds (shared libasan and friends, resolved through the rpath) are skipped too. clang
+   links its sanitizer runtimes statically, so its builds are patched like any other.
    Everywhere else `patch_nix_binary` is a no-op.
 
    The default loader is resolved by bin/nix/default-loader-path.sh.
@@ -29,7 +30,7 @@ set(_loader_path_script "${CMAKE_SOURCE_DIR}/bin/nix/default-loader-path.sh")
 
 if(
     is_linux
-    AND NOT SANITIZERS_ENABLED
+    AND NOT (SANITIZERS_ENABLED AND is_gcc)
     AND is_nix_compiler
     AND NOT DEFINED ENV{XRPLD_NO_PATCH_NIX_BINARY}
 )

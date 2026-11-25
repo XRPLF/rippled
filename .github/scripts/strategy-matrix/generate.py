@@ -34,6 +34,8 @@ _BASE_CMAKE_ARGS = [
     "-Drust=ON",
 ]
 
+VALIDATOR_KEYS_ARG = "-Dvalidator_keys=ON"
+
 # The package formats a config can be packaged as, each with its own
 # install-test job in reusable-package.yml.
 PACKAGE_DEB = "deb"
@@ -63,6 +65,11 @@ def config_name(
     """Name a config. Its artifacts are named after it, so packaging reuses this."""
     parts = [s for s in [suffix, _SANITIZER_SUFFIX.get(sanitizer, "")] if s]
     return "-".join([f"{distro}-{compiler}-{build_type.lower()}-{arch}", *parts])
+
+
+def sanitizer_variant(compiler: str, build_type: str, sanitizer: str) -> str:
+    """Name the package variant of a sanitizer build, as XrplPackaging.cmake does."""
+    return f"{compiler}-{build_type.lower()}-{_SANITIZER_SUFFIX[sanitizer]}"
 
 
 def get_cmake_args(build_type: str, extra_args: str) -> str:
@@ -166,8 +173,10 @@ class PackageConfig:
     # the config itself builds in.
     image: str
     # A flavour of the package, named xrpld-<variant>, for a config whose
-    # binaries are not the plain release build. A variant needs no counterpart
-    # in the other format.
+    # binaries are not the plain release build. A variant can exist as a DEB
+    # only or as an RPM only. A config with a sanitizer leaves it empty,
+    # because the compiler, the build type and the sanitizer of an entry name
+    # its variant.
     variant: str = ""
 
     def __post_init__(self) -> None:
@@ -202,9 +211,17 @@ class LinuxConfig:
         _check_disabled(self.disabled)
         if isinstance(self.package, dict):
             self.package = PackageConfig(**self.package)
-        assert self.package is None or Event.TAG in self.events, (
-            f"a config with a 'package' map must list the '{Event.TAG}' event; "
-            f"got {self.events}."
+        if self.package is not None and self.sanitizers:
+            assert not self.package.variant, (
+                f"a config with a sanitizer gets its package variant from its "
+                f"compiler, build type and sanitizer; remove "
+                f"{self.package.variant!r}."
+            )
+        assert (
+            self.package is None or VALIDATOR_KEYS_ARG in self.extra_cmake_args.split()
+        ), (
+            f"a config with a 'package' map must pass {VALIDATOR_KEYS_ARG}; "
+            f"got {self.extra_cmake_args!r}."
         )
         self.events = _read_events(self.events)
 
@@ -369,8 +386,7 @@ def expand_linux_packaging(linux: LinuxFile, event: Event) -> list[PackagingEntr
     and list 'event'.
 
     Packaging consumes the binaries that config's build job uploaded, so the
-    artifact names come from the same config name, and a packaged config is one
-    that passes -Dvalidator_keys=ON.
+    artifact names come from the same config name, sanitizer included.
 
     Packaging itself runs in vanilla distro images (debian:trixie, almalinux:10)
     instead of the nix-based build images, because deb/rpm tooling (debhelper,
@@ -381,24 +397,27 @@ def expand_linux_packaging(linux: LinuxFile, event: Event) -> list[PackagingEntr
         for cfg in configs:
             if cfg.disabled or cfg.package is None or event not in cfg.events:
                 continue
-            for compiler, build_type, arch in itertools.product(
-                cfg.compiler, cfg.build_type, cfg.arch
+            for compiler, build_type, sanitizer, arch in itertools.product(
+                cfg.compiler, cfg.build_type, cfg.sanitizer_entries(), cfg.arch
             ):
                 # The packaging workflow hardcodes an amd64 runner.
                 assert arch == AMD64, f"cannot package {distro} on {arch}"
-                name = config_name(distro, compiler, build_type, arch, cfg.suffix)
+                name = config_name(
+                    distro, compiler, build_type, arch, cfg.suffix, sanitizer
+                )
+                variant = (
+                    sanitizer_variant(compiler, build_type, sanitizer)
+                    if sanitizer
+                    else cfg.package.variant
+                )
                 entries.append(
                     PackagingEntry(
                         xrpld_artifact_name=f"xrpld-{name}",
                         validator_keys_artifact_name=f"validator-keys-{name}",
                         image=cfg.package.image,
                         package_type=cfg.package.type,
-                        package_variant=cfg.package.variant,
-                        package_name=(
-                            f"{BASE_NAME}-{cfg.package.variant}"
-                            if cfg.package.variant
-                            else BASE_NAME
-                        ),
+                        package_variant=variant,
+                        package_name=f"{BASE_NAME}-{variant}" if variant else BASE_NAME,
                     )
                 )
 

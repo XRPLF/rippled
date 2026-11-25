@@ -36,7 +36,20 @@ BASE_NAME = "xrpld"
 
 # The flavours that can be built, '' being the plain xrpld package. A variant
 # needs a config in linux.json to be built by CI; see package/README.md.
-VARIANTS = ("", "assert")
+# The build metadata that the binary of a sanitizer build reports, as
+# cmake/XrplSanitizers.cmake names it, keyed by the last part of its variant.
+SANITIZER_METADATA = {"asan": "ASAN", "ubsan": "UBSAN", "tsan": "TSAN"}
+
+# A sanitizer variant names the compiler, the build type and the sanitizer of
+# its build, such as clang-release-asan.
+SANITIZER_VARIANTS = tuple(
+    f"{compiler}-{build_type}-{sanitizer}"
+    for compiler in ("gcc", "clang")
+    for build_type in ("debug", "release")
+    for sanitizer in SANITIZER_METADATA
+)
+
+VARIANTS = ("", "assert", *SANITIZER_VARIANTS)
 
 # Files both packaging systems consume, staged under the same names.
 STAGED_FROM_BUILD = ("xrpld", "validator-keys", "validator-keys-LICENSE")
@@ -150,6 +163,19 @@ def read_version(xrpld: Path) -> str:
     fields = capture(xrpld, "--version").partition("\n")[0].split()
     assert len(fields) >= 3, f"cannot read a version from {xrpld} --version"
     return fields[2]
+
+
+def without_sanitizer_metadata(reported: str, variant: str) -> str:
+    """Remove the name of the sanitizer that a sanitizer build appends to the
+    build metadata of its version. The metadata of a tag stays.
+
+    A release channel rejects the sanitizer's metadata, and the name of the
+    variant carries it already.
+    """
+    name = SANITIZER_METADATA[variant.rpartition("-")[2]]
+    if reported.endswith(f".{name}"):
+        return reported.removesuffix(f".{name}")
+    return reported.removesuffix(f"+{name}")
 
 
 def check_binaries(build_dir: Path) -> None:
@@ -320,8 +346,8 @@ def main() -> None:
         "--variant",
         default="",
         choices=VARIANTS,
-        help="the flavour of the package to build: 'assert' produces "
-        "xrpld-assert, which ships the same paths as xrpld and replaces it "
+        help="the flavour of the package to build: a variant <VARIANT> produces "
+        "xrpld-<VARIANT>, which ships the same paths as xrpld and replaces it "
         "(default: the plain xrpld package)",
     )
     parser.add_argument(
@@ -345,7 +371,16 @@ def main() -> None:
 
     check_binaries(build_dir)
     reported = read_version(build_dir / "xrpld")
-    version = package_version(reported, channel)
+    # Only the package version drops the sanitizer's metadata: the changelog
+    # still records the version the binary reports.
+    version = package_version(
+        (
+            without_sanitizer_metadata(reported, variant)
+            if variant in SANITIZER_VARIANTS
+            else reported
+        ),
+        channel,
+    )
     epoch = source_date_epoch()
 
     # rpmbuild and dpkg-buildpackage both honour this for file timestamps.

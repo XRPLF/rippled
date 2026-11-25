@@ -37,7 +37,9 @@ pins the full container image in `image` — edit that field to move to a new
 image and both CI and local builds pick it up — and names the format that image
 builds in `type`, which CI passes to `build_pkg.py` as `--package-type`; the two
 have to stay in step. An optional `variant` names a flavour of the package (see
-[Package variants](#package-variants)), and CI passes it as `--variant`.
+[Package variants](#package-variants)), and CI passes it as `--variant`. A
+config with a sanitizer has no `variant`: the generator names it after the
+compiler, the build type and the sanitizer of the build.
 
 | Package type | Image (`configs.<distro>[].package.image` in `linux.json`) | Tools required                                                 |
 | ------------ | ---------------------------------------------------------- | -------------------------------------------------------------- |
@@ -73,9 +75,25 @@ apt-get install xrpld-assert # apt removes the plain package itself
 dnf swap xrpld xrpld-VARIANT # 'dnf install' alone stops at the conflict
 ```
 
-Only the DEB packages carry a variant today — `xrpld-assert` comes from the
-`debian` config alone, there being no call for an assert build on RHEL-based
-distributions — but the RPM side works the same way if one is added.
+Only the DEB packages carry a variant today, each from a `debian` config:
+`xrpld-assert` from the `-Dassert=ON` build, and `xrpld-clang-release-asan`,
+`xrpld-clang-release-ubsan` and `xrpld-clang-release-tsan` from the clang
+Release builds with one sanitizer each and asserts on. A sanitizer variant
+names the compiler, the build type and the sanitizer of its build, because a
+different compiler or build type reports different findings. There is no call
+for them on RHEL-based distributions, but the RPM side works the same way if
+one is added. The ASan and UBSan packages are built wherever the plain packages
+are: in the merge queue, on a push, for a pull request labeled "Ready to merge"
+or "Merge CI", nightly, on a manual run of the Trigger workflow and on a tag.
+The TSan package, the slowest CI job by far, is built only on the Trigger
+workflow's weekday schedule and on a manual run of it, so it is never
+published: a tag releases only what a push builds.
+`docs/build/sanitizers.md` describes what the binaries report and how to read
+it. A TSan binary re-executes itself with ASLR disabled when the kernel's address
+layout does not suit TSan, so a sandbox that blocks `personality()`, such as
+Docker's default seccomp profile, stops it with `FATAL: ThreadSanitizer:
+encountered an incompatible memory layout`. Run such a container with
+`--security-opt seccomp=unconfined`.
 
 A switch is a removal plus an installation rather than an upgrade, so unlike a
 version upgrade it stops the service: Debian's scriptlets start it again, while
@@ -198,8 +216,14 @@ The package version is not a CMake input on this path: `build_pkg.py` derives it
 from the just-built `xrpld` binary's `xrpld --version` output. The package
 release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
-`-Dassert=ON` passes `--variant assert`, so such a build packages as
-`xrpld-assert` without anything else being asked for.
+A build with one sanitizer passes its compiler, build type and sanitizer as the
+variant, such as `--variant clang-release-asan`, and otherwise `-Dassert=ON`
+passes `--variant assert`, so such a build packages
+under its own name without anything else being asked for. A build with two
+sanitizers has no variant, so it gets no `package` target. A sanitizer variant
+drops the build metadata that the sanitizer adds to the version its binary
+reports, since its name already carries the sanitizer and the stable channel
+would reject the metadata. The metadata of a tag stays.
 
 ## Publishing packages
 
