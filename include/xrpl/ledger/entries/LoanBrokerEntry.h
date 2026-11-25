@@ -13,6 +13,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <string_view>
 
 namespace xrpl {
@@ -66,6 +67,23 @@ public:
     [[nodiscard]] TER
     canApplyToCover(Asset const& vaultAsset, STAmount const& amount, std::string_view logPrefix)
         const;
+
+    /**
+     * Adjust this LoanBroker's owner count.
+     *
+     * A LoanBroker's sfOwnerCount tracks the number of outstanding loans on
+     * this broker; it is not a reserve-backed owner count and is distinct
+     * from the broker's pseudo-account's owner count. Loans can never carry
+     * a reserve sponsor (LoanSet rejects reserve sponsorship at preflight),
+     * so this never involves sponsor accounting and never invokes the
+     * ownerCountHook used for ACCOUNT_ROOT reserve tracking.
+     *
+     * @param delta Amount to add (positive) or remove (negative) from the
+     * count.
+     */
+    void
+    adjustOwnerCount(std::int32_t delta)
+        requires Base::kIsWritable;
 };
 
 using LoanBrokerEntryR = LoanBrokerEntry<ReadView>;

@@ -4,7 +4,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/LoanBrokerEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rate.h>
@@ -308,27 +307,27 @@ decreaseOwnerCountForObject(
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
+namespace detail {
+
 /**
- * Adjust a LoanBroker's owner count.
+ * Sets `sfield` on `sle` to its current value adjusted by `ownerCountAdj`
+ * (clamped to never go negative or overflow), persists the change via
+ * `view.update(sle)`, and returns the new value.
  *
- * A LoanBroker's sfOwnerCount tracks the number of outstanding loans on
- * that broker; it is not a reserve-backed owner count and is distinct
- * from the broker's pseudo-account's owner count. Loans can never carry a
- * reserve sponsor (LoanSet rejects reserve sponsorship at preflight), so
- * this never involves sponsor accounting and never invokes the
- * ownerCountHook used for ACCOUNT_ROOT reserve tracking.
- *
- * @param view The apply view for making changes
- * @param brokerSle The LoanBroker's ledger entry
- * @param delta Amount to add (positive) or remove (negative) from the count
- * @param j Journal for logging
+ * Exposed for LoanBrokerEntry::adjustOwnerCount(), which reuses this to
+ * adjust a LoanBroker's (non-reserve-backed) sfOwnerCount the same way
+ * this file's reserve-backed owner-count fields are adjusted.
  */
-void
-adjustLoanBrokerOwnerCount(
+std::uint32_t
+adjustOwnerCountImpl(
     ApplyView& view,
-    LoanBrokerEntryW& brokerSle,
-    std::int32_t delta,
+    SLE::Ref sle,
+    SF_UINT32 const& sfield,
+    AccountID const& accID,
+    std::int32_t ownerCountAdj,
     beast::Journal j);
+
+}  // namespace detail
 
 /**
  * Returns IOU issuer transfer fee as Rate. Rate specifies
