@@ -4,6 +4,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -30,6 +31,7 @@
 #include <streambuf>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -621,6 +623,89 @@ port_wss_admin
         // Restore the current working directory.
         current_path(cwd);
     }
+    void
+    testConfigSearch()
+    {
+        testcase("config_search");
+
+        // The search is driven by environment variables, which only POSIX can
+        // set from a test.
+#ifndef _MSC_VER
+        using namespace std::filesystem;
+        auto const cwd = current_path();
+
+        // Write a config file into a directory, creating the directory first.
+        auto const writeConfig = [](Path const& dir) {
+            create_directories(dir);
+            std::ofstream o((dir / std::string{Config::kConfigFileName}).string());
+            o << detail::configContents("", "");
+        };
+
+        // Empty working and home directories, with both XDG variables pointing
+        // at their own temporary directories. The guards are declared after
+        // the directories, so they restore before those are removed. The
+        // working directory is restored even when a call below throws, so that
+        // td never deletes the directory the process is in.
+        TempDir const td;
+        ScopeExit const restoreCwd{[&cwd] {
+            std::error_code ec;
+            current_path(cwd, ec);
+        }};
+        current_path(td.path());
+        TempDir const home;
+        TempDir const xdgConfig;
+        TempDir const xdgData;
+        detail::EnvVarGuard const homeGuard("HOME", home.path());
+        detail::EnvVarGuard const xdgConfigGuard("XDG_CONFIG_HOME", xdgConfig.path());
+        detail::EnvVarGuard const xdgDataGuard("XDG_DATA_HOME", xdgData.path());
+
+        // Read the working directory back, because current_path() can resolve
+        // a symlink.
+        Path const cwdDir = current_path();
+        Path const xdgConfigDir = Path(xdgConfig.path()) / systemName();
+        Path const xdgDataDir = Path(xdgData.path()) / systemName();
+
+        // A config file in both the working directory and the XDG config
+        // directory: the working directory wins, and its data directory is
+        // the db subdirectory.
+        writeConfig(cwdDir);
+        writeConfig(xdgConfigDir);
+        {
+            Path const dataDir = cwdDir / std::string{Config::kDatabaseDirName};
+            Config c;
+            BEAST_EXPECT(c.setup("", true, false, false));
+            BEAST_EXPECT(c.configDir == cwdDir);
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == dataDir.string());
+            BEAST_EXPECT(is_directory(dataDir));
+        }
+
+        // Without the working directory file, the XDG config directory is
+        // found, paired with the XDG data directory.
+        remove(cwdDir / std::string{Config::kConfigFileName});
+        {
+            Config c;
+            BEAST_EXPECT(c.setup("", true, false, false));
+            BEAST_EXPECT(c.configDir == xdgConfigDir);
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == xdgDataDir.string());
+            BEAST_EXPECT(is_directory(xdgDataDir));
+        }
+
+        // Without XDG_DATA_HOME, the data directory falls back to
+        // ${HOME}/.local/share.
+        {
+            detail::EnvVarGuard const noXdgData("XDG_DATA_HOME", std::nullopt);
+            Path const homeDataDir = Path(home.path()) / ".local" / "share" / systemName();
+            Config c;
+            BEAST_EXPECT(c.setup("", true, false, false));
+            BEAST_EXPECT(c.configDir == xdgConfigDir);
+            BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == homeDataDir.string());
+            BEAST_EXPECT(is_directory(homeDataDir));
+        }
+#else
+        pass();
+#endif  // _MSC_VER
+    }
+
     void
     testDbPath()
     {
@@ -1944,6 +2029,7 @@ r.ripple.com:51235
     {
         testLegacy();
         testConfigFile();
+        testConfigSearch();
         testDbPath();
         testValidatorKeys();
         testValidatorsFile();
