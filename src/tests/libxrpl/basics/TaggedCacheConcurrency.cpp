@@ -120,8 +120,11 @@ struct ConcurrencyRefCountObject : IntrusiveRefCounts
     }
 };
 
-// A mutex that records how the cache uses it. It lets the locking rules be
-// checked deterministically, without ThreadSanitizer.
+// A mutex that records how the cache uses it: how many times it is taken,
+// whether a thread takes a second one while holding the first, and whether one
+// is taken recursively. Those rules can then be checked deterministically. It
+// cannot tell whether data is read after the lock is released: only
+// ThreadSanitizer reports that.
 class LockCheckingMutex
 {
 public:
@@ -132,6 +135,8 @@ public:
     // Acquisitions of a mutex the calling thread already held.
     static inline std::atomic<int> recursive{0};
     static inline std::atomic<std::uint64_t> acquisitions{0};
+    // Number of different mutexes acquired at least once.
+    static inline std::atomic<std::uint64_t> distinct{0};
     // Called, when set, just before an acquisition. It may use the cache: its
     // own acquisitions do not call it again.
     static inline std::function<void()> beforeLock;
@@ -142,6 +147,7 @@ public:
         nested = 0;
         recursive = 0;
         acquisitions = 0;
+        distinct = 0;
         beforeLock = nullptr;
     }
 
@@ -170,6 +176,11 @@ public:
         depth_ = 1;
         ++held;
         ++acquisitions;
+        if (!seen_)
+        {
+            seen_ = true;
+            ++distinct;
+        }
     }
 
     void
@@ -188,6 +199,7 @@ private:
     std::mutex mutex_;
     std::atomic<std::thread::id> owner_;
     int depth_{0};
+    bool seen_{false};
 };
 
 template <class T, bool IsKeyCache = false>
@@ -256,15 +268,17 @@ class ManualCollector : public beast::insight::Collector
         }
     };
 
-    std::shared_ptr<StoredHook> hook_;
+    // Weak, so that the test can tell when the cache lets go of its hook.
+    std::weak_ptr<StoredHook> hook_;
     std::map<std::string, std::shared_ptr<RecordingGauge>> gauges_;
 
 public:
     beast::insight::Hook
     makeHook(beast::insight::HookImpl::HandlerType const& handler) override
     {
-        hook_ = std::make_shared<StoredHook>(handler);
-        return beast::insight::Hook{hook_};
+        auto hook = std::make_shared<StoredHook>(handler);
+        hook_ = hook;
+        return beast::insight::Hook{std::move(hook)};
     }
 
     beast::insight::Counter
@@ -296,7 +310,14 @@ public:
     void
     collect() const
     {
-        hook_->handler();
+        if (auto const hook = hook_.lock())
+            hook->handler();
+    }
+
+    [[nodiscard]] bool
+    hookRegistered() const
+    {
+        return !hook_.expired();
     }
 
     [[nodiscard]] std::uint64_t
@@ -305,6 +326,89 @@ public:
         return gauges_.at(name)->value;
     }
 };
+
+// A cached object that records, when it is destroyed, whether the collector
+// still had the hook of the cache that held it.
+struct HookProbe
+{
+    ManualCollector const* collector = nullptr;
+    bool* hookRegisteredAtDestruction = nullptr;
+
+    ~HookProbe()
+    {
+        if (collector != nullptr)
+            *hookRegisteredAtDestruction = collector->hookRegistered();
+    }
+};
+
+// A key that counts every use of it (hash, compare, copy, destroy) made, while
+// armed, by a thread that does not hold exactly one partition lock.
+struct LockCheckedKey
+{
+    static inline std::atomic<bool> armed{false};
+    static inline std::atomic<int> unguarded{0};
+
+    std::uint32_t value{0};
+
+    static void
+    check()
+    {
+        if (armed && LockCheckingMutex::held != 1)
+            ++unguarded;
+    }
+
+    explicit LockCheckedKey(std::uint32_t value) : value(value)
+    {
+    }
+
+    LockCheckedKey(LockCheckedKey const& other) : value(other.value)
+    {
+        check();
+    }
+
+    LockCheckedKey&
+    operator=(LockCheckedKey const&) = default;
+
+    ~LockCheckedKey()
+    {
+        check();
+    }
+
+    friend bool
+    operator==(LockCheckedKey const& lhs, LockCheckedKey const& rhs)
+    {
+        check();
+        return lhs.value == rhs.value;
+    }
+};
+
+// Picks the partition. The cache finds it by argument-dependent lookup.
+[[maybe_unused]] std::size_t
+extract(LockCheckedKey const& key)
+{
+    return key.value;
+}
+
+struct LockCheckedKeyHash
+{
+    std::size_t
+    operator()(LockCheckedKey const& key) const
+    {
+        LockCheckedKey::check();
+        return std::hash<std::uint32_t>{}(key.value);
+    }
+};
+
+template <class T, bool IsKeyCache = false>
+using LockCheckedKeyCache = TaggedCache<
+    LockCheckedKey,
+    T,
+    IsKeyCache,
+    SharedWeakCachePointer<T>,
+    std::shared_ptr<T>,
+    LockCheckedKeyHash,
+    std::equal_to<LockCheckedKey>,
+    LockCheckingMutex>;
 
 }  // namespace
 
@@ -344,8 +448,10 @@ struct TaggedCacheConcurrencyTest : public ::testing::Test
 };
 
 // Every single-key operation at once on a value cache, while other threads
-// sweep, clear, reset and read the totals. A removal that is counted twice or
-// not at all leaves a count that the last assertions catch: once everything
+// sweep and read the totals. In the first half a further thread clears and
+// resets the cache; the second half runs without it, because clear() zeroes
+// the counts and would hide a miscount. A removal that is counted twice or not
+// at all in the second half is caught by the last assertions: once everything
 // has expired and nothing is held, the cache must be exactly empty.
 TEST_F(TaggedCacheConcurrencyTest, mixed_operations_leave_counts_consistent)
 {
@@ -367,7 +473,7 @@ TEST_F(TaggedCacheConcurrencyTest, mixed_operations_leave_counts_consistent)
             total += static_cast<std::uint64_t>(cache.rate());
             (void)total;
         }};
-        ConcurrencyTestLoop const clearer{
+        ConcurrencyTestLoop clearer{
             [&, round = 0] mutable {
                 if (++round % 2 == 0)
                 {
@@ -380,10 +486,10 @@ TEST_F(TaggedCacheConcurrencyTest, mixed_operations_leave_counts_consistent)
             },
             std::chrono::milliseconds{2}};
 
-        runThreads(kThreads, [&](unsigned t) {
+        auto const work = [&](unsigned t) {
             std::mt19937 rng{t};
             std::vector<std::shared_ptr<std::string>> held;
-            for (unsigned i = 0; i < kIterations; ++i)
+            for (unsigned i = 0; i < kIterations / 2; ++i)
             {
                 LedgerIndex const key = rng() % 512;
                 switch (rng() % 8)
@@ -424,7 +530,14 @@ TEST_F(TaggedCacheConcurrencyTest, mixed_operations_leave_counts_consistent)
                 if (held.size() > 32)
                     held.clear();
             }
-        });
+        };
+        runThreads(kThreads, work);
+
+        // clear() zeroes the counts, which hides a miscount made before it.
+        // Run the workload again without it, so that a miscount made now
+        // reaches the assertions below.
+        clearer.stop();
+        runThreads(kThreads, work);
     }
 
     EXPECT_GE(cache.getCacheSize(), 0);
@@ -456,7 +569,7 @@ TEST_F(TaggedCacheConcurrencyTest, intrusive_mixed_operations_leave_counts_consi
             clock.advance(std::chrono::seconds{1});
             cache.sweep();
         }};
-        ConcurrencyTestLoop const clearer{
+        ConcurrencyTestLoop clearer{
             [&] {
                 cache.clear();
                 (void)cache.getKeys();
@@ -464,10 +577,10 @@ TEST_F(TaggedCacheConcurrencyTest, intrusive_mixed_operations_leave_counts_consi
             },
             std::chrono::milliseconds{2}};
 
-        runThreads(kThreads, [&](unsigned t) {
+        auto const work = [&](unsigned t) {
             std::mt19937 rng{t};
             std::vector<intr_ptr::SharedPtr<Object>> held;
-            for (unsigned i = 0; i < kIterations; ++i)
+            for (unsigned i = 0; i < kIterations / 2; ++i)
             {
                 LedgerIndex const key = rng() % 512;
                 switch (rng() % 5)
@@ -496,7 +609,14 @@ TEST_F(TaggedCacheConcurrencyTest, intrusive_mixed_operations_leave_counts_consi
                 if (held.size() > 32)
                     held.clear();
             }
-        });
+        };
+        runThreads(kThreads, work);
+
+        // clear() zeroes the counts, which hides a miscount made before it.
+        // Run the workload again without it, so that a miscount made now
+        // reaches the assertions below.
+        clearer.stop();
+        runThreads(kThreads, work);
     }
 
     EXPECT_GE(cache.getCacheSize(), 0);
@@ -520,11 +640,11 @@ TEST_F(TaggedCacheConcurrencyTest, key_cache_sizes_agree_after_concurrent_use)
             clock.advance(std::chrono::seconds{1});
             cache.sweep();
         }};
-        ConcurrencyTestLoop const clearer{[&] { cache.clear(); }, std::chrono::milliseconds{2}};
+        ConcurrencyTestLoop clearer{[&] { cache.clear(); }, std::chrono::milliseconds{2}};
 
-        runThreads(kThreads, [&](unsigned t) {
+        auto const work = [&](unsigned t) {
             std::mt19937_64 rng{t};
-            for (unsigned i = 0; i < kIterations; ++i)
+            for (unsigned i = 0; i < kIterations / 2; ++i)
             {
                 // Vary the leading bytes: they pick the partition.
                 UInt256 key;
@@ -539,7 +659,14 @@ TEST_F(TaggedCacheConcurrencyTest, key_cache_sizes_agree_after_concurrent_use)
                     cache.touchIfExists(key);
                 }
             }
-        });
+        };
+        runThreads(kThreads, work);
+
+        // clear() zeroes the counts, which hides a miscount made before it.
+        // Run the workload again without it, so that a miscount made now
+        // reaches the assertions below.
+        clearer.stop();
+        runThreads(kThreads, work);
     }
 
     EXPECT_EQ(cache.getCacheSize(), cache.getTrackSize());
@@ -935,6 +1062,178 @@ TEST_F(TaggedCacheConcurrencyTest, metrics_hook_reports_the_totals)
     collector->collect();
     EXPECT_EQ(collector->gauge("metrics.size"), kKeys);
     EXPECT_EQ(collector->gauge("metrics.hit_rate"), 75u);
+}
+
+// The cache counts an entry only while it holds a strong pointer to it. No
+// other test reaches these two branches without a concurrent clear().
+TEST_F(TaggedCacheConcurrencyTest, weak_entry_is_counted_only_while_cached)
+{
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache cache{"weak", 0, std::chrono::seconds{1}, clock, journal};
+
+    auto held = std::make_shared<std::string>("held");
+    EXPECT_FALSE(cache.canonicalizeReplaceClient(1, held));
+    clock.advance(std::chrono::seconds{2});
+    cache.sweep();
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 1);
+
+    // del() of an entry that is only weakly held must not change the count.
+    EXPECT_FALSE(cache.del(1, true));
+    EXPECT_EQ(cache.getCacheSize(), 0);
+    EXPECT_EQ(cache.getTrackSize(), 1);
+
+    // fetch() makes it strong again and counts it.
+    EXPECT_EQ(cache.fetch(1), held);
+    EXPECT_EQ(cache.getCacheSize(), 1);
+    EXPECT_EQ(cache.getTrackSize(), 1);
+}
+
+// fetch(key, handler) runs the handler unlocked. If the key is inserted
+// meanwhile, the caller must get the object that is in the cache.
+TEST_F(TaggedCacheConcurrencyTest, fetch_with_handler_keeps_the_entry_inserted_meanwhile)
+{
+    using Cache = TaggedCache<LedgerIndex, std::string>;
+    Cache cache{"race", 0, std::chrono::hours{1}, clock, journal};
+
+    std::shared_ptr<std::string> winner;
+    auto const loser = cache.fetch(7, [&] {
+        winner = cache.fetch(7, [] { return std::make_shared<std::string>("winner"); });
+        return std::make_shared<std::string>("loser");
+    });
+    ASSERT_NE(winner, nullptr);
+    EXPECT_EQ(loser, winner);
+    EXPECT_EQ(cache.fetch(7), winner);
+    EXPECT_EQ(cache.size(), 1u);
+}
+
+// There is one partition per hardware thread, and consecutive keys use all of
+// them. Everything else passes with a single partition, which would silently
+// undo the point of having partitions.
+TEST_F(TaggedCacheConcurrencyTest, keys_are_spread_over_one_partition_per_hardware_thread)
+{
+    auto const expected = std::max<std::uint64_t>(1, std::thread::hardware_concurrency());
+    LockCheckingCache<std::string> cache{"spread", 0, std::chrono::hours{1}, clock, journal};
+
+    for (LedgerIndex key = 0; key < expected; ++key)
+        cache.insert(key, "v");
+    EXPECT_EQ(LockCheckingMutex::distinct.load(), expected);
+
+    LockCheckingMutex::acquisitions = 0;
+    EXPECT_EQ(cache.size(), expected);
+    EXPECT_EQ(LockCheckingMutex::acquisitions.load(), expected);
+}
+
+// The metrics hook reads the partitions from another thread, so the cache
+// must let go of it before the partitions are destroyed.
+TEST_F(TaggedCacheConcurrencyTest, hook_is_released_before_the_partitions_are_destroyed)
+{
+    auto const collector = std::make_shared<ManualCollector>();
+    bool hookRegisteredAtDestruction = true;
+    {
+        TaggedCache<LedgerIndex, HookProbe> cache{
+            "order", 0, std::chrono::hours{1}, clock, journal, collector};
+        auto probe = std::make_shared<HookProbe>();
+        probe->collector = collector.get();
+        probe->hookRegisteredAtDestruction = &hookRegisteredAtDestruction;
+        cache.canonicalizeReplaceCache(1, probe);
+        probe.reset();
+        EXPECT_TRUE(collector->hookRegistered());
+    }
+    EXPECT_FALSE(hookRegisteredAtDestruction);
+}
+
+// The instrumented mutex counts acquisitions but cannot see a map being used
+// after its lock was released. These keys can: the map hashes, compares,
+// copies and destroys them, and each such use must happen under exactly one
+// partition lock.
+TEST_F(TaggedCacheConcurrencyTest, map_is_only_touched_under_its_partition_lock)
+{
+    using Key = LockCheckedKey;
+    std::vector<Key> keys;
+    keys.reserve(64);
+    for (std::uint32_t i = 0; i < 64; ++i)
+        keys.emplace_back(i);
+
+    auto const guarded = [](auto&& operation) {
+        Key::unguarded = 0;
+        Key::armed = true;
+        operation();
+        Key::armed = false;
+        return Key::unguarded.load() == 0;
+    };
+
+    {
+        LockCheckedKeyCache<std::string> cache{"guard", 1, std::chrono::seconds{1}, clock, journal};
+        auto const fill = [&] {
+            for (auto const& key : keys)
+                cache.insert(key, "v");
+        };
+        EXPECT_TRUE(guarded(fill)) << "insert";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.fetch(key);
+        })) << "fetch";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.touchIfExists(key);
+        })) << "touchIfExists";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+            {
+                std::string out;
+                cache.retrieve(key, out);
+            }
+        })) << "retrieve";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.fetchAndModify(key, [](std::string&) {});
+        })) << "fetchAndModify";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.canonicalizeReplaceCache(key, std::make_shared<std::string>("r"));
+        })) << "canonicalizeReplaceCache";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.fetch(key, [] { return std::make_shared<std::string>("h"); });
+        })) << "fetch with handler, found";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.del(key, false);
+        })) << "del";
+        EXPECT_EQ(cache.size(), 0u);
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.fetch(key, [] { return std::make_shared<std::string>("h"); });
+        })) << "fetch with handler, inserted";
+        cache.clear();
+        fill();
+        clock.advance(std::chrono::seconds{2});
+        EXPECT_TRUE(guarded([&] { cache.sweep(); })) << "sweep";
+        EXPECT_EQ(cache.size(), 0u);
+        fill();
+        EXPECT_TRUE(guarded([&] { cache.clear(); })) << "clear";
+        fill();
+        EXPECT_TRUE(guarded([&] { cache.reset(); })) << "reset";
+    }
+    {
+        LockCheckedKeyCache<int, true> cache{
+            "guardkeys", 1, std::chrono::seconds{1}, clock, journal};
+        auto const fill = [&] {
+            for (auto const& key : keys)
+                cache.insert(key);
+        };
+        EXPECT_TRUE(guarded(fill)) << "key insert";
+        EXPECT_TRUE(guarded([&] {
+            for (auto const& key : keys)
+                cache.touchIfExists(key);
+        })) << "key touchIfExists";
+        clock.advance(std::chrono::seconds{2});
+        EXPECT_TRUE(guarded([&] { cache.sweep(); })) << "key sweep";
+        EXPECT_EQ(cache.size(), 0u);
+        fill();
+        EXPECT_TRUE(guarded([&] { cache.clear(); })) << "key clear";
+    }
 }
 
 }  // namespace xrpl

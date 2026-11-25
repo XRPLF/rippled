@@ -58,8 +58,11 @@ struct ReplaceDynamically;
  *       always maps to the same partition, and an operation on one key locks
  *       only that partition. Operations on the whole cache (size(),
  *       getCacheSize(), getTrackSize(), getHitRate(), rate(), getKeys(),
- *       clear(), reset() and sweep()) lock one partition at a time, so they
- *       are not atomic with respect to operations on other partitions.
+ *       clear() and reset()) lock one partition at a time, so they are not
+ *       atomic with respect to operations on other partitions. sweep() scans
+ *       each partition on its own thread, so all partitions can be locked at
+ *       the same time, each for the length of its own scan; it is not atomic
+ *       across partitions either.
  *
  * @note No thread ever holds two partition locks of one cache. Callers may
  *       hold their own locks around a cache call. Code that runs while a
@@ -95,6 +98,12 @@ public:
         ClockType& clock,
         beast::Journal journal,
         beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make());
+
+    // Not copyable or movable: the metrics hook refers to this object, and a
+    // moved-from cache would have no partitions.
+    TaggedCache(TaggedCache const&) = delete;
+    TaggedCache&
+    operator=(TaggedCache const&) = delete;
 
 public:
     /**
@@ -140,7 +149,7 @@ public:
      * Remove every item.
      *
      * The partitions are emptied one at a time. An item inserted concurrently
-     * into a partition that is already empty survives the call.
+     * into a partition that this call has already emptied survives the call.
      */
     void
     clear();
@@ -378,8 +387,9 @@ private:
     /**
      * Lock the partition `key` belongs to.
      *
-     * Every single-key operation calls this once and then works only on the
-     * returned partition.
+     * Every single-key operation locks through this function and then works
+     * only on the returned partition. fetch(key, handler) does so twice: once
+     * before and once after it calls the handler.
      */
     [[nodiscard]] LockedPartition
     getLockedPartition(key_type const& key);

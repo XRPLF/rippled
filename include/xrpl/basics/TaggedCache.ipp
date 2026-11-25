@@ -3,7 +3,7 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/partitioned_unordered_map.h>  // extract()
+#include <xrpl/basics/partitioned_unordered_map.h>  // Provides extract().
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -644,7 +644,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         ++allocationIterations;
     };
 
-    reserve(size());
+    // As before the partitions had their own locks, an empty cache allocates nothing.
+    if (auto const total = size(); v.capacity() < total)
+        reserve(total);
 
     for (auto const& partition : partitions_)
     {
