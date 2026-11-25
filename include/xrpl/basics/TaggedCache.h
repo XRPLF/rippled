@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Mutex.hpp>
 #include <xrpl/basics/SharedWeakCachePointer.h>
 #include <xrpl/basics/SharedWeakCachePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/UnorderedContainers.h>
@@ -11,7 +12,6 @@
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
-#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -53,6 +53,23 @@ struct ReplaceDynamically;
  *
  * @note Callers must not modify data objects that are stored in the cache
  *       unless they hold their own lock over all cache operations.
+ *
+ * @note The cache is split into partitions, each with its own mutex. A key
+ *       always maps to the same partition, and an operation on one key locks
+ *       only that partition. Operations on the whole cache (size(),
+ *       getCacheSize(), getTrackSize(), getHitRate(), rate(), getKeys(),
+ *       clear() and reset()) lock one partition at a time, so they are not
+ *       atomic with respect to operations on other partitions. sweep() scans
+ *       each partition on its own thread, so all partitions can be locked at
+ *       the same time, each for the length of its own scan; it is not atomic
+ *       across partitions either.
+ *
+ * @note No thread ever holds two partition locks of one cache. Callers may
+ *       hold their own locks around a cache call. Code that runs while a
+ *       partition is locked (the callbacks passed to canonicalize() and
+ *       fetchAndModify(), and the destructors of cached objects) must not
+ *       call back into the same cache or take a lock that another thread
+ *       holds while calling into this cache: either can deadlock.
  */
 template <
     class Key,
@@ -82,6 +99,12 @@ public:
         beast::Journal journal,
         beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make());
 
+    // Not copyable or movable: the metrics hook refers to this object, and a
+    // moved-from cache would have no partitions.
+    TaggedCache(TaggedCache const&) = delete;
+    TaggedCache&
+    operator=(TaggedCache const&) = delete;
+
 public:
     /**
      * Return the clock associated with the cache.
@@ -91,22 +114,51 @@ public:
 
     /**
      * Returns the number of items in the container.
+     *
+     * The partitions are counted one at a time, so under concurrent use the
+     * result is a recent total and not a snapshot of one instant.
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    int
+    /**
+     * Returns the number of items the cache keeps alive.
+     *
+     * A recent total under concurrent use, like size().
+     */
+    [[nodiscard]] int
     getCacheSize() const;
 
-    int
+    /**
+     * Returns the number of items tracked, cached or not.
+     *
+     * A recent total under concurrent use, like size().
+     */
+    [[nodiscard]] int
     getTrackSize() const;
 
+    /**
+     * Returns the percentage of lookups that were cache hits.
+     *
+     * A recent value under concurrent use, like size().
+     */
     float
     getHitRate();
 
+    /**
+     * Remove every item.
+     *
+     * The partitions are emptied one at a time. An item inserted concurrently
+     * into a partition that this call has already emptied survives the call.
+     */
     void
     clear();
 
+    /**
+     * Remove every item and zero the hit and miss counts.
+     *
+     * The partitions are reset one at a time, like clear().
+     */
     void
     reset();
 
@@ -134,6 +186,11 @@ public:
     del(key_type const& key, bool valid);
 
 private:
+    struct PartitionData;
+
+    // A locked partition: the lock and the data it protects, in one object.
+    using LockedPartition = xrpl::Lock<PartitionData, std::scoped_lock, MutexType>;
+
     // Selects the `data` parameter type of canonicalizeImpl from the replace
     // policy: const for detail::ReplaceCached (never written back), otherwise
     // writable.
@@ -161,10 +218,11 @@ private:
         Callback&& replaceCallback = nullptr);
 
     /**
-     * canonicalizeImpl variant for callers that already hold `mutex_`.
+     * canonicalizeImpl variant for callers that already hold the lock of the
+     * partition `key` belongs to.
      *
-     * The unnamed `scoped_lock<MutexType> const&` parameter is proof of
-     * ownership; this overload does not acquire the lock. Use it from other
+     * `partition` is proof of ownership and the only map this overload
+     * touches; this overload does not acquire the lock. Use it from other
      * methods (e.g. fetchAndModify) that need to compose canonicalize with
      * additional work under a single critical section, without relying on
      * recursive-mutex re-entry.
@@ -172,7 +230,7 @@ private:
     template <class Policy, class Callback = std::nullptr_t>
     bool
     canonicalizeImpl(
-        std::scoped_lock<MutexType> const&,
+        LockedPartition& partition,
         key_type const& key,
         CanonicalizeClientPointerType<Policy> data,
         Policy policy,
@@ -275,14 +333,23 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
-    std::vector<key_type>
+    /**
+     * Returns the keys of all tracked items.
+     *
+     * The partitions are copied one at a time. A key that is present for the
+     * whole call is returned exactly once; a key inserted or removed during
+     * the call may or may not be returned.
+     */
+    [[nodiscard]] std::vector<key_type>
     getKeys() const;
 
     // CachedSLEs functions.
     /**
      * Returns the fraction of cache hits.
+     *
+     * A recent value under concurrent use, like size().
      */
-    double
+    [[nodiscard]] double
     rate() const;
 
     /**
@@ -301,8 +368,9 @@ public:
      *
      * The entry for the given key is fetched from the cache or created if it
      * doesn't exist. The callback is then invoked with a reference to the
-     * entry while the cache mutex is still held, allowing safe modification
-     * of the cached object.
+     * entry while the mutex of the key's partition is still held, allowing
+     * safe modification of the cached object. No other operation on that key,
+     * including sweep() and clear(), can run until the callback returns.
      *
      * @param key The key to fetch or create
      * @param callback Function to call with the entry under lock.
@@ -314,7 +382,23 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l);
+    initialFetch(key_type const& key, LockedPartition& partition);
+
+    /**
+     * Lock the partition `key` belongs to.
+     *
+     * Every single-key operation locks through this function and then works
+     * only on the returned partition. fetch(key, handler) does so twice: once
+     * before and once after it calls the handler.
+     */
+    [[nodiscard]] LockedPartition
+    getLockedPartition(key_type const& key);
+
+    struct Counters;
+
+    // Sum of the per-partition counters, locking one partition at a time.
+    [[nodiscard]] Counters
+    getCounters() const;
 
     void
     collectMetrics();
@@ -397,20 +481,39 @@ private:
 
     using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
-    using KeyOnlyCacheType = HardenedPartitionedHashMap<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using MapType = HardenedHashMap<key_type, Entry, Hash, KeyEqual>;
 
-    using KeyValueCacheType = HardenedPartitionedHashMap<key_type, ValueEntry, Hash, KeyEqual>;
+    struct Counters
+    {
+        // Number of items cached
+        int cacheCount{0};
+        std::uint64_t hits{0};
+        std::uint64_t misses{0};
+    };
 
-    using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
+    // Everything one partition mutex protects.
+    struct PartitionData
+    {
+        MapType map;  // Hold strong reference to recent objects
+        Counters counters;
+    };
+
+    // Keeps the partitions on separate cache lines.
+    static constexpr std::size_t kPartitionAlignment = 64;
+
+    struct alignas(kPartitionAlignment) Partition
+    {
+        // Qualified, because `Mutex` names the template parameter here.
+        xrpl::Mutex<PartitionData, MutexType> guarded;
+    };
 
     [[nodiscard]] std::thread
     sweepHelper(
         ClockType::time_point const& whenExpire,
         [[maybe_unused]] ClockType::time_point const& now,
-        KeyValueCacheType::MapType& partition,
-        SweptPointersVector& stuffToSweep,
-        std::atomic<int>& allRemovals,
-        std::scoped_lock<std::recursive_mutex> const&);
+        Partition& guardedPartition,
+        SweptPointersVector& stuffToSweep)
+        requires(!IsKeyCache);
 
     /**
      * Sweep one partition of a key-only cache on its own thread.
@@ -422,24 +525,19 @@ private:
      *        erased.
      * @param now The current time. An entry stamped later than this is
      *        clamped to it.
-     * @param partition The partition to sweep.
-     * @param allRemovals Receives the number of entries erased.
-     * @return The worker thread, which the caller joins under the lock.
+     * @param guardedPartition The partition to sweep. The worker locks it.
+     * @return The worker thread, which the caller joins.
      */
     [[nodiscard]] std::thread
     sweepHelper(
         ClockType::time_point const& whenExpire,
         ClockType::time_point const& now,
-        KeyOnlyCacheType::MapType& partition,
-        SweptPointersVector&,
-        std::atomic<int>& allRemovals,
-        std::scoped_lock<std::recursive_mutex> const&);
+        Partition& guardedPartition,
+        SweptPointersVector&)
+        requires IsKeyCache;
 
     beast::Journal journal_;
     ClockType& clock_;
-    Stats stats_;
-
-    MutexType mutable mutex_;
 
     // Used for logging
     std::string name_;
@@ -450,11 +548,12 @@ private:
     // Desired maximum cache age
     ClockType::duration const targetAge_;
 
-    // Number of items cached
-    int cacheCount_{0};
-    CacheType cache_;  // Hold strong reference to recent objects
-    std::uint64_t hits_{0};
-    std::uint64_t misses_{0};
+    // Sized once, in the constructor, and never resized.
+    std::vector<Partition> partitions_;
+
+    // Declared last: its hook calls collectMetrics() from another thread, so
+    // it must be destroyed before the partitions and constructed after them.
+    Stats stats_;
 };
 
 }  // namespace xrpl
