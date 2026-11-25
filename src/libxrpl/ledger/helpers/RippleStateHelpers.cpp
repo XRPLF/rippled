@@ -281,7 +281,7 @@ issueIOU(
                 bSenderHigh ? account : issue.account, bSenderHigh ? issue.account : account);
         }
 
-        state.update();
+        state.updateInView();
 
         return tesSUCCESS;
     }
@@ -371,7 +371,7 @@ redeemIOU(
                 bSenderHigh ? issue.account : account, bSenderHigh ? account : issue.account);
         }
 
-        state.update();
+        state.updateInView();
         return tesSUCCESS;
     }
 
