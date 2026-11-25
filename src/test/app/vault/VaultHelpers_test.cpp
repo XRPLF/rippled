@@ -25,6 +25,7 @@
 #include <expected>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -821,6 +822,41 @@ private:
         BEAST_EXPECT(payoutPlusOne && *payoutPlusOne == STAmount(asset, Number(offered + 1)));
     }
 
+    // The exact integer path must reject a quotient that does not fit in an
+    // int64 the same way the Number path does, by throwing
+    // std::overflow_error, so the transactors' existing handlers still apply.
+    void
+    testExactConversionOverflow(Asset const& asset, MPTID const& shareMPT)
+    {
+        testcase("Exact conversion overflow throws (" + to_string(asset) + ")");
+
+        // One share is worth 4e18 assets, so 3 shares are worth 1.2e19, more
+        // than the int64 maximum of about 9.22e18.
+        auto const [vault, issuance] =
+            makeVaultAndIssuance(asset, shareMPT, Number(4'000'000'000'000'000'000), 1);
+        STAmount const shares{MPTIssue{shareMPT}, Number(3)};
+
+        auto const throwsOverflow = [](auto&& convert) {
+            try
+            {
+                convert();
+            }
+            catch (std::overflow_error const&)
+            {
+                return true;
+            }
+            return false;
+        };
+
+        BEAST_EXPECT(throwsOverflow([&] {
+            return sharesToAssetsDeposit(vault, issuance, shares, VaultRounding::FavorVault);
+        }));
+        BEAST_EXPECT(throwsOverflow([&] {
+            return sharesToAssetsWithdraw(
+                vault, issuance, shares, WaiveUnrealizedLoss::No, VaultRounding::FavorVault);
+        }));
+    }
+
     // An impaired loan leaves LossUnrealized on the vault. Unless it is
     // waived, both withdraw conversions value the vault at AssetsTotal -
     // LossUnrealized, and FavorVault feeds that difference to the exact
@@ -944,6 +980,8 @@ public:
             testLargeTotalsAreExact(asset, shareMPT);
             testWithdrawWithUnrealizedLoss(asset, shareMPT);
         }
+        // XRP is left out: its supply cap keeps it far below the int64 limit.
+        testExactConversionOverflow(mpt, shareMPT);
         testIouConversionsUnchanged(iou, shareMPT);
     }
 };

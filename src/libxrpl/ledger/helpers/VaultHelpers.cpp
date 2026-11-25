@@ -160,7 +160,7 @@ std::optional<std::uint64_t>
 toExactUInt(Number const& n)
 {
     if (n.signum() < 0 || n.truncate() != n)
-        return std::nullopt;
+        return std::nullopt;  // LCOV_EXCL_LINE
     return static_cast<std::uint64_t>(static_cast<std::int64_t>(n));
 }
 
