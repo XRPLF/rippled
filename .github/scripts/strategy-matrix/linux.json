@@ -64,6 +64,20 @@
         "events": ["schedule", "workflow_dispatch"],
         "sanitizers": ["address", "undefinedbehavior"]
       },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Debug", "Release"],
+        "arch": ["amd64"],
+        "events": ["weekly", "workflow_dispatch"],
+        "sanitizers": ["thread"]
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "events": ["weekly", "workflow_dispatch"],
+        "sanitizers": ["thread"]
+      },
 
       {
         "compiler": ["clang"],

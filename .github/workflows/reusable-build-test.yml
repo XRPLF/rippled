@@ -19,6 +19,11 @@ on:
         required: true
         type: string
 
+      event:
+        description: "The matrix event to build, in place of the GitHub event that triggered the run."
+        required: false
+        type: string
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -30,6 +35,7 @@ jobs:
     uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
       os: ${{ inputs.os }}
+      event: ${{ inputs.event }}
 
   # Build and test the binary for each configuration.
   build-test-config:
