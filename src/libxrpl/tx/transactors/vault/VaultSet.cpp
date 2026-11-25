@@ -193,7 +193,7 @@ VaultSet::doApply()
         {
             sleIssuance->makeFieldAbsent(sfDomainID);
         }
-        sleIssuance.update();
+        sleIssuance.updateInView();
     }
 
     // Note, we must update Vault object even if only DomainID is being updated
