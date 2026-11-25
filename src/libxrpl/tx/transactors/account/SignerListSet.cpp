@@ -220,7 +220,7 @@ removeSignersFromLedger(
         removeFromOwnerCount,
         registry.getJournal("View"));
 
-    signers.erase();
+    signers.eraseFromView();
 
     return tesSUCCESS;
 }
@@ -334,8 +334,8 @@ SignerListSet::replaceSignerList()
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
     SignerListEntryW signerList(signerListKeylet, view(), j_);
-    signerList.newSLE();
-    signerList.insert();
+    signerList.newSle();
+    signerList.insertIntoView();
     writeSignersToSLE(signerList, flags);
 
     auto const viewJ = ctx_.registry.get().getJournal("View");
