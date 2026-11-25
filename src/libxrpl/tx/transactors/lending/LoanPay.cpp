@@ -455,8 +455,15 @@ LoanPay::doApply()
         return LoanPaymentType::Regular;
     }();
 
-    std::expected<LoanPaymentParts, TER> const paymentParts =
-        loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
+    std::expected<LoanPaymentParts, TER> const paymentParts = loanMakePayment(
+        asset,
+        view,
+        loanSle,
+        brokerSle,
+        amount,
+        paymentType,
+        isPaymentSizeBounded(view.rules(), vaultSle),
+        j_);
     if (!paymentParts)
     {
         XRPL_ASSERT_PARTS(

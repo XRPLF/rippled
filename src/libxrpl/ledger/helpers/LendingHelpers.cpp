@@ -14,12 +14,14 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -324,6 +326,33 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
     return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
+
+bool
+fitsAtLoanScale(Asset const& asset, Number const& total, std::int32_t loanScale)
+{
+    if (asset.native())
+        return total <= Number{kInitialXrp.drops()};
+    if (asset.holds<MPTIssue>())
+        return total <= Number{static_cast<std::int64_t>(kMaxMpTokenAmount)};
+    return total < Number{1, 16 + loanScale};
+}
+
+bool
+isPaymentSizeBounded(Rules const& rules, SLE::ConstRef vault)
+{
+    return rules.enabled(fixCleanup3_6_0) || getVaultVersion(vault) == VaultVersion::FixedPrecision;
+}
+
+namespace detail {
+// A whole number of the loan's units. Unlike isRounded this works on the Number itself, so it
+// also holds for a total too large to show at 16 digits. Multiplying by a power of ten only moves
+// the exponent, so this is exact.
+[[nodiscard]] bool
+isOnLoanGrid(Number const& value, std::int32_t loanScale)
+{
+    return value == (value * Number{1, -loanScale}).truncate() * Number{1, loanScale};
+}
+}  // namespace detail
 
 [[nodiscard]] bool
 isPaymentLate(ReadView const& view, SLE::ConstRef loanSle)
@@ -1260,9 +1289,9 @@ computeLatePayment(
         periodic.untrackedInterest + roundedLateInterest};
 
     XRPL_ASSERT_PARTS(
-        isRounded(asset, late.totalDue, loanScale),
+        detail::isOnLoanGrid(late.totalDue, loanScale),
         "xrpl::detail::computeLatePayment",
-        "total due is rounded");
+        "total due is on the loan grid");
 
     // Check that the borrower provided enough funds to cover the late payment.
     // The late payment is more expensive than a regular payment due to the
@@ -1380,9 +1409,9 @@ computeFullPayment(
     };
 
     XRPL_ASSERT_PARTS(
-        isRounded(asset, full.totalDue, loanScale),
+        detail::isOnLoanGrid(full.totalDue, loanScale),
         "xrpl::detail::computeFullPayment",
-        "total due is rounded");
+        "total due is on the loan grid");
 
     JLOG(j.trace()) << "computeFullPayment result: periodicRate: " << periodicRate
                     << ", paymentRemaining: " << paymentRemaining
@@ -1829,6 +1858,7 @@ makeRegularPayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    bool paymentSizeBounded,
     beast::Journal j)
 {
     using namespace lending;
@@ -1861,9 +1891,21 @@ makeRegularPayment(
     // mutations each iteration.
     auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
-    while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
-           numPayments < kLoanMaximumPaymentsPerTransaction)
+    while (paymentRemainingProxy > 0 && numPayments < kLoanMaximumPaymentsPerTransaction)
     {
+        if (amount < totalPaid + periodic.totalDue)
+            break;
+
+        // If the payment size is bounded, stop before an installment whose total passes the limit.
+        // The first is always paid. Round up, so a total just past the MPT maximum is not rounded
+        // back down to it. The overpayment below has its own check against the same limit.
+        if (paymentSizeBounded && numPayments > 0)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            if (!fitsAtLoanScale(asset, totalPaid + periodic.totalDue, loanScale))
+                break;
+        }
+
         // Try to make more payments
         XRPL_ASSERT_PARTS(
             periodic.trackedPrincipalDelta >= 0,
@@ -1939,9 +1981,18 @@ makeRegularPayment(
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
             : overpaymentRaw;
 
+        // When the payment size is bounded, the overpayment must not take the total past the limit.
+        // Round up, as in the loop above.
+        bool fitsLimit = true;
+        if (paymentSizeBounded)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            fitsLimit = fitsAtLoanScale(asset, totalPaid + overpayment, loanScale);
+        }
+
         // Post-amendment, the rounded overpayment can be zero; pre-amendment
         // it's always positive given the surrounding guards.
-        if (!fixEnabled || overpayment > 0)
+        if ((!fixEnabled || overpayment > 0) && fitsLimit)
         {
             ExtendedPaymentComponents const overpaymentComponents = computeOverpaymentComponents(
                 view.rules(),
@@ -2423,6 +2474,7 @@ loanMakePayment(
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
+    bool paymentSizeBounded,
     beast::Journal j)
 {
     if (loan->at(sfPaymentRemaining) == 0 || loan->at(sfPrincipalOutstanding) == 0)
@@ -2470,7 +2522,8 @@ loanMakePayment(
             return detail::makeLatePayment(asset, view, loan, brokerSle, amount, j);
         case LoanPaymentType::Regular:
         case LoanPaymentType::Overpayment:
-            return detail::makeRegularPayment(asset, view, loan, brokerSle, amount, paymentType, j);
+            return detail::makeRegularPayment(
+                asset, view, loan, brokerSle, amount, paymentType, paymentSizeBounded, j);
     }
 
     // LCOV_EXCL_START
