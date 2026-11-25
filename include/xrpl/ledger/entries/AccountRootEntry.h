@@ -128,7 +128,7 @@ public:
     [[nodiscard]] bool
     isGlobalFrozen() const
     {
-        return (*this)->isFlag(lsfGlobalFreeze);
+        return this->sleRef().isFlag(lsfGlobalFreeze);
     }
 
     /**
