@@ -100,7 +100,9 @@ struct RemoveArg
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
-static constexpr std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
+static constexpr NetClock::time_point kTestStart{NetClock::duration{10'000}};
+static constexpr std::chrono::seconds kTestStartTime =
+    NetClock::to_sys(kTestStart).time_since_epoch();
 
 /**
  * Oracle class facilitates unit-testing of the Price Oracle feature.

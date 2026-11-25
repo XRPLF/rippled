@@ -319,7 +319,8 @@ private:
             oracle.set(
                 UpdateArg{
                     .series = {{"XRP", "USD", 740, 1}},
-                    .lastUpdateTime = static_cast<int>(kEpochOffset.count() - 1),
+                    .lastUpdateTime = static_cast<int>(
+                        NetClock::to_sys(NetClock::time_point{}).time_since_epoch().count() - 1),
                     .fee = baseFee,
                     .err = Ter(tecINVALID_UPDATE_TIME),
                 });
