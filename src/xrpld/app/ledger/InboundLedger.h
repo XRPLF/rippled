@@ -88,7 +88,7 @@ public:
     }
 
     /**
-     * Returns false if we failed to get the data.
+     * @return Whether the acquisition has failed.
      */
     bool
     isFailed() const
