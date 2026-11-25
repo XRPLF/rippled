@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -112,7 +113,11 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
+        // Post-featureLendingProtocolV1_2: a vault created with sfEarlyExitFeeRate
+        // (even zero) permits withdrawal during the Investment phase.
+        bool const earlyExitAllowed = ctx.view.rules().enabled(featureLendingProtocolV1_2) &&
+            vault->isFieldPresent(sfEarlyExitFeeRate);
+        if (!earlyExitAllowed && getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
         {
             JLOG(ctx.j.debug())
                 << "VaultWithdraw: vault withdrawal is not allowed in the investment phase.";
@@ -470,12 +475,21 @@ VaultWithdraw::doApply()
     // the final-withdrawal path, which overwrites assetsWithdrawn with sfAssetsAvailable below.
     if (fix340Enabled && !isFinalWithdrawal && assetsWithdrawn > beast::kZero)
     {
+        // Shares are burned against the pre-fee amount while only the post-fee
+        // payout leaves the vault; the fee stays behind and accrues to the
+        // remaining shareholders. A final withdrawal never reaches this block,
+        // so no fee can be left behind in a vault with no shares.
+        TenthBips32 const feeRate = getEarlyExitFeeRate(view(), vault);
+
         // Check availability against the unclamped amount first, so a withdrawal that is both
         // over the vault's available balance and sub-ULP at the posterior sfAssetsTotal scale
         // reports tecINSUFFICIENT_FUNDS rather than tecPRECISION_LOSS. The clamp below only ever
         // shrinks assetsWithdrawn, so this check stays valid; the post-clamp check further down
         // remains in place to catch the (now smaller) clamped value too.
-        if (*assetsAvailable < assetsWithdrawn)
+        //
+        // With an early-exit fee only the post-fee payout leaves the vault, so availability is
+        // checked against it below instead.
+        if (feeRate == TenthBips32{0} && *assetsAvailable < assetsWithdrawn)
         {
             JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
             return tecINSUFFICIENT_FUNDS;
@@ -484,15 +498,41 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round down at the posterior scale of the balance the payout actually
-            // leaves -- AssetsAvailable on FixedPrecision, the AssetsTotal cache on
-            // Legacy/CashBasis -- so the payout never exceeds the value represented
-            // by the redeemed shares. sharesRedeemed is intentionally not
-            // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
-            if (!maybeClamped)
-                return maybeClamped.error();  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeClamped;
+            if (feeRate == kMaxEarlyExitFeeRate)
+            {
+                // The whole withdrawal is retained and nothing leaves the
+                // vault, so there is no payout to put on a grid.
+                assetsWithdrawn = STAmount{vaultAsset, 0};
+            }
+            else
+            {
+                // The fee is rounded up and the subtraction rounds down, so
+                // the payout never exceeds its exact value and the fee is at
+                // least the exact amount * rate. With a zero rate this is the
+                // pre-fee amount unchanged.
+                STAmount const payout = [&] {
+                    Number const fee = calculateEarlyExitFee(vault, assetsWithdrawn, feeRate);
+                    NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+                    return STAmount{vaultAsset, assetsWithdrawn - fee};
+                }();
+
+                // Reject a payout if a fee below 100% consumes the entire amount.
+                if (payout == beast::kZero)
+                {
+                    JLOG(j_.debug())
+                        << "VaultWithdraw: early-exit fee consumes the whole withdrawal";
+                    return tecPRECISION_LOSS;
+                }
+
+                // Round down at the posterior scale of the balance the payout actually leaves
+                auto const maybeClamped = clampVaultOutflow(vault, -payout);
+                if (!maybeClamped)
+                {
+                    JLOG(j_.debug()) << "VaultWithdraw: payout rounds to zero on the vault grid";
+                    return maybeClamped.error();
+                }
+                assetsWithdrawn = *maybeClamped;
+            }
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)

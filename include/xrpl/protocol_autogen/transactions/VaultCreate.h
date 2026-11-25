@@ -292,6 +292,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfRedemptionDate);
     }
+
+    /**
+     * @brief Get sfEarlyExitFeeRate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getEarlyExitFeeRate() const
+    {
+        if (hasEarlyExitFeeRate())
+        {
+            return this->tx_->at(sfEarlyExitFeeRate);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfEarlyExitFeeRate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasEarlyExitFeeRate() const
+    {
+        return this->tx_->isFieldPresent(sfEarlyExitFeeRate);
+    }
 };
 
 /**
@@ -446,6 +472,17 @@ public:
     setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfEarlyExitFeeRate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultCreateBuilder&
+    setEarlyExitFeeRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfEarlyExitFeeRate] = value;
         return *this;
     }
 
