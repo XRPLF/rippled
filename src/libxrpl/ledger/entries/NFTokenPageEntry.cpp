@@ -22,17 +22,17 @@ NFTokenPageEntry<ViewT>::insertToken(STObject&& nft)
     requires Base::kIsWritable
 {
     {
-        auto arr = (*this)->getFieldArray(sfNFTokens);
+        auto arr = this->sleRef().getFieldArray(sfNFTokens);
         arr.pushBack(std::move(nft));
 
         arr.sort([](STObject const& o1, STObject const& o2) {
             return nft::compareTokens(o1.getFieldH256(sfNFTokenID), o2.getFieldH256(sfNFTokenID));
         });
 
-        (*this)->setFieldArray(sfNFTokens, arr);
+        this->sleRef().setFieldArray(sfNFTokens, arr);
     }
 
-    this->update();
+    this->updateInView();
 }
 
 template <typename ViewT>
