@@ -24,9 +24,11 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -1450,6 +1452,196 @@ TEST(ConsensusTest, disputes)
             expectStalled(96, false, 11 + i, 6, 3, __LINE__);
         }
     }
+}
+
+TEST(ConsensusTest, median_close_offset)
+{
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
+    SCOPED_TRACE("median close offset");
+
+    // 815_000_000 seconds past the XRPL epoch (2000-01-01) lands in late 2025.
+    constexpr NetClock::rep baseSec = 815'000'000;
+    auto const tp = [&](std::int64_t deltaSec) {
+        auto const v = static_cast<std::int64_t>(baseSec) + deltaSec;
+        return NetClock::time_point{NetClock::duration{static_cast<NetClock::rep>(v)}};
+    };
+    auto const base = tp(0);
+
+    auto const make = [](NetClock::time_point self,
+                         std::initializer_list<std::pair<NetClock::time_point, int>> peers) {
+        ConsensusCloseTimes c;
+        c.self = self;
+        for (auto const& [t, w] : peers)
+            c.peers[t] += w;
+        return c;
+    };
+
+    auto const minusSec = tp(-1);
+    auto const plusSec = tp(1);
+    auto const plusTwoSec = tp(2);
+    auto const plusHour = tp(3600);
+    auto const minusHour = tp(-3600);
+
+    // Empty peers map: self alone -> 0s.
+    EXPECT_TRUE(medianCloseOffset(make(base, {})) == 0s);
+
+    // Negative offset round-trips correctly through unsigned NetClock::duration.
+    EXPECT_TRUE(medianCloseOffset(make(plusHour, {{base, 5}})) == -1h);
+
+    // Smallest non-trivial sample: self + 1 peer (total=2, halfway=1).
+    // With no honest majority the lower-median tie-break is asymmetric, so
+    // a lone outlier peer determines the result. A HIGH peer loses (self is
+    // the earlier, lower-median bin) and a LOW peer wins. An absurdly early
+    // winner is harmless: the ledger close time is monotonic, bounded below
+    // by the prior ledger's close time.
+    EXPECT_TRUE(medianCloseOffset(make(base, {{plusHour, 1}})) == 0s);
+    EXPECT_TRUE(medianCloseOffset(make(base, {{minusHour, 1}})) == -1h);
+
+    // 4 honest spread: {-1s:1, base:2, +1s:1}.
+    // total=5, halfway=3, -1s=1, base(self+peers+tally)=4 >= 3, median=base.
+    EXPECT_TRUE(medianCloseOffset(make(base, {{minusSec, 1}, {base, 2}, {plusSec, 1}})) == 0s);
+
+    // 3 honest spread + 1 byz outlier at +1h (under threshold).
+    // total=5, halfway=3, -1s=1, base(self+peers+tally)=3 >= 3, median=base.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 1}, {base, 1}, {plusSec, 1}, {plusHour, 1}})) ==
+        0s);
+
+    // 2 honest spread + 2 colluded byz HIGH at +1h (under threshold).
+    // total=5, halfway=3, -1s=1, base(self+peers+tally)=3 >= 3, median=base.
+    EXPECT_TRUE(medianCloseOffset(make(base, {{minusSec, 1}, {base, 1}, {plusHour, 2}})) == 0s);
+
+    // 1 honest + 3 colluded byz HIGH at +1h (past threshold).
+    // total=5, halfway=3, base(self+peers+tally)=2, +1h=5 >= 3, median=+1h.
+    EXPECT_TRUE(medianCloseOffset(make(base, {{base, 1}, {plusHour, 3}})) == 1h);
+
+    // 3 colluded byz LOW at -1h (mirror).
+    // total=5, halfway=3, -1h=3 >= 3, median=-1h.
+    EXPECT_TRUE(medianCloseOffset(make(base, {{minusHour, 3}, {base, 1}})) == -1h);
+
+    // 35 honest spread: {-1s:5, base:21, +1s:8, +2s:2}.
+    // total=36, halfway=18, -1s=5, base(self+peers+tally)=26 >= 18, median=base.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 5}, {base, 20}, {plusSec, 8}, {plusTwoSec, 2}})) ==
+        0s);
+
+    // 17 colluded byz HIGH at +1h (47%, under threshold). Honest 18 = {-1s:4, base:13, +1s:1}.
+    // total=36, halfway=18, -1s=4, base(self+peers+tally)=18 >= 18, median=base.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 4}, {base, 13}, {plusSec, 1}, {plusHour, 17}})) ==
+        0s);
+
+    // 17 colluded byz LOW at -1h. Same honest distribution.
+    // total=36, halfway=18, -1h=17, -1s=21 >= 18, median=-1s.
+    // Byz under threshold but still shifts median to lowest honest second —
+    // bounded by the honest spread.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusHour, 17}, {minusSec, 4}, {base, 13}, {plusSec, 1}})) ==
+        -1s);
+
+    // 18 colluded byz HIGH at +1h (exact half). Honest 17 = {-1s:3, base:13, +1s:1}.
+    // total=36, halfway=18, -1s=3, base(self+peers+tally)=17, +1s=18 >= 18, median=+1s.
+    // Honest+self can't reach halfway at base, so median lands at first honest bin above.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 3}, {base, 13}, {plusSec, 1}, {plusHour, 18}})) ==
+        1s);
+
+    // 18 byz LOW at -1h (exact half, lower-median tie favors byz).
+    // total=36, halfway=18, -1h=18 >= 18, median=-1h.
+    // Documents a limitation: at exactly N/2 Byzantine, LOW-side coalition wins the
+    // median outright. Honest majority (>= N/2+1) avoids this.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusHour, 18}, {minusSec, 3}, {base, 13}, {plusSec, 1}})) ==
+        -1h);
+
+    // 19 byz HIGH at +1h (past threshold). Honest 16 = {-1s:3, base:12, +1s:1}.
+    // total=36, halfway=18, -1s=3, base(self+peers+tally)=16, +1s=17, +1h=36 >= 18, median=+1h.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 3}, {base, 12}, {plusSec, 1}, {plusHour, 19}})) ==
+        1h);
+
+    // 19 byz LOW at -1h (past threshold, mirror).
+    // total=36, halfway=18, -1h=19 >= 18, median=-1h.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusHour, 19}, {minusSec, 3}, {base, 12}, {plusSec, 1}})) ==
+        -1h);
+
+    // 99 honest spread: {-1s:15, base:60, +1s:20, +2s:4} = 99.
+    // total=100, halfway=50, -1s=15, base(self+peers+tally)=76 >= 50, median=base.
+    EXPECT_TRUE(
+        medianCloseOffset(
+            make(base, {{minusSec, 15}, {base, 60}, {plusSec, 20}, {plusTwoSec, 4}})) == 0s);
+
+    // 49 byz HIGH at +1h (under threshold). Honest 50 = {-1s:5, base:44, +1s:1}.
+    // total=100, halfway=50, -1s=5, base(self+peers+tally)=50 >= 50, median=base.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 5}, {base, 44}, {plusSec, 1}, {plusHour, 49}})) ==
+        0s);
+
+    // 50 byz HIGH at +1h (exact half). Honest 49 = {-1s:5, base:43, +1s:1}.
+    // total=100, halfway=50, -1s=5, base(self+peers+tally)=49, +1s=50 >= 50, median=+1s.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 5}, {base, 43}, {plusSec, 1}, {plusHour, 50}})) ==
+        1s);
+
+    // 50 byz LOW at -1h (exact half, lower-median tie wins).
+    // total=100, halfway=50, -1h=50 >= 50, median=-1h.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusHour, 50}, {minusSec, 5}, {base, 43}, {plusSec, 1}})) ==
+        -1h);
+
+    // 51 byz HIGH at +1h (past threshold). Honest 48 = {-1s:5, base:42, +1s:1}.
+    // total=100, halfway=50, -1s=5, base(self+peers+tally)=48, +1s=49, +1h=100 >= 50,
+    // median=+1h.
+    EXPECT_TRUE(
+        medianCloseOffset(make(base, {{minusSec, 5}, {base, 42}, {plusSec, 1}, {plusHour, 51}})) ==
+        1h);
+}
+
+TEST(ConsensusTest, byzantine_close_time_no_quorum)
+{
+    using namespace csf;
+    using namespace std::chrono;
+    SCOPED_TRACE("byzantine close time without honest quorum");
+
+    // When fault injection (partition / clog / throttle) thins a node's
+    // *fresh* proposals down to just itself plus the Byzantine peer, the
+    // close-time vote is taken over only 2 participants:
+    // participantsNeeded(2,50)=1 and (2,75)=1, so the {honest:1, byz:1}
+    // split is a tie. With the lower-band tie-break in updateOurPositions
+    // the tie resolves to the honest (earlier) time, so
+    // the lone honest node keeps its own close time instead of adopting the
+    // Byzantine's +24h -- closing the seed that would otherwise propagate.
+    // (Before the fix, the upper-band tie-break adopted +24h here.)
+
+    ConsensusParms const parms{};
+    Sim sim;
+
+    PeerGroup const honest = sim.createGroup(1);
+    PeerGroup const byzantine = sim.createGroup(1);
+    PeerGroup network = honest + byzantine;
+
+    network.trust(network);
+    network.connect(network, round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+
+    Peer const* h = honest[0];
+    while (h->lastClosedLedger.closeTimeResolution() >= parms.proposeFRESHNESS)
+        sim.run(1);
+    sim.run(2);
+
+    NetClock::time_point const before = h->lastClosedLedger.closeTime();
+
+    for (Peer* peer : byzantine)
+        peer->clockSkew = 24h;
+
+    sim.run(1);
+
+    // Even with only itself + the Byzantine in the vote, the honest node's
+    // close time advances by ~one interval, never by the ~24h proposed.
+    auto const advanced = h->lastClosedLedger.closeTime() - before;
+    EXPECT_TRUE(advanced >= 0s);
+    EXPECT_TRUE(advanced < 1h);
 }
 
 }  // namespace xrpl::test
