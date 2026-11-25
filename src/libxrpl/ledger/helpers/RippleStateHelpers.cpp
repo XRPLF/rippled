@@ -857,7 +857,7 @@ deleteAMMMPToken(
             keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    sleMpt.erase();
+    sleMpt.eraseFromView();
 
     return tesSUCCESS;
 }

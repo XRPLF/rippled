@@ -378,7 +378,7 @@ ConfidentialMPTConvert::doApply()
     }
 
     view().update(sleIssuance);
-    sleMptoken.update();
+    sleMptoken.updateInView();
     return tesSUCCESS;
 }
 
