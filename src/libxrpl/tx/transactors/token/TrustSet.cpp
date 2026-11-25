@@ -634,7 +634,7 @@ TrustSet::doApply()
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -660,7 +660,7 @@ TrustSet::doApply()
             // Reserve is not scaled by load.
             else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
             {
-                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                JLOG(j_.trace()) << "Delay transaction: Insufficient reserve to "
                                     "add trust line.";
 
                 // Another transaction could provide XRP to the account and then
@@ -691,7 +691,7 @@ TrustSet::doApply()
     else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.
@@ -710,7 +710,7 @@ TrustSet::doApply()
         !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
-                            "Insufficent reserve to create line.";
+                            "Insufficient reserve to create line.";
 
         // Another transaction could create the account and then this
         // transaction would succeed.

@@ -530,7 +530,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         if (lptAMMBalance == beast::kZero)
             initializeFeeAuctionVote(sb, ammSle, accountID_, lptAMMBalance.asset(), tfee);
 
-        ammSle.update();
+        ammSle.updateInView();
     }
 
     return {result, isTesSuccess(result)};
