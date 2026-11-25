@@ -13,6 +13,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
+#include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/CredentialFields.h>
@@ -1207,11 +1208,52 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this};
 
         boost::system::error_code ec;
+
+        // Only a body the reader could not parse has a reason to append after the colon.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "{]");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body().starts_with("Unable to parse request: "));
+            BEAST_EXPECT(
+                resp.body().size() > std::string_view{"Unable to parse request: \r\n"}.size());
+        }
+
+        // The size limit is checked before the parse, so an oversized body is never read.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(
+                env, yield, false, resp, ec, std::string(rpc::tuning::kMaxRequestSize + 1, 'x'));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "Request is too large\r\n");
+        }
+
+        // A whitespace-only body is a parse failure, not an empty document: the reader records a
+        // reason for it, so there is text after the colon. An empty body is not sent here: this
+        // client sends a body-less request as a GET, which the status page answers instead.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "  \n");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body().starts_with("Unable to parse request: "));
+            BEAST_EXPECT(
+                resp.body().size() > std::string_view{"Unable to parse request: \r\n"}.size());
+        }
+
+        // `null` parses to a document that carries nothing, like the empty object below.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "null");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "Request is empty\r\n");
+        }
+
+        // An empty object parses, so it is not a parse failure; it simply carries no request.
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             doHTTPRequest(env, yield, false, resp, ec, "{}");
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is empty\r\n");
         }
 
         {
@@ -1229,7 +1271,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
         }
 
         {
@@ -1240,7 +1282,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv.append(j);
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
         }
 
         {
@@ -1327,6 +1369,30 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             params[jss::ripplerpc] = version;
         jv[jss::params][0u] = params;
         return to_string(jv);
+    }
+
+    /**
+     * The command line client reports a body the server refused before reading
+     * it as the same class of rejection as a body that does not parse.
+     *
+     * `Request is too large` is reached with one parameter over the size limit.
+     * `Request is empty` is not reachable from the client: every body it builds
+     * carries `method` and `params`, so none parses to an empty document.
+     */
+    void
+    testTheClientReportsAnUnreadBodyAsNotParsable()
+    {
+        testcase("The command line client reports an unread body as not parsable");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        json::Value params(json::ValueType::Object);
+        params["pad"] = std::string(rpc::tuning::kMaxRequestSize, 'x');
+
+        auto const reply = env.rpc("json", "ping", to_string(params));
+        BEAST_EXPECTS(reply[jss::error] == "invalidParams", to_string(reply));
+        BEAST_EXPECTS(reply["error_what"] == "Request is too large\r\n", to_string(reply));
     }
 
     /**
@@ -2575,53 +2641,121 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
-     * A throw before the handler runs is reported as `internal`, with the
-     * request masked in the reply and in the log.
+     * A `method` inside `params` that is not a string names no command.
      *
-     * `RPCHandler` reads a `method` beside `command` as a string before it
-     * dispatches, outside the `try` that catches a handler's throw. Over HTTP
-     * the request's own `method` sits at the top level, so one inside `params`
-     * is not checked first, and an object there throws into the `catch` arm of
-     * `processRequest`. The WebSocket transport rejects such a frame as
-     * `missingCommand`, so the arm in `processSession` is not reached here.
+     * Over HTTP the request's own `method` sits at the top level and becomes
+     * `command`, so a `method` inside `params` is client text of any type.
+     * `RPCHandler` answers every type but a string as `unknownCmd`, which is
+     * also its answer to a string that differs from `command`. The request is
+     * a client error: the reply echoes it masked, and the `catch` arm of
+     * `processRequest` logs nothing for it.
      *
-     * @param yield The coroutine the request runs on.
+     * @param yield The coroutine the requests run on.
      */
     void
-    testThrowBeforeTheHandlerIsReportedAsInternal(boost::asio::yield_context& yield)
+    testNonStringMethodInParamsIsUnknown(boost::asio::yield_context& yield)
     {
-        testcase("A throw before the handler is reported as internal");
+        testcase("A method in params that is not a string is an unknown command");
 
         using namespace test::jtx;
 
         static constexpr char const* kSensitiveSeed = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+        // An object and an array have no conversion to a string. The others have one, and none
+        // of them converts to the name of a command.
+        std::vector<std::pair<std::string_view, json::Value>> const variants{
+            {"object", json::ValueType::Object},
+            {"array", json::ValueType::Array},
+            {"integer", 5},
+            {"real", 1.5},
+            {"null", json::ValueType::Null},
+            {"boolean", true},
+        };
 
         std::string logs;
         {
             Env env{
                 *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::Error};
 
-            json::Value params(json::ValueType::Object);
-            params[jss::method] = json::ValueType::Object;
-            params[jss::secret] = kSensitiveSeed;
+            for (auto const& [label, method] : variants)
+            {
+                json::Value params(json::ValueType::Object);
+                params[jss::method] = method;
+                params[jss::secret] = kSensitiveSeed;
 
+                json::Value jv;
+                jv[jss::method] = "ping";
+                jv[jss::params] = json::ValueType::Array;
+                jv[jss::params][0u] = params;
+
+                boost::system::error_code ec;
+                Response resp;
+                auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), label);
+                BEAST_EXPECTS(resp.result() == kOk, label);
+
+                auto const& result = reply[jss::result];
+                BEAST_EXPECTS(result[jss::error] == "unknownCmd", to_string(reply));
+                BEAST_EXPECTS(result[jss::error_code] == RpcUnknownCommand, label);
+                BEAST_EXPECTS(result[jss::status] == jss::error, label);
+
+                // The echo returns the bad member as the client sent it, and the secret masked.
+                BEAST_EXPECTS(result[jss::request][jss::command] == "ping", label);
+                BEAST_EXPECTS(result[jss::request][jss::method] == method, label);
+                BEAST_EXPECTS(result[jss::request][jss::secret] == "<masked>", label);
+            }
+
+            // A string that agrees with `command` is accepted, so the rejections above are due to
+            // the type alone.
             json::Value jv;
             jv[jss::method] = "ping";
             jv[jss::params] = json::ValueType::Array;
-            jv[jss::params][0u] = params;
+            jv[jss::params][0u][jss::method] = "ping";
 
             boost::system::error_code ec;
             Response resp;
             auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
-            BEAST_EXPECTS(reply[jss::result][jss::error] == "internal", to_string(reply));
-            BEAST_EXPECT(reply[jss::result][jss::request][jss::secret] == "<masked>");
+            BEAST_EXPECTS(reply[jss::result][jss::status] == jss::success, to_string(reply));
         }
 
-        // The arm logged, so the absence assertion below is not vacuous.
-        BEAST_EXPECT(logs.contains("Internal error : "));
-
-        // The line reports what was thrown and the request, masked.
+        // A client error is not an internal one: no request reached the `catch` arm.
+        BEAST_EXPECT(!logs.contains("Internal error"));
         BEAST_EXPECT(!logs.contains(kSensitiveSeed));
+    }
+
+    /**
+     * An `[rpc_startup]` command named by a value that is not a string is
+     * answered `unknownCmd`, and the server starts.
+     *
+     * The operator writes the line, so `command` and `method` have any type.
+     * The result line is written at fatal, which the capture is taken at, and
+     * only by a server that is not quiet.
+     */
+    void
+    testStartupCommandNamedByANonStringIsUnknown()
+    {
+        testcase("A startup command that is not named by a string is unknown");
+
+        using namespace test::jtx;
+
+        std::string logs;
+        {
+            Env const env{
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    // The test config is quiet, and a quiet server does not write the result.
+                    cfg->setupControl(false, false, true);
+                    cfg->section(Sections::kRpcStartup).append(R"({"command": {}})");
+                    cfg->section(Sections::kRpcStartup).append(R"({"method": []})");
+                    return cfg;
+                }),
+                std::make_unique<CaptureLogs>(&logs),
+                beast::Severity::Fatal};
+        }
+
+        // Each line throws out of the constructor above unless it is rejected, so reaching this
+        // point shows that both were. The result line names the error.
+        BEAST_EXPECT(logs.contains("Startup RPC: "));
+        BEAST_EXPECT(logs.contains(R"("error":"unknownCmd")"));
     }
 
     /**
@@ -2976,12 +3110,13 @@ public:
             testNoRPC(yield);
             testWSRequests(yield);
             testRPCRequests(yield);
+            testTheClientReportsAnUnreadBodyAsNotParsable();
             testMaskedCredentials(yield);
             testBatchEarlyErrorsAreMasked(yield);
             testTheLoggedRequestIsMaskedAndCapped(yield);
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
             testInternalErrorIsReportedOnBothTransports(yield);
-            testThrowBeforeTheHandlerIsReportedAsInternal(yield);
+            testNonStringMethodInParamsIsUnknown(yield);
             testNoCredentialReachesTheLogAtTrace(yield);
             testRipplerpcVersions(yield);
             testPrivilegedRequestIsNotShed(yield);
@@ -2996,6 +3131,7 @@ public:
         testCommandLineCredentialsAreMasked();
         testUnparsableReplyIsNotLogged();
         testStartupCommandsAreMasked();
+        testStartupCommandNamedByANonStringIsUnknown();
     }
 };
 
