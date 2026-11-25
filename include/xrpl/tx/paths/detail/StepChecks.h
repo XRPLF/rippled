@@ -26,7 +26,7 @@ checkFreeze(
     XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
-    if (auto sle = AccountRootEntryR(dst, view))
+    if (auto const sle = AccountRootEntryR(dst, view))
     {
         if (sle->isFlag(lsfGlobalFreeze))
         {
