@@ -471,7 +471,7 @@ VaultClawback::doApply()
     if (auto const ter = adjustVaultCash(vault.mutableRawSle(), -assetsRecovered, j_);
         !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
-    vault.update();
+    vault.updateInView();
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
