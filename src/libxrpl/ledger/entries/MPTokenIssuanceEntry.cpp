@@ -34,9 +34,9 @@ MPTokenIssuanceEntry<ViewT>::transferRate() const
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
     // which represents 50% of 1,000,000,000
-    if ((*this)->isFieldPresent(sfTransferFee))
+    if (this->sleRef().isFieldPresent(sfTransferFee))
     {
-        auto const fee = (*this)->getFieldU16(sfTransferFee);
+        auto const fee = this->sleRef().getFieldU16(sfTransferFee);
         XRPL_ASSERT(fee <= kMaxTransferFee, "xrpl::transferRate : fee is too large");
         return Rate{1'000'000'000u + (10'000 * fee)};
     }
@@ -86,17 +86,17 @@ MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
     if (!this->exists())
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
-    auto const issuer = (*this)->getAccountID(sfIssuer);
+    auto const issuer = this->sleRef().getAccountID(sfIssuer);
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying.
     // Read it to derive the underlying asset and recurse, skipping the
     // issuer-account-then-vault chain. Pre-amendment shares (no field)
     // fall back to the chain lookup below.
-    if ((*this)->isFieldPresent(sfReferenceHolding))
+    if (this->sleRef().isFieldPresent(sfReferenceHolding))
     {
         auto const sleHolding =
-            view.read(keylet::unchecked((*this)->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(this->sleRef().getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
         {
             // LCOV_EXCL_START
@@ -134,12 +134,12 @@ template <typename ViewT>
 bool
 MPTokenIssuanceEntry<ViewT>::isSoleShareholder(AccountID const& account) const
 {
-    std::uint64_t const outstanding = (*this)->at(sfOutstandingAmount);
+    std::uint64_t const outstanding = this->sleRef().at(sfOutstandingAmount);
     if (outstanding == 0)
         return false;
 
     auto const shareMPTID =
-        makeMptID((*this)->getFieldU32(sfSequence), (*this)->getAccountID(sfIssuer));
+        makeMptID(this->sleRef().getFieldU32(sfSequence), this->sleRef().getAccountID(sfIssuer));
     auto const sleToken = this->readView().read(keylet::mptoken(shareMPTID, account));
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
