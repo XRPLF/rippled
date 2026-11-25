@@ -98,6 +98,12 @@ namespace test::jtx {
 // JSON generators
 
 /**
+ * Build a bare AccountSet transaction, with no flags set.
+ */
+json::Value
+accountSet(Account const& account);
+
+/**
  * Add and/or remove flag.
  */
 json::Value
