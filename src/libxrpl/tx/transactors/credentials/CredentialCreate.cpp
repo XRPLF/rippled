@@ -116,7 +116,7 @@ CredentialCreate::doApply()
     Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
     CredentialEntryW sleCred(credentialKey, view(), j_);
-    sleCred.newSLE();
+    sleCred.newSle();
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -182,7 +182,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU64(sfSubjectNode, *page);
     }
 
-    sleCred.insert();
+    sleCred.insertIntoView();
 
     return tesSUCCESS;
 }
