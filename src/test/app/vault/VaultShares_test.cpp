@@ -36,6 +36,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -183,13 +184,171 @@ private:
     }
 
     void
+    testSharesNotEscrowable()
+    {
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        for (bool const withFix : {true, false})
+        {
+            testcase << "vault shares escrow: fixVaultV1_1 " << (withFix ? "enabled" : "disabled");
+            Env env{*this, withFix ? testableAmendments() : testableAmendments() - fixVaultV1_1};
+            auto const baseFee = env.current()->fees().base;
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100000), issuer, owner, depositor, bob);
+            env.close();
+
+            // The asset is escrowable and clawable; whether the shares are escrowable depends only
+            // on fixVaultV1_1.
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow | tfMPTCanClawback});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            auto const shareMptID = vaultSle->at(sfShareMPTID);
+            MPTIssue const shareIssue{shareMptID};
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1000)}));
+            env.close();
+
+            {
+                json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[sfMPTokenIssuanceID] = to_string(shareMptID);
+                jv[jss::TransactionType] = jss::MPTokenAuthorize;
+                env(jv);
+                env.close();
+            }
+
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(shareMptID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return;
+            BEAST_EXPECT(sleIssuance->isFlag(lsfMPTCanEscrow) == !withFix);
+            BEAST_EXPECT(sleIssuance->isFlag(lsfMPTCanTrade));
+            BEAST_EXPECT(sleIssuance->isFlag(lsfMPTCanTransfer));
+
+            env(escrow::create(depositor, bob, STAmount{shareIssue, 500}),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150),
+                Ter(withFix ? TER{tecNO_PERMISSION} : TER{tesSUCCESS}));
+            env.close();
+
+            auto const sleMpt = env.le(keylet::mptoken(shareMptID, depositor));
+            if (!BEAST_EXPECT(sleMpt))
+                return;
+            BEAST_EXPECTS(
+                sleMpt->at(sfMPTAmount) == (withFix ? 1000 : 500),
+                std::to_string(sleMpt->at(sfMPTAmount)));
+        }
+
+        {
+            testcase("vault shares escrow: vault created before fixVaultV1_1");
+            Env env{*this, testableAmendments() - fixVaultV1_1};
+            auto const baseFee = env.current()->fees().base;
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100000), issuer, owner, depositor, bob);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            auto const shareMptID = vaultSle->at(sfShareMPTID);
+            MPTIssue const shareIssue{shareMptID};
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1000)}));
+            env.close();
+
+            {
+                json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[sfMPTokenIssuanceID] = to_string(shareMptID);
+                jv[jss::TransactionType] = jss::MPTokenAuthorize;
+                env(jv);
+                env.close();
+            }
+
+            auto const escrowSeq = env.seq(depositor);
+            env(escrow::create(depositor, bob, STAmount{shareIssue, 300}),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150));
+            env.close();
+
+            env.enableFeature(fixVaultV1_1);
+            env.close();
+
+            // The issuance keeps lsfMPTCanEscrow, but its issuer is a vault pseudo-account.
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(shareMptID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return;
+            BEAST_EXPECT(sleIssuance->isFlag(lsfMPTCanEscrow));
+
+            env(escrow::create(depositor, bob, STAmount{shareIssue, 200}),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            // An escrow of shares created before the amendment still finishes.
+            env(escrow::finish(bob, depositor, escrowSeq),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150));
+            env.close();
+
+            auto const sleBob = env.le(keylet::mptoken(shareMptID, bob));
+            if (!BEAST_EXPECT(sleBob))
+                return;
+            BEAST_EXPECTS(sleBob->at(sfMPTAmount) == 300, std::to_string(sleBob->at(sfMPTAmount)));
+        }
+    }
+
+    void
     testRemoveEmptyHoldingLockedAmount()
     {
         testcase("removeEmptyHolding deletes MPToken with sfLockedAmount");
         using namespace test::jtx;
         using namespace std::literals;
 
-        auto const amendments = testableAmendments();
+        // Escrowing shares needs a vault created without fixVaultV1_1.
+        auto const amendments = testableAmendments() - fixVaultV1_1;
         auto const runTest = [&](FeatureBitset f) {
             Env env{*this, f};
             auto const baseFee = env.current()->fees().base;
@@ -729,6 +888,7 @@ public:
     {
         testNonTransferableShares();
         testFailedPseudoAccount();
+        testSharesNotEscrowable();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();
         testReferenceHolding();

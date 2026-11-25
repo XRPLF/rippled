@@ -119,8 +119,7 @@ private:
                 BEAST_EXPECT(issuance["LedgerEntryType"].asString() == "MPTokenIssuance");
                 BEAST_EXPECT(issuance[jss::mpt_issuance_id].asString() == strShareID);
                 BEAST_EXPECT(kCheckInt(issuance, sfSequence, 1));
-                BEAST_EXPECT(kCheckInt(
-                    issuance, sfFlags, int(lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer)));
+                BEAST_EXPECT(kCheckInt(issuance, sfFlags, int(lsfMPTCanTrade | lsfMPTCanTransfer)));
                 BEAST_EXPECT(kCheckString(issuance, sfOutstandingAmount, "50000000"));
             }
         };

@@ -1006,7 +1006,8 @@ private:
         {
             testcase("Vault withdraw respects escrowed shares");
 
-            Env env{*this, testableAmendments()};
+            // Escrowing shares needs a vault created without fixVaultV1_1.
+            Env env{*this, testableAmendments() - fixVaultV1_1};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -1083,7 +1084,8 @@ private:
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testableAmendments() | fixCleanup3_1_3};
+            // Escrowing shares needs a vault created without fixVaultV1_1.
+            Env env{*this, (testableAmendments() | fixCleanup3_1_3) - fixVaultV1_1};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
