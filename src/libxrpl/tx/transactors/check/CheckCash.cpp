@@ -36,7 +36,6 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 
 namespace xrpl {

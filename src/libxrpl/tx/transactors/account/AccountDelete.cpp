@@ -226,7 +226,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = AccountRootEntryR(dst, ctx.view);
+    auto const sleDst = AccountRootEntryR(dst, ctx.view);
 
     if (!sleDst)
         return tecNO_DST;
@@ -252,7 +252,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto sleAccount = AccountRootEntryR(account, ctx.view);
+    auto const sleAccount = AccountRootEntryR(account, ctx.view);
     XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
