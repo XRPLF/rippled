@@ -61,7 +61,7 @@ public:
     [[nodiscard]] bool
     isGlobalFrozen() const
     {
-        return (*this)->isFlag(lsfMPTLocked);
+        return this->sleRef().isFlag(lsfMPTLocked);
     }
 
     /**
@@ -112,7 +112,7 @@ public:
         {
             return tecOBJECT_NOT_FOUND;
         }
-        if (!(*this)->isFlag(lsfMPTCanTransfer))
+        if (!this->sleRef().isFlag(lsfMPTCanTransfer))
         {
             return tecNO_AUTH;
         }
