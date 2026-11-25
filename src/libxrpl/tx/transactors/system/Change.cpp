@@ -155,8 +155,8 @@ Change::initializeVMFees()
 
     if (!feeObject)
     {
-        feeObject.newSLE();
-        feeObject.insert();
+        feeObject.newSle();
+        feeObject.insertIntoView();
     }
 
     // Compile-time constants, never `FeeSetup`: every node applies this
@@ -165,7 +165,7 @@ Change::initializeVMFees()
     feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
     feeObject->at(sfGasPrice) = kDefaultGasPrice;
 
-    feeObject.update();
+    feeObject.updateInView();
 
     JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
 }
@@ -179,8 +179,8 @@ Change::applyAmendment()
 
     if (!amendmentObject)
     {
-        amendmentObject.newSLE();
-        amendmentObject.insert();
+        amendmentObject.newSle();
+        amendmentObject.insertIntoView();
     }
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
@@ -260,7 +260,7 @@ Change::applyAmendment()
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
     }
 
-    amendmentObject.update();
+    amendmentObject.updateInView();
 
     return tesSUCCESS;
 }
@@ -272,8 +272,8 @@ Change::applyFee()
 
     if (!feeObject)
     {
-        feeObject.newSLE();
-        feeObject.insert();
+        feeObject.newSle();
+        feeObject.insertIntoView();
     }
     auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const&... fields) {
         ((feeObject->at(fields) = tx[fields]), ...);
@@ -289,7 +289,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
     }
 
-    feeObject.update();
+    feeObject.updateInView();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
@@ -333,8 +333,8 @@ Change::applyUNLModify()
     NegativeUNLEntryW negUnlObject(view(), j_);
     if (!negUnlObject)
     {
-        negUnlObject.newSLE();
-        negUnlObject.insert();
+        negUnlObject.newSle();
+        negUnlObject.insertIntoView();
     }
 
     bool const found = [&] {
@@ -407,7 +407,7 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    negUnlObject.update();
+    negUnlObject.updateInView();
     return tesSUCCESS;
 }
 

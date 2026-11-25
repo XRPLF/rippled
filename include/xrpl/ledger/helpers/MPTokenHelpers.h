@@ -53,8 +53,9 @@ isIndividualFrozen(SLE const& mptSle);
 /**
  * Returns true if @p account cannot send or receive tokens of @p mptIssue
  * because a freeze applies. This is the complete check callers should use
- * before moving MPT value: it combines @ref isGlobalFrozen (issuance-level
- * lock), @ref isIndividualFrozen (per-holder lock bit), and the transitive
+ * before moving MPT value: it combines
+ * @ref isGlobalFrozen(ReadView const&, MPTIssue const&) (issuance-level lock),
+ * @ref isIndividualFrozen (per-holder lock bit), and the transitive
  * vault pseudo-account check (if @p mptIssue is a vault share, the underlying
  * asset is checked, and so on recursively up to @c maxAssetCheckDepth).
  *

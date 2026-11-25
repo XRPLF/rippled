@@ -149,7 +149,7 @@ separate from the Apple Clang ones. The
 on pushes to `develop` and on manual runs — its nightly run rebuilds everything
 from source but uploads nothing — so once a set has been published `nix develop`
 can reuse it instead of compiling every dependency locally. These configurations
-run outside the reduced pull-request matrix, so label a PR `Full CI build` when it
+run outside the reduced pull-request matrix, so label a PR `Merge CI` when it
 touches `flake.lock` or `nix/`.
 
 To compile everything from source, add `--build '*'` to the `conan install`
