@@ -5,26 +5,55 @@
     {
       "build_type": "Release",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-      "minimal": true
+      "events": [
+        "pull_request",
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     },
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "build_only": true,
-      "minimal": false
+      "events": [
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     },
     {
       "build_type": "Release",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "toolchain": "nix",
-      "minimal": false
+      "events": [
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     },
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "toolchain": "nix",
       "build_only": true,
-      "minimal": false
+      "events": [
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     }
   ]
 }
