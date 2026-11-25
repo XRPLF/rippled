@@ -181,8 +181,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = AccountRootEntryR(uDstAccountID, ctx.view);
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        !sleDst)
+    if (!sleDst)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines

@@ -1224,7 +1224,7 @@ ValidPseudoAccounts::finalize(
     for (auto const& [owner, indexes] : ownerDirAdditions_)
     {
         auto const root = view.read(keylet::account(owner));
-        if (!root || !isPseudoAccount(root))
+        if (!root || !isPseudoAccountSle(root))
             continue;
 
         for (auto const& index : indexes)
