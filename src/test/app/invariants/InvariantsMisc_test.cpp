@@ -845,7 +845,13 @@ class InvariantsMisc_test : public InvariantsBase
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto const sleLoan = ac.view().peek(loanKeylet);
@@ -900,7 +906,13 @@ class InvariantsMisc_test : public InvariantsBase
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                 auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1023,7 +1035,13 @@ class InvariantsMisc_test : public InvariantsBase
                     test::StreamSink sink{beast::Severity::Warning};
                     beast::Journal const jlog{sink};
                     ApplyContext ac{
-                        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                        env.app(),
+                        ov,
+                        tx,
+                        tesSUCCESS,
+                        env.current()->fees().base,
+                        ApplyFlags::None,
+                        jlog};
                     CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
                     auto const sleLoan = ac.view().peek(loanKeylet);
@@ -1507,7 +1525,7 @@ class InvariantsMisc_test : public InvariantsBase
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
-                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             auto const sle = ac.view().peek(vaultKeylet);
@@ -1574,7 +1592,7 @@ class InvariantsMisc_test : public InvariantsBase
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
-                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             // visitEntry only runs for entries the transaction touched, so
@@ -1631,7 +1649,8 @@ class InvariantsMisc_test : public InvariantsBase
         STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
         test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
-        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        ApplyContext ac{
+            env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
         CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         FailingTxInvariantCheck failing;

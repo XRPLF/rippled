@@ -73,7 +73,7 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     // A closed base makes apply() produce metadata, which an open ledger
     // does not.
     OpenView open(&env_.getClosedLedger());
-    ApplyContext ctx(env_.getServiceRegistry(), open, *tx_, tesSUCCESS, fee_, TapRetry);
+    ApplyContext ctx(env_.getServiceRegistry(), open, *tx_, tesSUCCESS, fee_, ApplyFlags::Retry);
 
     // Buffer an inserted entry, a modified entry, destroyed drops and a
     // delivered amount through the context's own surface.
@@ -96,7 +96,7 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     auto const reread = ctx.view().read(keylet::account(alice_.id()));
     ASSERT_NE(reread, nullptr);
     EXPECT_EQ(reread->getFieldU32(sfSequence), baseSeq);
-    EXPECT_EQ(ctx.view().flags(), TapRetry);
+    EXPECT_EQ(ctx.view().flags(), ApplyFlags::Retry);
 
     // Only changes made after the discard reach the target view.
     auto const fresh = makeTicket(2);

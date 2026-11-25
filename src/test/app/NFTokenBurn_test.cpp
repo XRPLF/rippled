@@ -777,7 +777,13 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
 
                 // Verify that the last page is present and contains one NFT.
                 auto const lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));
@@ -809,7 +815,13 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    ApplyFlags::None,
+                    jlog};
 
                 // Verify that the middle  page is present.
                 auto const lastNFTokenPage = ac.view().peek(keylet::nftokenPageMax(alice));

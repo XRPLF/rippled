@@ -228,7 +228,7 @@ TEST_F(SLEBaseTests, adopt_sle)
 
 TEST_F(SLEBaseTests, writable_accessors)
 {
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), ApplyFlags::None);
     beast::Journal const j{beast::Journal::getNullSink()};
 
     AccountRootEntryW account(alice_.id(), av, j);
@@ -263,7 +263,7 @@ TEST_F(SLEBaseTests, writable_accessors)
 
 TEST_F(SLEBaseTests, apply_view_context_ctor)
 {
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), ApplyFlags::None);
     beast::Journal const j{beast::Journal::getNullSink()};
 
     transactions::AccountSetBuilder builder{alice_.id()};
@@ -288,7 +288,7 @@ TEST_F(SLEBaseTests, apply_view_context_ctor)
 TEST_F(SLEBaseTests, writable_lifecycle)
 {
     // A view we never apply, so nothing here reaches the ledger.
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), ApplyFlags::None);
 
     // Entry that does not exist yet: newSle() -> insertIntoView().
     {
@@ -313,7 +313,7 @@ TEST_F(SLEBaseTests, writable_lifecycle)
     // Erase but not Cache, so it shows the difference: building the entry
     // only peeks, and the write is invisible to the view until updateInView().
     {
-        ApplyViewImpl fresh(&env_.getClosedLedger(), TapNone);
+        ApplyViewImpl fresh(&env_.getClosedLedger(), ApplyFlags::None);
 
         AccountRootEntryW account(alice_.id(), fresh);
         EXPECT_TRUE(account.exists());
@@ -382,7 +382,7 @@ TEST_F(SLEBaseTests, assignment)
 
 TEST_F(SLEBaseTests, conversion)
 {
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), ApplyFlags::None);
 
     AccountRootEntryW const writable(alice_.id(), av);
     EXPECT_TRUE(writable.exists());
@@ -407,7 +407,7 @@ TEST_F(SLEBaseTests, resolve_entry_peeks)
     AccountRootEntryR const overLedger(alice_.id(), ledger);
     EXPECT_TRUE(overLedger.exists());
 
-    ApplyViewImpl av(&ledger, TapNone);
+    ApplyViewImpl av(&ledger, ApplyFlags::None);
 
     // ReadView const& binds an ApplyViewImpl just as happily, and there the
     // dynamic_cast succeeds, so this one resolves through ApplyView::peek().
@@ -454,7 +454,7 @@ TEST_F(SLEBaseTests, throws_on_missing_entry)
 TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
 {
     // A view we never apply, so nothing here reaches the ledger.
-    ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl av(&env_.getClosedLedger(), ApplyFlags::None);
 
     // bob is unfunded, so this resolves to nothing and every operation that
     // needs an SLE has to throw instead of dereferencing null. These are the

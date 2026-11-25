@@ -297,7 +297,8 @@ OfferCreate::checkAcceptAsset(
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(asset.getIssuer());
 
-        return ((flags & TapRetry) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
+        return ((flags & ApplyFlags::Retry) != ApplyFlags::None) ? TER{terNO_ACCOUNT}
+                                                                 : TER{tecNO_ISSUER};
     }
 
     // An account cannot create a trustline to itself, so no line can exist
@@ -320,7 +321,8 @@ OfferCreate::checkAcceptAsset(
                 {
                     JLOG(j.debug()) << "delay: can't receive IOUs from issuer with "
                                        "DisallowIncomingTrustline set";
-                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                    return ((flags & ApplyFlags::Retry) != ApplyFlags::None) ? TER{terNO_LINE}
+                                                                             : TER{tecNO_LINE};
                 }
             }
 
@@ -328,7 +330,8 @@ OfferCreate::checkAcceptAsset(
             {
                 if (!trustLine)
                 {
-                    return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
+                    return ((flags & ApplyFlags::Retry) != ApplyFlags::None) ? TER{terNO_LINE}
+                                                                             : TER{tecNO_LINE};
                 }
 
                 // Entries have a canonical representation, determined by a
@@ -344,7 +347,8 @@ OfferCreate::checkAcceptAsset(
                     JLOG(j.debug()) << "delay: can't receive IOUs from "
                                        "issuer without auth.";
 
-                    return ((flags & TapRetry) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+                    return ((flags & ApplyFlags::Retry) != ApplyFlags::None) ? TER{terNO_AUTH}
+                                                                             : TER{tecNO_AUTH};
                 }
             }
 

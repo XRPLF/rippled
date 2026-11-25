@@ -1603,7 +1603,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             auto const stx = rebuilt(mutated);
 
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, *stx, TapNone, j);
+                auto const result = xrpl::apply(env.app(), view, *stx, ApplyFlags::None, j);
                 BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
                 BEAST_EXPECT(!result.applied);
                 return result.applied;
@@ -1639,7 +1639,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             auto const stx = rebuilt(mutated);
 
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, *stx, TapNone, j);
+                auto const result = xrpl::apply(env.app(), view, *stx, ApplyFlags::None, j);
                 BEAST_EXPECT(result.ter == temINVALID);
                 BEAST_EXPECT(!result.applied);
                 return result.applied;
