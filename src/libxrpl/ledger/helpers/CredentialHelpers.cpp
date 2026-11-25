@@ -123,7 +123,7 @@ deleteSLE(ApplyView& view, CredentialEntryW& sleCredential, beast::Journal j)
     }
 
     // Remove object from ledger
-    sleCredential.erase();
+    sleCredential.eraseFromView();
 
     return tesSUCCESS;
 }
