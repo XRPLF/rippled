@@ -15,15 +15,15 @@ The legacy unit tests under `src/test/` are a custom framework (derived from Bea
 - A suite's `--unittest` name is built from the arguments to its `BEAST_DEFINE_TESTSUITE`/`BEAST_DEFINE_TESTSUITE_PRIO` macro (usually at the bottom of the test file), in reverse order and joined with `.`: `BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl)` → `xrpl.app.Credentials`.
 - `--unittest-arg=<string>` passes one string to every suite that runs; a suite reads it with `arg()` and interprets it itself. Only a few suites use it (e.g. `TheoreticalQuality`, the nodestore `import` test); for the rest it has no effect.
 - Tests that run offline in under a minute should be automatic `--unittest` suites; anything else is a manual/integration test.
-- New tests should be written using `gtest` under `src/tests/` unless that isn't possible, in which case fall back to the legacy Beast framework under `src/test/` (see [src/test/AGENTS.md](./src/test/AGENTS.md) for conventions specific to that directory). `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
+- Before you add a new test, search `src/test/` and `src/tests/` for a suite that already covers the same feature or code path. If one exists, add the test there, even if that suite uses the legacy Beast framework under `src/test/` (see [src/test/AGENTS.md](./src/test/AGENTS.md) for conventions specific to that directory). Otherwise, write it using `gtest` under `src/tests/`, and fall back to `src/test/` only if `gtest` isn't possible. `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
 
 ## Lint/Format
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup and [CONTRIBUTING.md](./CONTRIBUTING.md#clang-tidy) for `clang-tidy` (opt-in, needs local `clang-tidy` and generated headers).
+See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup and [docs/cpp/clang-tidy.md](./docs/cpp/clang-tidy.md) for `clang-tidy` (opt-in, needs local `clang-tidy` and generated headers).
 
 ## Code Style
 
-New file placement and header levelization: see [CONTRIBUTING.md](./CONTRIBUTING.md#before-making-a-pull-request). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [CONTRIBUTING.md](./CONTRIBUTING.md#contracts-and-instrumentation). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages). New public functions/methods need a Doxygen-style comment.
+New file placement and header levelization: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md#source-layout). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages). New public functions/methods need a Doxygen-style comment.
 
 Comments should explain _why_, not _what_/_how_ — the code already shows that. Only describe what/how when the code itself would otherwise be confusing (a non-obvious workaround, a subtle invariant, a surprising constraint). Write new or changed comments as full sentences: start with a capital letter and end with a period.
 
