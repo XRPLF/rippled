@@ -316,6 +316,8 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        # The libFuzzer entry point defines its own main(); it is built only into xrpl_fuzz.
+        list(FILTER sources EXCLUDE REGEX "/src/test/fuzz/main/")
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
