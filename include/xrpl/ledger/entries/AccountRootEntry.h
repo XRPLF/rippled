@@ -158,8 +158,8 @@ public:
     [[nodiscard]] Rate
     transferRate() const
     {
-        if ((*this)->isFieldPresent(sfTransferRate))
-            return Rate{(*this)->getFieldU32(sfTransferRate)};
+        if (this->sleRef().isFieldPresent(sfTransferRate))
+            return Rate{this->sleRef().getFieldU32(sfTransferRate)};
         return kParityRate;
     }
 
