@@ -230,7 +230,7 @@ defaultLoanFixedPrecision(
     loanSle->at(sfPrincipalOutstanding) = 0;
     loanSle->at(sfManagementFeeOutstanding) = 0;
     loanSle->at(sfNextPaymentDueDate) = 0;
-    loanSle.update();
+    loanSle.updateInView();
 
     if (coverAmount == beast::kZero)
         return tesSUCCESS;
@@ -388,7 +388,7 @@ LoanManage::defaultLoan(
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
-    loanSle.update();
+    loanSle.updateInView();
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
@@ -466,7 +466,7 @@ LoanManage::impairLoan(
             loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
         }
     }
-    loanSle.update();
+    loanSle.updateInView();
 
     return tesSUCCESS;
 }
@@ -529,7 +529,7 @@ LoanManage::unimpairLoan(
                 view.parentCloseTime().time_since_epoch().count() + paymentInterval;
         }
     }
-    loanSle.update();
+    loanSle.updateInView();
 
     return tesSUCCESS;
 }

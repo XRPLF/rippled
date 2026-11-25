@@ -2446,7 +2446,7 @@ loanMakePayment(
     XRPL_ASSERT(
         *loan->at(sfTotalValueOutstanding) > 0, "xrpl::loanMakePayment : valid total value");
 
-    loan.update();
+    loan.updateInView();
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.
