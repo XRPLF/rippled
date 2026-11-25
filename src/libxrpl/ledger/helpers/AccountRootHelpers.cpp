@@ -184,7 +184,7 @@ adjustOwnerCountSigned(
                 view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
             }
 
-            auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+            auto const sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
             if (sponsorshipSle && adjustment > 0)
             {
                 // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new
@@ -221,7 +221,7 @@ adjustOwnerCountSigned(
 
         view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
         accountSle->at(sfOwnerCount) = adjusted;
-        accountSle.update();
+        accountSle.updateInView();
     }
 }
 
@@ -480,7 +480,7 @@ pseudoAccountAddress(ReadView const& view, UInt256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const kPseudoFields = []() {
+    static std::vector<SField const*> const kPseudoFields = [] {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {

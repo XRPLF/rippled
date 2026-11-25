@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -60,7 +61,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
-    if (vault->at(sfAssetsTotal) != 0)
+    if (getAssetsTotal(vault) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
         return tecHAS_OBLIGATIONS;
@@ -98,12 +99,12 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
-    auto asset = vault->at(sfAsset);
+    auto const asset = vault->at(sfAsset);
 
     if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
@@ -193,7 +194,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    vaultPseudoSLE.erase();
+    vaultPseudoSLE.eraseFromView();
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);

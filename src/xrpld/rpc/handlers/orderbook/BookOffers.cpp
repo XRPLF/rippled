@@ -58,7 +58,7 @@ parseTakerAssetJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
-    auto const assetError = [&]() {
+    auto const assetError = [&] {
         if (name == jss::taker_pays)
             return RpcSrcCurMalformed;
         return RpcDstAmtMalformed;
@@ -97,7 +97,7 @@ parseTakerIssuerJSON(
     json::StaticString const& name,
     beast::Journal j)
 {
-    auto const issuerError = [&]() {
+    auto const issuerError = [&] {
         if (name == jss::taker_pays)
             return RpcSrcIsrMalformed;
         return RpcDstIsrMalformed;

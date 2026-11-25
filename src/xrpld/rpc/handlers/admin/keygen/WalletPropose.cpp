@@ -38,7 +38,7 @@ estimateEntropy(std::string const& input)
     for (auto const& [_, f] : freq)
     {
         (void)_;
-        auto x = f / input.length();
+        auto const x = f / input.length();
         se += x * log2(x);
     }
 
@@ -52,7 +52,7 @@ estimateEntropy(std::string const& input)
 //  passphrase: <string>
 // }
 json::Value
-doWalletPropose(rpc::JsonContext& context)
+doWalletPropose(rpc::JsonContext const& context)
 {
     return walletPropose(context.params);
 }

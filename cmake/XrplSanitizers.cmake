@@ -58,7 +58,7 @@ target_link_options(common INTERFACE ${sanitizers_linker_flags})
 # This module appends -fsanitize-ignorelist=<path> for Clang builds.
 # The ignorelist path contains CMAKE_SOURCE_DIR, so it must be set here, rather than in the Conan profile.
 # GCC does not support -fsanitize-ignorelist.
-if(is_clang)
+if(is_any_clang)
     set(ignorelist_path
         "${CMAKE_SOURCE_DIR}/sanitizers/suppressions/sanitizer-ignorelist.txt"
     )
@@ -77,19 +77,24 @@ if(is_clang)
     message(STATUS "  Ignorelist: ${ignorelist_path}")
 endif()
 
-# Define SANITIZERS macro for BuildInfo.cpp
+# Define the SANITIZERS macro for BuildInfo.cpp, plus one of XRPL_ASAN,
+# XRPL_TSAN and XRPL_UBSAN per active sanitizer, so that code can test for a
+# specific one with #ifdef instead of parsing the dot-joined SANITIZERS string.
 set(sanitizers_list)
 if(SANITIZERS MATCHES "address")
     set(enable_asan ON)
     list(APPEND sanitizers_list "ASAN")
+    target_compile_definitions(common INTERFACE XRPL_ASAN)
 endif()
 if(SANITIZERS MATCHES "thread")
     set(enable_tsan ON)
     list(APPEND sanitizers_list "TSAN")
+    target_compile_definitions(common INTERFACE XRPL_TSAN)
 endif()
 if(SANITIZERS MATCHES "undefinedbehavior")
     set(enable_ubsan ON)
     list(APPEND sanitizers_list "UBSAN")
+    target_compile_definitions(common INTERFACE XRPL_UBSAN)
 endif()
 
 if(sanitizers_list)

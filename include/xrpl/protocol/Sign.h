@@ -32,7 +32,7 @@ enum class SignatureRole {
     /**
      * The sponsor's signature, in sfSponsorSignature.
      */
-    Sponsor
+    Sponsor,
 };
 
 /**

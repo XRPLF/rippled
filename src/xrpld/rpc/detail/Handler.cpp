@@ -3,20 +3,35 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/MethodNames.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/account/AccountChannels.h>
+#include <xrpld/rpc/handlers/account/AccountCurrencies.h>
+#include <xrpld/rpc/handlers/account/AccountInfo.h>
+#include <xrpld/rpc/handlers/account/AccountLines.h>
+#include <xrpld/rpc/handlers/account/AccountNFTs.h>
+#include <xrpld/rpc/handlers/account/AccountOffers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
+#include <xrpld/rpc/handlers/orderbook/BookChanges.h>
+#include <xrpld/rpc/handlers/orderbook/DepositAuthorized.h>
+#include <xrpld/rpc/handlers/orderbook/NFTBuyOffers.h>
+#include <xrpld/rpc/handlers/orderbook/NFTSellOffers.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
+#include <xrpld/rpc/handlers/transaction/TransactionEntry.h>
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/Types.hpp>
+
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
-#include <iterator>
+#include <expected>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -33,8 +48,8 @@ using Method = Handler::Method;
  * The handler is a template parameter rather than an argument, so that byRef
  * names a plain function instead of returning a closure over it.
  */
-template <json::Value (*Function)(JsonContext&)>
-Status
+template <auto Function>
+::rpc::Status
 byRef(JsonContext& context, json::Value& result)
 {
     result = Function(context);
@@ -46,81 +61,94 @@ byRef(JsonContext& context, json::Value& result)
         // LCOV_EXCL_STOP
     }
 
-    return Status();
-}
-
-template <class HandlerImpl>
-Status
-handle(JsonContext& context, json::Value& object)
-{
-    XRPL_ASSERT(
-        context.apiVersion >= HandlerImpl::minApiVer &&
-            context.apiVersion <= HandlerImpl::maxApiVer,
-        "xrpl::rpc::handle : valid API version");
-    HandlerImpl handler(context);
-
-    auto status = handler.check();
-    if (status)
-    {
-        status.inject(object);
-    }
-    else
-    {
-        handler.writeResult(object);
-    }
-    return status;
+    return ::rpc::Status::kOK;
 }
 
 template <typename HandlerImpl>
-constexpr Handler
-handlerFrom()
-{
-    static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
-    static_assert(HandlerImpl::maxApiVer <= rpc::kApiMaximumValidVersion);
-    static_assert(rpc::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
+concept SpecBasedHandler = std::derived_from<HandlerImpl, HandlerFor<typename HandlerImpl::Input>>;
 
-    return {
-        HandlerImpl::name,
-        Method::of<&handle<HandlerImpl>>(),
-        HandlerImpl::role,
-        HandlerImpl::condition,
-        HandlerImpl::minApiVer,
-        HandlerImpl::maxApiVer,
-    };
+template <typename HandlerImpl>
+concept InputlessHandler = requires(HandlerImpl& handler) { handler.process(); };
+
+template <class HandlerImpl, class Output>
+::rpc::Status
+respond(
+    HandlerImpl const& handler,
+    json::Value& object,
+    std::expected<Output, ::rpc::Status> const& output,
+    ::rpc::spec::Warnings const& warnings)
+{
+    if (not output.has_value())
+    {
+        injectSpecError(object, output.error());
+        return output.error();
+    }
+
+    json::Value result;
+    handler.writeResult(result, *output);
+    injectSpecWarnings(result, warnings);
+    object = std::move(result);
+
+    return ::rpc::Status::kOK;
 }
 
-// The handlers that name the function they dispatch to. The order is free:
-// getHandler() searches kHandlers below, which is this array and the next one
-// sorted together.
-constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
+template <class HandlerImpl>
+::rpc::Status
+handle(JsonContext& context, json::Value& object)
+    requires SpecBasedHandler<HandlerImpl> or InputlessHandler<HandlerImpl>
+{
+    if constexpr (SpecBasedHandler<HandlerImpl>)
+    {
+        auto const input = HandlerImpl::parseInput(context.params, context.apiVersion);
+        if (not input.has_value())
+        {
+            injectSpecError(object, input.error());
+            return input.error();
+        }
+
+        HandlerImpl handler(context);
+        auto const output = handler.process(*input);
+        auto const warnings = output.has_value()
+            ? HandlerImpl::spec(context.apiVersion).check(context.params)
+            : ::rpc::spec::Warnings{};
+        return respond(handler, object, output, warnings);
+    }
+    else
+    {
+        HandlerImpl handler(context);
+        return respond(handler, object, handler.process(), /* warnings= */ {});
+    }
+}
+
+constexpr auto kHandlerArray = std::to_array<Handler>({
     // Request-response methods
     {
         .name = method::kAccountInfo,
-        .valueMethod = Method::of<&byRef<&doAccountInfo>>(),
+        .valueMethod = Method::of<&handle<AccountInfoHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountCurrencies,
-        .valueMethod = Method::of<&byRef<&doAccountCurrencies>>(),
+        .valueMethod = Method::of<&handle<AccountCurrenciesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountLines,
-        .valueMethod = Method::of<&byRef<&doAccountLines>>(),
+        .valueMethod = Method::of<&handle<AccountLinesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountChannels,
-        .valueMethod = Method::of<&byRef<&doAccountChannels>>(),
+        .valueMethod = Method::of<&handle<AccountChannelsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountNfts,
-        .valueMethod = Method::of<&byRef<&doAccountNFTs>>(),
+        .valueMethod = Method::of<&handle<AccountNFTsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -132,7 +160,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountOffers,
-        .valueMethod = Method::of<&byRef<&doAccountOffers>>(),
+        .valueMethod = Method::of<&handle<AccountOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -157,7 +185,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kBookChanges,
-        .valueMethod = Method::of<&byRef<&doBookChanges>>(),
+        .valueMethod = Method::of<&handle<BookChangesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -199,7 +227,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kDepositAuthorized,
-        .valueMethod = Method::of<&byRef<&doDepositAuthorized>>(),
+        .valueMethod = Method::of<&handle<DepositAuthorizedHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -240,6 +268,12 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
+    },
+    {
+        .name = method::kLedger,
+        .valueMethod = Method::of<&handle<LedgerHandler>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
     },
     {
         .name = method::kLedgerAccept,
@@ -313,14 +347,14 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kNftBuyOffers,
-        .valueMethod = Method::of<&byRef<&doNFTBuyOffers>>(),
+        .valueMethod = Method::of<&handle<NFTBuyOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
     },
     {
         .name = method::kNftSellOffers,
-        .valueMethod = Method::of<&byRef<&doNFTSellOffers>>(),
+        .valueMethod = Method::of<&handle<NFTSellOffersHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
         .hasCommandLineForm = false,
@@ -448,7 +482,7 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kTransactionEntry,
-        .valueMethod = Method::of<&byRef<&doTransactionEntry>>(),
+        .valueMethod = Method::of<&handle<TransactionEntryHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -512,6 +546,12 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kVersion,
+        .valueMethod = Method::of<&handle<VersionHandler>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
         .name = method::kWalletPropose,
         .valueMethod = Method::of<&byRef<&doWalletPropose>>(),
         .role = Role::ADMIN,
@@ -532,39 +572,9 @@ constexpr auto kFunctionHandlerArray = std::to_array<Handler>({
     },
 });
 
-// The class-based handlers, which carry their name and API range as static
-// members rather than as a table entry, so they cannot go in the array above.
-constexpr auto kClassHandlerArray = std::to_array<Handler>({
-    handlerFrom<LedgerHandler>(),
-    handlerFrom<VersionHandler>(),
-});
-
-/**
- * Join the two handler arrays above into one.
- *
- * Handler has no default constructor, so every entry is built in place from an
- * index pack rather than the array being sized and then copied into. The packs
- * come from the arrays themselves, so adding a handler to either needs no change
- * here.
- *
- * @return kFunctionHandlerArray followed by kClassHandlerArray.
- */
-constexpr auto
-joinHandlers()
-{
-    constexpr auto kFunctionIndices = std::make_index_sequence<std::size(kFunctionHandlerArray)>{};
-    constexpr auto kClassIndices = std::make_index_sequence<std::size(kClassHandlerArray)>{};
-
-    return []<std::size_t... Function, std::size_t... Class>(
-               std::index_sequence<Function...>, std::index_sequence<Class...>) {
-        return std::array<Handler, sizeof...(Function) + sizeof...(Class)>{
-            kFunctionHandlerArray[Function]..., kClassHandlerArray[Class]...};
-    }(kFunctionIndices, kClassIndices);
-}
-
 // The whole dispatch table.
 constexpr auto kHandlers = [] {
-    auto all = joinHandlers();
+    auto all = kHandlerArray;
 
     // Sorted by name, so a handler can be found by binary search.
     std::ranges::sort(all, {}, &Handler::name);
