@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -452,7 +453,8 @@ requireAuth(
             sleIssuance->isFlag(lsfMPTRequireAuth),
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        auto const ter = credentials::validDomain(view, *maybeDomainID, account);
+        PermissionedDomainEntryR const domain(*maybeDomainID, view);
+        auto const ter = credentials::validDomain(domain, account);
         if (isTesSuccess(ter))
         {
             return ter;  // Note: sleToken might be null
@@ -505,7 +507,8 @@ enforceMPTokenAuthorization(
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
 
-        auto const ter = verifyValidDomain(ctx.view, account, *maybeDomainID, j);
+        PermissionedDomainEntryR const domain(*maybeDomainID, ctx.view);
+        auto const ter = verifyValidDomain(ctx.view, account, domain, j);
         if (isTesSuccess(ter))
             return true;
         if (ter == tecEXPIRED)
