@@ -148,19 +148,6 @@ bool
 isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTokenIssuanceEntryR const& issuanceSle,
-    std::uint8_t depth)
-{
-    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
-        return *result;
-
-    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
-}
-
-bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
     MPTIssue const& mptShare,
     std::uint8_t depth)
 {
@@ -170,6 +157,19 @@ isVaultPseudoAccountFrozen(
     MPTokenIssuanceEntryR const issuanceSle(mptShare.getMptID(), view);
     if (!issuanceSle)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntryR const& issuanceSle,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
 
     return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
 }

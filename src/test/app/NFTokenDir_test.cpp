@@ -202,7 +202,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
             env.close();
 
-            // All of the accounts create one NFT and and offer that NFT to
+            // All of the accounts create one NFT and offer that NFT to
             // buyer.
             std::vector<UInt256> nftIDs;
             std::vector<UInt256> offers;
@@ -409,7 +409,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             }
             env.close();
 
-            // All of the accounts create one NFT and and offer that NFT to
+            // All of the accounts create one NFT and offer that NFT to
             // buyer.
             std::vector<UInt256> nftIDs;
             std::vector<UInt256> offers;
@@ -642,7 +642,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
         env.close();
 
-        // All of the accounts create one NFT and and offer that NFT to buyer.
+        // All of the accounts create one NFT and offer that NFT to buyer.
         std::vector<UInt256> nftIDs;
         std::vector<UInt256> offers;
         offers.reserve(accounts.size());
@@ -808,7 +808,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         }
         env.close();
 
-        // All of the accounts create seven consecutive NFTs and and offer
+        // All of the accounts create seven consecutive NFTs and offer
         // those NFTs to buyer.
         std::array<std::vector<UInt256>, 7> nftIDsByPage;
         for (auto& vec : nftIDsByPage)
