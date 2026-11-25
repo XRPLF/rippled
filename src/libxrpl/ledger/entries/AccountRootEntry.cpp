@@ -101,7 +101,7 @@ AccountRootEntry<ViewT>::checkReserve(
     TER insufReserveCode) const
 {
     // TODO: swap to assert after fixCleanup3_2_0 is retired
-    if (!this->exists() || (*this)->getType() != ltACCOUNT_ROOT)
+    if (!this->exists() || this->sleRef().getType() != ltACCOUNT_ROOT)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     XRPL_ASSERT(
         !isTesSuccess(insufReserveCode), "xrpl::checkReserve : insufReserveCode is not tesSUCCESS");
@@ -114,7 +114,8 @@ AccountRootEntry<ViewT>::checkReserve(
 
             auto const sle = ctx.view.read(
                 keylet::sponsorship(
-                    (*sponsorSle)->getAccountID(sfAccount), (*this)->getAccountID(sfAccount)));
+                    (*sponsorSle)->getAccountID(sfAccount),
+                    this->sleRef().getAccountID(sfAccount)));
 
             // A reserve-sponsored tx must carry a sponsor signature
             // (cosigning path) and/or have a pre-existing sponsorship SLE
@@ -150,7 +151,7 @@ AccountRootEntry<ViewT>::checkReserve(
             "xrpl::checkReserve : featureSponsor disabled and sponsorSle not provided");
         XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::checkReserve : accountCountDelta is 0");
         auto const reserve = ctx.view.fees().accountReserve(
-            (*this)->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
+            this->sleRef().getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
         if (accBalance < reserve)
             return insufReserveCode;
     }
