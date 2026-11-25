@@ -188,7 +188,7 @@ AccountRootEntry<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
 
     auto const& view = this->readView();
     auto const j = this->journal();
-    AccountID const id = (*this)->getAccountID(sfAccount);
+    AccountID const id = this->sleRef().getAccountID(sfAccount);
 
     // Return balance minus reserve
     std::uint32_t const currentOwnerCount = detail::confineOwnerCount(
@@ -200,7 +200,7 @@ AccountRootEntry<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
         ? XRPAmount{0}
         : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
-    auto const fullBalance = (*this)->getFieldAmount(sfBalance);
+    auto const fullBalance = this->sleRef().getFieldAmount(sfBalance);
 
     auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
 
