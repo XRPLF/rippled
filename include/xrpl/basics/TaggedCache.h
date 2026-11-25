@@ -275,6 +275,15 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
+    /**
+     * Copy every key in the cache.
+     *
+     * The keys are copied under the cache lock, so the result is the key set
+     * at one instant. A large cache is copied by one thread per partition to
+     * shorten the time the lock is held.
+     *
+     * @return The keys, in no particular order.
+     */
     std::vector<key_type>
     getKeys() const;
 
@@ -438,6 +447,10 @@ private:
     beast::Journal journal_;
     ClockType& clock_;
     Stats stats_;
+
+    // getKeys() copies a cache smaller than this on the calling thread, where
+    // starting a thread per partition would cost more than the walk itself.
+    static constexpr std::size_t kParallelGetKeysMinSize = 100'000;
 
     MutexType mutable mutex_;
 

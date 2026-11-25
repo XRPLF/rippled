@@ -614,23 +614,26 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     getKeys() const -> std::vector<key_type>
 {
     std::vector<key_type> v;
+    std::chrono::milliseconds copyDuration{0};
 
     {
+        // The buffer is sized, not just reserved, outside the lock. That lets the partitions be
+        // copied into it concurrently, and its pages are already touched when the lock is taken.
+        //
         // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
         // absurd. (Note that if this somehow ever happens, one more allocation will be done under
         // lock, which is undesirable, but really should be almost impossible.)
         std::size_t allocationIterations = 0;
         std::unique_lock lock(mutex_);
-        for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
+        for (auto size = cache_.size(); v.size() < size && allocationIterations < 20;
              size = cache_.size())
         {
             ScopeUnlock const unlock(lock);
             if (allocationIterations > 0)
             {
-                JLOG(journal_.info())
-                    << "getKeys(): Cache grew beyond allocated capacity after "
-                    << allocationIterations << " prior attempt(s). Have " << v.capacity()
-                    << ", need " << size << ". Retrying allocation";
+                JLOG(journal_.info()) << "getKeys(): Cache grew beyond allocated capacity after "
+                                      << allocationIterations << " prior attempt(s). Have "
+                                      << v.size() << ", need " << size << ". Retrying allocation";
             }
             // Allocate the current size plus a little extra, in case the cache grows while
             // allocating. Each time another allocation is needed, the extra also gets bigger until
@@ -639,22 +642,61 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             auto const bufferOffset = std::min(allocationIterations, std::size_t{baseShift});
             auto const bufferShift = baseShift - bufferOffset;
             size += (size >> bufferShift) + 1;
-            v.reserve(size);
+            v.resize(size);
             ++allocationIterations;
         }
-        if (v.capacity() < cache_.size())
+        if (v.size() < cache_.size())
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::TaggedCache::getKeys(): failed to allocate sufficient capacity");
-            v.reserve(cache_.size());
+            v.resize(cache_.size());
             // LCOV_EXCL_STOP
         }
         XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
-        XRPL_ASSERT(
-            v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
-        for (auto const& _ : cache_)
-            v.push_back(_.first);
+        XRPL_ASSERT(v.size() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
+
+        auto const start = std::chrono::steady_clock::now();
+
+        // Each partition gets its own range of the buffer, so the workers never write to the same
+        // element.
+        auto const& partitions = cache_.map();
+        std::vector<std::size_t> offsets;
+        offsets.reserve(partitions.size());
+        std::size_t total = 0;
+        for (auto const& partition : partitions)
+        {
+            offsets.push_back(total);
+            total += partition.size();
+        }
+
+        auto const copyKeys = [&](std::size_t p) {
+            auto out = v.begin() + offsets[p];
+            for (auto const& entry : partitions[p])
+                *out++ = entry.first;
+        };
+
+        if (total < kParallelGetKeysMinSize)
+        {
+            for (std::size_t p = 0; p < partitions.size(); ++p)
+                copyKeys(p);
+        }
+        else
+        {
+            // As in sweep(), the workers only run while this thread holds the lock.
+            std::vector<std::thread> workers;
+            workers.reserve(partitions.size());
+            for (std::size_t p = 0; p < partitions.size(); ++p)
+                workers.emplace_back(copyKeys, p);
+            for (std::thread& worker : workers)
+                worker.join();
+        }
+
+        v.resize(total);
+        copyDuration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start);
     }
+    JLOG(journal_.debug()) << name_ << " TaggedCache getKeys copied " << v.size()
+                           << " keys, lock duration " << copyDuration.count() << "ms";
 
     return v;
 }
