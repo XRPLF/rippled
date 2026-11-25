@@ -99,7 +99,7 @@ public:
     [[nodiscard]] bool
     isDeepFrozen() const
     {
-        return (*this)->isFlag(lsfHighDeepFreeze) || (*this)->isFlag(lsfLowDeepFreeze);
+        return this->sleRef().isFlag(lsfHighDeepFreeze) || this->sleRef().isFlag(lsfLowDeepFreeze);
     }
 };
 
