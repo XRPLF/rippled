@@ -191,8 +191,8 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
         if (!this->exists())
             return;  // LCOV_EXCL_LINE
 
-        auto const accountID = (*this)->getAccountID(sfAccount);
-        bool const validType = (*this)->getType() == ltACCOUNT_ROOT;
+        auto const accountID = this->sleRef().getAccountID(sfAccount);
+        bool const validType = this->sleRef().getType() == ltACCOUNT_ROOT;
         XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
         if (!validType)
             return;  // LCOV_EXCL_LINE
@@ -250,10 +250,10 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
         // the remaining are only asserts to preserve existing behavior
         XRPL_ASSERT(!sponsorSle, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
         XRPL_ASSERT(
-            (*this)->getType() == ltACCOUNT_ROOT,
+            this->sleRef().getType() == ltACCOUNT_ROOT,
             "xrpl::adjustOwnerCountSigned : valid account sle type");
         XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
-        std::uint32_t const current{(*this)->getFieldU32(sfOwnerCount)};
+        std::uint32_t const current{this->sleRef().getFieldU32(sfOwnerCount)};
         AccountID const id = (**this)[sfAccount];
         std::uint32_t const adjusted = detail::confineOwnerCount(current, adjustment, id, j);
 
@@ -262,8 +262,8 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
         finalOwnerCount.owner = adjusted;
 
         view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
-        (*this)->at(sfOwnerCount) = adjusted;
-        this->update();
+        this->sleRef().at(sfOwnerCount) = adjusted;
+        this->updateInView();
     }
 }
 
