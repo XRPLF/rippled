@@ -10,10 +10,13 @@
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -328,6 +331,44 @@ TEST_F(TaggedCacheTest, fetch_and_modify_replaces_an_expired_entry)
     EXPECT_EQ(cache.getCacheSize(), 1);
     EXPECT_EQ(cache.getTrackSize(), 1);
     EXPECT_EQ(*cache.fetch(1), "two");
+}
+
+// Returns the keys 1..count, which is what getKeys() should hold, once sorted,
+// after those keys were inserted.
+static std::vector<LedgerIndex>
+keysUpTo(LedgerIndex count)
+{
+    std::vector<LedgerIndex> keys(count);
+    std::iota(keys.begin(), keys.end(), LedgerIndex{1});
+    return keys;
+}
+
+TEST_F(TaggedCacheTest, get_keys_returns_every_key_once)
+{
+    constexpr LedgerIndex kCount = 1'000;
+    for (LedgerIndex key = 1; key <= kCount; ++key)
+        cache.insert(key, "value");
+
+    auto keys = cache.getKeys();
+    std::ranges::sort(keys);
+    EXPECT_EQ(keys, keysUpTo(kCount));
+}
+
+TEST_F(TaggedCacheTest, get_keys_returns_every_key_once_from_a_large_cache)
+{
+    // Large enough that getKeys() copies the partitions on separate threads.
+    constexpr LedgerIndex kCount = 250'000;
+    for (LedgerIndex key = 1; key <= kCount; ++key)
+        cache.insert(key, "value");
+
+    auto keys = cache.getKeys();
+    std::ranges::sort(keys);
+    EXPECT_EQ(keys, keysUpTo(kCount));
+}
+
+TEST_F(TaggedCacheTest, get_keys_of_an_empty_cache_is_empty)
+{
+    EXPECT_TRUE(cache.getKeys().empty());
 }
 
 TEST_F(IntrusiveTaggedCacheTest, fetch_and_modify_supports_intrusive_pointers)
