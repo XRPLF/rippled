@@ -22,19 +22,19 @@ RippleStateEntry<ViewT>::removeFromLedger(AccountID const& lowAccount, AccountID
     auto const j = this->journal();
 
     // Detect legacy dirs.
-    std::uint64_t const uLowNode = (*this)->getFieldU64(sfLowNode);
-    std::uint64_t const uHighNode = (*this)->getFieldU64(sfHighNode);
+    std::uint64_t const uLowNode = this->sleRef().getFieldU64(sfLowNode);
+    std::uint64_t const uHighNode = this->sleRef().getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
-    if (!view.dirRemove(keylet::ownerDir(lowAccount), uLowNode, (*this)->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(lowAccount), uLowNode, this->sleRef().key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
 
-    if (!view.dirRemove(keylet::ownerDir(highAccount), uHighNode, (*this)->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(highAccount), uHighNode, this->sleRef().key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -43,7 +43,7 @@ RippleStateEntry<ViewT>::removeFromLedger(AccountID const& lowAccount, AccountID
     removeSponsorFromLedgerEntry(this->mutableRawSle(), sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }
