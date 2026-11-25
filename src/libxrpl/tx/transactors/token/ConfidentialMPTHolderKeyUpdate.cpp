@@ -173,7 +173,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
         // The holder revokes their pending recovery authorization; the
         // current key and balances are left untouched.
         sleMptoken->makeFieldAbsent(sfRecoveryKey);
-        sleMptoken.update();
+        sleMptoken.updateInView();
         return tesSUCCESS;
     }
 
@@ -204,7 +204,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
         // LCOV_EXCL_STOP
     }
 
-    sleMptoken.update();
+    sleMptoken.updateInView();
     return tesSUCCESS;
 }
 

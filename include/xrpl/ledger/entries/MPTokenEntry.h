@@ -67,7 +67,7 @@ public:
     [[nodiscard]] bool
     isIndividualFrozen() const
     {
-        return (*this)->isFlag(lsfMPTLocked);
+        return this->sleRef().isFlag(lsfMPTLocked);
     }
 
     /**
@@ -82,7 +82,7 @@ public:
     [[nodiscard]] bool
     isAuthorized() const
     {
-        return (*this)->isFlag(lsfMPTAuthorized);
+        return this->sleRef().isFlag(lsfMPTAuthorized);
     }
 
     /**

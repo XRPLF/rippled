@@ -62,7 +62,7 @@ MPTokenEntry<ViewT>::create(
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    mptoken.newSLE();
+    mptoken.newSle();
     (*mptoken)[sfAccount] = account;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = flags;
@@ -70,7 +70,7 @@ MPTokenEntry<ViewT>::create(
 
     addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
 
-    mptoken.insert();
+    mptoken.insertIntoView();
 
     return tesSUCCESS;
 }
@@ -100,9 +100,9 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
 {
     auto const j = this->journal();
     auto const mptIssue = amount.get<MPTIssue>();
-    auto const holder = (*this)->getAccountID(sfAccount);
+    auto const holder = this->sleRef().getAccountID(sfAccount);
 
-    auto const amt = (*this)->getFieldU64(sfMPTAmount);
+    auto const amt = this->sleRef().getFieldU64(sfMPTAmount);
     auto const pay = amount.mpt().value();
 
     // Underflow check for subtraction
@@ -125,16 +125,16 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
-    if ((*this)->isFieldPresent(sfLockedAmount))
+    if (this->sleRef().isFieldPresent(sfLockedAmount))
     {
         (**this)[sfLockedAmount] += pay;
     }
     else
     {
-        (*this)->setFieldU64(sfLockedAmount, pay);
+        this->sleRef().setFieldU64(sfLockedAmount, pay);
     }
 
-    this->update();
+    this->updateInView();
     return tesSUCCESS;
 }
 
@@ -145,15 +145,15 @@ MPTokenEntry<ViewT>::unlockEscrow(STAmount const& grossAmount)
 {
     auto const j = this->journal();
     auto const& mptIssue = grossAmount.get<MPTIssue>();
-    auto const holder = (*this)->getAccountID(sfAccount);
+    auto const holder = this->sleRef().getAccountID(sfAccount);
 
-    if (!(*this)->isFieldPresent(sfLockedAmount))
+    if (!this->sleRef().isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "unlockEscrowMPT: no locked amount in MPToken for " << to_string(holder);
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
-    auto const locked = (*this)->getFieldU64(sfLockedAmount);
+    auto const locked = this->sleRef().getFieldU64(sfLockedAmount);
     auto const delta = grossAmount.mpt().value();
 
     // Underflow check for subtraction
@@ -167,13 +167,13 @@ MPTokenEntry<ViewT>::unlockEscrow(STAmount const& grossAmount)
     auto const newLocked = locked - delta;
     if (newLocked == 0)
     {
-        (*this)->makeFieldAbsent(sfLockedAmount);
+        this->sleRef().makeFieldAbsent(sfLockedAmount);
     }
     else
     {
-        (*this)->setFieldU64(sfLockedAmount, newLocked);
+        this->sleRef().setFieldU64(sfLockedAmount, newLocked);
     }
-    this->update();
+    this->updateInView();
     return tesSUCCESS;
 }
 
