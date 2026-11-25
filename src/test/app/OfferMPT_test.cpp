@@ -8,7 +8,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/noop.h>

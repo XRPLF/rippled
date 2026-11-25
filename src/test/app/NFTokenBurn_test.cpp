@@ -4,7 +4,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>

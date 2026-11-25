@@ -48,6 +48,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <source_location>
 #include <string>
 
 namespace xrpl::test {

@@ -4,7 +4,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/owners.h>

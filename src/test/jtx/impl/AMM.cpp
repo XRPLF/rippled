@@ -54,12 +54,9 @@ AMM::initialTokens()
 {
     if (!env_.enabled(fixAMMv1_3))
     {
-        // Applying a transaction resets the Number mantissa scale, so match
-        // the scale the ledger uses when it computes the LP tokens.
-        std::optional<NumberMantissaScaleGuard> scaleGuard;
-        if (!env_.enabled(featureSingleAssetVault) && !env_.enabled(featureLendingProtocol) &&
-            !env_.enabled(featureMPTokensV2))
-            scaleGuard.emplace(MantissaRange::MantissaScale::Small);
+        // Use the rules, and so the Number mantissa scale, that the ledger uses when it
+        // computes the LP tokens.
+        CurrentTransactionRulesGuard const rulesGuard(env_.current()->rules());
         auto const product = number(asset1_) * number(asset2_);
         return (IOUAmount)(product.mantissa() >= 0 ? root2(product) : root2(-product));
     }

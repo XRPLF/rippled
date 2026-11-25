@@ -5,6 +5,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 

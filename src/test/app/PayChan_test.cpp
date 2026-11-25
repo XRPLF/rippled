@@ -7,7 +7,6 @@
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/paychan.h>
 #include <test/jtx/ter.h>

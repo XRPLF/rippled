@@ -7,7 +7,6 @@
 #include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/directory.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
