@@ -110,7 +110,7 @@ valueToQuotedString(char const* value)
     unsigned const maxsize = (strlen(value) * 2) + 3;  // all-escaped+quotes+NULL
     std::string result;
     result.reserve(maxsize);  // to avoid lots of mallocs
-    result += "\"";
+    result += '"';
 
     for (char const* c = value; *c != 0; ++c)
     {
@@ -168,7 +168,7 @@ valueToQuotedString(char const* value)
         }
     }
 
-    result += "\"";
+    result += '"';
     return result;
 }
 
@@ -213,38 +213,38 @@ FastWriter::writeValue(Value const& value)
             break;
 
         case ValueType::Array: {
-            document_ += "[";
+            document_ += '[';
             int const size = value.size();
 
             for (int index = 0; index < size; ++index)
             {
                 if (index > 0)
-                    document_ += ",";
+                    document_ += ',';
 
                 writeValue(value[index]);
             }
 
-            document_ += "]";
+            document_ += ']';
         }
         break;
 
         case ValueType::Object: {
             Value::Members members(value.getMemberNames());
-            document_ += "{";
+            document_ += '{';
 
             for (auto it = members.begin(); it != members.end(); ++it)
             {
                 std::string const& name = *it;
 
                 if (it != members.begin())
-                    document_ += ",";
+                    document_ += ',';
 
                 document_ += valueToQuotedString(name.c_str());
-                document_ += ":";
+                document_ += ':';
                 writeValue(value[name]);
             }
 
-            document_ += "}";
+            document_ += '}';
         }
         break;
     }
@@ -262,7 +262,7 @@ StyledWriter::write(Value const& root)
     addChildValues_ = false;
     indentString_ = "";
     writeValue(root);
-    document_ += "\n";
+    document_ += '\n';
     return document_;
 }
 
@@ -323,7 +323,7 @@ StyledWriter::writeValue(Value const& value)
                     if (++it; it == members.end())
                         break;
 
-                    document_ += ",";
+                    document_ += ',';
                 }
 
                 unindent();
@@ -371,7 +371,7 @@ StyledWriter::writeArrayValue(Value const& value)
                 if (++index == size)
                     break;
 
-                document_ += ",";
+                document_ += ',';
             }
 
             unindent();

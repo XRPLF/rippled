@@ -67,7 +67,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask = [&]() -> std::uint32_t {
+    std::uint32_t const nfTokenMintMask = [&] -> std::uint32_t {
         if (ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine))
         {
             // if featureDynamicNFT enabled then new flag allowing mutable URI available
@@ -96,7 +96,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // An issuer must only be set if the tx is executed by the minter
-    if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
+    if (auto const iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
         return temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
@@ -146,7 +146,7 @@ NFTokenMint::createNFTokenID(
     taxon = nft::cipheredTaxon(tokenSeq, taxon);
 
     // The values are packed inside a 32-byte buffer, so we need to make sure
-    // that the endianess is fixed.
+    // that the endianness is fixed.
     flags = boost::endian::native_to_big(flags);
     fee = boost::endian::native_to_big(fee);
     taxon = nft::toTaxon(boost::endian::native_to_big(nft::toUInt32(taxon)));
@@ -224,7 +224,7 @@ NFTokenMint::doApply()
 {
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
-    auto const tokenSeq = [this, &issuer]() -> std::expected<std::uint32_t, TER> {
+    auto const tokenSeq = [this, &issuer] -> std::expected<std::uint32_t, TER> {
         auto root = AccountRootEntryW(issuer, view());
         if (!root)
         {
@@ -271,12 +271,12 @@ NFTokenMint::doApply()
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return std::unexpected(tecMAX_SEQUENCE_REACHED);
 
-        root.update();
+        root.updateInView();
         return tokenSeq;
     }();
 
     if (!tokenSeq.has_value())
-        return (tokenSeq.error());
+        return tokenSeq.error();
 
     std::uint32_t const ownerCountBefore =
         AccountRootEntryW(accountID_, view())->getFieldU32(sfOwnerCount);

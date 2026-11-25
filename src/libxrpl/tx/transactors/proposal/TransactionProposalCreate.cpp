@@ -85,7 +85,7 @@ TransactionProposalCreate::preflight(PreflightContext const& ctx)
     // no batch inner transactions — and, if it is a Batch, none of its own
     // inner transactions may be a nested proposal or a pseudo-transaction
     // either.
-    if (!proposal::isValidProposal(proposedTx))
+    if (!proposal::isValidProposalTxnType(proposedTx))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCreate: proposed txn is not "
                                "independently submittable.";
@@ -182,7 +182,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
     {
         // Whether `proposer` is `account` itself or an entry on `account`'s
         // applicable SignerList.
-        auto isAuthorizedFor = [&](AccountID const& account) -> std::expected<bool, TER> {
+        auto const isAuthorizedFor = [&](AccountID const& account) -> std::expected<bool, TER> {
             if (proposer == account)
                 return true;
 
@@ -319,7 +319,7 @@ TransactionProposalCreate::doApply()
     std::uint32_t const ticketSequence = proposedTx.getFieldU32(sfTicketSequence);
 
     Keylet const proposalKeylet = keylet::txProposal(target, ticketSequence);
-    auto sleProposal = std::make_shared<SLE>(proposalKeylet);
+    auto const sleProposal = std::make_shared<SLE>(proposalKeylet);
     sleProposal->setAccountID(sfOwner, accountID_);
     sleProposal->setFieldObject(sfProposedTransaction, proposedTx);
     sleProposal->setFieldU32(sfExpiration, ctx_.tx[sfExpiration]);

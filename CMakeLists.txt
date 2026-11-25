@@ -42,7 +42,7 @@ if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
-elseif(is_clang)
+elseif(is_any_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
 elseif(is_msvc)
@@ -105,7 +105,6 @@ find_package(date REQUIRED)
 find_package(ed25519 REQUIRED)
 find_package(FastFloat REQUIRED)
 find_package(gRPC REQUIRED)
-find_package(LibArchive REQUIRED)
 find_package(lz4 REQUIRED)
 find_package(mpt-crypto REQUIRED)
 find_package(nudb REQUIRED)

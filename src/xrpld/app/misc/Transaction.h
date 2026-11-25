@@ -45,7 +45,7 @@ enum class TransStatus {
     HELD = 5,        // not valid now, maybe later
     REMOVED = 6,     // taken out of a ledger
     OBSOLETE = 7,    // a compatible transaction has taken precedence
-    INCOMPLETE = 8   // needs more signatures
+    INCOMPLETE = 8,  // needs more signatures
 };
 
 // This class is for constructing and examining transactions.
@@ -119,8 +119,8 @@ public:
     setStatus(
         TransStatus status,
         std::uint32_t ledgerSeq,
-        std::optional<uint32_t> transactionSeq = std::nullopt,
-        std::optional<uint32_t> networkID = std::nullopt);
+        std::optional<std::uint32_t> transactionSeq = std::nullopt,
+        std::optional<std::uint32_t> networkID = std::nullopt);
 
     void
     setStatus(TransStatus status)

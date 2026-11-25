@@ -13,10 +13,6 @@
 
 namespace xrpl {
 
-namespace path::detail {
-struct FlowDebugInfo;
-}  // namespace path::detail
-
 /**
  * Make a payment from the src account to the dst account
  *
@@ -34,7 +30,6 @@ struct FlowDebugInfo;
  * @param limitQuality Do not use liquidity below this quality threshold
  * @param sendMax Do not spend more than this amount
  * @param j Journal to write journal messages to
- * @param flowDebugInfo If non-null a pointer to FlowDebugInfo for debugging
  * @return Actual amount in and out, and the result code
  */
 path::RippleCalc::Output
@@ -51,7 +46,6 @@ flow(
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
     std::optional<UInt256> const& domainID,
-    beast::Journal j,
-    path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
+    beast::Journal j);
 
 }  // namespace xrpl

@@ -74,7 +74,7 @@ SetRegularKey::doApply()
         sle->makeFieldAbsent(sfRegularKey);
     }
 
-    sle.update();
+    sle.updateInView();
 
     return tesSUCCESS;
 }
