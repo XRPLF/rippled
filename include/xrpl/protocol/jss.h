@@ -113,6 +113,8 @@ JSS(active);                      // out: OverlayImpl
 JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
+JSS(admin_password);              // in: Role; out: RPCCall
+JSS(admin_user);                  // in: Role; out: RPCCall
 JSS(affected);                    // out: AcceptedLedgerTx
 JSS(age);                         // out: NetworkOPs, Peers
 JSS(alternatives);                // out: PathRequest, RipplePathFind
@@ -560,7 +562,7 @@ JSS(signing_key);                 // out: NetworkOPs
 JSS(signing_keys);                // out: ValidatorList
 JSS(signing_time);                // out: NetworkOPs
 JSS(signer_lists);                // in/out: AccountInfo
-JSS(size);                        // out: get_aggregate_price
+JSS(size);                        // out: get_aggregate_price, ServerHandler
 JSS(snapshot);                    // in: Subscribe
 JSS(source_account);              // in: PathRequest, RipplePathFind
 JSS(source_amount);               // in: PathRequest, RipplePathFind

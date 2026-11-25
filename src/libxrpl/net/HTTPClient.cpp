@@ -30,6 +30,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -363,12 +364,22 @@ public:
         }
     }
 
+    /**
+     * Reads the status line and headers of the reply, then the body.
+     *
+     * @param ecResult The outcome of the read that delivered the header.
+     * @param bytesTransferred The length of the header through its `\r\n\r\n`
+     *        delimiter; the buffer can hold body bytes read past it.
+     */
     void
     handleHeader(boost::system::error_code const& ecResult, std::size_t bytesTransferred)
     {
         std::string strHeader{
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
-        JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
+        // The trace covers the header only: the bytes read past the delimiter are body, which can
+        // carry a credential.
+        JLOG(j_.trace()) << "Header: \"" << std::string_view{strHeader}.substr(0, bytesTransferred)
+                         << "\"";
 
         static boost::regex const kReStatus{R"(\`HTTP/1\S+ (\d{3}) .*\')"};  // HTTP/1.1 200 OK
         static boost::regex const kReSize{

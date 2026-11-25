@@ -4,6 +4,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
@@ -33,9 +34,10 @@ passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
     bool const passwordRequired = (!port.adminUser.empty() || !port.adminPassword.empty());
 
     return !passwordRequired ||
-        ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.adminPassword) &&
-         (params["admin_user"].isString() && params["admin_user"].asString() == port.adminUser));
+        ((params[jss::admin_password].isString() &&
+          params[jss::admin_password].asString() == port.adminPassword) &&
+         (params[jss::admin_user].isString() &&
+          params[jss::admin_user].asString() == port.adminUser));
 }
 
 bool
