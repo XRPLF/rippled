@@ -182,9 +182,9 @@ AccountRootEntry<ViewT>::isPseudoAccount() const
 {
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
-    return this->exists() && (*this)->getType() == ltACCOUNT_ROOT &&
+    return this->exists() && this->sleRef().getType() == ltACCOUNT_ROOT &&
         std::ranges::any_of(getPseudoAccountFields(), [this](SField const* sf) {
-               return (*this)->isFieldPresent(*sf);
+               return this->sleRef().isFieldPresent(*sf);
            });
 }
 
