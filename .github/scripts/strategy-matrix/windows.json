@@ -2,11 +2,29 @@
   "platform": "windows/amd64",
   "runner": ["self-hosted", "Windows", "dev-box-windows-2026"],
   "configs": [
-    { "build_type": "Release", "minimal": true },
+    {
+      "build_type": "Release",
+      "events": [
+        "pull_request",
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
+    },
     {
       "build_type": "Debug",
       "build_only": true,
-      "minimal": false
+      "events": [
+        "ready_to_merge",
+        "merge_group",
+        "push",
+        "schedule",
+        "tag",
+        "workflow_dispatch"
+      ]
     }
   ]
 }

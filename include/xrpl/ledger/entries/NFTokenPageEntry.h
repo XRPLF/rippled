@@ -45,7 +45,7 @@ public:
     [[nodiscard]] std::optional<STObject>
     findToken(UInt256 const& id) const
     {
-        for (auto const& t : (*this)->getFieldArray(sfNFTokens))
+        for (auto const& t : this->sleRef().getFieldArray(sfNFTokens))
         {
             if (t[sfNFTokenID] == id)
                 return t;
