@@ -15,6 +15,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -1582,7 +1583,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return;
-        BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::CashBasis);
+        BEAST_EXPECT(
+            getVaultVersion(VaultEntryR(vaultSle, *env.current())) == VaultVersion::CashBasis);
         Number const ownerBefore = env.balance(owner, asset).value();
 
         env(pay(borrower, loanKeylet.key, asset(Number{1} + fee).value()));

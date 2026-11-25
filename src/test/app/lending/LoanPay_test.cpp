@@ -19,6 +19,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -2254,7 +2255,9 @@ private:
                 return;
             checkFixedPrecisionVaultAssetsDeployed(
                 *this, env, broker.vaultKeylet(), {}, {loanKeylet}, row.name);
-            BEAST_EXPECT(getVaultVersion(vaultAfter) == VaultVersion::FixedPrecision);
+            BEAST_EXPECT(
+                getVaultVersion(VaultEntryR(vaultAfter, *env.current())) ==
+                VaultVersion::FixedPrecision);
             BEAST_EXPECT(vaultAfter->at(sfYieldUnrealized) == scheduledInterest(loanAfter));
             expectPrincipalIsVaultDebt(vaultAfter, loanAfter);
         }
@@ -2307,7 +2310,9 @@ private:
                 continue;
             checkFixedPrecisionVaultAssetsDeployed(
                 *this, env, broker.vaultKeylet(), {}, {loanKeylet}, "after integral payment");
-            BEAST_EXPECT(getVaultVersion(vaultAfter) == VaultVersion::FixedPrecision);
+            BEAST_EXPECT(
+                getVaultVersion(VaultEntryR(vaultAfter, *env.current())) ==
+                VaultVersion::FixedPrecision);
             BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == state.paymentRemaining - 1);
             expectPrincipalIsVaultDebt(vaultAfter, loanAfter);
         }

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/VaultEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -471,21 +472,21 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 // points transactors call.
 AccountingDeltas
 loanOriginationDeltas(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 bool
 loanOriginationExceedsVaultMaximum(
-    SLE::ConstRef vaultSle,
+    VaultEntryR const& vaultSle,
     Number const& vaultTotal,
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
+loanVaultExposure(VaultEntryR const& vaultSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
+loanPaymentDeltas(VaultEntryR const& vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
