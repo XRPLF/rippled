@@ -204,7 +204,7 @@ LoanBrokerCoverDeposit::doApply()
 
     // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) += amount;
-    broker.update();
+    broker.updateInView();
 
     associateAsset(*broker, vaultAsset);
 

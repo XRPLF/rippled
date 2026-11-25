@@ -235,7 +235,7 @@ LoanBrokerDelete::doApply()
     if (!fix350Enabled)
         decreaseOwnerCountForObject(view(), owner, broker.mutableRawSle(), 2, j_);
 
-    broker.erase();
+    broker.eraseFromView();
 
     return tesSUCCESS;
 }

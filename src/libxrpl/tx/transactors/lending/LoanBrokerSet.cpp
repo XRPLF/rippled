@@ -288,7 +288,7 @@ LoanBrokerSet::doApply()
             }
         }
 
-        broker.update();
+        broker.updateInView();
 
         associateAsset(*broker, vaultAsset);
     }
@@ -319,7 +319,7 @@ LoanBrokerSet::doApply()
             // LCOV_EXCL_STOP
         }
         LoanBrokerEntryW broker(accountID_, sequence, view);
-        broker.newSLE();
+        broker.newSle();
 
         if (auto const ter = dirLink(view, accountID_, broker.mutableRawSle()))
             return ter;  // LCOV_EXCL_LINE
@@ -367,7 +367,7 @@ LoanBrokerSet::doApply()
                 broker->setFieldH256(sfDomainID, *domainID);
         }
 
-        broker.insert();
+        broker.insertIntoView();
 
         associateAsset(*broker, vaultAsset);
     }

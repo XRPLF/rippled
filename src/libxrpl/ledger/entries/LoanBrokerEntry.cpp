@@ -35,7 +35,7 @@ LoanBrokerEntry<ViewT>::canApplyToCover(
     if (amount == beast::kZero)
         return tecPRECISION_LOSS;
 
-    int const coverScale = scale((*this)->at(sfCoverAvailable), vaultAsset);
+    int const coverScale = scale(this->sleRef().at(sfCoverAvailable), vaultAsset);
     if (amount.isZeroAtScale(coverScale))
     {
         JLOG(this->journal().warn()) << logPrefix << ": amount " << amount.getFullText()
