@@ -164,7 +164,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
     if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
         return tesSUCCESS;
 
-    if (!(*this)->isFlag(lsfMPTCanTransfer))
+    if (!this->sleRef().isFlag(lsfMPTCanTransfer))
         return TER{tecNO_AUTH};
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
@@ -174,7 +174,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
     //
     // The recursive call always passes WaiveMPTCanTransfer::No so that
     // a waived outer caller does not transitively unlock the underlying.
-    if (view.rules().enabled(fixCleanup3_2_0) && (*this)->isFieldPresent(sfReferenceHolding))
+    if (view.rules().enabled(fixCleanup3_2_0) && this->sleRef().isFieldPresent(sfReferenceHolding))
     {
         // Defensive depth bound on the inheritance recursion. Unreachable
         // in practice (vault-of-vault-shares is forbidden at VaultCreate).
@@ -187,7 +187,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
         }
 
         auto const sleHolding =
-            view.read(keylet::unchecked((*this)->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(this->sleRef().getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
