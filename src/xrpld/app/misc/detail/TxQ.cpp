@@ -1499,7 +1499,7 @@ TxQApplyImpl::applyImplPrelock()
 {
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, jExt_))
+    if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, preflightRes_, flags_))
         return directApplied;
 
     if ((flags_ & TapDryRun) != 0u)
@@ -1973,8 +1973,8 @@ TxQ::tryDirectApply(
     Application& app,
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
+    PreflightResult const& pfResult,
+    ApplyFlags flags)
 {
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
@@ -2013,7 +2013,8 @@ TxQ::tryDirectApply(
         auto const transactionID = tx->getTransactionID();
         JLOG(j_.trace()) << "Applying transaction " << transactionID << " to open ledger.";
 
-        auto const [txnResult, didApply, metadata] = xrpl::apply(app, view, *tx, flags, j);
+        auto const [txnResult, didApply, metadata] =
+            doApply(preclaim(pfResult, app, view), app, view);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
                          << (didApply ? " applied successfully with " : " failed with ")
