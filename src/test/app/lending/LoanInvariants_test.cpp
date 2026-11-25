@@ -1099,6 +1099,307 @@ private:
         }
     }
 
+    // sfLossUnrealized is stored at the vault's AssetsTotal scale and
+    // re-rounded to nearest on every change. Once that scale coarsens past an
+    // older loan's LoanScale -- which happens when another loan's up-front
+    // interest, or another depositor, pushes AssetsTotal across a power of ten
+    // -- the stored aggregate can sit just below that loan's exact exposure.
+    // The strict "LossUnrealized < exposure" guards in unimpairLoan and
+    // defaultLoan (and therefore in LoanPay, which unimpairs before paying)
+    // then reject the loan with tefBAD_LEDGER, so it can no longer be
+    // unimpaired, repaid or defaulted. fixCleanup3_6_0 reverses no more
+    // recorded loss than is recorded, which frees the loan -- including loans
+    // already stranded on-ledger -- while leaving every state where the
+    // recorded loss already covers the exposure bit-identical.
+    //
+    // Each case runs twice via amendmentCombinations: once with the fix and
+    // once without, so the pre-amendment tefBAD_LEDGER behaviour is pinned too.
+    void
+    testLossUnrealizedScaleCrossing(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const withAmendment = features[fixCleanup3_6_0];
+
+        struct Ctx
+        {
+            jtx::Account issuer;
+            jtx::Account lender;
+            jtx::Account borrower;
+            jtx::PrettyAsset iou;
+            BrokerInfo broker;
+        };
+
+        // Fresh Env + IOU vault + broker. vaultDeposit 1000 => AssetsTotal 1000
+        // => vault scale -12. Each case gets its own Env so outcomes cannot
+        // leak between them.
+        auto const runTest = [&](auto&& body) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+            env.close();
+
+            PrettyAsset const iou = issuer[iouCurrency_];
+            env(trust(lender, iou(1'000'000'000)));
+            env(trust(borrower, iou(1'000'000'000)));
+            env.close();
+            env(pay(issuer, lender, iou(100'000'000)));
+            env(pay(issuer, borrower, iou(100'000'000)));
+            env.close();
+
+            BrokerParameters const brokerParams{
+                .vaultDeposit = 1'000,
+                .debtMax = 0,
+                .coverRateMin = TenthBips32{13'370},
+                .coverDeposit = 5'000,
+                .managementFeeRate = TenthBips16{500},
+            };
+
+            BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
+
+            body(env, Ctx{issuer, lender, borrower, iou, broker});
+        };
+
+        // Originate a tiny loan whose principal carries a digit at 1e-12, so it
+        // cannot be represented once the vault coarsens to -11. 0% interest and
+        // a single payment keep its scale at the vault's current -12 and leave
+        // ManagementFeeOutstanding at zero.
+        auto const originateTiny = [&](Env& env, Ctx const& c) -> Keylet {
+            auto const keylet = nextLoanKeylet(env, c.broker);
+            env(set(c.borrower, c.broker.brokerID, Number{10'000'000'001, -12}),
+                Sig(sfCounterpartySignature, c.lender),
+                kInterestRate(TenthBips32{0}),
+                kPaymentTotal(1),
+                kPaymentInterval(86400 * 365),
+                Fee(XRP(10)));
+            env.close();
+            return keylet;
+        };
+
+        // Originate a loan large enough that its up-front interest pushes the
+        // vault scale up to -11.
+        auto const originateBig = [&](Env& env, Ctx const& c) -> Keylet {
+            auto const keylet = nextLoanKeylet(env, c.broker);
+            env(set(c.borrower, c.broker.brokerID, Number{500}),
+                Sig(sfCounterpartySignature, c.lender),
+                kInterestRate(TenthBips32{100'000}),
+                kPaymentTotal(20),
+                kPaymentInterval(86400 * 365),
+                Fee(XRP(10)));
+            env.close();
+            return keylet;
+        };
+
+        // Make the loan late and impair it.
+        auto const impair = [&](Env& env, Ctx const& c, Keylet const& keylet) {
+            auto const state = getCurrentState(env, c.broker, keylet);
+            BEAST_EXPECT(canImpairLoan(env, c.broker, state));
+            advancePastDueDate(env, keylet);
+            env(manage(c.lender, keylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+        };
+
+        auto const lossUnrealized = [&](Env& env, Ctx const& c) -> Number {
+            auto const vaultSle = env.le(c.broker.vaultKeylet());
+            return BEAST_EXPECT(vaultSle) ? Number{vaultSle->at(sfLossUnrealized)} : Number{-1};
+        };
+
+        auto const exposureOf = [&](Env& env, Ctx const& c, Keylet const& keylet) -> Number {
+            auto const vaultSle = env.le(c.broker.vaultKeylet());
+            auto const loanSle = env.le(keylet);
+            return (BEAST_EXPECT(vaultSle) && BEAST_EXPECT(loanSle))
+                ? loanVaultExposure(vaultSle, loanSle)
+                : Number{-1};
+        };
+
+        // Build the stuck single-loan state: tiny loan impaired after the
+        // vault scale has crossed to -11. The stored loss (0.01) sits strictly
+        // below the loan's exact exposure (0.010000000001) with or without the
+        // fix.
+        auto const makeStuckTiny = [&](Env& env, Ctx const& c) -> Keylet {
+            auto const tinyKeylet = originateTiny(env, c);
+            auto const bigKeylet = originateBig(env, c);
+
+            auto const tinyLoanSle = env.le(tinyKeylet);
+            auto const bigLoanSle = env.le(bigKeylet);
+            auto const vaultSle = env.le(c.broker.vaultKeylet());
+            if (BEAST_EXPECT(tinyLoanSle) && BEAST_EXPECT(bigLoanSle) &&
+                BEAST_EXPECT(vaultSle))
+            {
+                BEAST_EXPECT(tinyLoanSle->at(sfLoanScale) == -12);
+                BEAST_EXPECT(bigLoanSle->at(sfLoanScale) == -11);
+                BEAST_EXPECT(getVaultScale(vaultSle) == -11);
+                BEAST_EXPECT(tinyLoanSle->at(sfManagementFeeOutstanding) == Number{0});
+                BEAST_EXPECT(
+                    (tinyLoanSle->at(sfTotalValueOutstanding) == Number{10'000'000'001, -12}));
+            }
+
+            impair(env, c, tinyKeylet);
+
+            BEAST_EXPECT((lossUnrealized(env, c) == Number{1, -2}));
+            BEAST_EXPECT(lossUnrealized(env, c) < exposureOf(env, c, tinyKeylet));
+            return tinyKeylet;
+        };
+
+        // T1(a) - unimpair the stuck loan.
+        testcase << "LossUnrealized scale crossing: unimpair"
+                 << (withAmendment ? " (fix on)" : " (fix off)");
+        runTest([&](Env& env, Ctx const& c) {
+            auto const tinyKeylet = makeStuckTiny(env, c);
+
+            env(manage(c.lender, tinyKeylet.key, tfLoanUnimpair),
+                withAmendment ? Ter(tesSUCCESS) : Ter(tefBAD_LEDGER));
+            env.close();
+
+            if (withAmendment)
+            {
+                BEAST_EXPECT(lossUnrealized(env, c) == Number{0});
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                    BEAST_EXPECT(!loanSle->isFlag(lsfLoanImpaired));
+            }
+            else
+            {
+                // The rejected transaction left the stuck state untouched.
+                BEAST_EXPECT((lossUnrealized(env, c) == Number{1, -2}));
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                    BEAST_EXPECT(loanSle->isFlag(lsfLoanImpaired));
+            }
+        });
+
+        // T1(b) - repay the stuck loan. LoanPay unimpairs before paying, so it
+        // fails the same way until the fix is on.
+        testcase << "LossUnrealized scale crossing: late payment"
+                 << (withAmendment ? " (fix on)" : " (fix off)");
+        runTest([&](Env& env, Ctx const& c) {
+            auto const tinyKeylet = makeStuckTiny(env, c);
+
+            // A 1-IOU late payment comfortably exceeds the total amount due.
+            env(pay(c.borrower, tinyKeylet.key, c.iou(1), tfLoanLatePayment),
+                Fee(XRP(10)),
+                withAmendment ? Ter(tesSUCCESS) : Ter(tefBAD_LEDGER));
+            env.close();
+
+            if (withAmendment)
+            {
+                BEAST_EXPECT(lossUnrealized(env, c) == Number{0});
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                    BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 0);
+            }
+            else
+            {
+                // The rejected payment left the stuck state untouched.
+                BEAST_EXPECT((lossUnrealized(env, c) == Number{1, -2}));
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                {
+                    BEAST_EXPECT(loanSle->isFlag(lsfLoanImpaired));
+                    BEAST_EXPECT(loanSle->at(sfPaymentRemaining) == 1);
+                }
+            }
+        });
+
+        // T1(c) - default the stuck loan.
+        testcase << "LossUnrealized scale crossing: default"
+                 << (withAmendment ? " (fix on)" : " (fix off)");
+        runTest([&](Env& env, Ctx const& c) {
+            auto const tinyKeylet = makeStuckTiny(env, c);
+
+            // Advance past the due date plus the grace period so the loan can
+            // be defaulted.
+            if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+            {
+                std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+                std::uint32_t const gracePeriod = loanSle->at(sfGracePeriod);
+                env.close(
+                    NetClock::time_point{NetClock::duration{dueDate + gracePeriod}} +
+                    std::chrono::seconds{60});
+            }
+
+            env(manage(c.lender, tinyKeylet.key, tfLoanDefault),
+                withAmendment ? Ter(tesSUCCESS) : Ter(tefBAD_LEDGER));
+            env.close();
+
+            if (withAmendment)
+            {
+                BEAST_EXPECT(lossUnrealized(env, c) == Number{0});
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                    BEAST_EXPECT(loanSle->isFlag(lsfLoanDefault));
+            }
+            else
+            {
+                // The rejected default left the stuck state untouched: the loan
+                // is still impaired, not defaulted.
+                BEAST_EXPECT((lossUnrealized(env, c) == Number{1, -2}));
+                if (auto const loanSle = env.le(tinyKeylet); BEAST_EXPECT(loanSle))
+                {
+                    BEAST_EXPECT(loanSle->isFlag(lsfLoanImpaired));
+                    BEAST_EXPECT(!loanSle->isFlag(lsfLoanDefault));
+                }
+            }
+        });
+
+        // T2 - multiple impaired loans, last one out. Loan A is impaired while
+        // the vault is still at -12 (exact), then the big loan coarsens the
+        // vault to -11, then loan B is impaired. Unimpairing A reduces the
+        // aggregate below B's exposure, so B becomes the stuck loan even though
+        // it was fine when impaired. The clamp reverses only the recorded part
+        // and frees B, leaving LossUnrealized at zero.
+        testcase << "LossUnrealized scale crossing: multi-loan last out"
+                 << (withAmendment ? " (fix on)" : " (fix off)");
+        runTest([&](Env& env, Ctx const& c) {
+            auto const aKeylet = originateTiny(env, c);
+            impair(env, c, aKeylet);
+            // A impaired at the fine scale: recorded loss is exact.
+            BEAST_EXPECT((lossUnrealized(env, c) == Number{10'000'000'001, -12}));
+
+            auto const bKeylet = originateTiny(env, c);
+            auto const bigKeylet = originateBig(env, c);
+            if (auto const vaultSle = env.le(c.broker.vaultKeylet()); BEAST_EXPECT(vaultSle))
+                BEAST_EXPECT(getVaultScale(vaultSle) == -11);
+
+            impair(env, c, bKeylet);
+            // Aggregate re-rounded to -11: round(0.020000000002) = 0.02.
+            BEAST_EXPECT((lossUnrealized(env, c) == Number{2, -2}));
+
+            // Unimpair A: succeeds either way (0.02 covers A's exposure). The
+            // aggregate drops to round(0.009999999999) = 0.01, now below B's
+            // exact exposure.
+            env(manage(c.lender, aKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT((lossUnrealized(env, c) == Number{1, -2}));
+            BEAST_EXPECT(lossUnrealized(env, c) < exposureOf(env, c, bKeylet));
+
+            // Unimpair B: stuck without the fix, freed by it.
+            env(manage(c.lender, bKeylet.key, tfLoanUnimpair),
+                withAmendment ? Ter(tesSUCCESS) : Ter(tefBAD_LEDGER));
+            env.close();
+            if (withAmendment)
+                BEAST_EXPECT(lossUnrealized(env, c) == Number{0});
+        });
+
+        // T3 - no regression on the exact path. The big loan sits at the vault
+        // scale, so its recorded loss equals its exposure exactly;
+        // min(LossUnrealized, exposure) == exposure, and the outcome is
+        // identical with and without the fix.
+        testcase << "LossUnrealized scale crossing: equal-scale no regression"
+                 << (withAmendment ? " (fix on)" : " (fix off)");
+        runTest([&](Env& env, Ctx const& c) {
+            originateTiny(env, c);
+            auto const bigKeylet = originateBig(env, c);
+
+            impair(env, c, bigKeylet);
+            BEAST_EXPECT(lossUnrealized(env, c) == exposureOf(env, c, bigKeylet));
+
+            env(manage(c.lender, bigKeylet.key, tfLoanUnimpair), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(lossUnrealized(env, c) == Number{0});
+        });
+    }
+
     // Tests run under each entry in amendmentCombinations().
     void
     runAmendmentSensitive(FeatureBitset features)
@@ -1119,6 +1420,8 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
+        for (auto const& features : jtx::amendmentCombinations({fixCleanup3_6_0}, all_))
+            testLossUnrealizedScaleCrossing(features);
     }
 };
 
