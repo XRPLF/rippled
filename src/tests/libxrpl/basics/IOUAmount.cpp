@@ -135,7 +135,7 @@ TEST(IOUAmountTest, comparisons)
 
 TEST(IOUAmountTest, to_string)
 {
-    auto test = [](IOUAmount const& n, std::string const& expected) {
+    auto const test = [](IOUAmount const& n, std::string const& expected) {
         auto const result = to_string(n);
         std::stringstream ss;
         ss << "to_string(" << result << "). Expected: " << expected;

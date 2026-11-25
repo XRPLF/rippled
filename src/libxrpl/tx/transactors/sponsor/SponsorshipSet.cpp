@@ -261,7 +261,7 @@ SponsorshipSet::createSponsorship(
     bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
-    auto newSle = std::make_shared<SLE>(sponsorshipKeylet);
+    auto const newSle = std::make_shared<SLE>(sponsorshipKeylet);
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
     // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.
@@ -395,6 +395,7 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                 {},
                 ctx_.journal,
                 tecUNFUNDED);

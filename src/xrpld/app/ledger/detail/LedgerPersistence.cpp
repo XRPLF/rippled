@@ -1,5 +1,7 @@
 #include <xrpld/app/ledger/LedgerPersistence.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -8,6 +10,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
@@ -21,14 +24,30 @@
 
 namespace xrpl {
 
+/**
+ * Save a validated ledger to the relational database, once.
+ *
+ * The pending-saves entry for the sequence is finished on every exit, so a
+ * save that throws leaves no sequence marked in progress: a later save of
+ * the same ledger can run, and a synchronous caller waiting on it wakes up.
+ * The SAVED flag pendSaveValidated() set on the ledger hash is cleared as
+ * well, so that later save is not deduplicated away. The sequence is also
+ * removed from the complete range, since the write may have deleted the
+ * ledger's row before it failed.
+ *
+ * @param registry The services that hold the pending saves and the database.
+ * @param ledger The ledger to save.
+ * @param current Whether the ledger is the current validated ledger.
+ * @return Whether the database reported the save as done.
+ */
 static bool
 saveValidatedLedger(
     ServiceRegistry& registry,
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = registry.getJournal("Ledger");
-    auto seq = ledger->header().seq;
+    auto const j = registry.getJournal("Ledger");
+    auto const seq = ledger->header().seq;
     if (!registry.getPendingSaves().startWork(seq))
     {
         // The save was completed synchronously
@@ -38,7 +57,23 @@ saveValidatedLedger(
 
     auto& db = registry.getRelationalDatabase();
 
-    auto const res = db.saveValidatedLedger(ledger, current);
+    bool res = false;
+    try
+    {
+        res = db.saveValidatedLedger(ledger, current);
+    }
+    catch (...)
+    {
+        // The ledger's row may be gone, so stop advertising the sequence as complete.
+        registry.getLedgerMaster().clearLedger(seq);
+
+        // Neither the in-progress mark nor the SAVED flag may outlive a save that did not happen,
+        // or a retry would be deduplicated away. Release them in the reverse of the order
+        // pendSaveValidated() takes them, or a concurrent enqueue can re-arm the flag.
+        registry.getPendingSaves().finishWork(seq);
+        registry.getHashRouter().clearFlags(ledger->header().hash, HashRouterFlags::SAVED);
+        throw;
+    }
 
     // Clients can now trust the database for
     // information about this ledger sequence.
@@ -56,7 +91,7 @@ pendSaveValidated(
     if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
-        auto stream = registry.getJournal("Ledger").debug();
+        auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
         if (!isSynchronous || !registry.getPendingSaves().pending(ledger->header().seq))
@@ -71,7 +106,7 @@ pendSaveValidated(
 
     if (!registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
-        auto stream = registry.getJournal("Ledger").debug();
+        auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
 
         return true;
@@ -82,7 +117,7 @@ pendSaveValidated(
         registry.getJobQueue().addJob(
             isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
-            [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
+            [&registry, ledger, isCurrent] { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
         return true;
     }
@@ -115,16 +150,34 @@ loadLedgerHelper(
     return ledger;
 }
 
+/**
+ * Settle a ledger just loaded from local storage, or discard it.
+ *
+ * @param ledger The ledger to settle. Cleared on failure, so the caller cannot
+ *        hand out one that is still mutable.
+ * @param j Where to log a refusal.
+ */
 static void
-finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
+finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
 {
     if (!ledger)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+        ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
-    ledger->setImmutable();
+    // Loaded locally. See Ledger::setImmutable().
+    if (!ledger->setImmutable())
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invalid map for ledger " << ledger->header().seq
+                        << "; not marking it as loaded";
+        UNREACHABLE("xrpl::finishLoadByIndexOrHash : map is invalid");
+        // Discarded rather than left un-full, since nothing gates usability on the full flag.
+        ledger.reset();
+        return;
+        // LCOV_EXCL_STOP
+    }
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->header().hash);
 

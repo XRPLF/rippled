@@ -51,7 +51,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
-    auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
+    auto const isTooLong = [&](auto const& sField, std::size_t length) -> bool {
         if (auto field = ctx.tx[~sField])
             return field->length() > length;
         return false;
@@ -106,7 +106,7 @@ DIDSet::doApply()
     Keylet const didKeylet = keylet::did(accountID_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
-        auto update = [&](auto const& sField) {
+        auto const update = [&](auto const& sField) {
             if (auto const field = ctx_.tx[~sField])
             {
                 if (field->empty())
@@ -136,7 +136,7 @@ DIDSet::doApply()
     auto const sleDID = std::make_shared<SLE>(didKeylet);
     (*sleDID)[sfAccount] = accountID_;
 
-    auto set = [&](auto const& sField) {
+    auto const set = [&](auto const& sField) {
         if (auto const field = ctx_.tx[~sField]; field && !field->empty())
             (*sleDID)[sField] = *field;
     };

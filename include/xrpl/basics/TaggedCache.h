@@ -112,6 +112,13 @@ public:
 
     /**
      * Refresh the last access time on a key if present.
+     *
+     * The lookup counts toward the hit rate that getHitRate() and rate()
+     * report.
+     *
+     * @tparam KeyComparable The type of the key to look up. The cache must be
+     *         able to compare it with `key_type`.
+     * @param key The key to look up.
      * @return `true` If the key was found.
      */
     template <class KeyComparable>
@@ -148,6 +155,24 @@ private:
     template <class Policy, class Callback = std::nullptr_t>
     bool
     canonicalizeImpl(
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback = nullptr);
+
+    /**
+     * canonicalizeImpl variant for callers that already hold `mutex_`.
+     *
+     * The unnamed `scoped_lock<MutexType> const&` parameter is proof of
+     * ownership; this overload does not acquire the lock. Use it from other
+     * methods (e.g. fetchAndModify) that need to compose canonicalize with
+     * additional work under a single critical section, without relying on
+     * recursive-mutex re-entry.
+     */
+    template <class Policy, class Callback = std::nullptr_t>
+    bool
+    canonicalizeImpl(
+        std::scoped_lock<MutexType> const&,
         key_type const& key,
         CanonicalizeClientPointerType<Policy> data,
         Policy policy,
@@ -226,6 +251,17 @@ public:
     insert(key_type const& key, T const& value) -> ReturnType
         requires(!IsKeyCache);
 
+    /**
+     * Insert a key into a key-only cache.
+     *
+     * A key already present has its last access time refreshed instead, and
+     * is not counted again in getCacheSize().
+     *
+     * @tparam ReturnType The return type. It must be constructible from
+     *         `bool`.
+     * @param key The key to insert.
+     * @return `true` if the key is new and is now tracked.
+     */
     template <class ReturnType = bool>
     auto
     insert(key_type const& key) -> ReturnType
@@ -238,9 +274,6 @@ public:
     //
     bool
     retrieve(key_type const& key, T& data);
-
-    MutexType&
-    peekMutex();
 
     std::vector<key_type>
     getKeys() const;
@@ -262,6 +295,22 @@ public:
     SharedPointerType
     fetch(key_type const& digest, Handler const& h);
     // End CachedSLEs functions.
+
+    /**
+     * Fetch or create an entry and execute a callback while holding the lock.
+     *
+     * The entry for the given key is fetched from the cache or created if it
+     * doesn't exist. The callback is then invoked with a reference to the
+     * entry while the cache mutex is still held, allowing safe modification
+     * of the cached object.
+     *
+     * @param key The key to fetch or create
+     * @param callback Function to call with the entry under lock.
+     *                 Signature: void(T&)
+     */
+    template <class Callback>
+    void
+    fetchAndModify(key_type const& key, Callback&& callback);
 
 private:
     SharedPointerType
@@ -288,9 +337,6 @@ private:
         beast::insight::Hook hook;
         beast::insight::Gauge size;
         beast::insight::Gauge hitRate;
-
-        std::size_t hits{0};
-        std::size_t misses{0};
     };
 
     class KeyOnlyEntry
@@ -366,6 +412,20 @@ private:
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
+    /**
+     * Sweep one partition of a key-only cache on its own thread.
+     *
+     * Every expired entry is erased and counted, so getCacheSize() tracks the
+     * map size as it does for a value cache.
+     *
+     * @param whenExpire Entries whose last touch is not after this time are
+     *        erased.
+     * @param now The current time. An entry stamped later than this is
+     *        clamped to it.
+     * @param partition The partition to sweep.
+     * @param allRemovals Receives the number of entries erased.
+     * @return The worker thread, which the caller joins under the lock.
+     */
     [[nodiscard]] std::thread
     sweepHelper(
         ClockType::time_point const& whenExpire,

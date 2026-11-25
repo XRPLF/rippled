@@ -12,6 +12,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
@@ -440,7 +441,7 @@ private:
         // These values are carefully chosen to do the right thing if passed
         // to SField::shouldInclude (bool)
         OmitSigningFields = false,
-        WithAllFields = true
+        WithAllFields = true,
     };
 
     void
@@ -457,9 +458,7 @@ private:
     // The remove_cv and remove_reference are necessitated by the STBitString
     // types.  Their value() returns by const ref.  We return those types
     // by value.
-    template <
-        typename T,
-        typename V = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T>().value())>>>
+    template <typename T, typename V = std::remove_cvref_t<decltype(std::declval<T>().value())>>
     V
     getFieldByValue(SField const& field) const;
 

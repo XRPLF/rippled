@@ -26,7 +26,7 @@ NFTokenBurn::preflight(PreflightContext const& ctx)
 TER
 NFTokenBurn::preclaim(PreclaimContext const& ctx)
 {
-    auto const owner = [&ctx]() {
+    auto const owner = [&ctx] {
         if (ctx.tx.isFieldPresent(sfOwner))
             return ctx.tx.getAccountID(sfOwner);
 

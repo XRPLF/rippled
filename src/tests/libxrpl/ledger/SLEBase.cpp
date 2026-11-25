@@ -8,7 +8,6 @@
 #include <xrpl/ledger/entries/AMMEntry.h>  // IWYU pragma: keep
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>       // IWYU pragma: keep
-#include <xrpl/ledger/entries/BridgeEntry.h>           // IWYU pragma: keep
 #include <xrpl/ledger/entries/CheckEntry.h>            // IWYU pragma: keep
 #include <xrpl/ledger/entries/CredentialEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/DIDEntry.h>              // IWYU pragma: keep
@@ -33,11 +32,10 @@
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
-#include <xrpl/ledger/entries/TransactionProposalEntry.h>              // IWYU pragma: keep
-#include <xrpl/ledger/entries/VaultEntry.h>                            // IWYU pragma: keep
-#include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
-#include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/TransactionProposalEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/VaultEntry.h>                // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -52,14 +50,15 @@
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
-// The entry classes have no consumers yet, and an un-instantiated class
-// template is barely type-checked. Instantiate every one explicitly so the
-// compiler actually checks them. Keep this block even once real call sites
-// exist: it is what catches a new ledger entry type being added without its
-// wrapper class, or the wrapper class existing but never actually being used.
+// An un-instantiated class template is barely type-checked. Name every entry
+// class in a static_assert below so its class definition is instantiated and
+// type-checked; the per-type suites check the member bodies. Keep this block
+// even once real call sites exist: it is what catches a new ledger entry type
+// being added without its wrapper class.
 //
 // Driving this off ledger_entries.macro keeps it exhaustive by construction:
 // adding a ledger entry type without adding its entry class stops compiling
@@ -76,12 +75,15 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
+// A static_assert naming each class instantiates its definition (see #8357).
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
-    template class name##Entry<ReadView>;                                                      \
-    template class name##Entry<ApplyView>;                                                     \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
-        #name "Entry must be bound to " #tag);
+        #name "Entry must be bound to " #tag);                                                 \
+    static_assert(                                                                             \
+        std::is_constructible_v<name##Entry<ReadView>, Keylet const&, ReadView const&> &&      \
+            std::is_constructible_v<name##Entry<ApplyView>, Keylet const&, ApplyView&>,        \
+        #name "Entry must be constructible from a Keylet and a view");
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -119,6 +121,28 @@ static_assert(
 static_assert(
     std::is_convertible_v<AccountRootEntryW, ReadOnlySLE>,
     "typed -> generic widening must keep working");
+
+// Read-only entries are copyable and assignable; writable entries are
+// move-only.
+static_assert(
+    std::is_copy_assignable_v<ReadOnlySLE> && std::is_move_assignable_v<ReadOnlySLE>,
+    "read-only entries must be copy and move assignable");
+static_assert(
+    std::is_copy_assignable_v<AccountRootEntryR>,
+    "typed read-only entries must be copy assignable");
+static_assert(
+    !std::is_copy_constructible_v<WritableSLE>,
+    "writable entries must not be copy constructible");
+static_assert(
+    !std::is_copy_assignable_v<WritableSLE>,
+    "writable entries must not be copy assignable");
+static_assert(std::is_move_assignable_v<WritableSLE>, "writable entries must be move assignable");
+static_assert(
+    !std::is_copy_assignable_v<AccountRootEntryW>,
+    "typed writable entries must not be copy assignable");
+static_assert(
+    std::is_move_assignable_v<AccountRootEntryW>,
+    "typed writable entries must be move assignable");
 
 // Detection idioms for the writable interface. These have to go through a
 // template parameter: a requires-expression over a concrete type is checked
@@ -266,7 +290,7 @@ TEST_F(SLEBaseTests, writable_lifecycle)
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
-    // Entry that does not exist yet: newSLE() -> insert().
+    // Entry that does not exist yet: newSle() -> insertIntoView().
     {
         TicketEntryW ticket(keylet::ticket(alice_.id(), SeqProxy::rawTicket(1)), av);
         EXPECT_FALSE(ticket.exists());
@@ -274,20 +298,20 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         EXPECT_EQ(ticket.type(), ltTICKET);
         EXPECT_EQ(ticket.keylet().type, ltTICKET);
 
-        ticket.newSLE();
+        ticket.newSle();
         EXPECT_TRUE(ticket.exists());
-        ticket.insert();
-        ticket.update();
+        ticket.insertIntoView();
+        ticket.updateInView();
 
         // Erasing an entry inserted in this same view drops it outright.
-        ticket.erase();
+        ticket.eraseFromView();
         EXPECT_FALSE(ticket.exists());
     }
 
-    // Entry that already exists: update() is what promotes it from a bare
+    // Entry that already exists: updateInView() is what promotes it from a bare
     // peek to a real change. ApplyViewImpl::size() counts Insert, Modify and
     // Erase but not Cache, so it shows the difference: building the entry
-    // only peeks, and the write is invisible to the view until update().
+    // only peeks, and the write is invisible to the view until updateInView().
     {
         ApplyViewImpl fresh(&env_.getClosedLedger(), TapNone);
 
@@ -298,11 +322,11 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         account->setFieldU32(sfSequence, account->getFieldU32(sfSequence) + 1);
         EXPECT_EQ(fresh.size(), 0);
 
-        account.update();
+        account.updateInView();
         EXPECT_EQ(fresh.size(), 1);
 
-        // update() is idempotent: the entry is already a Modify.
-        account.update();
+        // updateInView() is idempotent: the entry is already a Modify.
+        account.updateInView();
         EXPECT_EQ(fresh.size(), 1);
     }
 
@@ -314,9 +338,46 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         AccountRootEntryW account(alice_.id(), av);
         EXPECT_TRUE(account.exists());
 
-        account.erase();
+        account.eraseFromView();
         EXPECT_FALSE(account.exists());
     }
+}
+
+TEST_F(SLEBaseTests, assignment)
+{
+    Account const carol{"carol"};
+    env_.createAccount(carol, XRP(10'000));
+    ApplyViewImpl first(&env_.getClosedLedger(), TapNone);
+    ApplyViewImpl second(&env_.getClosedLedger(), TapNone);
+
+    // Read-only: assigning an entry built over another view changes both the
+    // view and the SLE.
+    AccountRootEntryR readOnly(alice_.id(), first);
+    AccountRootEntryR const other(carol.id(), second);
+    ASSERT_TRUE(readOnly.exists());
+    ASSERT_TRUE(other.exists());
+    EXPECT_EQ(&readOnly.readView(), static_cast<ReadView const*>(&first));
+
+    readOnly = other;
+    EXPECT_EQ(&readOnly.readView(), static_cast<ReadView const*>(&second));
+    EXPECT_EQ(readOnly.rawSle(), other.rawSle());
+    EXPECT_EQ(readOnly.key(), keylet::account(carol.id()).key);
+
+    // Writable: move-assigning changes the apply view, so updateInView()
+    // reaches the new view and not the old one.
+    AccountRootEntryW writable(alice_.id(), first);
+    AccountRootEntryW donor(carol.id(), second);
+    ASSERT_TRUE(writable.exists());
+    ASSERT_TRUE(donor.exists());
+
+    writable = std::move(donor);
+    EXPECT_EQ(&writable.applyView(), &second);
+    EXPECT_EQ(writable.key(), keylet::account(carol.id()).key);
+
+    writable->setFieldU32(sfSequence, writable->getFieldU32(sfSequence) + 1);
+    writable.updateInView();
+    EXPECT_EQ(first.size(), 0);
+    EXPECT_EQ(second.size(), 1);
 }
 
 TEST_F(SLEBaseTests, conversion)
@@ -404,25 +465,25 @@ TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
 
     EXPECT_THROW(std::ignore = missing.operator->(), std::logic_error);
     EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
-    EXPECT_THROW(missing.insert(), std::logic_error);
-    EXPECT_THROW(missing.update(), std::logic_error);
-    EXPECT_THROW(missing.erase(), std::logic_error);
+    EXPECT_THROW(missing.insertIntoView(), std::logic_error);
+    EXPECT_THROW(missing.updateInView(), std::logic_error);
+    EXPECT_THROW(missing.eraseFromView(), std::logic_error);
 
     // keylet() and key() are the exception: a writable entry keeps the keylet
-    // it was built from, so they stay valid before newSLE().
+    // it was built from, so they stay valid before newSle().
     EXPECT_EQ(missing.key(), keylet::account(bob_.id()).key);
 
-    // newSLE() is the inverse -- it throws when the entry *does* exist,
+    // newSle() is the inverse -- it throws when the entry *does* exist,
     // rather than silently dropping the SLE already held.
-    missing.newSLE();
+    missing.newSle();
     EXPECT_TRUE(missing.exists());
-    EXPECT_THROW(missing.newSLE(), std::logic_error);
+    EXPECT_THROW(missing.newSle(), std::logic_error);
 
     // And once erased, the entry is empty again and throws as before.
-    missing.insert();
-    missing.erase();
+    missing.insertIntoView();
+    missing.eraseFromView();
     EXPECT_FALSE(missing.exists());
-    EXPECT_THROW(missing.update(), std::logic_error);
+    EXPECT_THROW(missing.updateInView(), std::logic_error);
 }
 
 }  // namespace test

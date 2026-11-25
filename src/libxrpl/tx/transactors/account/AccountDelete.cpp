@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -246,7 +247,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
-            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+            if (!DepositPreauthEntryR(dst, account, ctx.view))
                 return tecNO_PERMISSION;
         }
     }
@@ -325,7 +326,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        auto const sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.

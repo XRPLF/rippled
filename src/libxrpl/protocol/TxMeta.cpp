@@ -124,7 +124,7 @@ TxMeta::getAffectedAccounts() const
 
                         if (lim != nullptr)
                         {
-                            auto issuer = lim->getIssuer();
+                            auto const issuer = lim->getIssuer();
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
@@ -135,7 +135,7 @@ TxMeta::getAffectedAccounts() const
                         auto mptID = dynamic_cast<STBitString<192> const*>(&field);
                         if (mptID != nullptr)
                         {
-                            auto issuer = MPTIssue(mptID->value()).getIssuer();
+                            auto const issuer = MPTIssue(mptID->value()).getIssuer();
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
@@ -226,7 +226,7 @@ TxMeta::getAffectedNode(UInt256 const& node)
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::TxMeta::getAffectedNode(UInt256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
-    return *(nodes_.begin());  // Silence compiler warning.
+    return *nodes_.begin();  // Silence compiler warning.
     // LCOV_EXCL_STOP
 }
 
