@@ -52,6 +52,16 @@ json::Value
 cancel(Account const& account, uint256 const& proposalID);
 
 /**
+ * @brief Build a TransactionProposalExecute naming the proposal to apply.
+ *
+ * @param executor The account submitting the transaction and paying its fees.
+ * @param proposalID The ID of the TransactionProposal to execute.
+ * @return The TransactionProposalExecute JSON object.
+ */
+json::Value
+execute(Account const& executor, uint256 const& proposalID);
+
+/**
  * @brief Conditions that check what a proposal transaction did to the ledger.
  *
  * Each is named for the generator it verifies, so a submission and its check

@@ -36,6 +36,7 @@ namespace {
 constexpr auto kProposalTxTypes = std::to_array<TxType>({
     ttTRANSACTION_PROPOSAL_CREATE,
     ttTRANSACTION_PROPOSAL_CANCEL,
+    ttTRANSACTION_PROPOSAL_EXECUTE,
 });
 
 }  // namespace
@@ -81,6 +82,56 @@ isValidProposalTxnType(STObject const& proposedTx)
     }
 
     return true;
+}
+
+namespace {
+
+bool
+isEmptySignature(STObject const& sig)
+{
+    return !sig.isFieldPresent(sfTxnSignature) || sig.getFieldVL(sfTxnSignature).empty();
+}
+
+// One slot: a direct approval (a key) or shares (Signers), never both or
+// neither, and no signature bytes anywhere.
+bool
+isApprovalSlot(STObject const& slot)
+{
+    if (!isEmptySignature(slot))
+        return false;
+
+    bool const hasKey = !slot.getFieldVL(sfSigningPubKey).empty();
+    if (!slot.isFieldPresent(sfSigners))
+        return hasKey;
+
+    auto const& signers = slot.getFieldArray(sfSigners);
+    if (hasKey || signers.empty())
+        return false;
+    return std::ranges::all_of(signers, [](STObject const& signer) {
+        return isEmptySignature(signer) && !signer.getFieldVL(sfSigningPubKey).empty();
+    });
+}
+
+}  // namespace
+
+bool
+hasOnlyApprovals(STObject const& proposedTx)
+{
+    if (!isApprovalSlot(proposedTx))
+        return false;
+
+    for (auto const* field :
+         std::array<SField const*, 2>{&sfCounterpartySignature, &sfSponsorSignature})
+    {
+        if (proposedTx.isFieldPresent(*field) && !isApprovalSlot(proposedTx.getFieldObject(*field)))
+            return false;
+    }
+
+    if (!proposedTx.isFieldPresent(sfBatchSigners))
+        return true;
+
+    auto const& batchSigners = proposedTx.getFieldArray(sfBatchSigners);
+    return std::ranges::all_of(batchSigners, isApprovalSlot);
 }
 
 bool

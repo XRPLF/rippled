@@ -103,7 +103,18 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID;
     }
 
-    if ((ctx.tx.getFlags() & flagMask) != 0u)
+    auto txFlags = ctx.tx.getFlags();
+
+    // tfProposedTxn is valid only on the proposed transaction of a
+    // TransactionProposal, while it is created or executed, and never on a
+    // Batch inner. Execute applies only transactions that carry it.
+    if (ctx.rules.enabled(featureCosign) && (ctx.flags & TapBatch) == 0u &&
+        (ctx.flags & (TapProposal | TapProposalExecute)) != 0u && !ctx.tx.isFlag(tfInnerBatchTxn))
+        txFlags &= ~tfProposedTxn;
+    if ((ctx.flags & TapProposalExecute) != 0u && !ctx.tx.isFlag(tfProposedTxn))
+        return temINVALID_FLAG;
+
+    if ((txFlags & flagMask) != 0u)
     {
         JLOG(ctx.j.debug()) << ctx.tx.peekAtField(sfTransactionType).getFullText()
                             << ": invalid flags.";
@@ -308,6 +319,19 @@ Transactor::preflight2(PreflightContext const& ctx)
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
+    }
+
+    // A proposed transaction carries approvals, not signatures: its slots
+    // hold keys with empty TxnSignatures. The cryptographic check ran on each
+    // TransactionProposalSign; what is left is the key-to-account check in
+    // preclaim (checkSign), which runs against the current ledger.
+    if ((ctx.flags & TapProposalExecute) != 0u)
+    {
+        if (!ctx.rules.enabled(featureCosign) || !ctx.tx.isFlag(tfProposedTxn))
+            return temINVALID_FLAG;
+        if (!proposal::hasOnlyApprovals(ctx.tx))
+            return temBAD_SIGNATURE;
+        return tesSUCCESS;
     }
 
     // Skip the signature check on batch inner transactions. preflight1 already
@@ -521,7 +545,8 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if ((ctx.flags & TapBatch) != 0u)
+    // Batch inners and proposed transactions are paid for by their carrier.
+    if ((ctx.flags & (TapBatch | TapProposalExecute)) != 0u)
     {
         if (feePaid == beast::kZero)
             return tesSUCCESS;

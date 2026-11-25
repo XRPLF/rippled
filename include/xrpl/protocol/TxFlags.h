@@ -45,6 +45,12 @@ inline constexpr FlagValue tfInnerBatchTxn = 0x40000000;
 inline constexpr FlagValue tfUniversal = tfFullyCanonicalSig | tfInnerBatchTxn;
 inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 
+// Marks the proposed transaction of a TransactionProposal (Cosign). It is not
+// part of tfUniversal: preflight0 accepts it only while a proposal is being
+// created (TapProposal) or executed (TapProposalExecute), so every other path
+// still rejects it through the ordinary flag mask.
+inline constexpr FlagValue tfProposedTxn = 0x20000000;
+
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")
 #pragma push_macro("VALUE_TO_MAP")
