@@ -100,7 +100,7 @@ PermissionedDomainSet::doApply()
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
-        slePd.update();
+        slePd.updateInView();
     }
     else
     {
@@ -116,7 +116,7 @@ PermissionedDomainSet::doApply()
         auto const seq = fixEnabled ? ctx_.tx.getSeqProxy()
                                     : SeqProxy::rawSequence(ctx_.tx.getFieldU32(sfSequence));
         PermissionedDomainEntryW slePd(accountID_, seq, view());
-        slePd.newSLE();
+        slePd.newSle();
 
         slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, seq.value());
@@ -129,7 +129,7 @@ PermissionedDomainSet::doApply()
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
         increaseOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
-        slePd.insert();
+        slePd.insertIntoView();
     }
 
     return tesSUCCESS;

@@ -70,7 +70,7 @@ PermissionedDomainDelete::doApply()
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
     decreaseOwnerCountForObject(view(), ownerSle, slePd.mutableRawSle(), 1, ctx_.journal);
-    slePd.erase();
+    slePd.eraseFromView();
 
     return tesSUCCESS;
 }
