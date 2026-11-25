@@ -4467,8 +4467,8 @@ public:
         // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
         // restore the owner's OwnerCount to the legacy weight.
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
-            auto account = std::make_shared<SLE>(*AccountRootEntryR(alice.id(), view));
+            auto const signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto const account = std::make_shared<SLE>(*AccountRootEntryR(alice.id(), view));
             signerList->clearFlag(lsfOneOwnerCount);
             account->setFieldU32(sfOwnerCount, legacyWeight);
             view.rawReplace(signerList);
