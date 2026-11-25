@@ -556,7 +556,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Vault object state changes
-    vaultSle.update();
+    vaultSle.updateInView();
 
     if (fixedPrecision)
     {
