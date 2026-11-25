@@ -147,7 +147,7 @@ public:
         else
         {
             // old behavior: can create an offer if balance allows, regardless
-            // ot authorization
+            // of authorization
             env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         }
     }
@@ -251,7 +251,7 @@ public:
             env.close();
             //
 
-            // Reseting trustline to delete it. This allows to check if
+            // Resetting trustline to delete it. This allows to check if
             // already existing offers handled correctly
             env(trust(a2, usd(0)));
             env.close();
@@ -489,7 +489,7 @@ public:
         env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
-        // Reseting trustline to delete it. This allows to check if
+        // Resetting trustline to delete it. This allows to check if
         // already existing offers handled correctly
         env(trust(a2, usd(0)));
         env.close();
