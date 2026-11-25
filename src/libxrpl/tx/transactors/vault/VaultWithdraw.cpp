@@ -575,7 +575,7 @@ VaultWithdraw::doApply()
     {
         return ter;  // LCOV_EXCL_LINE
     }
-    vault.update();
+    vault.updateInView();
 
     auto const& vaultAccount = vault->at(sfAccount);
 
