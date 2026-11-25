@@ -88,7 +88,7 @@ public:
     [[nodiscard]] bool
     isIndividualFrozen(AccountID const& account, AccountID const& issuer) const
     {
-        return (*this)->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
+        return this->sleRef().isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
     }
 };
 
