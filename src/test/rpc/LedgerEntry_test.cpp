@@ -3098,6 +3098,137 @@ class LedgerEntry_test : public beast::unit_test::Suite
     }
 
 public:
+    /**
+     * The malformed arms of the object-shaped entry types that nothing else
+     * feeds.
+     *
+     * Each arm names its own token, and the tokens and messages asserted here
+     * are literals, so a helper handed the wrong code fails the case that
+     * reaches it.
+     */
+    void
+    testMalformedTypedFields()
+    {
+        testcase("Malformed typed fields");
+        using namespace test::jtx;
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // A 64-hex string parses as a UInt256, so the `loan` cases below can reach the field
+        // after it.
+        static constexpr char const* kHash =
+            "1111111111111111111111111111111111111111111111111111111111111111";
+
+        {
+            // `dir_root` present but not a hash. The arm above requires exactly one of `owner`
+            // and `dir_root`, so this is reached only with `dir_root` named.
+            json::Value jvParams;
+            jvParams[jss::directory] = json::ValueType::Object;
+            jvParams[jss::directory][jss::dir_root] = "notahash";
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr, "malformedDirRoot", RpcInvalidParams, "Invalid field 'dir_root', not hash.");
+        }
+        {
+            // `loan_broker` as an object naming no `owner`.
+            json::Value jvParams;
+            jvParams[jss::loan_broker] = json::ValueType::Object;
+            jvParams[jss::loan_broker][jss::seq] = 1;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", RpcInvalidParams, "Missing field 'owner'.");
+        }
+        {
+            // `loan_broker` naming an `owner` that parses, so the `seq` below it is reached.
+            json::Value jvParams;
+            jvParams[jss::loan_broker] = json::ValueType::Object;
+            jvParams[jss::loan_broker][jss::owner] = alice.human();
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", RpcInvalidParams, "Missing field 'seq'.");
+        }
+        {
+            // `loan` as an object naming no `loan_broker_id`.
+            json::Value jvParams;
+            jvParams[jss::loan] = json::ValueType::Object;
+            jvParams[jss::loan][jss::loan_seq] = 1;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr, "malformedRequest", RpcInvalidParams, "Missing field 'loan_broker_id'.");
+        }
+        {
+            // `loan` naming a `loan_broker_id` that parses, so the `loan_seq` below it is reached.
+            json::Value jvParams;
+            jvParams[jss::loan] = json::ValueType::Object;
+            jvParams[jss::loan][jss::loan_broker_id] = kHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", RpcInvalidParams, "Missing field 'loan_seq'.");
+        }
+        {
+            // `loan_broker` naming an `owner` that is not an account.
+            json::Value jvParams;
+            jvParams[jss::loan_broker] = json::ValueType::Object;
+            jvParams[jss::loan_broker][jss::owner] = "notanaccount";
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr, "malformedOwner", RpcInvalidParams, "Invalid field 'owner', not AccountID.");
+        }
+        {
+            // `loan_broker` naming a valid `owner` and a `seq` that is not a number.
+            json::Value jvParams;
+            jvParams[jss::loan_broker] = json::ValueType::Object;
+            jvParams[jss::loan_broker][jss::owner] = alice.human();
+            jvParams[jss::loan_broker][jss::seq] = "notanumber";
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr, "malformedSeq", RpcInvalidParams, "Invalid field 'seq', not number.");
+        }
+        {
+            // `loan` naming a `loan_broker_id` that is not a hash.
+            json::Value jvParams;
+            jvParams[jss::loan] = json::ValueType::Object;
+            jvParams[jss::loan][jss::loan_broker_id] = "notahash";
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr,
+                "malformedBroker",
+                RpcInvalidParams,
+                "Invalid field 'loan_broker_id', not Hash256.");
+        }
+        {
+            // `loan` naming a valid `loan_broker_id` and a `loan_seq` that is not a number.
+            json::Value jvParams;
+            jvParams[jss::loan] = json::ValueType::Object;
+            jvParams[jss::loan][jss::loan_broker_id] = kHash;
+            jvParams[jss::loan][jss::loan_seq] = "notanumber";
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr, "malformedSeq", RpcInvalidParams, "Invalid field 'loan_seq', not number.");
+        }
+        {
+            // `mpt_issuance` that is not a Hash192. A hash of the wrong width reaches the same
+            // arm as text does.
+            json::Value jvParams;
+            jvParams[jss::mpt_issuance] = kHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(
+                jrr,
+                "malformedMPTokenIssuance",
+                RpcInvalidParams,
+                "Invalid field 'mpt_issuance', not Hash192.");
+        }
+    }
+
     void
     run() override
     {
@@ -3132,6 +3263,7 @@ public:
         testFixed();
         testHashes();
         testCLI();
+        testMalformedTypedFields();
     }
 };
 
