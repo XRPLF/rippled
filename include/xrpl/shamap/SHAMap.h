@@ -18,6 +18,8 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/container/small_vector.hpp>
+
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
@@ -170,6 +172,14 @@ public:
      * The depth of the hash map: data is only present in the leaves
      */
     static constexpr unsigned int kLeafDepth = 64;
+
+    /**
+     * Path entries a NodePathStack holds without allocating. With hashed keys,
+     * a path holds about log16(leaf count) + 2 entries: a mean of 7.5-8 and a
+     * maximum of 13-14 for 10M-30M leaves. About 2 paths in a million are
+     * deeper than 12; those spill to the heap.
+     */
+    static constexpr std::size_t kInlinePathDepth = 12;
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
@@ -621,7 +631,8 @@ private:
         }
 
     private:
-        std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>> stack_;
+        using Entry = std::pair<SHAMapTreeNodePtr, SHAMapNodeID>;
+        std::stack<Entry, boost::container::small_vector<Entry, kInlinePathDepth>> stack_;
     };
 
     using DeltaRef =

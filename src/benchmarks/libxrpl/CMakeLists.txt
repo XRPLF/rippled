@@ -20,3 +20,7 @@ target_link_libraries(
 xrpl_add_benchmark(nodestore)
 target_link_libraries(xrpl.bench.nodestore PRIVATE xrpl.imports.bench)
 add_dependencies(xrpl.benchmarks xrpl.bench.nodestore)
+
+xrpl_add_benchmark(shamap)
+target_link_libraries(xrpl.bench.shamap PRIVATE xrpl.imports.bench)
+add_dependencies(xrpl.benchmarks xrpl.bench.shamap)
