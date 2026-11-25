@@ -20,6 +20,8 @@ URL:      https://github.com/XRPLF/rippled
 
 ExclusiveArch: x86_64 aarch64
 BuildRequires: systemd-rpm-macros
+# The default config fetches validator lists over verified HTTPS.
+Requires: ca-certificates
 
 # A variant owns the same paths, so it stands in for the plain package.
 %if "%{?pkg_variant}" != ""

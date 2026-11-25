@@ -74,7 +74,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 {
     XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : valid input job type");
 
-    auto iter(jobData_.find(type));
+    auto const iter(jobData_.find(type));
     XRPL_ASSERT(
         iter != jobData_.end(), "xrpl::JobQueue::addRefCountedJob : job type found in jobs");
     if (iter == jobData_.end())
@@ -92,7 +92,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 
     {
         std::scoped_lock const lock(mutex_);
-        auto result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
+        auto const result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
         auto const& job = *result.first;
 
         JobType const type(job.getType());

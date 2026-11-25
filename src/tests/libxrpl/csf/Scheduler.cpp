@@ -14,11 +14,11 @@ TEST(SchedulerTest, scheduler)
 
     scheduler.in(1s, [&] { seen.insert(1); });
     scheduler.in(2s, [&] { seen.insert(2); });
-    auto token = scheduler.in(3s, [&] { seen.insert(3); });
+    auto const token = scheduler.in(3s, [&] { seen.insert(3); });
     scheduler.at(scheduler.now() + 4s, [&] { seen.insert(4); });
     scheduler.at(scheduler.now() + 8s, [&] { seen.insert(8); });
 
-    auto start = scheduler.now();
+    auto const start = scheduler.now();
 
     // Process first event
     EXPECT_TRUE(seen.empty());

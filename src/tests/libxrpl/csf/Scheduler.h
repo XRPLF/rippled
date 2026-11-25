@@ -312,7 +312,7 @@ inline auto
 Scheduler::QueueType::erase(iterator iter) -> ByWhenSet::iterator
 {
     auto& e = *iter;
-    auto next = byWhen_.erase(iter);
+    auto const next = byWhen_.erase(iter);
     e.~Event();
     alloc_->deallocate(&e, sizeof(e));
     return next;

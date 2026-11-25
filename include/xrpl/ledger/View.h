@@ -164,7 +164,7 @@ getCandidateLedger(LedgerIndex requested)
 areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason);
 
 [[nodiscard]] bool
@@ -172,7 +172,7 @@ areCompatible(
     UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason);
 
 //------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    SLE::pointer& object,
+    SLE::pointer const& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /**
@@ -265,6 +265,13 @@ canWithdraw(
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx);
 
+/**
+ * Pays out a withdrawal from a vault or loan broker pseudo-account.
+ *
+ * `sourceAmount` leaves `sourceAcct` and `destinationAmount` reaches `dstAcct`.
+ * The two differ only when the withdrawal carries a transfer fee; the
+ * difference is the fee and is settled through the issuer.
+ */
 [[nodiscard]] TER
 doWithdraw(
     ApplyViewContext ctx,
@@ -272,7 +279,8 @@ doWithdraw(
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
-    STAmount const& amount,
+    STAmount const& destinationAmount,
+    STAmount const& sourceAmount,
     beast::Journal j);
 
 /**

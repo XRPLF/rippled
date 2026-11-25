@@ -455,7 +455,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // pool MPT allows transfers (lsfMPTCanTransfer); issuer-involving
         // transfers are always permitted. The check fires on the redeem step
         // against the AMM account via canTransferLPToken().
-        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
+        auto const testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, alice_, bob_);
             env.close();
@@ -517,7 +517,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // the spendable balance in accountHolds, just as isLPTokenFrozen does),
         // so an offer to sell it cannot be funded - the same tecUNFUNDED_OFFER
         // outcome as freezing a pool asset (see testOfferCreation).
-        auto testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
+        auto const testLPTokenTransfer = [&](std::uint32_t mptFlags, bool poolXrpToBtc) {
             Env env{*this, features};
             env.fund(XRP(30'000), gw_, carol_);
             env.close();

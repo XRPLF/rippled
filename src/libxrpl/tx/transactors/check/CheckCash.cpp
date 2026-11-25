@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -62,8 +63,8 @@ CheckCash::preflight(PreflightContext const& ctx)
 
     if (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: "
-                              "does not specify exactly one of Amount and DeliverMin.";
+        JLOG(ctx.j.debug()) << "Malformed transaction: "
+                               "does not specify exactly one of Amount and DeliverMin.";
         return temMALFORMED;
     }
 
@@ -71,13 +72,13 @@ CheckCash::preflight(PreflightContext const& ctx)
     STAmount const value{optAmount ? *optAmount : *optDeliverMin};
     if (!isLegalNet(value) || value.signum() <= 0)
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: bad amount: " << value.getFullText();
+        JLOG(ctx.j.debug()) << "Malformed transaction: bad amount: " << value.getFullText();
         return temBAD_AMOUNT;
     }
 
     if (badAsset() == value.asset())
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
+        JLOG(ctx.j.debug()) << "Malformed transaction: Bad currency.";
         return temBAD_CURRENCY;
     }
 
@@ -87,10 +88,10 @@ CheckCash::preflight(PreflightContext const& ctx)
 TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntryR const sleCheck(ctx.tx[sfCheckID], ctx.view);
     if (!sleCheck)
     {
-        JLOG(ctx.j.warn()) << "Check does not exist.";
+        JLOG(ctx.j.debug()) << "Check does not exist.";
         return tecNO_ENTRY;
     }
 
@@ -98,7 +99,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     AccountID const dstId = sleCheck->at(sfDestination);
     if (ctx.tx[sfAccount] != dstId)
     {
-        JLOG(ctx.j.warn()) << "Cashing a check with wrong Destination.";
+        JLOG(ctx.j.debug()) << "Cashing a check with wrong Destination.";
         return tecNO_PERMISSION;
     }
     AccountID const srcId = sleCheck->at(sfAccount);
@@ -117,7 +118,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
-            JLOG(ctx.j.warn()) << "Malformed transaction: source or destination not in ledger";
+            JLOG(ctx.j.debug()) << "Malformed transaction: source or destination not in ledger";
             return tecNO_ENTRY;
         }
 
@@ -125,24 +126,26 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
-            JLOG(ctx.j.warn()) << "Malformed transaction: DestinationTag required in check.";
+            JLOG(ctx.j.debug()) << "Malformed transaction: DestinationTag required in check.";
             return tecDST_TAG_NEEDED;
         }
     }
 
     if (hasExpired(ctx.view, sleCheck->at(~sfExpiration)))
     {
-        JLOG(ctx.j.warn()) << "Cashing a check that has already expired.";
+        JLOG(ctx.j.debug()) << "Cashing a check that has already expired.";
         return tecEXPIRED;
     }
 
     {
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
-        STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
-            return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        STAmount const value{
+            [](STTx const& tx) {
+                auto const optAmount = tx[~sfAmount];
+                return optAmount ? *optAmount : tx[sfDeliverMin];
+            }(ctx.tx),
+        };
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
         // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
@@ -152,31 +155,33 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
-            JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
+            JLOG(ctx.j.debug()) << "Check cash does not match check currency.";
             return temMALFORMED;
         }
         AccountID const issuerId{value.getIssuer()};
         if (issuerId != sendMax.getIssuer())
         {
-            JLOG(ctx.j.warn()) << "Check cash does not match check issuer.";
+            JLOG(ctx.j.debug()) << "Check cash does not match check issuer.";
             return temMALFORMED;
         }
         if (value > sendMax)
         {
-            JLOG(ctx.j.warn()) << "Check cashed for more than check sendMax.";
+            JLOG(ctx.j.debug()) << "Check cashed for more than check sendMax.";
             return tecPATH_PARTIAL;
         }
 
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{accountFunds(
-                ctx.view,
-                sleCheck->at(sfAccount),
-                value,
-                FreezeHandling::ZeroIfFrozen,
-                AuthHandling::ZeroIfUnauthorized,
-                ctx.j)};
+            STAmount availableFunds{
+                accountFunds(
+                    ctx.view,
+                    sleCheck->at(sfAccount),
+                    value,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    ctx.j),
+            };
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
@@ -187,7 +192,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
             if (value > availableFunds)
             {
-                JLOG(ctx.j.warn()) << "Check cashed for more than owner's balance.";
+                JLOG(ctx.j.debug()) << "Check cashed for more than owner's balance.";
                 return tecPATH_PARTIAL;
             }
         }
@@ -204,9 +209,9 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
                     {
-                        JLOG(ctx.j.warn()) << "Can't receive IOUs from "
-                                              "non-existent issuer: "
-                                           << to_string(issuerId);
+                        JLOG(ctx.j.debug()) << "Can't receive IOUs from "
+                                               "non-existent issuer: "
+                                            << to_string(issuerId);
                         return tecNO_ISSUER;
                     }
 
@@ -231,8 +236,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                         if (!isAuthorized)
                         {
-                            JLOG(ctx.j.warn()) << "Can't receive IOUs from "
-                                                  "issuer without auth.";
+                            JLOG(ctx.j.debug()) << "Can't receive IOUs from "
+                                                   "issuer without auth.";
                             return tecNO_AUTH;
                         }
                     }
@@ -246,7 +251,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     // not be frozen.
                     if (isFrozen(ctx.view, dstId, currency, issuerId))
                     {
-                        JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
+                        JLOG(ctx.j.debug()) << "Cashing a check to a frozen trustline.";
                         return tecFROZEN;
                     }
 
@@ -256,29 +261,29 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
                     {
-                        JLOG(ctx.j.warn()) << "Can't receive MPTs from "
-                                              "non-existent issuer: "
-                                           << to_string(issuerId);
+                        JLOG(ctx.j.debug()) << "Can't receive MPTs from "
+                                               "non-existent issuer: "
+                                            << to_string(issuerId);
                         return tecNO_ISSUER;
                     }
 
                     if (auto const err = requireAuth(ctx.view, issue, dstId, AuthType::WeakAuth);
                         !isTesSuccess(err))
                     {
-                        JLOG(ctx.j.warn()) << "Cashing a check to a MPT requiring auth.";
+                        JLOG(ctx.j.debug()) << "Cashing a check to a MPT requiring auth.";
                         return err;
                     }
 
                     if (isFrozen(ctx.view, dstId, issue))
                     {
-                        JLOG(ctx.j.warn()) << "Cashing a check to a frozen MPT.";
+                        JLOG(ctx.j.debug()) << "Cashing a check to a frozen MPT.";
                         return tecLOCKED;
                     }
 
                     if (auto const err = canTransfer(ctx.view, issue, srcId, dstId);
                         !isTesSuccess(err))
                     {
-                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        JLOG(ctx.j.debug()) << "MPT transfer is disabled.";
                         return err;
                     }
 
@@ -296,7 +301,7 @@ CheckCash::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+    CheckEntryW sleCheck(ctx_.tx[sfCheckID], psb, j_);
     if (!sleCheck)
     {
         // LCOV_EXCL_START
@@ -314,7 +319,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck);
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck.rawSle());
 
     // Preclaim already checked that source has at least the requested
     // funds.
@@ -381,7 +386,7 @@ CheckCash::doApply()
             // higher than any real delivery as the request. MPTs are
             // bounded integral amounts, so use the maximum output the check
             // can actually deliver without exceeding SendMax.
-            auto const maxDeliverMin = [&]() {
+            auto const maxDeliverMin = [&] {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
@@ -403,7 +408,8 @@ CheckCash::doApply()
                     });
             };
             STAmount const flowDeliver{
-                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount),
+            };
 
             auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
             auto const sponsorSle = getTxReserveSponsor(applyViewContext);
@@ -412,7 +418,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkDstReserve = [&]() -> SLE::pointer {
+            auto checkDstReserve = [&] -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -529,7 +535,7 @@ CheckCash::doApply()
                         auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
-                            auto sleDst = checkDstReserve();
+                            auto const sleDst = checkDstReserve();
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
@@ -548,7 +554,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit] {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
@@ -575,7 +581,7 @@ CheckCash::doApply()
 
             if (!isTesSuccess(result.result()))
             {
-                JLOG(ctx_.journal.warn()) << "flow failed when cashing check.";
+                JLOG(ctx_.journal.debug()) << "flow failed when cashing check.";
                 return result.result();
             }
 
@@ -584,7 +590,7 @@ CheckCash::doApply()
             {
                 if (result.actualAmountOut < *optDeliverMin)
                 {
-                    JLOG(ctx_.journal.warn()) << "flow did not produce DeliverMin.";
+                    JLOG(ctx_.journal.debug()) << "flow did not produce DeliverMin.";
                     return tecPATH_PARTIAL;
                 }
                 ctx_.deliver(result.actualAmountOut);
@@ -594,7 +600,7 @@ CheckCash::doApply()
             // for DeliverMin.
             ctx_.deliver(result.actualAmountOut);
 
-            sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+            sleCheck = CheckEntryW(ctx_.tx[sfCheckID], psb, j_);
         }
     }
 
@@ -620,10 +626,10 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    decreaseOwnerCountForObject(psb, srcId, sleCheck, 1, viewJ);
+    decreaseOwnerCountForObject(psb, srcId, sleCheck.mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    psb.erase(sleCheck);
+    sleCheck.eraseFromView();
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;
