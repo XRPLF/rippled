@@ -466,7 +466,7 @@ LoanPay::doApply()
     }
 
     // If the payment computation completed without error, the loanSle object has been modified.
-    loanSle.update();
+    loanSle.updateInView();
 
     Number const scheduledInterestDelta =
         fixedPrecision ? scheduledInterest() - scheduledInterestBefore : kNumZero;

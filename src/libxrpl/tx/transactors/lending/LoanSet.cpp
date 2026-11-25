@@ -711,7 +711,7 @@ LoanSet::doApply()
 
     // Create the loan
     LoanEntryW loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy), view);
-    loan.newSLE();
+    loan.newSle();
 
     // Prevent copy/paste errors
     auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -748,7 +748,7 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    loan.insert();
+    loan.insertIntoView();
 
     // Update the balances in the vault
     if (vaultVersion == VaultVersion::FixedPrecision)

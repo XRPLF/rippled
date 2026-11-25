@@ -106,7 +106,7 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Delete the Loan object
-    // Erase through the view, not loanSle.erase(): decreaseOwnerCountForObject
+    // Erase through the view, not loanSle.eraseFromView(): decreaseOwnerCountForObject
     // below still reads the erased SLE.
     view.erase(loanSle.mutableRawSle());
 
