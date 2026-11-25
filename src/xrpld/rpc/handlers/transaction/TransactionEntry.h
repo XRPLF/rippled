@@ -15,7 +15,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 namespace xrpl::rpc {
 
@@ -33,7 +32,7 @@ public:
     struct Output
     {
         std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
-        std::optional<std::string_view> error;   ///< An error written with the ledger fields.
+        std::optional<::rpc::Status> error;      ///< An error written with the ledger fields.
         std::shared_ptr<STTx const> tx;          ///< The transaction found.
         std::shared_ptr<STObject const> meta;    ///< The metadata of the transaction found.
     };
@@ -46,19 +45,26 @@ public:
     explicit TransactionEntryHandler(JsonContext& context);
 
     /**
-     * @brief Process the request.
+     * Looks the transaction up in the selected ledger.
      *
-     * @param input The request, parsed and validated by the spec.
-     * @return The output to write, or the status of the error.
+     * @param input The parsed request: the ledger selected, and the `tx_hash`
+     *        read or the reason there is none.
+     * @return The ledger with the transaction and its metadata, or the ledger
+     *         with an error carrying its code: `fieldNotFoundTransaction`
+     *         without a `tx_hash`, `notYetImplemented` when the ledger is the
+     *         open one, `malformedRequest` when `tx_hash` is not a hex string,
+     *         `transactionNotFound` when the ledger does not hold it. A ledger
+     *         that cannot be selected is returned as the unexpected Status.
      */
     [[nodiscard]] std::expected<Output, ::rpc::Status>
     process(Input const& input) const;
 
     /**
-     * @brief Write the output of process() into the response.
+     * Writes the reply: the ledger fields, then either the error with its
+     * code and message, or the transaction and its metadata.
      *
-     * @param value The response to write into.
-     * @param output The output process() returned.
+     * @param value The reply object written into.
+     * @param output The result of `process`.
      */
     void
     writeResult(json::Value& value, Output const& output) const;

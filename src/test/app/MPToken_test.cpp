@@ -1946,8 +1946,8 @@ class MPToken_test : public beast::unit_test::Suite
                 jtx.stx->add(s);
                 auto jrr = env.rpc("submit", strHex(s.slice()));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidTransaction");
-                BEAST_EXPECT(!jrr[jss::result].isMember(jss::error_code));
-                BEAST_EXPECT(jrr[jss::result][jss::error_message].isNull());
+                BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidTransaction);
+                BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Transaction is invalid.");
 
                 // tx is unsigned
                 json::Value jv1;

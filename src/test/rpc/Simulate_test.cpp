@@ -338,8 +338,8 @@ class Simulate_test : public beast::unit_test::Suite
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(resp[jss::result][jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!resp[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(resp[jss::result][jss::error_message].isNull());
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 resp[jss::result][jss::error_exception] ==
                 "Field 'Destination' is required but missing.");
@@ -357,6 +357,21 @@ class Simulate_test : public beast::unit_test::Suite
                 resp[jss::result][jss::error] == "srcActMalformed",
                 resp[jss::result][jss::error].toStyledString());
             BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcSrcActMalformed);
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Account'.");
+        }
+        {
+            // A non-string `Account`, which no earlier check rejects: the `tx_json` arm validates
+            // only that it is an object, and the check above only that `Account` is present.
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = 123;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error] == "invalidParams",
+                resp[jss::result][jss::error].toStyledString());
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'tx.Account'.");
         }
         {
