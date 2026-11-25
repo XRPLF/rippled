@@ -173,7 +173,7 @@ SponsorshipSet::createSponsorship(
     bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
-    sponsorship.newSLE();
+    sponsorship.newSle();
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
     // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.
@@ -239,7 +239,7 @@ SponsorshipSet::createSponsorship(
     increaseOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(sponsorship.mutableRawSle(), reserveSponsorAccSle);
 
-    sponsorship.insert();
+    sponsorship.insertIntoView();
     return tesSUCCESS;
 }
 
@@ -376,7 +376,7 @@ SponsorshipSet::doApply()
     if (flags != (*sponsorship)[sfFlags])
         (*sponsorship)[sfFlags] = flags;
 
-    sponsorship.update();
+    sponsorship.updateInView();
 
     return tesSUCCESS;
 }

@@ -51,7 +51,7 @@ SponsorshipEntry<ViewT>::decrementPrefundedReserveCount(std::uint32_t const delt
     if (delta == 0)
         return tesSUCCESS;  // LCOV_EXCL_LINE
 
-    auto const currentReserveCount = (*this)->getFieldU32(sfRemainingOwnerCount);
+    auto const currentReserveCount = this->sleRef().getFieldU32(sfRemainingOwnerCount);
     if (currentReserveCount < delta)
     {
         // LCOV_EXCL_START
@@ -61,8 +61,8 @@ SponsorshipEntry<ViewT>::decrementPrefundedReserveCount(std::uint32_t const delt
         // LCOV_EXCL_STOP
     }
 
-    (*this)->at(sfRemainingOwnerCount) = currentReserveCount - delta;
-    this->update();
+    this->sleRef().at(sfRemainingOwnerCount) = currentReserveCount - delta;
+    this->updateInView();
     return tesSUCCESS;
 }
 
@@ -104,13 +104,13 @@ SponsorshipEntry<ViewT>::removeFromLedger()
     decreaseOwnerCountForObject(view, sponsorAccSle, this->mutableRawSle(), 1, j);
 
     // Return any prefunded fee amount to the sponsor before erasing the object.
-    if ((*this)->isFieldPresent(sfFeeAmount))
+    if (this->sleRef().isFieldPresent(sfFeeAmount))
     {
-        (*sponsorAccSle)[sfBalance] += (*this)->getFieldAmount(sfFeeAmount);
+        (*sponsorAccSle)[sfBalance] += this->sleRef().getFieldAmount(sfFeeAmount);
         view.update(sponsorAccSle);
     }
 
-    this->erase();
+    this->eraseFromView();
 
     return tesSUCCESS;
 }
