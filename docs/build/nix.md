@@ -9,9 +9,7 @@ This guide explains how to use Nix to set up a reproducible development environm
 - **Reproducible environment**: Everyone gets the same versions of tools and compilers
 - **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment, and CI builds some macOS configurations in it as well
 - **No system pollution**: Dependencies are isolated and don't affect your system packages
-- **Consistent compilers**: The GCC and Clang shells use the same versions as CI
 - **Quick setup**: Get started with a single command
-- **Works on Linux and macOS**: Consistent experience across platforms
 
 ## Install Nix
 
@@ -27,13 +25,8 @@ From the root of the xrpld repository, enter the default development shell:
 nix --experimental-features 'nix-command flakes' develop
 ```
 
-This will:
-
-- Download and set up all required development tools (CMake, Ninja, Conan, etc.)
-- Configure the appropriate compiler for your platform:
-  - **Linux**: GCC (provided by Nix)
-  - **macOS**: Clang (provided by Nix)
-
+This downloads and sets up all required development tools (CMake, Ninja, Conan, etc.)
+and the compiler for your platform (see [Platform notes](#platform-notes)).
 The first time you run this command, it will take a few minutes to download and build the environment. Subsequent runs will be much faster.
 
 ### Platform notes
@@ -156,7 +149,7 @@ separate from the Apple Clang ones. The
 on pushes to `develop` and on manual runs — its nightly run rebuilds everything
 from source but uploads nothing — so once a set has been published `nix develop`
 can reuse it instead of compiling every dependency locally. These configurations
-run outside the reduced pull-request matrix, so label a PR `Full CI build` when it
+run outside the reduced pull-request matrix, so label a PR `Merge CI` when it
 touches `flake.lock` or `nix/`.
 
 To compile everything from source, add `--build '*'` to the `conan install`
@@ -183,24 +176,39 @@ at link or run time.
 > configuration CI covers, and no dependency binaries are published for it.
 
 This is checked rather than assumed.
-[`bin/check-nix-store-refs.sh`](../../bin/check-nix-store-refs.sh) takes one file
-or directory and fails if a binary under it resolves a store path at run time.
+[`bin/nix/check-nix-store-refs.sh`](../../bin/nix/check-nix-store-refs.sh) takes one
+file or directory and fails if a binary under it resolves a store path at run time.
 CI runs it over the build output and the Conan cache, and again in the upload job
 before anything is published. You can run it yourself:
 
 ```bash
-bin/check-nix-store-refs.sh build
-bin/check-nix-store-refs.sh ~/.conan2-nix
+bin/nix/check-nix-store-refs.sh build
+bin/nix/check-nix-store-refs.sh ~/.conan2-nix
 ```
 
 It works on Linux too, but asserts something narrower there: the toolchain always
-writes the store into `PT_INTERP` and `RUNPATH`, and CI builds inside an image
-whose store is fixed for its lifetime, so that is fine. Only the binaries
-[`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake) retargets to the
-system loader have to be clean, and those are what CI checks:
+writes the store into `PT_INTERP` and `RUNPATH`. That is fine for the pinned
+glibc, whose path does not move, but not for the GCC runtime, which moves with
+every GCC update. So [`conan/profiles/default`](../../conan/profiles/default)
+links build-context packages, whose executables run during the build, with
+`-static-libstdc++ -Wl,--as-needed`. They still load `libgcc_s.so.1` from the
+store, but from the pinned glibc output, which bundles it and precedes the GCC
+runtime in `RUNPATH`. `-static-libgcc` is not an option: it makes an exception
+thrown from a `std::call_once` callable hang or crash.
+[`conan/profiles/sanitizers`](../../conan/profiles/sanitizers) does not
+instrument build-context packages. CI checks that they load nothing from the store but glibc, from
+the graph `conan install --format=json` writes:
 
 ```bash
-bin/check-nix-store-refs.sh build/xrpld
+bin/nix/check-build-context-runtime.sh graph.json
+```
+
+Only the binaries [`PatchNixBinary.cmake`](../../cmake/PatchNixBinary.cmake)
+retargets to the system loader have to be fully clean, and those are what CI
+checks:
+
+```bash
+bin/nix/check-nix-store-refs.sh build/xrpld
 ```
 
 ### The libresolv stub

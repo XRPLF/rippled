@@ -110,11 +110,11 @@ encodeSoftwareVersion(std::string_view versionStr)
 
             for (auto const& id : v.preReleaseIdentifiers)
             {
-                auto parsePreRelease = [](std::string_view identifier,
-                                          std::string_view prefix,
-                                          std::uint8_t key,
-                                          std::uint8_t lok,
-                                          std::uint8_t hik) -> std::uint8_t {
+                auto const parsePreRelease = [](std::string_view identifier,
+                                                std::string_view prefix,
+                                                std::uint8_t key,
+                                                std::uint8_t lok,
+                                                std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
                     if (!identifier.starts_with(prefix))

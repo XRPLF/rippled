@@ -173,7 +173,7 @@ PaymentChannelClaim::doApply()
         XRPL_ASSERT(
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        sled.update();
+        sled.updateInView();
         ctx_.view().update(slep);
     }
 

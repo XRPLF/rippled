@@ -92,7 +92,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
 
     if (journal.debug())
     {
-        auto readFile = [](std::string const& path) -> std::string {
+        auto const readFile = [](std::string const& path) -> std::string {
             std::ifstream ifs(path, std::ios::in | std::ios::binary);
             if (!ifs.is_open())
                 return {};

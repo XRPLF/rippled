@@ -26,7 +26,7 @@ NFTokenBurn::preflight(PreflightContext const& ctx)
 TER
 NFTokenBurn::preclaim(PreclaimContext const& ctx)
 {
-    auto const owner = [&ctx]() {
+    auto const owner = [&ctx] {
         if (ctx.tx.isFieldPresent(sfOwner))
             return ctx.tx.getAccountID(sfOwner);
 
@@ -73,7 +73,7 @@ NFTokenBurn::doApply()
     if (auto issuer = AccountRootEntryW(nft::getIssuer(ctx_.tx[sfNFTokenID]), view()))
     {
         (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].valueOr(0) + 1;
-        issuer.update();
+        issuer.updateInView();
     }
 
     // Delete up to 500 offers in total.

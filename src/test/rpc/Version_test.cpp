@@ -23,7 +23,7 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto isCorrectReply = [](json::Value const& re) -> bool {
+        auto const isCorrectReply = [](json::Value const& re) -> bool {
             if (re.isMember(jss::error))
                 return false;
             return re.isMember(jss::version);
@@ -48,7 +48,7 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto badVersion = [](json::Value const& re) -> bool {
+        auto const badVersion = [](json::Value const& re) -> bool {
             if (re.isMember("error_what"))
             {
                 if (re["error_what"].isString())

@@ -203,14 +203,15 @@ makeRunner(Workload w, std::string cfg, std::shared_ptr<RunState> rs)
         }
 
         std::size_t index = state.thread_index();
-        for (auto _ : state)
+        for (auto const _ : state)
         {
             w.iterate(
                 IterateContext{
                     .rs = *rs,
                     .backend = *rs->harness->backend,
                     .index = index,
-                    .poolSize = poolSize});
+                    .poolSize = poolSize,
+                });
             index += state.threads();
         }
 
@@ -239,7 +240,7 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
 
     if (!w.pinToPool)
     {
-        auto rs = std::make_shared<RunState>();
+        auto const rs = std::make_shared<RunState>();
         benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
             ->RangeMultiplier(10)
             ->Range(kPoolSizes.front(), kPoolSizes.back())
@@ -258,7 +259,7 @@ registerWorkload(BackendConfig const& bc, Workload const& w)
             if (poolSize % threads != 0)
                 continue;
 
-            auto rs = std::make_shared<RunState>();
+            auto const rs = std::make_shared<RunState>();
             benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
                 ->Arg(poolSize)
                 ->Iterations(poolSize / threads)
@@ -287,7 +288,7 @@ registerStoreBatch(BackendConfig const& bc)
         if (numBatches == 0)
             continue;
 
-        auto rs = std::make_shared<RunState>();
+        auto const rs = std::make_shared<RunState>();
         benchmark::RegisterBenchmark(
             name,
             [rs, cfg](benchmark::State& state) {
@@ -303,7 +304,7 @@ registerStoreBatch(BackendConfig const& bc)
                 }
 
                 std::size_t index = 0;
-                for (auto _ : state)
+                for (auto const _ : state)
                 {
                     rs->harness->backend->storeBatch(batches[index % batches.size()]);
                     ++index;

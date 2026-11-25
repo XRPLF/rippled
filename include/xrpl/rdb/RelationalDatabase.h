@@ -9,7 +9,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
@@ -51,8 +50,8 @@ struct LedgerRange
 enum class DelegateType {
     Actor,  ///< Another account signed and submitted transactions on behalf of this account (this
             ///< account is the owner/delegator).
-    Authorizer  ///< This account signed and submitted transactions on behalf of another account
-                ///< (this account is the signer/delegatee).
+    Authorizer,  ///< This account signed and submitted transactions on behalf of another account
+                 ///< (this account is the signer/delegatee).
 };
 
 struct DelegateFilter
@@ -104,21 +103,6 @@ public:
     using AccountTxs = std::vector<AccountTx>;
     using TxnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
     using MetaTxsList = std::vector<TxnMetaLedgerType>;
-
-    using LedgerSequence = uint32_t;
-    using LedgerHash = UInt256;
-    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
-
-    struct AccountTxArgs
-    {
-        AccountID account;
-        std::optional<LedgerSpecifier> ledger;
-        bool binary = false;
-        bool forward = false;
-        uint32_t limit = 0;
-        std::optional<AccountTxMarker> marker;
-        std::optional<DelegateFilter> delegate;
-    };
 
     struct AccountTxResult
     {

@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -246,7 +247,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         // lsfDepositAuth flag set by default
         if (sleDst->isFlag(lsfDepositAuth))
         {
-            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+            if (!DepositPreauthEntryR(dst, account, ctx.view))
                 return tecNO_PERMISSION;
         }
     }
@@ -325,7 +326,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        auto const sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -426,7 +427,7 @@ AccountDelete::doApply()
             return tefINTERNAL;  // LCOV_EXCL_LINE
         }
         sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
-        sponsorSle.update();
+        sponsorSle.updateInView();
 
         // Following line might look redundant, but without it, sfSponsor
         // would end up remaining in after-ltAccountRoot during the
@@ -449,8 +450,8 @@ AccountDelete::doApply()
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    dst.update();
-    src.erase();
+    dst.updateInView();
+    src.eraseFromView();
 
     return tesSUCCESS;
 }

@@ -146,6 +146,7 @@ in
     })
   ];
 
+  clang = customClang;
   gccStdenv = customStdenv;
   clangStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv customClang;
   gcov = customGcov;
