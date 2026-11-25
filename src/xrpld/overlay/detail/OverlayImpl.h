@@ -637,7 +637,7 @@ private:
         std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(
             counts.size() == stats_.trafficGauges.size(),
-            "xrpl::OverlayImpl::collect_metrics : counts size do match");
+            "xrpl::OverlayImpl::collectMetrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {
@@ -649,7 +649,7 @@ private:
 
             XRPL_ASSERT(
                 gauge.name == value.name,
-                "xrpl::OverlayImpl::collect_metrics : gauge and counter "
+                "xrpl::OverlayImpl::collectMetrics : gauge and counter "
                 "match");
 
             gauge.bytesIn = value.bytesIn;

@@ -55,7 +55,7 @@ ReadViewFwdRange<ValueType>::Iterator::operator==(Iterator const& other) const
 {
     XRPL_ASSERT(
         view_ == other.view_,
-        "xrpl::detail::ReadViewFwdRange::iterator::operator==(iterator) "
+        "xrpl::detail::ReadViewFwdRange::Iterator::operator==(Iterator) "
         "const : input view match");
 
     if (impl_ != nullptr && other.impl_ != nullptr)

@@ -537,7 +537,7 @@ Number::Guard::round() const noexcept
     }
 
     XRPL_ASSERT(
-        mode == RoundingMode::ToNearest, "xrpl::Number::Guard::Round : fallthrough to ToNearest");
+        mode == RoundingMode::ToNearest, "xrpl::Number::Guard::round : fallthrough to ToNearest");
     // assume round to nearest if mode is not one of the predefined values
     if (digits_ > 0x5000'0000'0000'0000)
         return Round::Up;

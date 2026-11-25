@@ -1670,7 +1670,7 @@ ValidatorList::forEachAvailable(
             continue;
         XRPL_ASSERT(
             plCollection.maxSequence.value_or(0) != 0,
-            "xrpl::ValidatorList::for_each_available : nonzero maxSequence");
+            "xrpl::ValidatorList::forEachAvailable : nonzero maxSequence");
         func(
             plCollection.rawManifest,
             plCollection.rawVersion,

@@ -802,7 +802,7 @@ public:
     Overlay&
     getOverlay() override
     {
-        XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
+        XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::getOverlay : non-null overlay");
         return *overlay_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 

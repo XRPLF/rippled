@@ -266,7 +266,7 @@ SponsorshipSet::createSponsorship(
     // checked in preclaim.
     XRPL_ASSERT(
         !feeAmountDelta.has_value() || *feeAmountDelta > beast::kZero,
-        "xrpl::SponsorshipSet::doApply : new sponsorship has positive fee amount");
+        "xrpl::SponsorshipSet::createSponsorship : new sponsorship has positive fee amount");
 
     (*newSle)[sfOwner] = sponsorID;
     (*newSle)[sfSponsee] = sponseeID;

@@ -110,7 +110,8 @@ isVaultPseudoAccountFrozenForIssuance(
         if (!sleHolding)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            UNREACHABLE(
+                "xrpl::isVaultPseudoAccountFrozenForIssuance : dangling sfReferenceHolding");
             return false;
             // LCOV_EXCL_STOP
         }
@@ -122,7 +123,7 @@ isVaultPseudoAccountFrozenForIssuance(
     if (mptIssuer == nullptr)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozenForIssuance : null MPToken issuer");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -133,7 +134,7 @@ isVaultPseudoAccountFrozenForIssuance(
     auto const vault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
     {  // LCOV_EXCL_START
-        UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null vault");
+        UNREACHABLE("xrpl::isVaultPseudoAccountFrozenForIssuance : null vault");
         return false;
         // LCOV_EXCL_STOP
     }
