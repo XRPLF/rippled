@@ -27,6 +27,10 @@ New file placement and header levelization: see [docs/cpp/guidelines.md](./docs/
 
 Comments should explain _why_, not _what_/_how_ — the code already shows that. Only describe what/how when the code itself would otherwise be confusing (a non-obvious workaround, a subtle invariant, a surprising constraint). Write new or changed comments as full sentences: start with a capital letter and end with a period.
 
+## Pull requests
+
+The "Trivial" label means a PR needs one approval instead of two (see [CONTRIBUTING.md](./CONTRIBUTING.md#ready-to-merge)). Suggest it only when a wrong change would be obvious to a reviewer and cannot alter transaction, ledger, consensus, or peer-protocol behavior. Typical cases: CI, build, and tooling changes; docs and comments; typo fixes; clang-tidy and formatting changes; renames; removal of unused code or legacy tests; test-only changes; and version bumps. Do not suggest it for a change that alters runtime behavior in `src/xrpld/` or `src/libxrpl/`, even a small one: bug fixes, new validation or error paths, amendment registration, enabling, or retirement, and invariant changes. Dependabot PRs use the "Dependencies" label instead. PR size does not decide the label: large mechanical renames and dead-code removals qualify, and a 5-line fix to transaction logic does not. If you are unsure, do not suggest the label. A maintainer applies it.
+
 ## Architecture
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the directory-by-directory map of the codebase.
