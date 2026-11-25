@@ -176,11 +176,11 @@ transferRate(ReadView const& view, AccountID const& issuer)
 
 void
 decreaseOwnerCount(
-    ApplyView& view,
+    ApplyView&,
     AccountRootEntryW& accountSle,
     std::optional<AccountRootEntryW>& sponsorSle,
     std::uint32_t count,
-    beast::Journal j)
+    beast::Journal)
 {
     XRPL_ASSERT(
         count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
