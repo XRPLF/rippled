@@ -118,6 +118,12 @@ Header includes must be [levelized](../../.github/scripts/levelization).
   `TaggedCache::getKeys()`), and don't copy under the lock what you could
   reference or move.
 
+## Classes
+
+- Put private data members at the top of a class, followed by the public
+  special members in this order: destructor, default constructor, copy
+  constructor, copy assignment, move constructor, move assignment.
+
 ## Naming
 
 - Name getters with a noun, or with a `get`, `is` or `are` prefix.
