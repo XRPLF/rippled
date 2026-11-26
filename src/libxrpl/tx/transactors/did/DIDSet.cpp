@@ -90,8 +90,7 @@ addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    std::optional<AccountRootEntryW> noSponsor;
-    sleAccount.increaseOwnerCount(noSponsor, 1);
+    sleAccount.increaseOwnerCount(nullptr, 1);
     sleAccount.updateInView();
 
     return tesSUCCESS;
