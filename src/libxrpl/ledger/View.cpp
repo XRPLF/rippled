@@ -592,7 +592,7 @@ doWithdraw(
         dstAcct,
         destinationAmount,
         j,
-        sponsor ? sponsor->mutableRawSle() : SLE::pointer{},
+        rawSleOrNull(sponsor),
         WaiveTransferFee::Yes);
 }
 

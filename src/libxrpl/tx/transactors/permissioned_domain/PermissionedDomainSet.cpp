@@ -131,8 +131,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        std::optional<AccountRootEntryW> noSponsor;
-        ownerSle.increaseOwnerCount(noSponsor, 1);
+        ownerSle.increaseOwnerCount(nullptr, 1);
         view().insert(slePd);
     }
 
