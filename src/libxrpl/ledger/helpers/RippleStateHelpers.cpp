@@ -379,7 +379,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (RippleStateEntryW state(index, view, j); state)
+    if (RippleStateEntryW state(index, view, j))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -468,7 +468,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (RippleStateEntryW state(account, issue.account, issue.currency, view, j); state)
+    if (RippleStateEntryW state(account, issue.account, issue.currency, view, j))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 

@@ -37,7 +37,6 @@
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
-#include <optional>
 #include <string>
 #include <variant>
 
@@ -271,7 +270,7 @@ checkDepositFreeze(
 //
 //------------------------------------------------------------------------------
 
-static std::optional<RippleStateEntryR>
+static RippleStateEntryR
 getLineIfUsable(
     ReadView const& view,
     AccountID const& account,
@@ -284,7 +283,7 @@ getLineIfUsable(
 
     if (!sle)
     {
-        return std::nullopt;
+        return sle;
     }
 
     if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen)
@@ -292,7 +291,7 @@ getLineIfUsable(
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
         {
-            return std::nullopt;
+            return RippleStateEntryR(SLE::const_pointer{}, view);
         }
 
         // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
@@ -302,7 +301,7 @@ getLineIfUsable(
             auto const sleIssuer = view.read(keylet::account(issuer));
             if (!sleIssuer)
             {
-                return std::nullopt;  // LCOV_EXCL_LINE
+                return RippleStateEntryR(SLE::const_pointer{}, view);  // LCOV_EXCL_LINE
             }
             if (sleIssuer->isFieldPresent(sfAMMID))
             {
@@ -311,7 +310,7 @@ getLineIfUsable(
                 if (!sleAmm ||
                     isLPTokenFrozen(view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
                 {
-                    return std::nullopt;
+                    return RippleStateEntryR(SLE::const_pointer{}, view);
                 }
             }
         }
@@ -322,7 +321,7 @@ getLineIfUsable(
         // gated by featureMPTokensV2.
         if (!isTesSuccess(canTransferLPToken(view, account, account, issuer)))
         {
-            return std::nullopt;
+            return RippleStateEntryR(SLE::const_pointer{}, view);
         }
     }
 
@@ -332,7 +331,7 @@ getLineIfUsable(
 static STAmount
 getTrustLineBalance(
     ReadView const& view,
-    std::optional<RippleStateEntryR> const& sle,
+    RippleStateEntryR const& sle,
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer,
@@ -342,7 +341,7 @@ getTrustLineBalance(
     STAmount amount;
     if (sle)
     {
-        amount = (*sle)->getFieldAmount(sfBalance);
+        amount = sle->getFieldAmount(sfBalance);
         bool const accountHigh = account > issuer;
         auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
         if (accountHigh)
@@ -352,7 +351,7 @@ getTrustLineBalance(
         }
         if (includeOppositeLimit)
         {
-            amount += (*sle)->getFieldAmount(oppositeField);
+            amount += sle->getFieldAmount(oppositeField);
         }
         amount.get<Issue>().account = issuer;
     }
@@ -392,8 +391,7 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    std::optional<RippleStateEntryR> const sle =
-        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+    RippleStateEntryR const sle = getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
     return getTrustLineBalance(view, sle, account, currency, issuer, returnSpendable, j);
 }
@@ -735,7 +733,7 @@ directSendNoFeeIOU(
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
-    if (RippleStateEntryW sleRippleState(index, view, j); sleRippleState)
+    if (RippleStateEntryW sleRippleState(index, view, j))
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
