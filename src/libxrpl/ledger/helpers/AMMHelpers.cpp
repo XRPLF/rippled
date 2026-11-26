@@ -453,8 +453,8 @@ ammHolds(
     beast::Journal const j)
 {
     auto const assets = [&] -> std::optional<std::pair<Asset, Asset>> {
-        auto const asset1 = (*ammSle)[sfAsset];
-        auto const asset2 = (*ammSle)[sfAsset2];
+        auto const asset1 = ammSle->at(sfAsset);
+        auto const asset2 = ammSle->at(sfAsset2);
         if (optAsset1 && optAsset2)
         {
             if (invalidAMMAssetPair(
@@ -507,7 +507,7 @@ ammHolds(
         freezeHandling,
         authHandling,
         j);
-    return std::make_tuple(amount1, amount2, (*ammSle)[sfLPTokenBalance]);
+    return std::make_tuple(amount1, amount2, ammSle->at(sfLPTokenBalance));
 }
 
 STAmount
@@ -568,7 +568,7 @@ ammLPHolds(
     beast::Journal const j)
 {
     return ammLPHolds(
-        view, (*ammSle)[sfAsset], (*ammSle)[sfAsset2], (*ammSle)[sfAccount], lpAccount, j);
+        view, ammSle->at(sfAsset), ammSle->at(sfAsset2), ammSle->at(sfAccount), lpAccount, j);
 }
 
 std::uint16_t
@@ -596,7 +596,7 @@ getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& ac
             }
         }
     }
-    return (*ammSle)[sfTradingFee];
+    return ammSle->at(sfTradingFee);
 }
 
 STAmount
