@@ -61,10 +61,10 @@ MPTokenEntry<ViewT>::create(
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     mptoken.newSle();
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
+    mptoken->at(sfAccount) = account;
+    mptoken->at(sfMPTokenIssuanceID) = mptIssuanceID;
+    mptoken->at(sfFlags) = flags;
+    mptoken->at(sfOwnerNode) = *ownerNode;
 
     addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
 
