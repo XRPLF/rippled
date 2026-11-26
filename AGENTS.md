@@ -23,7 +23,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup
 
 ## Code Style
 
-C++ conventions (file placement, header levelization, interfaces, comments, tests, and more): see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md).
+C++ conventions: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md).
 Braces, whitespace, and member order: see [docs/CodingStyle.md](./docs/CodingStyle.md).
 `XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md).
 Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).

@@ -31,39 +31,23 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 ## General
 
 - Don't rely on empty value. Prefer `std::optional` instead.
-- Prefer `std::format` to string concatenation.
 - Before writing a helper, check whether one already exists, e.g. call
   `getFlags()` rather than `getFieldU32(sfFlags)`. When two places must stay
   consistent, make both call one helper instead of keeping two copies in sync.
 - Delete dead code rather than disabling it with `#if 0` or commenting it out.
   Don't add functions, overloads or parameters that nothing uses yet.
-- Give magic numbers a named constant, or reuse the existing one. In tests,
-  derive expected values from the same constant instead of repeating the
-  literal.
-- Define long non-template functions in the `.cpp` file, not in the header.
-  The same goes for full specializations of function templates: declare them
-  in the header and define them in the `.cpp`. Specializations of class
-  templates (e.g. `std::hash`) must stay in the header.
-- Use `std::filesystem::path` for filesystem paths, and join them with `/`
-  rather than string concatenation.
+- Give magic numbers a named constant, or reuse the existing one.
+- Define non-trivial (not one-liner) non-template functions in the `.cpp`
+  file, not in the header.
 - Before converting a value to a narrower or differently-signed integer type,
   check that it fits. Use `safeCast` (`include/xrpl/basics/safe_cast.h`) when
   every source value fits, so the compiler verifies it, and `unsafeCast` after
   checking the range when it doesn't.
-- Check the platform with predefined macros (`_WIN32`, `__linux__`,
-  `__APPLE__`) and the compiler with `_MSC_VER`, `__clang__` or `__GNUC__`, not
-  with library macros such as `BOOST_OS_LINUX`: if the header that defines a
-  macro isn't included, `#if` silently treats it as `0`.
 - Fix the code rather than silence clang-tidy. When a `NOLINT` is unavoidable,
   name the check and say why it's needed.
-- Use `std::size_t` for sizes, loop counters and indexes.
 - Don't use CRTP to call into the derived class; use an explicit object
   parameter (deducing `this`) instead. CRTP for per-type state, as in
   `CountedObject<T>`, is fine.
-- Be careful when brace-initializing a type that has a `std::initializer_list`
-  constructor, because braces prefer it: `std::vector<int>{3, 0}` holds two
-  elements, while `std::vector<int>(3, 0)` holds three. Think twice before
-  adding such a constructor to a type.
 
 ## Function parameters
 
@@ -87,7 +71,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 ## Standard library
 
-- Prefer `std::ranges` algorithms to hand-written loops.
+- Prefer `std::ranges` algorithms to loops that reimplement them (`find_if`,
+  `any_of`, `transform`, ...).
 - Use `std::ranges::contains` rather than comparing the result of `find` with
   `end()` on a sequence. For associative containers, use their member
   `contains()`, which doesn't scan linearly.
@@ -97,6 +82,14 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Prefer standard containers to their Boost equivalents (e.g. `std::flat_set`
   over `boost::container::flat_set`), unless the standard library doesn't have
   one yet.
+- Prefer `std::format` to string concatenation.
+- Use `std::filesystem::path` for filesystem paths, and join them with `/`
+  rather than string concatenation.
+- Use `std::size_t` for sizes, loop counters and indexes.
+- Be careful when brace-initializing a type that has a `std::initializer_list`
+  constructor, because braces prefer it: `std::vector<int>{3, 0}` holds two
+  elements, while `std::vector<int>(3, 0)` holds three. Think twice before
+  adding such a constructor to a type.
 
 ## Error handling
 
@@ -190,6 +183,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Make sure a test can fail. Assert the effect (balances, ledger entries,
   output), not only the result code or that nothing threw, and check that a
   regression test fails without the fix.
+- Derive expected values from the same named constants the code uses instead
+  of repeating literals.
 - Make a negative test break exactly one precondition, with every other input
   valid, so it fails for the reason it claims whatever order the checks run
   in.
@@ -197,7 +192,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
   `ASSERT_*` returns only from the current function, so wrap calls to helpers
   that use it in `ASSERT_NO_FATAL_FAILURE`. In the legacy framework, write
   `if (!BEAST_EXPECT(cond)) return;`.
-- Don't sleep, poll wall-clock time or busy-wait. Use a manual clock
+- Don't let a test's outcome depend on timing or thread scheduling. Don't
+  sleep, poll wall-clock time or busy-wait. Use a manual clock
   (`beast::ManualClock`), `std::latch` or `JobQueue::rendezvous()`. When
   waiting for something that might never happen, use a wait with a timeout
   (e.g. `std::condition_variable::wait_for`) so the test fails instead of
