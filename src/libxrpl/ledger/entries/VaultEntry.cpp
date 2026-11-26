@@ -65,7 +65,7 @@ VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
 {
     Number assetTotal = getAssetsTotal(this->rawSle());
     if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= (**this).at(sfLossUnrealized);
+        assetTotal -= this->sleRef().at(sfLossUnrealized);
     return assetTotal;
 }
 
