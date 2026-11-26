@@ -35,8 +35,7 @@ template <typename ViewT>
 VaultPhase
 VaultEntry<ViewT>::phase() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::phase : valid Vault sle");
     return getVaultPhase(
         this->readView(),
         this->sleRef()[~sfVaultKind],
