@@ -15,8 +15,9 @@ VaultVersion
 VaultEntry<ViewT>::version() const
 {
     XRPL_ASSERT(
-        *this && (**this).getType() == ltVAULT, "xrpl::VaultEntry::version : valid Vault sle");
-    return decodeVaultVersion((**this).at(~sfLEVersion));
+        *this && this->sleRef().getType() == ltVAULT,
+        "xrpl::VaultEntry::version : valid Vault sle");
+    return decodeVaultVersion(this->sleRef().at(~sfLEVersion));
 }
 
 template class VaultEntry<ReadView>;
