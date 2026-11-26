@@ -665,7 +665,7 @@ struct Credentials_test : public beast::unit_test::Suite
             {
                 testcase("CredentialsAccept fail, invalid credentialType param.");
                 auto const jv = credentials::accept(subject, issuer, "");
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temBAD_FIELD_LENGTH));
             }
         }
 
@@ -841,7 +841,7 @@ struct Credentials_test : public beast::unit_test::Suite
             {
                 testcase("CredentialsDelete fail, invalid credentialType param.");
                 auto const jv = credentials::deleteCred(subject, subject, issuer, "");
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temBAD_FIELD_LENGTH));
             }
 
             {
@@ -905,7 +905,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto jv = credentials::deleteCred(subject, subject, issuer, credType);
                 jv.removeMember(jss::Subject);
                 jv.removeMember(jss::Issuer);
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temINVALID));
                 env.close();
             }
 

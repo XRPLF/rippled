@@ -3381,7 +3381,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(coverWithdrawToDest(),
             loan_broker::kDestination(dest),
             credentials::Ids({credIdx, credIdx}),
-            Ter{temMALFORMED});
+            Ter{temDUPLICATE});
         env.close();
 
         // Valid credential not authorized by dest hits authorizedDepositPreauth error path

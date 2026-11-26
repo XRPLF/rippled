@@ -383,27 +383,27 @@ private:
                 {
                     auto tx = tx1;
                     tx[sfData] = "";
-                    env(tx, Ter(temMALFORMED));
+                    env(tx, Ter(temBAD_FIELD_LENGTH));
                 }
 
                 {
                     auto tx = tx1;
                     // A hexadecimal string of 257 bytes.
                     tx[sfData] = std::string(514, 'A');
-                    env(tx, Ter(temMALFORMED));
+                    env(tx, Ter(temBAD_FIELD_LENGTH));
                 }
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     tx[sfData] = "";
-                    env(tx, Ter{temMALFORMED});
+                    env(tx, Ter{temBAD_FIELD_LENGTH});
                 }
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     // A hexadecimal string of 257 bytes.
                     tx[sfData] = std::string(514, 'A');
-                    env(tx, Ter{temMALFORMED});
+                    env(tx, Ter{temBAD_FIELD_LENGTH});
                 }
             });
 
@@ -428,7 +428,7 @@ private:
                 {
                     auto tx = tx1;
                     tx[sfMPTokenMetadata] = "";
-                    env(tx, Ter(temMALFORMED));
+                    env(tx, Ter(temBAD_FIELD_LENGTH));
                 }
 
                 {
@@ -436,7 +436,7 @@ private:
                     // This metadata is for the share token.
                     // A hexadecimal string of 1025 bytes.
                     tx[sfMPTokenMetadata] = std::string(2050, 'B');
-                    env(tx, Ter(temMALFORMED));
+                    env(tx, Ter(temBAD_FIELD_LENGTH));
                 }
             });
 
@@ -449,7 +449,7 @@ private:
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
                     tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
-                    env(tx, Ter{temMALFORMED});
+                    env(tx, Ter{temBAD_AMOUNT});
                 }
             });
 
@@ -553,7 +553,7 @@ private:
                 {
                     auto tx = tx1;
                     tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
-                    env(tx, Ter{temMALFORMED});
+                    env(tx, Ter{temBAD_AMOUNT});
                 }
 
                 {
