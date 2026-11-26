@@ -7,12 +7,12 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/CredentialEntry.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
@@ -48,7 +48,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
 
-        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+        return !sleCred.isExpired(view.header().parentCloseTime);
     });
 
     return inDomain;
