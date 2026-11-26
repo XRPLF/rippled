@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -82,7 +83,7 @@ SponsorshipEntry<ViewT>::removeFromLedger()
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
-    auto const sponsorAccSle = view.peek(keylet::account(sponsorID));
+    AccountRootEntryW sponsorAccSle(sponsorID, view, j);
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -103,13 +104,13 @@ SponsorshipEntry<ViewT>::removeFromLedger()
         // LCOV_EXCL_STOP
     }
 
-    decreaseOwnerCountForObject(view, sponsorAccSle, this->mutableRawSle(), 1, j);
+    decreaseOwnerCountForObject(view, sponsorAccSle.mutableRawSle(), this->mutableRawSle(), 1, j);
 
     // Return any prefunded fee amount to the sponsor before erasing the object.
     if (this->sleRef().isFieldPresent(sfFeeAmount))
     {
-        (*sponsorAccSle)[sfBalance] += this->sleRef().getFieldAmount(sfFeeAmount);
-        view.update(sponsorAccSle);
+        sponsorAccSle->at(sfBalance) += this->sleRef()[sfFeeAmount];
+        sponsorAccSle.updateInView();
     }
 
     this->eraseFromView();

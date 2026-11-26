@@ -181,8 +181,8 @@ SponsorshipSet::createSponsorship(
         !feeAmountDelta.has_value() || *feeAmountDelta > beast::kZero,
         "xrpl::SponsorshipSet::doApply : new sponsorship has positive fee amount");
 
-    (*sponsorship)[sfOwner] = sponsorID;
-    (*sponsorship)[sfSponsee] = sponseeID;
+    sponsorship->at(sfOwner) = sponsorID;
+    sponsorship->at(sfSponsee) = sponseeID;
     if (feeAmountDelta && feeAmountDelta->xrp() > sponsorBalanceAfterFee.xrp())
         return tecUNFUNDED;
 
@@ -205,14 +205,14 @@ SponsorshipSet::createSponsorship(
     if (hasPositiveFeeAmount)
     {
         // New object: FeeAmount starts absent, so deduct and record the full amount
-        (*sponsorship)[sfFeeAmount] = *feeAmountDelta;
+        sponsorship->at(sfFeeAmount) = *feeAmountDelta;
         (*sponsorAccSle)[sfBalance] -= *feeAmountDelta;
     }
 
     if (maxFee && *maxFee > beast::kZero)
-        (*sponsorship)[sfMaxFee] = *maxFee;
+        sponsorship->at(sfMaxFee) = *maxFee;
     if (remainingOwnerCountDelta && *remainingOwnerCountDelta > 0)
-        (*sponsorship)[sfRemainingOwnerCount] = *remainingOwnerCountDelta;
+        sponsorship->at(sfRemainingOwnerCount) = *remainingOwnerCountDelta;
 
     std::uint32_t flags = 0;
     if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
@@ -221,19 +221,19 @@ SponsorshipSet::createSponsorship(
     if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForReserve))
         flags |= lsfSponsorshipRequireSignForReserve;
 
-    (*sponsorship)[sfFlags] = flags;
+    sponsorship->at(sfFlags) = flags;
 
     auto const sponsorPage = view().dirInsert(
         keylet::ownerDir(sponsorID), sponsorship.keylet(), describeOwnerDir(sponsorID));
     if (!sponsorPage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
-    (*sponsorship)[sfOwnerNode] = *sponsorPage;
+    sponsorship->at(sfOwnerNode) = *sponsorPage;
 
     auto const sponseePage = view().dirInsert(
         keylet::ownerDir(sponseeID), sponsorship.keylet(), describeOwnerDir(sponseeID));
     if (!sponseePage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
-    (*sponsorship)[sfSponseeNode] = *sponseePage;
+    sponsorship->at(sfSponseeNode) = *sponseePage;
 
     // NOLINTNEXTLINE(readability-suspicious-call-argument)
     increaseOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
@@ -287,7 +287,7 @@ SponsorshipSet::doApply()
     if (feeAmountDelta)
     {
         auto actualDelta = feeAmountDelta.value();
-        auto const currentFee = (*sponsorship)[~sfFeeAmount].valueOr(XRPAmount{0});
+        auto const currentFee = sponsorship->at(~sfFeeAmount).valueOr(XRPAmount{0});
 
         // Clamp negative delta to avoid underflow.
         if (actualDelta < beast::kZero && -actualDelta > currentFee)
@@ -324,7 +324,7 @@ SponsorshipSet::doApply()
         }
         else
         {
-            (*sponsorship)[sfFeeAmount] = newFee;
+            sponsorship->at(sfFeeAmount) = newFee;
         }
         ctx_.view().update(sponsorAccSle);
     }
@@ -333,11 +333,11 @@ SponsorshipSet::doApply()
     {
         if (*maxFee == beast::kZero)
         {
-            (*sponsorship).makeFieldAbsent(sfMaxFee);
+            sponsorship->makeFieldAbsent(sfMaxFee);
         }
         else
         {
-            (*sponsorship)[sfMaxFee] = *maxFee;
+            sponsorship->at(sfMaxFee) = *maxFee;
         }
     }
 
@@ -373,8 +373,8 @@ SponsorshipSet::doApply()
     if (ctx_.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
         flags &= ~lsfSponsorshipRequireSignForReserve;
 
-    if (flags != (*sponsorship)[sfFlags])
-        (*sponsorship)[sfFlags] = flags;
+    if (flags != sponsorship->getFieldU32(sfFlags))
+        sponsorship->at(sfFlags) = flags;
 
     sponsorship.updateInView();
 
