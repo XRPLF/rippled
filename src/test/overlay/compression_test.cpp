@@ -360,6 +360,29 @@ public:
     }
 
     void
+    testMtSquelchUncompressed()
+    {
+        testcase("mtSQUELCH is uncompressed");
+
+        auto squelch = std::make_shared<protocol::TMSquelch>();
+        squelch->set_squelch(true);
+        // An oversized key pushes the message past the 70-byte threshold, so
+        // only the message type can keep it from being compressed.
+        std::string largePubKey(256, 'A');
+        squelch->set_validatorpubkey(largePubKey);
+        squelch->set_squelchduration(600);
+
+        Message m(*squelch, protocol::mtSQUELCH);
+
+        auto const& compressed = m.getBuffer(Compressed::On);
+        auto const& uncompressed = m.getBuffer(Compressed::Off);
+
+        BEAST_EXPECT(uncompressed.size() > compression::kHeaderBytes + 70);
+        BEAST_EXPECT(compressed.size() == uncompressed.size());
+        BEAST_EXPECT(compressed == uncompressed);
+    }
+
+    void
     testHandshake()
     {
         testcase("Handshake");
@@ -419,6 +442,7 @@ public:
     {
         testProtocol();
         testHandshake();
+        testMtSquelchUncompressed();
     }
 };
 
