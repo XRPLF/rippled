@@ -2,10 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -25,12 +22,6 @@ public:
 
     static NotTEC
     preflight(PreflightContext const& ctx);
-
-    static TER
-    deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
-
-    static TER
-    deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j);
 
     TER
     doApply() override;
