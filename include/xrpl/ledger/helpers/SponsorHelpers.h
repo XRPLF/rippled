@@ -115,6 +115,24 @@ getLedgerEntryReserveSponsor(
     SF_ACCOUNT const& field = sfSponsor);
 
 /**
+ * Return the sponsor's mutable SLE, or a null pointer if there is no sponsor.
+ */
+[[nodiscard]] inline SLE::pointer
+rawSleOrNull(std::optional<AccountRootEntryW>& sponsorSle)
+{
+    return sponsorSle ? sponsorSle->mutableRawSle() : SLE::pointer{};
+}
+
+/**
+ * Return the sponsor's read-only SLE, or a null pointer if there is no sponsor.
+ */
+[[nodiscard]] inline SLE::const_pointer
+rawSleOrNull(std::optional<AccountRootEntryW> const& sponsorSle)
+{
+    return sponsorSle ? sponsorSle->rawSle() : SLE::const_pointer{};
+}
+
+/**
  * Stamp a reserve sponsor onto a ledger entry using an explicit sponsor SLE.
  *
  * Sets @p field on @p sle to the AccountID from @p sponsorSle. A no-op when

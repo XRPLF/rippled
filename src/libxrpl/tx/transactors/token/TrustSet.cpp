@@ -321,10 +321,8 @@ TrustSet::doApply()
         return sponsorExp.error();  // LCOV_EXCL_LINE
     auto& sponsorSle = *sponsorExp;
 
-    std::optional<AccountRootEntryW> noSponsor;
-    auto const getSponsor = [&sponsorSle, &noSponsor, this](
-                                AccountID const& account) -> std::optional<AccountRootEntryW>& {
-        return (sponsorSle && account == accountID_) ? sponsorSle : noSponsor;
+    auto const getSponsor = [&sponsorSle, this](AccountID const& account) -> AccountRootEntryW* {
+        return (sponsorSle && account == accountID_) ? &*sponsorSle : nullptr;
     };
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
@@ -530,14 +528,14 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            auto& lowSponsor = getSponsor(uLowAccountID);
+            AccountRootEntryW* const lowSponsor = getSponsor(uLowAccountID);
 
             if (view().rules().enabled(featureSponsor))
             {
                 if (auto const ret = sleLowAccount.checkReserve(
                         ctx_.getApplyViewContext(),
                         preFeeBalance_,
-                        lowSponsor,
+                        lowSponsor ? std::optional<AccountRootEntryR>(*lowSponsor) : std::nullopt,
                         {.ownerCountDelta = 1},
                         tecINSUF_RESERVE_LINE);
                     lowSponsor && !isTesSuccess(ret))
@@ -560,7 +558,7 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            sleLowAccount.decreaseOwnerCount(currentLowSponsor, 1);
+            sleLowAccount.decreaseOwnerCount(currentLowSponsor ? &*currentLowSponsor : nullptr, 1);
             uFlagsOut &= ~lsfLowReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
@@ -568,7 +566,7 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
-            auto& highSponsor = getSponsor(uHighAccountID);
+            AccountRootEntryW* const highSponsor = getSponsor(uHighAccountID);
 
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
@@ -578,7 +576,7 @@ TrustSet::doApply()
                 if (auto const ret = sleHighAccount.checkReserve(
                         ctx_.getApplyViewContext(),
                         preFeeBalance_,
-                        highSponsor,
+                        highSponsor ? std::optional<AccountRootEntryR>(*highSponsor) : std::nullopt,
                         {.ownerCountDelta = 1},
                         tecINSUF_RESERVE_LINE);
                     highSponsor && !isTesSuccess(ret))
@@ -601,7 +599,8 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            sleHighAccount.decreaseOwnerCount(currentHighSponsor, 1);
+            sleHighAccount.decreaseOwnerCount(
+                currentHighSponsor ? &*currentHighSponsor : nullptr, 1);
             uFlagsOut &= ~lsfHighReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
@@ -735,7 +734,7 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
-            sponsorSle ? sponsorSle->mutableRawSle() : SLE::pointer{},
+            rawSleOrNull(sponsorSle),
             viewJ);
     }
 

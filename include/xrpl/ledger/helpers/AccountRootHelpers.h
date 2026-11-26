@@ -134,7 +134,7 @@ increaseOwnerCount(
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    accountSle.increaseOwnerCount(sponsorSle, count);
+    accountSle.increaseOwnerCount(sponsorSle ? &*sponsorSle : nullptr, count);
 }
 
 /**
@@ -158,7 +158,7 @@ decreaseOwnerCount(
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    accountSle.decreaseOwnerCount(sponsorSle, count);
+    accountSle.decreaseOwnerCount(sponsorSle ? &*sponsorSle : nullptr, count);
 }
 
 /**

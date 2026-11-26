@@ -327,8 +327,7 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        std::optional<AccountRootEntryW> noSponsor;
-        owner.increaseOwnerCount(noSponsor, 2);
+        owner.increaseOwnerCount(nullptr, 2);
         if (preFeeBalance_ < owner.reserve())
             return tecINSUFFICIENT_RESERVE;
 
