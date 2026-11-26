@@ -254,7 +254,7 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
             "xrpl::adjustOwnerCountSigned : valid account sle type");
         XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
         std::uint32_t const current{this->sleRef().getFieldU32(sfOwnerCount)};
-        AccountID const id = (**this)[sfAccount];
+        AccountID const id = this->sleRef()[sfAccount];
         std::uint32_t const adjusted = detail::confineOwnerCount(current, adjustment, id, j);
 
         OwnerCounts const currentOwnerCount(this->rawSle());
