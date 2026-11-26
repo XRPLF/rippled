@@ -500,7 +500,7 @@ ammLPHolds(
     beast::Journal const j)
 {
     return ammLPHolds(
-        view, (*ammSle)[sfAsset], (*ammSle)[sfAsset2], (*ammSle)[sfAccount], lpAccount, j);
+        view, ammSle->at(sfAsset), ammSle->at(sfAsset2), ammSle->at(sfAccount), lpAccount, j);
 }
 
 std::uint16_t
@@ -528,7 +528,7 @@ getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& ac
             }
         }
     }
-    return (*ammSle)[sfTradingFee];
+    return ammSle->at(sfTradingFee);
 }
 
 STAmount
