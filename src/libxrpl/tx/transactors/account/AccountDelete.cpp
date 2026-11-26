@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -167,10 +168,11 @@ removeCredentialFromLedger(
     ServiceRegistry&,
     ApplyView& view,
     AccountID const&,
-    UInt256 const&,
-    SLE::Ref sleDel,
+    UInt256 const& delIndex,
+    SLE::Ref,
     beast::Journal j)
 {
+    CredentialEntryW sleDel(delIndex, view, j);
     return credentials::deleteSLE(view, sleDel, j);
 }
 
