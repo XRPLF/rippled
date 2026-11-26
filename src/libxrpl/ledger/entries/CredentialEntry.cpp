@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -23,7 +24,7 @@ CredentialEntry<ViewT>::removeFromLedger()
         return tecNO_ENTRY;
 
     auto const delSLE = [this](AccountID const& account, SField const& node, bool isOwner) -> TER {
-        auto const sleAccount = this->applyView().peek(keylet::account(account));
+        AccountRootEntryW sleAccount(account, this->applyView(), this->journal());
         if (!sleAccount)
         {
             // LCOV_EXCL_START
@@ -44,7 +45,11 @@ CredentialEntry<ViewT>::removeFromLedger()
         if (isOwner)
         {
             decreaseOwnerCountForObject(
-                this->applyView(), sleAccount, this->mutableRawSle(), 1, this->journal());
+                this->applyView(),
+                sleAccount.mutableRawSle(),
+                this->mutableRawSle(),
+                1,
+                this->journal());
         }
 
         return tesSUCCESS;
