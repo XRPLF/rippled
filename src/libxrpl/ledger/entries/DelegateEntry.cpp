@@ -24,7 +24,7 @@ DelegateEntry<ViewT>::checkTxPermission(STTx const& tx) const
     if (!this->exists())
         return terNO_DELEGATE_PERMISSION;
 
-    auto const& sle = this->operator*();
+    auto const& sle = this->sleRef();
     auto const permissionArray = sle.getFieldArray(sfPermissions);
     auto const txPermission = tx.getTxnType() + 1;
 
@@ -46,7 +46,7 @@ DelegateEntry<ViewT>::granularPermission(TxType const& type) const
     if (!this->exists())
         return granularPermissions;
 
-    auto const& sle = this->operator*();
+    auto const& sle = this->sleRef();
     auto const permissionArray = sle.getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)
     {
@@ -68,7 +68,7 @@ DelegateEntry<ViewT>::removeFromLedger(AccountID const&)
     if (!this->exists())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto& sle = this->operator*();
+    auto& sle = this->sleRef();
     auto const delegator = sle[sfAccount];
     auto const delegatee = sle[sfAuthorize];
 
