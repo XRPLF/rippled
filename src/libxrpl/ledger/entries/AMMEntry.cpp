@@ -148,12 +148,12 @@ AMMEntry<ViewT>::tradingFee(AccountID const& account) const
 {
     using namespace std::chrono;
     XRPL_ASSERT(
-        Base::operator->()->isFieldPresent(sfAuctionSlot),
+        this->sleRef().isFieldPresent(sfAuctionSlot),
         "xrpl::AMMEntry::tradingFee : auction present");
-    if (Base::operator->()->isFieldPresent(sfAuctionSlot))
+    if (this->sleRef().isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
-            safeDowncast<STObject const&>(Base::operator->()->peekAtField(sfAuctionSlot));
+            safeDowncast<STObject const&>(this->sleRef().peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(this->readView().header().parentCloseTime.time_since_epoch())
@@ -171,7 +171,7 @@ AMMEntry<ViewT>::tradingFee(AccountID const& account) const
             }
         }
     }
-    return Base::operator*()[sfTradingFee];
+    return this->sleRef()[sfTradingFee];
 }
 
 template class AMMEntry<ReadView>;
