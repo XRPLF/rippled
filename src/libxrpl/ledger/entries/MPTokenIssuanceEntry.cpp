@@ -67,7 +67,7 @@ template <typename ViewT>
 bool
 MPTokenIssuanceEntry<ViewT>::isFrozen(AccountID const& account, std::uint8_t depth) const
 {
-    MPTIssue const mptIssue{(**this)[sfSequence], (**this)[sfIssuer]};
+    MPTIssue const mptIssue{this->sleRef()[sfSequence], this->sleRef()[sfIssuer]};
     return isGlobalFrozen() || isIndividualFrozen(this->readView(), account, mptIssue) ||
         isVaultPseudoAccountFrozen(account, depth);
 }
