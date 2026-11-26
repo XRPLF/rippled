@@ -39,8 +39,9 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Give magic numbers a named constant, or reuse the existing one.
 - Avoid global variables, especially objects with static storage duration:
   their initialization and destruction order across files is unspecified.
-- Define non-trivial (not one-liner) non-template functions in the `.cpp`
-  file, not in the header.
+- Define non-trivial (not one-liner) functions in the `.cpp` file, not in the
+  header, unless they must be visible to callers (templates, `constexpr` and
+  `consteval` functions).
 - Before converting a value to a narrower or differently-signed integer type,
   check that it fits. Use `safeCast` (`include/xrpl/basics/safe_cast.h`) when
   every source value fits, so the compiler verifies it, and `unsafeCast` after
