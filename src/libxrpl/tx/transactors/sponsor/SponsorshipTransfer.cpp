@@ -523,7 +523,7 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     balanceBeforeFee(sponseeSle.rawSle()),
-                    std::optional<AccountRootEntryR>{},
+                    std::nullopt,
                     {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))

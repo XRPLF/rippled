@@ -156,7 +156,7 @@ checkReserve(
  *
  * @param view The apply view for making changes
  * @param accountSle The account's ledger entry
- * @param sponsorSle The sponsor's ledger entry (if applicable)
+ * @param sponsorSle The sponsor's ledger entry, or nullptr if unsponsored
  * @param count Amount to add to the owner count
  * @param j Journal for logging
  */
@@ -164,7 +164,7 @@ void
 increaseOwnerCount(
     ApplyView& view,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -210,7 +210,7 @@ increaseOwnerCount(
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    increaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    increaseOwnerCount(view, accountSle, sponsorSle ? &*sponsorSle : nullptr, count, j);
 }
 
 /**
@@ -223,7 +223,7 @@ increaseOwnerCount(
  *
  * @param view The apply view for making changes
  * @param accountSle The account's ledger entry
- * @param sponsorSle The sponsor's ledger entry (if applicable)
+ * @param sponsorSle The sponsor's ledger entry, or nullptr if unsponsored
  * @param count Amount to remove from the owner count
  * @param j Journal for logging
  */
@@ -231,7 +231,7 @@ void
 decreaseOwnerCount(
     ApplyView& view,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::uint32_t count,
     beast::Journal j);
 
@@ -256,7 +256,7 @@ decreaseOwnerCount(
     std::optional<AccountRootEntryW> sponsorSle;
     if (sponsor)
         sponsorSle.emplace(*sponsor, view);
-    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    decreaseOwnerCount(view, accountSle, sponsorSle ? &*sponsorSle : nullptr, count, j);
 }
 
 /**

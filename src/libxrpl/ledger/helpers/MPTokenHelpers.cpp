@@ -286,8 +286,8 @@ authorizeMPToken(
         ctx.view.insert(mptoken);
 
         // Update owner count.
-        increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, sponsorSle ? sponsorSle->rawSle() : SLE::const_pointer{});
+        increaseOwnerCount(ctx.view, sleAcct, sponsorSle ? &*sponsorSle : nullptr, 1, journal);
+        addSponsorToLedgerEntry(mptoken, rawSleOrNull(sponsorSle));
 
         return tesSUCCESS;
     }
@@ -1030,7 +1030,7 @@ checkCreateMPT(
         std::optional<AccountRootEntryW> sponsorAccSle;
         if (sponsorSle)
             sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
-        increaseOwnerCount(view, sleAcct, sponsorAccSle, 1, j);
+        increaseOwnerCount(view, sleAcct, sponsorAccSle ? &*sponsorAccSle : nullptr, 1, j);
     }
     return tesSUCCESS;
 }

@@ -45,7 +45,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
         {
-            if (auto const sle = AccountRootEntryR(issuer, ctx.view); sle)
+            if (auto const sle = AccountRootEntryR(issuer, ctx.view))
             {
                 if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
                     return tecNO_PERMISSION;
