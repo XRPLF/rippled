@@ -660,7 +660,7 @@ class Delegate_test : public beast::unit_test::Suite
             // alice deletes account, this will remove the Delegate object from
             // both alice's and bob's owner directories
             auto const deleteFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, carol), Fee(deleteFee));
+            env(acctdelete(alice, carol));
             env.close();
 
             BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
@@ -712,7 +712,7 @@ class Delegate_test : public beast::unit_test::Suite
             // bob's owner directories so alice's delegation does not survive
             // a potential account resurrection.
             auto const deleteFee = drops(env.current()->fees().increment);
-            env(acctdelete(bob, carol), Fee(deleteFee));
+            env(acctdelete(bob, carol));
             env.close();
 
             BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
@@ -727,8 +727,7 @@ class Delegate_test : public beast::unit_test::Suite
             BEAST_EXPECT(sleAlice2);
             BEAST_EXPECT(sleAlice2->getFieldU32(sfOwnerCount) == 0);
 
-            auto const aliceDeleteFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, carol), Fee(aliceDeleteFee));
+            env(acctdelete(alice, carol));
             env.close();
 
             BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
@@ -772,7 +771,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const daveBalance = env.balance(dave);
 
             auto const deleteFee = drops(env.current()->fees().increment);
-            env(acctdelete(bob, dave), Fee(deleteFee));
+            env(acctdelete(bob, dave));
             env.close();
 
             // bob's account and directory are gone

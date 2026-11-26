@@ -4,7 +4,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
@@ -1147,8 +1146,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfNextPageMin));
 
         // Attempt to delete alice's account, but fail because she owns NFTs.
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, minter), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, minter), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // minter sells the last 32 NFTs back to alice.

@@ -7,7 +7,6 @@
 #include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/directory.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -211,8 +210,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
-                auto const acctDelFee{drops(env.current()->fees().increment)};
-                env(acctdelete(issuer, other), Fee(acctDelFee));
+                env(acctdelete(issuer, other));
                 env.close();
             }
 
@@ -249,8 +247,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
-                auto const acctDelFee{drops(env.current()->fees().increment)};
-                env(acctdelete(issuer, other), Fee(acctDelFee));
+                env(acctdelete(issuer, other));
                 env.close();
             }
 
@@ -285,8 +282,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 int const delta = env.seq(subject) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
-                auto const acctDelFee{drops(env.current()->fees().increment)};
-                env(acctdelete(subject, other), Fee(acctDelFee));
+                env(acctdelete(subject, other));
                 env.close();
             }
 
@@ -323,8 +319,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 int const delta = env.seq(subject) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
-                auto const acctDelFee{drops(env.current()->fees().increment)};
-                env(acctdelete(subject, other), Fee(acctDelFee));
+                env(acctdelete(subject, other));
                 env.close();
             }
 
@@ -780,8 +775,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
-                auto const acctDelFee{drops(env.current()->fees().increment)};
-                env(acctdelete(issuer, other), Fee(acctDelFee));
+                env(acctdelete(issuer, other));
 
                 // can't accept - no issuer account
                 jv = credentials::accept(subject, issuer, credType);

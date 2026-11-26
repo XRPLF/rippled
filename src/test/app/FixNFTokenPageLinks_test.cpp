@@ -159,7 +159,9 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             env(tx, ticket::Use(ticketSeq), Ter(temINVALID));
         }
         // Fee too low.
-        env(ledger_state_fix::nftPageLinks(alice, alice), Ter(telINSUF_FEE_P));
+        env(ledger_state_fix::nftPageLinks(alice, alice),
+            Fee(drops(env.current()->fees().base)),
+            Ter(telINSUF_FEE_P));
 
         // Invalid flags.
         auto const linkFixFee = drops(env.current()->fees().increment);

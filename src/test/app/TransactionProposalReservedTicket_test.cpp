@@ -799,7 +799,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
 
         incLgrSeqForAccDel(env, target);
-        env(acctdelete(target, bob), Fee(env.current()->fees().increment));
+        env(acctdelete(target, bob));
         env.close();
 
         BEAST_EXPECT(!env.le(keylet::account(target.id())));
@@ -850,7 +850,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, bob) == proposal::kProposalOwnerCount);
 
         incLgrSeqForAccDel(env, target);
-        env(acctdelete(target, dest), Fee(env.current()->fees().increment));
+        env(acctdelete(target, dest));
         env.close();
 
         BEAST_EXPECT(!env.le(keylet::account(target.id())));
@@ -891,7 +891,7 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             env, alice, proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq));
 
         incLgrSeqForAccDel(env, alice);
-        env(acctdelete(alice, bob), Fee(env.current()->fees().increment), Ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, bob), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         BEAST_EXPECT(env.le(keylet::account(alice.id())));

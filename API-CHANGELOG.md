@@ -22,6 +22,12 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Bugfixes
+
+- `sign`, `submit`, and `simulate`: When fee autofill cannot calculate a fee for the transaction, it uses the open ledger's base fee instead of the server's configured reference fee. The `fee_mult_max` and `fee_div_max` limit uses the same value. ([#8725](https://github.com/XRPLF/rippled/pull/8725))
+
 ## XRP Ledger server version 3.6.0
 
 Version 3.6.0 is not yet released.

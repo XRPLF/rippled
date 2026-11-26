@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
@@ -13,7 +14,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -71,22 +71,7 @@ fillFee(json::Value& jv, ReadView const& view)
     if (jv.isMember(jss::Fee))
         return;
 
-    auto const base = view.fees().base;
-
-    // For confidential transactions, the fee is higher because confidential
-    // transaction processing is more expensive.
-    auto const txType = jv[jss::TransactionType].asString();
-    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
-        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
-        txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTMirrorUpdate ||
-        txType == jss::ConfidentialMPTHolderKeyUpdate)
-    {
-        jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
-    }
-    else
-    {
-        jv[jss::Fee] = to_string(base);
-    }
+    jv[jss::Fee] = to_string(rpc::getTxFee(view, jv));
 }
 
 void

@@ -8,7 +8,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/noop.h>
@@ -6246,7 +6245,7 @@ public:
                 env.close();
 
             // Account deletion has a high fee.  Account for that.
-            env(acctdelete(gw, alice), Fee(drops(env.current()->fees().increment)));
+            env(acctdelete(gw, alice));
             env.close();
 
             // Verify that gw's account root is gone from the ledger.
