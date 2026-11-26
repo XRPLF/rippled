@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -21,14 +22,14 @@ DIDEntry<ViewT>::addToLedger(AccountID const& owner)
     auto& view = this->applyView();
     auto const j = this->journal();
 
-    auto const sleAccount = view.peek(keylet::account(owner));
+    AccountRootEntryW sleAccount(owner, view, j);
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve = accountReserve(view, sleAccount, j, {.ownerCountDelta = 1});
+        auto const balance = sleAccount->getFieldAmount(sfBalance).xrp();
+        auto const reserve = accountReserve(view, sleAccount.rawSle(), j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -44,8 +45,8 @@ DIDEntry<ViewT>::addToLedger(AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         this->sleRef()[sfOwnerNode] = *page;
     }
-    increaseOwnerCount(view, sleAccount, {}, 1, j);
-    view.update(sleAccount);
+    increaseOwnerCount(view, sleAccount.mutableRawSle(), {}, 1, j);
+    sleAccount.updateInView();
 
     return tesSUCCESS;
 }
@@ -67,11 +68,11 @@ DIDEntry<ViewT>::removeFromLedger(AccountID const& owner)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
+    AccountRootEntryW sleOwner(owner, view, j);
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    decreaseOwnerCountForObject(view, sleOwner, this->mutableRawSle(), 1, j);
+    decreaseOwnerCountForObject(view, sleOwner.mutableRawSle(), this->mutableRawSle(), 1, j);
 
     // Remove object from ledger
     this->eraseFromView();
