@@ -188,7 +188,7 @@ decreaseOwnerCountForObject(
         return;  // LCOV_EXCL_LINE
 
     auto sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    accountSle.decreaseOwnerCount(sponsorSle, count);
+    accountSle.decreaseOwnerCount(sponsorSle ? &*sponsorSle : nullptr, count);
 }
 
 void

@@ -782,7 +782,7 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            senderSle.decreaseOwnerCount(currentSponsor, 1);
+            senderSle.decreaseOwnerCount(currentSponsor ? &*currentSponsor : nullptr, 1);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);

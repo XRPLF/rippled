@@ -515,7 +515,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = sponseeSle.checkReserve(
                     ctx_.getApplyViewContext(),
                     balanceBeforeFee(sponseeSle.rawSle()),
-                    std::optional<AccountRootEntryR>{},
+                    std::nullopt,
                     {.accountCountDelta = 1});
                 !isTesSuccess(ter))
                 return ter;
