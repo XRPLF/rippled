@@ -52,7 +52,7 @@ void
 MPTokenIssuanceEntry<ViewT>::issuerSelfDebitHook(std::uint64_t amount)
     requires Base::kIsWritable
 {
-    MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
+    MPTIssue const issue{this->sleRef()[sfSequence], this->sleRef()[sfIssuer]};
     auto const available = availableAmount();
     this->applyView().issuerSelfDebitHookMPT(issue, amount, available);
 }
