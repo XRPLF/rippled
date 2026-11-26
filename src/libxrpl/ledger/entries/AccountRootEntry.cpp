@@ -97,7 +97,7 @@ AccountRootEntry<ViewT>::checkReserve(
     TER insufReserveCode) const
 {
     // TODO: swap to assert after fixCleanup3_2_0 is retired
-    if (!this->exists() || this->sleRef().getType() != ltACCOUNT_ROOT)
+    if (!this->exists())
         return tefINTERNAL;  // LCOV_EXCL_LINE
     XRPL_ASSERT(
         !isTesSuccess(insufReserveCode), "xrpl::checkReserve : insufReserveCode is not tesSUCCESS");
@@ -105,13 +105,10 @@ AccountRootEntry<ViewT>::checkReserve(
     {
         if (sponsorSle)
         {
-            if ((*sponsorSle)->getType() != ltACCOUNT_ROOT)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
-
+            AccountRootEntry<ReadView> const& sponsor = *sponsorSle;
             auto const sle = ctx.view.read(
                 keylet::sponsorship(
-                    (*sponsorSle)->getAccountID(sfAccount),
-                    this->sleRef().getAccountID(sfAccount)));
+                    sponsor->getAccountID(sfAccount), this->sleRef().getAccountID(sfAccount)));
 
             // A reserve-sponsored tx must carry a sponsor signature
             // (cosigning path) and/or have a pre-existing sponsorship SLE
@@ -127,8 +124,8 @@ AccountRootEntry<ViewT>::checkReserve(
                     return insufReserveCode;
             }
 
-            auto const sponsorBalance = (*sponsorSle)->getFieldAmount(sfBalance).xrp();
-            XRPAmount const sponsorReserve = sponsorSle->reserve(adj);
+            auto const sponsorBalance = sponsor->getFieldAmount(sfBalance).xrp();
+            XRPAmount const sponsorReserve = sponsor.reserve(adj);
 
             if (sponsorBalance < sponsorReserve)
                 return insufReserveCode;
@@ -163,9 +160,7 @@ AccountRootEntry<ViewT>::checkReserve(ApplyViewContext ctx, XRPAmount accBalance
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
 
-    std::optional<AccountRootEntry<ReadView>> sponsorSle;
-    if (*sponsorExp)
-        sponsorSle.emplace(**sponsorExp);
+    std::optional<AccountRootEntry<ReadView>> const sponsorSle(*sponsorExp);
     return checkReserve(ctx, accBalance, sponsorSle, adj);
 }
 
