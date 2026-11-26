@@ -16,19 +16,16 @@ template <typename ViewT>
 VaultVersion
 VaultEntry<ViewT>::version() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT,
-        "xrpl::VaultEntry::version : valid Vault sle");
-    return decodeVaultVersion(this->sleRef().at(~sfLEVersion));
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::version : valid Vault sle");
+    return decodeVaultVersion(this->sleRef()[~sfLEVersion]);
 }
 
 template <typename ViewT>
 VaultKind
 VaultEntry<ViewT>::kind() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
-    auto const vaultKind = this->sleRef().at(~sfVaultKind);
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::kind : valid Vault sle");
+    auto const vaultKind = this->sleRef()[~sfVaultKind];
     if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
         return VaultKind::ClosedEnded;
     return VaultKind::OpenEnded;
