@@ -12,7 +12,7 @@ template <typename ViewT>
 std::int64_t
 MPTokenIssuanceEntry<ViewT>::maxAmount() const
 {
-    return maxMPTAmount(**this);
+    return maxMPTAmountthis->sleRef();
 }
 
 template class MPTokenIssuanceEntry<ReadView>;
