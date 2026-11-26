@@ -186,8 +186,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
             // LCOV_EXCL_STOP
         }
 
-        auto const sleHolding =
-            view.read(keylet::unchecked(this->sleRef().getFieldH256(sfReferenceHolding)));
+        auto const sleHolding = view.read(keylet::unchecked(this->sleRef()[sfReferenceHolding]));
         if (!sleHolding)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
