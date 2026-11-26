@@ -37,6 +37,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Delete dead code rather than disabling it with `#if 0` or commenting it out.
   Don't add functions, overloads or parameters that nothing uses yet.
 - Give magic numbers a named constant, or reuse the existing one.
+- Avoid global variables, especially objects with static storage duration:
+  their initialization and destruction order across files is unspecified.
 - Define non-trivial (not one-liner) non-template functions in the `.cpp`
   file, not in the header.
 - Before converting a value to a narrower or differently-signed integer type,
@@ -123,6 +125,9 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 - Put private data members at the top of a class, followed by the public
   special members in this order: destructor, default constructor, copy
   constructor, copy assignment, move constructor, move assignment.
+- Mark single-argument constructors `explicit` unless the implicit conversion
+  is intended.
+- Prefer `private` to `protected`.
 
 ## Naming
 
