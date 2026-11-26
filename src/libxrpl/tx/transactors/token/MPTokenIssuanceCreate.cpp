@@ -203,7 +203,7 @@ MPTokenIssuanceCreate::create(
     }
 
     // Update owner count.
-    increaseOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
+    increaseOwnerCount(ctx.view, acct, sponsorSle ? &*sponsorSle : nullptr, 1, journal);
 
     return mptId;
 }
