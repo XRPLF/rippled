@@ -1270,7 +1270,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (NFTokenOfferEntryW offer(index, view, viewJ); offer)
+        if (NFTokenOfferEntryW offer{index, view, viewJ})
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == kExpiredOfferRemoveLimit)

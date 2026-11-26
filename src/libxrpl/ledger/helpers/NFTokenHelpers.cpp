@@ -592,7 +592,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
         // deleting during iteration.
         for (int i = offerIndexes.size() - 1; i >= 0; --i)
         {
-            if (NFTokenOfferEntryW offer(offerIndexes[i], view); offer)
+            if (NFTokenOfferEntryW offer{offerIndexes[i], view})
             {
                 if (deleteTokenOffer(view, offer))
                 {
