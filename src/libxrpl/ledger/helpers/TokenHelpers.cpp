@@ -733,7 +733,7 @@ directSendNoFeeIOU(
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
-    if (RippleStateEntryW sleRippleState(index, view, j))
+    if (RippleStateEntryW sleRippleState{index, view, j})
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
