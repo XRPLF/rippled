@@ -24,7 +24,7 @@ template <typename ViewT>
 std::int64_t
 MPTokenIssuanceEntry<ViewT>::maxAmount() const
 {
-    return maxMPTAmount(**this);
+    return maxMPTAmountthis->sleRef();
 }
 
 template <typename ViewT>
@@ -48,7 +48,7 @@ template <typename ViewT>
 STAmount
 MPTokenIssuanceEntry<ViewT>::issuerFundsToSelfIssue() const
 {
-    MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
+    MPTIssue const issue{this->sleRef()[sfSequence], this->sleRef()[sfIssuer]};
     auto const available = availableAmount();
     return this->readView().balanceHookSelfIssueMPT(issue, available);
 }
@@ -58,7 +58,7 @@ void
 MPTokenIssuanceEntry<ViewT>::issuerSelfDebitHook(std::uint64_t amount)
     requires Base::kIsWritable
 {
-    MPTIssue const issue{(**this)[sfSequence], (**this)[sfIssuer]};
+    MPTIssue const issue{this->sleRef()[sfSequence], this->sleRef()[sfIssuer]};
     auto const available = availableAmount();
     this->applyView().issuerSelfDebitHookMPT(issue, amount, available);
 }
@@ -160,7 +160,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
 
     auto const& view = this->readView();
 
-    auto const issuer = (**this)[sfIssuer];
+    auto const issuer = this->sleRef()[sfIssuer];
     if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
         return tesSUCCESS;
 
