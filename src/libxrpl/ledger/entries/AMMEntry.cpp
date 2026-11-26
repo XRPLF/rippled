@@ -192,16 +192,16 @@ AMMEntry<ViewT>::initializeFeeAuctionVote(
     voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
     voteEntry.setAccountID(sfAccount, account);
     voteSlots.pushBack(voteEntry);
-    Base::operator->()->setFieldArray(sfVoteSlots, voteSlots);
+    this->sleRef().setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (!Base::operator->()->isFieldPresent(sfAuctionSlot))
+    if (!this->sleRef().isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
-        Base::operator->()->set(std::move(auctionSlot));
+        this->sleRef().set(std::move(auctionSlot));
     }
-    STObject& auctionSlot = Base::operator->()->peekFieldObject(sfAuctionSlot);
+    STObject& auctionSlot = this->sleRef().peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
@@ -213,11 +213,11 @@ AMMEntry<ViewT>::initializeFeeAuctionVote(
     // Set the fee
     if (tfee != 0)
     {
-        Base::operator->()->setFieldU16(sfTradingFee, tfee);
+        this->sleRef().setFieldU16(sfTradingFee, tfee);
     }
-    else if (Base::operator->()->isFieldPresent(sfTradingFee))
+    else if (this->sleRef().isFieldPresent(sfTradingFee))
     {
-        Base::operator->()->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
+        this->sleRef().makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
     }
     if (auto const dfee = tfee / kAuctionSlotDiscountedFeeFraction)
     {
