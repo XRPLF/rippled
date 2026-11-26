@@ -34,7 +34,7 @@ checkFreeze(
         }
     }
 
-    if (RippleStateEntryR const sle(src, dst, currency, view))
+    if (RippleStateEntryR const sle{src, dst, currency, view})
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
