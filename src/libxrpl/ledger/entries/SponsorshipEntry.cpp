@@ -35,7 +35,7 @@ SponsorshipEntry<ViewT>::hasBudget(
     // If the transaction omits a field, it keeps whatever the existing object holds,
     // so fall back to the current SLE value when the tx does not set it.
     STAmount const currentFee =
-        this->exists() ? (**this)[~sfFeeAmount].value_or(STAmount{0}) : STAmount{0};
+        this->exists() ? this->sleRef()[~sfFeeAmount].value_or(STAmount{0}) : STAmount{0};
     STAmount const newFee = currentFee + feeAmountDelta.value_or(STAmount{0});
 
     std::int64_t const newCount = totalRemainingOwnerCount(remainingOwnerCountDelta);
@@ -77,8 +77,8 @@ SponsorshipEntry<ViewT>::removeFromLedger()
     auto& view = this->applyView();
     auto const j = this->journal();
 
-    auto const sponsorID = (**this)[sfOwner];
-    auto const sponseeID = (**this)[sfSponsee];
+    auto const sponsorID = this->sleRef()[sfOwner];
+    auto const sponseeID = this->sleRef()[sfSponsee];
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
@@ -86,14 +86,16 @@ SponsorshipEntry<ViewT>::removeFromLedger()
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(sponsorID), (**this)[sfOwnerNode], this->key(), false))
+    if (!view.dirRemove(
+            keylet::ownerDir(sponsorID), this->sleRef()[sfOwnerNode], this->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsor.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    if (!view.dirRemove(keylet::ownerDir(sponseeID), (**this)[sfSponseeNode], this->key(), false))
+    if (!view.dirRemove(
+            keylet::ownerDir(sponseeID), this->sleRef()[sfSponseeNode], this->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsee.";

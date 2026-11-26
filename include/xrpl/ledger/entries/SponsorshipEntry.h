@@ -50,7 +50,7 @@ public:
     totalRemainingOwnerCount(std::optional<std::int32_t> const& remainingOwnerCountDelta) const
     {
         std::uint32_t const currentCount =
-            this->exists() ? (**this)[~sfRemainingOwnerCount].value_or(0u) : 0u;
+            this->exists() ? this->sleRef()[~sfRemainingOwnerCount].value_or(0u) : 0u;
         return static_cast<std::int64_t>(currentCount) + remainingOwnerCountDelta.value_or(0);
     }
 
