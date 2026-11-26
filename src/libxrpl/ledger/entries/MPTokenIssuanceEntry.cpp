@@ -160,7 +160,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
 
     auto const& view = this->readView();
 
-    auto const issuer = (**this)[sfIssuer];
+    auto const issuer = this->sleRef()[sfIssuer];
     if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
         return tesSUCCESS;
 
