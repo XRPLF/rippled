@@ -143,7 +143,7 @@ void
 adjustOwnerCountSigned(
     ApplyView& view,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::int32_t adjustment,
     beast::Journal j)
 {
@@ -166,21 +166,18 @@ adjustOwnerCountSigned(
 
         if (sponsorSle)
         {
-            bool const validSponsorType = (*sponsorSle)->getType() == ltACCOUNT_ROOT;
-            XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
-            if (!validSponsorType)
-                return;  // LCOV_EXCL_LINE
-            auto const sponsorID = (*sponsorSle)->getAccountID(sfAccount);
+            AccountRootEntryW& sponsor = *sponsorSle;
+            auto const sponsorID = sponsor->getAccountID(sfAccount);
 
             totalOwnerCount.sponsored = adjustOwnerCountImpl(
                 view, accountSle.mutableRawSle(), sfSponsoredOwnerCount, accountID, adjustment, j);
 
             {
-                OwnerCounts const sponsorCurrent(sponsorSle->rawSle());
+                OwnerCounts const sponsorCurrent(sponsor.rawSle());
                 OwnerCounts sponsorAdjustment(sponsorCurrent);
                 sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
                     view,
-                    sponsorSle->mutableRawSle(),
+                    sponsor.mutableRawSle(),
                     sfSponsoringOwnerCount,
                     sponsorID,
                     adjustment,
@@ -319,7 +316,7 @@ void
 increaseOwnerCount(
     ApplyView& view,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::uint32_t count,
     beast::Journal j)
 {
@@ -346,10 +343,7 @@ increaseOwnerCount(
     XRPL_ASSERT(
         sponsorExp.has_value(), "xrpl::increaseOwnerCount : sponsor validated before mutation");
 
-    std::optional<AccountRootEntryW> sponsorSle;
-    if (sponsorExp && *sponsorExp)
-        sponsorSle.emplace(std::move(**sponsorExp));
-
+    AccountRootEntryW* const sponsorSle = sponsorExp && *sponsorExp ? &**sponsorExp : nullptr;
     increaseOwnerCount(ctx.view, accountSle, sponsorSle, count, j);
 }
 
@@ -357,7 +351,7 @@ void
 decreaseOwnerCount(
     ApplyView& view,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::uint32_t count,
     beast::Journal j)
 {
@@ -388,7 +382,7 @@ decreaseOwnerCountForObject(
         return;  // LCOV_EXCL_LINE
 
     auto sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    decreaseOwnerCount(view, accountSle, sponsorSle ? &*sponsorSle : nullptr, count, j);
 }
 
 void
@@ -447,12 +441,10 @@ checkReserve(
     {
         if (sponsorSle)
         {
-            if ((*sponsorSle)->getType() != ltACCOUNT_ROOT)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
-
+            AccountRootEntryR const& sponsor = *sponsorSle;
             auto const sle = ctx.view.read(
                 keylet::sponsorship(
-                    (*sponsorSle)->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+                    sponsor->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
             // A reserve-sponsored tx must carry a sponsor signature
             // (cosigning path) and/or have a pre-existing sponsorship SLE
@@ -468,8 +460,8 @@ checkReserve(
                     return insufReserveCode;
             }
 
-            auto const sponsorBalance = (*sponsorSle)->getFieldAmount(sfBalance).xrp();
-            XRPAmount const sponsorReserve = accountReserve(ctx.view, *sponsorSle, j, adj);
+            auto const sponsorBalance = sponsor->getFieldAmount(sfBalance).xrp();
+            XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsor, j, adj);
 
             if (sponsorBalance < sponsorReserve)
                 return insufReserveCode;
@@ -507,9 +499,7 @@ checkReserve(
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
 
-    std::optional<AccountRootEntryR> sponsorSle;
-    if (*sponsorExp)
-        sponsorSle.emplace(**sponsorExp);
+    std::optional<AccountRootEntryR> const sponsorSle(*sponsorExp);
     return checkReserve(ctx, accSle, accBalance, sponsorSle, adj, j);
 }
 
