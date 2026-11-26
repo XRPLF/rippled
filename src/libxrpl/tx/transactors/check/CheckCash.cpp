@@ -558,7 +558,7 @@ CheckCash::doApply()
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
-                    if (RippleStateEntryW sleTrustLine(*trustLineKey, psb); sleTrustLine)
+                    if (RippleStateEntryW sleTrustLine(*trustLineKey, psb))
                         sleTrustLine->at(tweakedLimit) = savedLimit;
                 }
             });

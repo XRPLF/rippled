@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -121,7 +122,7 @@ RippleStateEntry<ViewT>::create(
     XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) == (bSetHigh ? uHighAccountID : uLowAccountID),
         "xrpl::trustCreate : matching account ID");
-    auto const slePeer = view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
+    AccountRootEntryW const slePeer(bSetHigh ? uLowAccountID : uHighAccountID, view);
     if (!slePeer)
         return tecNO_TARGET;
 
