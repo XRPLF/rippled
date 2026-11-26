@@ -288,7 +288,7 @@ trustCreate(
     std::optional<AccountRootEntryW> sponsorAccSle;
     if (sponsorSle)
         sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
-    increaseOwnerCount(view, accountSle, sponsorAccSle, 1, j);
+    increaseOwnerCount(view, accountSle, sponsorAccSle ? &*sponsorAccSle : nullptr, 1, j);
 
     addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
@@ -383,7 +383,7 @@ updateTrustLine(
         // Clear the reserve of the sender, possibly delete the line!
         auto currentSponsor =
             getLedgerEntryReserveSponsor(view, state, bSenderHigh ? sfHighSponsor : sfLowSponsor);
-        decreaseOwnerCount(view, sle, currentSponsor, 1, j);
+        decreaseOwnerCount(view, sle, currentSponsor ? &*currentSponsor : nullptr, 1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
@@ -720,7 +720,7 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
-        sponsorSle ? sponsorSle->mutableRawSle() : SLE::pointer{},
+        rawSleOrNull(sponsorSle),
         journal);
 }
 
@@ -758,13 +758,15 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = AccountRootEntryW(line->at(sfLowLimit)->getIssuer(), ctx.view);
+        auto sleLowAccount =
+            AccountRootEntryW(line->getFieldAmount(sfLowLimit).getIssuer(), ctx.view);
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
 
-        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
+        decreaseOwnerCount(
+            ctx.view, sleLowAccount, currentLowSponsor ? &*currentLowSponsor : nullptr, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -775,13 +777,19 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = AccountRootEntryW(line->at(sfHighLimit)->getIssuer(), ctx.view);
+        auto sleHighAccount =
+            AccountRootEntryW(line->getFieldAmount(sfHighLimit).getIssuer(), ctx.view);
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
 
-        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
+        decreaseOwnerCount(
+            ctx.view,
+            sleHighAccount,
+            currentHighSponsor ? &*currentHighSponsor : nullptr,
+            1,
+            journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -843,7 +851,7 @@ deleteAMMTrustLine(
     if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, 1, j);
+    decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle ? &*sponsorSle : nullptr, 1, j);
 
     return tesSUCCESS;
 }

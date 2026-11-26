@@ -196,7 +196,7 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::Ref sle, SF_ACCOUNT const& fi
         XRPL_ASSERT(
             ctx.view.rules().enabled(featureSponsor),
             "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
-        addSponsorToLedgerEntry(sle, (**sponsorSle).rawSle(), field);
+        addSponsorToLedgerEntry(sle, rawSleOrNull(*sponsorSle), field);
     }
 }
 
