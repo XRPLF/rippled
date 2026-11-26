@@ -109,7 +109,7 @@ SponsorshipEntry<ViewT>::removeFromLedger()
     // Return any prefunded fee amount to the sponsor before erasing the object.
     if (this->sleRef().isFieldPresent(sfFeeAmount))
     {
-        sponsorAccSle->at(sfBalance) += this->sleRef()[sfFeeAmount];
+        sponsorAccSle->at(sfBalance) += this->sleRef().getFieldAmount(sfFeeAmount);
         sponsorAccSle.updateInView();
     }
 
