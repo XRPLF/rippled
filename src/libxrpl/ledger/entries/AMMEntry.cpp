@@ -37,8 +37,8 @@ AMMEntry<ViewT>::holds(
 {
     auto const j = this->journal();
     auto const assets = [&] -> std::optional<std::pair<Asset, Asset>> {
-        auto const asset1 = Base::operator*()[sfAsset];
-        auto const asset2 = Base::operator*()[sfAsset2];
+        auto const asset1 = this->sleRef()[sfAsset];
+        auto const asset2 = this->sleRef()[sfAsset2];
         if (optAsset1 && optAsset2)
         {
             if (invalidAMMAssetPair(
@@ -85,13 +85,13 @@ AMMEntry<ViewT>::holds(
         return std::unexpected(tecAMM_INVALID_TOKENS);
     auto const [amount1, amount2] = ammPoolHolds(
         this->readView(),
-        Base::operator->()->getAccountID(sfAccount),
+        this->sleRef().getAccountID(sfAccount),
         assets->first,
         assets->second,
         freezeHandling,
         authHandling,
         j);
-    return std::make_tuple(amount1, amount2, Base::operator*()[sfLPTokenBalance]);
+    return std::make_tuple(amount1, amount2, this->sleRef()[sfLPTokenBalance]);
 }
 
 template <typename ViewT>
@@ -105,8 +105,8 @@ AMMEntry<ViewT>::lpHolds(AccountID const& lpAccount) const
 
     auto const& view = this->readView();
     auto const j = this->journal();
-    AccountID const ammAccount = Base::operator*()[sfAccount];
-    auto const currency = ammLPTCurrency(Base::operator*()[sfAsset], Base::operator*()[sfAsset2]);
+    AccountID const ammAccount = this->sleRef()[sfAccount];
+    auto const currency = ammLPTCurrency(this->sleRef()[sfAsset], this->sleRef()[sfAsset2]);
     STAmount amount;
 
     auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
