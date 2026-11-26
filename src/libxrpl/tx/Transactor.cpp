@@ -838,7 +838,7 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    std::uint64_t const page{(*ticket)[sfOwnerNode]};
+    std::uint64_t const page{ticket->at(sfOwnerNode)};
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
         // LCOV_EXCL_START
@@ -880,7 +880,7 @@ Transactor::ticketDelete(
     // Update the Ticket owner's reserve.
     decreaseOwnerCountForObject(view, sleAccount, ticket.mutableRawSle(), 1, j);
 
-    std::uint32_t const ticketSeq{(*ticket)[sfTicketSequence]};
+    std::uint32_t const ticketSeq{ticket->at(sfTicketSequence)};
 
     // Remove Ticket from ledger.
     ticket.eraseFromView();
