@@ -297,8 +297,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     ammSle.initializeFeeAuctionVote(account, lptIss, ctx.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    auto const ammRawSle = ammSle.mutableRawSle();
-    if (auto const ter = dirLink(sb, accountId, ammRawSle); ter)
+    if (auto const ter = dirLink(sb, accountId, ammSle.mutableRawSle()); ter)
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
