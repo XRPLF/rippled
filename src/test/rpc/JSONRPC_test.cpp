@@ -3123,6 +3123,46 @@ public:
                 req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == env.current()->fees().increment.jsonClipped());
         }
+
+        // When the fee cannot be calculated, the fallback is the ledger's base fee, not the
+        // configured reference fee.
+        env.app().config().fees.referenceFee = 100 * baseFee;
+
+        {
+            json::Value req;
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!rpc::containsError(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) && req[jss::tx_json][jss::Fee] == baseFee);
+        }
+
+        {
+            json::Value req;
+            json::Reader().parse(
+                R"({ "fee_mult_max" : 1, "fee_div_max" : 2, "tx_json" : { } } )", req);
+            json::Value const result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 5");
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
     }
 
     void

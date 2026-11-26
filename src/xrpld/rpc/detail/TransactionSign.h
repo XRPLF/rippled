@@ -72,6 +72,18 @@ checkFee(
     TxQ const& txQ,
     Application const& app);
 
+/**
+ * Estimate the base fee for a transaction in a ledger.
+ *
+ * The estimate is not scaled for server load or fee escalation. If the
+ * transaction is malformed or its fee cannot be calculated, the ledger's base
+ * fee is returned.
+ *
+ * @param view The ledger to calculate the fee against.
+ * @param tx The transaction JSON. It is taken by value, so the caller's object
+ *           is not changed.
+ * @return The estimated fee.
+ */
 [[nodiscard]] XRPAmount
 getTxFee(ReadView const& view, json::Value tx);
 
