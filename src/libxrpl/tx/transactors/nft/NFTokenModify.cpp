@@ -20,12 +20,12 @@ NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
     if (auto const owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
-        return temMALFORMED;
+        return temDST_IS_SRC;
 
     if (auto uri = ctx.tx[~sfURI])
     {
         if (uri->empty() || uri->length() > kMaxTokenUriLength)
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
     }
 
     return tesSUCCESS;

@@ -65,7 +65,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
 
     // issuer is the same as holder
     if (ctx.tx[sfAccount] == *mptHolder)
-        return temMALFORMED;
+        return temDST_IS_SRC;
 
     if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;

@@ -78,7 +78,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                 Ter(terNO_ACCOUNT));
 
             // can not clawback from self.
-            env(amm::ammClawback(gw, gw, usd, btc, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(gw, gw, usd, btc, std::nullopt), Ter(temDST_IS_SRC));
 
             // provided Asset does not match issuer gw
             {

@@ -109,7 +109,7 @@ private:
                 CreateArg{
                     .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", 750, 1}},
                     .fee = baseFee,
-                    .err = Ter(temMALFORMED),
+                    .err = Ter(temDUPLICATE),
                 });
 
             // Price is not included
@@ -125,14 +125,14 @@ private:
                 CreateArg{
                     .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", std::nullopt, 1}},
                     .fee = baseFee,
-                    .err = Ter(temMALFORMED),
+                    .err = Ter(temDUPLICATE),
                 });
             // Token pair is in add and delete
             oracle.set(
                 CreateArg{
                     .series = {{"XRP", "EUR", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
                     .fee = baseFee,
-                    .err = Ter(temMALFORMED),
+                    .err = Ter(temDUPLICATE),
                 });
 
             // Array of token pair is 0 or exceeds 10
@@ -240,19 +240,25 @@ private:
             // Asset class
             std::string assetClass(17, '0');
             oracle.set(
-                CreateArg{.assetClass = assetClass, .fee = baseFee, .err = Ter(temMALFORMED)});
+                CreateArg{
+                    .assetClass = assetClass,
+                    .fee = baseFee,
+                    .err = Ter(temBAD_FIELD_LENGTH),
+                });
             // provider
             std::string const large(257, '0');
-            oracle.set(CreateArg{.provider = large, .fee = baseFee, .err = Ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{.provider = large, .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
             // URI
-            oracle.set(CreateArg{.uri = large, .fee = baseFee, .err = Ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = large, .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
             // Empty field
             // Asset class
-            oracle.set(CreateArg{.assetClass = "", .fee = baseFee, .err = Ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{.assetClass = "", .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
             // provider
-            oracle.set(CreateArg{.provider = "", .fee = baseFee, .err = Ter(temMALFORMED)});
+            oracle.set(CreateArg{.provider = "", .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
             // URI
-            oracle.set(CreateArg{.uri = "", .fee = baseFee, .err = Ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = "", .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
         }
 
         {
@@ -387,7 +393,7 @@ private:
                 UpdateArg{
                     .series = {{"XRP", "EUR", std::nullopt, std::nullopt}, {"XRP", "EUR", 740, 1}},
                     .fee = baseFee,
-                    .err = Ter(temMALFORMED),
+                    .err = Ter(temDUPLICATE),
                 });
             // Delete token pair that doesn't exist in this oracle
             oracle.set(

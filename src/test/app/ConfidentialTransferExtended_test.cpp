@@ -434,7 +434,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .dest = bob,
                 .amt = 10,
                 .credentials = std::vector<std::string>{},
-                .err = temMALFORMED,
+                .err = temARRAY_EMPTY,
             });
         }
 
@@ -460,7 +460,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .dest = bob,
                 .amt = 10,
                 .credentials = tooManyCredentials,
-                .err = temMALFORMED,
+                .err = temARRAY_TOO_LARGE,
             });
         }
 
@@ -491,7 +491,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .dest = bob,
                 .amt = 10,
                 .credentials = {{credIdx, credIdx}},
-                .err = temMALFORMED,
+                .err = temDUPLICATE,
             });
         }
 

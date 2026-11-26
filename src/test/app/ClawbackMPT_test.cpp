@@ -94,7 +94,7 @@ class ClawbackMPT_test : public beast::unit_test::Suite
             env.close();
 
             // fails when issuer and holder are the same account
-            env(claw(alice, mpt(5), alice), Ter(temMALFORMED));
+            env(claw(alice, mpt(5), alice), Ter(temDST_IS_SRC));
             env.close();
         }
 

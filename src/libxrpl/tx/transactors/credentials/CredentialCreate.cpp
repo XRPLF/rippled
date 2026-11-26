@@ -65,14 +65,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
-        return temMALFORMED;
+        return temBAD_FIELD_LENGTH;
     }
 
     auto const credType = tx[sfCredentialType];
     if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return temBAD_FIELD_LENGTH;
     }
 
     return tesSUCCESS;

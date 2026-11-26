@@ -27,7 +27,7 @@ NotTEC
 MPTokenAuthorize::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
-        return temMALFORMED;
+        return temDST_IS_SRC;
 
     return tesSUCCESS;
 }

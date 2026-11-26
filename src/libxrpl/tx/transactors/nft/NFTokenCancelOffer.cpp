@@ -24,8 +24,11 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     auto const& offerIds = ctx.tx[sfNFTokenOffers];
 
-    if (offerIds.empty() || (offerIds.size() > kMaxTokenOfferCancelCount))
-        return temMALFORMED;
+    if (offerIds.empty())
+        return temARRAY_EMPTY;
+
+    if (offerIds.size() > kMaxTokenOfferCancelCount)
+        return temARRAY_TOO_LARGE;
 
     // Zero offer IDs cannot be passed as ledger entry keys.
     if (ctx.rules.enabled(fixCleanup3_2_0) &&
@@ -37,7 +40,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
     std::ranges::sort(ids);
     if (std::ranges::adjacent_find(ids) != ids.end())
-        return temMALFORMED;
+        return temDUPLICATE;
 
     return tesSUCCESS;
 }

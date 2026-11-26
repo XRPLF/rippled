@@ -874,7 +874,10 @@ public:
             env(acctdelete(becky, alice), Fee(acctDelFee), Ter(tecNO_PERMISSION));
 
             // becky use empty credentials and can't delete account
-            env(acctdelete(becky, alice), Fee(acctDelFee), credentials::Ids({}), Ter(temMALFORMED));
+            env(acctdelete(becky, alice),
+                Fee(acctDelFee),
+                credentials::Ids({}),
+                Ter(temARRAY_EMPTY));
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),

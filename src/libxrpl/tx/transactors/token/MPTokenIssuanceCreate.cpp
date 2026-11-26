@@ -84,7 +84,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
-            return temMALFORMED;
+            return temINVALID_FLAG;
 
         // Confidential amounts are encrypted so transfer rate is disallowed.
         if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
@@ -104,17 +104,17 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
     }
 
     // Check if maximumAmount is within unsigned 63 bit range
     if (auto const maxAmt = ctx.tx[~sfMaximumAmount])
     {
         if (maxAmt == 0)
-            return temMALFORMED;
+            return temBAD_AMOUNT;
 
         if (maxAmt > kMaxMpTokenAmount)
-            return temMALFORMED;
+            return temBAD_AMOUNT;
     }
     return tesSUCCESS;
 }

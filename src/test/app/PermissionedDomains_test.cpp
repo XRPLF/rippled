@@ -177,7 +177,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         // Make an empty CredentialType.
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         txJsonMutable["AcceptedCredentials"][2u][jss::Credential]["CredentialType"] = "";
-        env(txJsonMutable, Ter(temMALFORMED));
+        env(txJsonMutable, Ter(temBAD_FIELD_LENGTH));
 
         // Make too long CredentialType.
         static constexpr std::string_view kLongCredentialType =
@@ -213,7 +213,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
             auto const sorted = pdomain::sortCredentials(credentialsDup);
             BEAST_EXPECT(sorted.size() == 4);
-            env(pdomain::setTx(account, credentialsDup, domain), Ter(temMALFORMED));
+            env(pdomain::setTx(account, credentialsDup, domain), Ter(temDUPLICATE));
 
             env.close();
             env(pdomain::setTx(account, sorted, domain));

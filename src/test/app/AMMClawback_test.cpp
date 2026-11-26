@@ -115,10 +115,10 @@ class AMMClawback_test : public beast::unit_test::Suite
             AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
 
             // Issuer can not clawback from himself.
-            env(amm::ammClawback(gw, gw, usd, XRP, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(gw, gw, usd, XRP, std::nullopt), Ter(temDST_IS_SRC));
 
             // Holder can not clawback from himself.
-            env(amm::ammClawback(alice, alice, usd, XRP, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(alice, alice, usd, XRP, std::nullopt), Ter(temDST_IS_SRC));
         }
 
         // Test if the Asset field matches the Account field.

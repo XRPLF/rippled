@@ -849,7 +849,7 @@ private:
         env.close();
 
         // Malformed credential array (duplicates) is rejected by checkFields
-        env(withdrawToDest(), credentials::Ids({credIdx, credIdx}), Ter{temMALFORMED});
+        env(withdrawToDest(), credentials::Ids({credIdx, credIdx}), Ter{temDUPLICATE});
         env.close();
 
         // Valid credential not authorized by dest hits authorizedDepositPreauth error path

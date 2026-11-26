@@ -821,7 +821,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 auto jv = pay(alice, bob, XRP(100));
                 jv[sfCredentialIDs.jsonName] = json::ValueType::Array;
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temARRAY_EMPTY));
                 env.close();
             }
 
@@ -889,7 +889,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                         {.issuer = issuer, .credType = credType},
                         {.issuer = issuer, .credType = credType},
                     }),
-                Ter(temMALFORMED));
+                Ter(temDUPLICATE));
 
             // Bob setup DepositPreauth object
             env(deposit::authCredentials(bob, {{.issuer = issuer, .credType = credType}}));
@@ -929,7 +929,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             }
 
             // Error, duplicate credentials
-            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, credIdx}), Ter(temMALFORMED));
+            env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx, credIdx}), Ter(temDUPLICATE));
 
             // Alice can pay
             env(pay(alice, bob, XRP(100)), credentials::Ids({credIdx}));
@@ -1056,7 +1056,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 // empty credential type
                 auto const jv = deposit::authCredentials(bob, {{.issuer = issuer, .credType = {}}});
-                env(jv, Ter(temMALFORMED));
+                env(jv, Ter(temBAD_FIELD_LENGTH));
             }
 
             {
@@ -1334,7 +1334,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
 
             // zelda can't finish escrow with invalid credentials
             {
-                env(escrow::finish(zelda, alice, seq), credentials::Ids({}), Ter(temMALFORMED));
+                env(escrow::finish(zelda, alice, seq), credentials::Ids({}), Ter(temARRAY_EMPTY));
                 env.close();
             }
 
@@ -1460,12 +1460,13 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 auto credentials2 = copyCredentials;
                 credentials2.push_back(c);
-                env(deposit::authCredentials(stock, credentials2), Ter(temMALFORMED));
+                env(deposit::authCredentials(stock, credentials2), Ter(temDUPLICATE));
             }
 
-            // create batch of credentials and save their hashes
+            // Create one fewer credential than the maximum, so that adding a
+            // duplicate tests duplicate detection, not the array size limit.
             std::vector<std::string> credentialIDs;
-            for (auto const& c : credentials)
+            for (auto const& c : copyCredentials)
             {
                 env(credentials::create(alice, c.issuer, c.credType));
                 env.close();
@@ -1484,7 +1485,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
                 auto credentialIDs2 = credentialIDs;
                 credentialIDs2.push_back(h);
 
-                env(pay(alice, bob, XRP(100)), credentials::Ids(credentialIDs2), Ter(temMALFORMED));
+                env(pay(alice, bob, XRP(100)), credentials::Ids(credentialIDs2), Ter(temDUPLICATE));
             }
         }
     }

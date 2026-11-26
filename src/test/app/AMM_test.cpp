@@ -551,14 +551,6 @@ private:
                     STAmount{USD, 1, -1},
                     std::nullopt,
                 },
-                {
-                    tfTwoAssetIfEmpty | tfLPToken,
-                    std::nullopt,
-                    XRP(100),
-                    USD(100),
-                    STAmount{USD, 1, -1},
-                    std::nullopt,
-                },
             };
             for (auto const& it : invalidOptions)
             {
@@ -574,6 +566,19 @@ private:
                     std::get<5>(it),
                     Ter(temMALFORMED));
             }
+
+            // Two flags set, so the popcount check fails.
+            ammAlice.deposit(
+                alice_,
+                std::nullopt,
+                XRP(100),
+                USD(100),
+                STAmount{USD, 1, -1},
+                tfTwoAssetIfEmpty | tfLPToken,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(temINVALID_FLAG));
 
             {
                 // bad preflight1
@@ -1580,7 +1585,7 @@ private:
                     std::nullopt,
                     std::nullopt,
                     std::nullopt,
-                    temMALFORMED,
+                    temINVALID_FLAG,
                 },
                 {
                     std::nullopt,
@@ -1588,7 +1593,7 @@ private:
                     std::nullopt,
                     std::nullopt,
                     tfSingleAsset | tfTwoAsset,
-                    temMALFORMED,
+                    temINVALID_FLAG,
                 },
                 {1'000, std::nullopt, std::nullopt, std::nullopt, tfWithdrawAll, temMALFORMED},
                 {
@@ -1597,7 +1602,7 @@ private:
                     XRP(100),
                     std::nullopt,
                     tfWithdrawAll | tfLPToken,
-                    temMALFORMED,
+                    temINVALID_FLAG,
                 },
                 {std::nullopt, std::nullopt, USD(100), std::nullopt, tfWithdrawAll, temMALFORMED},
                 {
@@ -1606,7 +1611,7 @@ private:
                     std::nullopt,
                     std::nullopt,
                     tfWithdrawAll | tfOneAssetWithdrawAll,
-                    temMALFORMED,
+                    temINVALID_FLAG,
                 },
                 {std::nullopt, USD(100), std::nullopt, std::nullopt, tfWithdrawAll, temMALFORMED},
                 {
@@ -1633,7 +1638,7 @@ private:
                     USD(100),
                     IOUAmount{250, 0},
                     std::nullopt,
-                    temMALFORMED,
+                    temINVALID_FLAG,
                 },
                 {std::nullopt, XRP(100), USD(100), IOUAmount{250, 0}, std::nullopt, temMALFORMED},
                 {1'000, XRP(100), USD(100), std::nullopt, std::nullopt, temMALFORMED},
@@ -2669,6 +2674,25 @@ private:
                     .authAccounts = {bob_, ed, bill, scott, james},
                 }),
                 Ter(temMALFORMED));
+        });
+
+        // Auth accounts include the bidder or a duplicate.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1'000), bob_);
+            env.close();
+            ammAlice.deposit(carol_, 1'000'000);
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 100,
+                    .authAccounts = {carol_},
+                }),
+                Ter(temDST_IS_SRC));
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 100,
+                    .authAccounts = {bob_, bob_},
+                }),
+                Ter(temDUPLICATE));
         });
 
         // Bid price exceeds LP owned tokens

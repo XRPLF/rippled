@@ -111,7 +111,7 @@ class MPToken_test : public beast::unit_test::Suite
                 .assetScale = 0,
                 .transferFee = 1,
                 .metadata = "test",
-                .err = temMALFORMED,
+                .err = temINVALID_FLAG,
             });
 
             if (!features[featureSingleAssetVault] || !features[featurePermissionedDomains])
@@ -164,7 +164,7 @@ class MPToken_test : public beast::unit_test::Suite
                 .assetScale = 0,
                 .transferFee = kMaxTransferFee,
                 .metadata = "test",
-                .err = temMALFORMED,
+                .err = temINVALID_FLAG,
             });
 
             // empty metadata returns error
@@ -173,16 +173,16 @@ class MPToken_test : public beast::unit_test::Suite
                 .assetScale = 0,
                 .transferFee = 0,
                 .metadata = "",
-                .err = temMALFORMED,
+                .err = temBAD_FIELD_LENGTH,
             });
 
             // MaximumAmount of 0 returns error
             mptAlice.create({
                 .maxAmt = 0,
                 .assetScale = 1,
-                .transferFee = 1,
+                .transferFee = 0,
                 .metadata = "test",
-                .err = temMALFORMED,
+                .err = temBAD_AMOUNT,
             });
 
             // MaximumAmount larger than 63 bit returns error
@@ -191,14 +191,14 @@ class MPToken_test : public beast::unit_test::Suite
                 .assetScale = 0,
                 .transferFee = 0,
                 .metadata = "test",
-                .err = temMALFORMED,
+                .err = temBAD_AMOUNT,
             });
             mptAlice.create({
                 .maxAmt = kMaxMpTokenAmount + 1,  // 9'223'372'036'854'775'808
                 .assetScale = 0,
                 .transferFee = 0,
                 .metadata = "test",
-                .err = temMALFORMED,
+                .err = temBAD_AMOUNT,
             });
         }
 
@@ -389,9 +389,9 @@ class MPToken_test : public beast::unit_test::Suite
             // has a value of 1
             mptAlice.authorize({.account = bob, .flags = 0x00000002, .err = temINVALID_FLAG});
 
-            mptAlice.authorize({.account = bob, .holder = bob, .err = temMALFORMED});
+            mptAlice.authorize({.account = bob, .holder = bob, .err = temDST_IS_SRC});
 
-            mptAlice.authorize({.holder = alice, .err = temMALFORMED});
+            mptAlice.authorize({.holder = alice, .err = temDST_IS_SRC});
         }
 
         // Try authorizing when MPTokenIssuance doesn't exist in
@@ -659,7 +659,7 @@ class MPToken_test : public beast::unit_test::Suite
                         .account = alice,
                         .holder = bob,
                         .domainID = UInt256(42),
-                        .err = temMALFORMED,
+                        .err = temMUTUALLY_EXCLUSIVE,
                     });
                 }
             }
@@ -671,7 +671,7 @@ class MPToken_test : public beast::unit_test::Suite
             // if the holder is the same as the acct that submitted the tx,
             // tx fails
             mptAlice.set(
-                {.account = alice, .holder = alice, .flags = tfMPTLock, .err = temMALFORMED});
+                {.account = alice, .holder = alice, .flags = tfMPTLock, .err = temDST_IS_SRC});
         }
 
         // Validate fields in MPTokenIssuanceSet (preclaim)
@@ -3051,7 +3051,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.close();
 
             // alice can't claw back from herself
-            env(claw(alice, mpt(5), alice), Ter(temMALFORMED));
+            env(claw(alice, mpt(5), alice), Ter(temDST_IS_SRC));
             env.close();
 
             // can't clawback negative amount
@@ -3545,7 +3545,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create({.ownerCount = 1});
 
             std::string const metadata(kMaxMpTokenMetadataLength + 1, 'a');
-            mptAlice.set({.account = alice, .metadata = metadata, .err = temMALFORMED});
+            mptAlice.set({.account = alice, .metadata = metadata, .err = temBAD_FIELD_LENGTH});
         }
 
         // Can not set metadata when it is immutable

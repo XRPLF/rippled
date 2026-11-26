@@ -82,10 +82,15 @@ AMMBid::preflight(PreflightContext const& ctx)
             for (auto const& obj : authAccounts)
             {
                 auto const authAccount = obj[sfAccount];
-                if (authAccount == account || unique.contains(authAccount))
+                if (authAccount == account)
                 {
                     JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
-                    return temMALFORMED;
+                    return temDST_IS_SRC;
+                }
+                if (unique.contains(authAccount))
+                {
+                    JLOG(ctx.j.debug()) << "AMM Bid: Duplicate auth.account.";
+                    return temDUPLICATE;
                 }
                 unique.insert(authAccount);
             }

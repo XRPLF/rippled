@@ -445,6 +445,7 @@ struct PayChan_test : public beast::unit_test::Suite
             Ter(temBAD_EXPIRATION));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
+        env(claim(alice, chan), Txflags(tfClose | tfRenew), Ter(temMUTUALLY_EXCLUSIVE));
         env(claim(bob, chan), Txflags(tfRenew), Ter(tecNO_PERMISSION));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
@@ -872,7 +873,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 Ter(tecBAD_CREDENTIALS));
 
             // Fail, empty credentials
-            env(claim(alice, chan, delta, delta), credentials::Ids({}), Ter(temMALFORMED));
+            env(claim(alice, chan, delta, delta), credentials::Ids({}), Ter(temARRAY_EMPTY));
 
             {
                 // claim fails cause of expired credentials
@@ -1922,14 +1923,14 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
         jv = claim(bob, chan, authAmt.value(), authAmt.value(), Slice(sig), alice.pk());
         jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
-        env(jv, Ter(temMALFORMED));
+        env(jv, Ter(temBAD_SIGNATURE));
         jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);
-        env(jv, Ter(temMALFORMED));
+        env(jv, Ter(temBAD_SIGNATURE));
         badPrefix = pkHex;
         badPrefix[0] = 'f';
         badPrefix[1] = 'f';
         jv["PublicKey"] = badPrefix;
-        env(jv, Ter(temMALFORMED));
+        env(jv, Ter(temBAD_SIGNATURE));
 
         // missing public key
         jv.removeMember("PublicKey");

@@ -281,7 +281,7 @@ struct Escrow_test : public beast::unit_test::Suite
         env(escrow::create("alice", "bob", XRP(100)),
             escrow::kCancelTime(env.now() + 90s),
             Fee(baseFee * 150),
-            Ter(temMALFORMED));
+            Ter(temINVALID));
 
         // Creating an escrow with only a cancel time and a kCondition is
         // allowed:
@@ -372,7 +372,7 @@ struct Escrow_test : public beast::unit_test::Suite
         // Fail if neither a FinishTime nor a kCondition are attached:
         env(escrow::create("alice", "carol", XRP(1)),
             escrow::kCancelTime(env.now() + 1s),
-            Ter(temMALFORMED));
+            Ter(temINVALID));
 
         // Fail if FinishAfter has already passed:
         env(escrow::create("alice", "carol", XRP(1)),

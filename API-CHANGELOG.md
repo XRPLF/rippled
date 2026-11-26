@@ -26,6 +26,10 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 Version 3.6.0 is not yet released.
 
+### Breaking changes in 3.6.0
+
+- Many preflight checks that returned `temMALFORMED` now return a more specific result code. Three new codes are added: `temBAD_FIELD_LENGTH` (a field is empty or too long), `temDUPLICATE` (an array has a duplicate entry), and `temMUTUALLY_EXCLUSIVE` (two fields or flags cannot be used together). Existing codes are also used in more places: `temARRAY_EMPTY` and `temARRAY_TOO_LARGE` for `CredentialIDs` and `NFTokenOffers`, `temDST_IS_SRC` when an account names itself as holder, owner, issuer or authorized account, `temINVALID` when a required field is missing, `temINVALID_FLAG` for invalid flag combinations, `temBAD_AMOUNT` for out-of-range amounts, and `temBAD_SIGNATURE` for an invalid `PublicKey` in `PaymentChannelClaim`. The affected transactions are `AccountDelete`, `AMMBid`, `AMMClawback`, `AMMDeposit`, `AMMWithdraw`, `Clawback`, `ConfidentialMPTSend`, `CredentialAccept`, `CredentialCreate`, `CredentialDelete`, `DelegateSet`, `DepositPreauth`, `DIDSet`, `EscrowCreate`, `EscrowFinish`, `LoanBrokerCoverWithdraw`, `MPTokenAuthorize`, `MPTokenIssuanceCreate`, `MPTokenIssuanceSet`, `NFTokenAcceptOffer`, `NFTokenCancelOffer`, `NFTokenMint`, `NFTokenModify`, `OracleSet`, `Payment`, `PaymentChannelClaim`, `PermissionedDomainSet`, `VaultCreate`, `VaultSet`, `VaultWithdraw`, and `ttFEE`. These are `tem` codes, so the transactions are still rejected and never reach a ledger. ([#6405](https://github.com/XRPLF/rippled/pull/6405))
+
 ### Bugfixes in 3.6.0
 
 - `log_level`: The `severity` and `partition` parameters now return `invalidParams` when supplied with non-string values, instead of causing an internal error. ([#7595](https://github.com/XRPLF/rippled/pull/7595))

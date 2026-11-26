@@ -135,11 +135,16 @@ checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > kMaxCredentialsArraySize))
+    if (credentials.empty())
     {
-        JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
+        JLOG(j.trace()) << "Malformed transaction: Credentials array is empty.";
+        return temARRAY_EMPTY;
+    }
+    if (credentials.size() > kMaxCredentialsArraySize)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Credentials array size is too large: "
                         << credentials.size();
-        return temMALFORMED;
+        return temARRAY_TOO_LARGE;
     }
 
     if (rules.enabled(fixCleanup3_4_0) &&
@@ -156,7 +161,7 @@ checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
         if (!ins)
         {
             JLOG(j.trace()) << "Malformed transaction: duplicates in credentials.";
-            return temMALFORMED;
+            return temDUPLICATE;
         }
     }
 
@@ -315,7 +320,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
                             << ct.size();
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
         }
 
         auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
@@ -323,7 +328,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "duplicates in credentials.";
-            return temMALFORMED;
+            return temDUPLICATE;
         }
     }
 

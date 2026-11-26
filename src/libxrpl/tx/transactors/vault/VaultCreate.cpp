@@ -64,7 +64,7 @@ NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
     if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
-        return temMALFORMED;
+        return temBAD_FIELD_LENGTH;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
@@ -88,7 +88,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::kZero)
-            return temMALFORMED;
+            return temBAD_AMOUNT;
 
         // An AssetsMaximum out of range for the asset, e.g. XRP above
         // STAmount::kMaxNativeN, would throw when rounded to the asset.
@@ -99,7 +99,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
     }
 
     if (auto const scale = ctx.tx[~sfScale])

@@ -40,7 +40,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
         }
     }
 
@@ -49,7 +49,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         if (*assetMax < beast::kZero)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
-            return temMALFORMED;
+            return temBAD_AMOUNT;
         }
     }
 

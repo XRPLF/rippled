@@ -504,13 +504,13 @@ class FeeVote_test : public beast::unit_test::Suite
 
             // Test transaction with missing required new fields
             auto const missingTx = createFeeTxMissingRequiredFields(ledger->seq());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temMALFORMED);
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temINVALID);
 
             // Test transaction that has all the required fields but also carries
             // the legacy fields. Now that XRPFees is retired those are forbidden,
-            // and rejected with temMALFORMED rather than the former temDISABLED.
+            // and rejected with temINVALID rather than the former temDISABLED.
             auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temMALFORMED);
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temINVALID);
 
             Serializer s;
             disallowedTx.add(s);
@@ -538,11 +538,11 @@ class FeeVote_test : public beast::unit_test::Suite
 
             // Test transaction with missing required new fields
             auto const missingTx = createFeeTxMissingRequiredFields(ledger->seq());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temMALFORMED);
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, missingTx) == temINVALID);
 
             // Test transaction with legacy fields
             auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temMALFORMED);
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temINVALID);
 
             // Valid XRP fee fields, but none of the gas fields
             STTx const noGasTx(ttFEE, [&](auto& obj) {

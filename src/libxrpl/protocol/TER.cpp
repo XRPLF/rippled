@@ -211,6 +211,9 @@ transResults()
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
         MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided byte code is invalid."),
+        MAKE_ERROR(temBAD_FIELD_LENGTH,          "Malformed: Field length is invalid."),
+        MAKE_ERROR(temDUPLICATE,                 "Malformed: Duplicate entry in array."),
+        MAKE_ERROR(temMUTUALLY_EXCLUSIVE,        "Malformed: Fields are mutually exclusive."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

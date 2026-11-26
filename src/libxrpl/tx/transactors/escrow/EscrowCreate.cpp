@@ -186,7 +186,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
                                "Condition, or Bytecode.";
-        return temMALFORMED;
+        return temINVALID;
     }
 
     if (auto const cb = ctx.tx[~sfCondition])

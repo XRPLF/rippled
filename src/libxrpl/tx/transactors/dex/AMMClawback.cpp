@@ -60,7 +60,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (issuer == holder)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: holder cannot be the same as issuer.";
-        return temMALFORMED;
+        return temDST_IS_SRC;
     }
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];

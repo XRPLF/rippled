@@ -65,7 +65,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (hasDomain && hasHolder)
-        return temMALFORMED;
+        return temMUTUALLY_EXCLUSIVE;
 
     if (enablePrivacy && hasHolder)
         return temMALFORMED;
@@ -77,7 +77,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
-        return temMALFORMED;
+        return temDST_IS_SRC;
 
     if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT) ||
         ctx.rules.enabled(featureConfidentialTransfer))
@@ -106,7 +106,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temBAD_TRANSFER_FEE;
 
         if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
-            return temMALFORMED;
+            return temBAD_FIELD_LENGTH;
 
         // If the immutable flags field is included, at least one flag must be
         // specified, and undefined flags must not be specified.

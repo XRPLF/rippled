@@ -58,7 +58,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 
     {
         if (ctx.tx.isFlag(tfClose) && ctx.tx.isFlag(tfRenew))
-            return temMALFORMED;
+            return temMUTUALLY_EXCLUSIVE;
     }
 
     if (auto const sig = ctx.tx[~sfSignature])
@@ -78,7 +78,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 
         Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
-            return temMALFORMED;
+            return temBAD_SIGNATURE;
 
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;

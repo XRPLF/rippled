@@ -92,11 +92,11 @@ Change::preclaim(PreclaimContext const& ctx)
             if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
                 !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                 !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
-                return temMALFORMED;
+                return temINVALID;
             // The XRPFees feature has been retired, these fields are forbidden now.
             if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                 ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
-                return temMALFORMED;
+                return temINVALID;
             if (ctx.view.rules().enabled(featureSmartEscrow))
             {
                 if (!ctx.tx.isFieldPresent(sfGasLimit) ||

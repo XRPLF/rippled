@@ -126,17 +126,20 @@ struct DID_test : public beast::unit_test::Suite
 
         // uri is too long
         std::string const longString(257, 'a');
-        env(did::set(alice), did::Uri(longString), Ter(temMALFORMED));
+        env(did::set(alice), did::Uri(longString), Ter(temBAD_FIELD_LENGTH));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // document is too long
-        env(did::set(alice), did::Document(longString), Ter(temMALFORMED));
+        env(did::set(alice), did::Document(longString), Ter(temBAD_FIELD_LENGTH));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // attestation is too long
-        env(did::set(alice), did::Document("data"), did::Data(longString), Ter(temMALFORMED));
+        env(did::set(alice),
+            did::Document("data"),
+            did::Data(longString),
+            Ter(temBAD_FIELD_LENGTH));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 

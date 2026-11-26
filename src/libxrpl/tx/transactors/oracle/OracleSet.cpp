@@ -56,7 +56,7 @@ OracleSet::preflight(PreflightContext const& ctx)
 
     if (isInvalidLength(sfProvider, kMaxOracleProvider) || isInvalidLength(sfURI, kMaxOracleUri) ||
         isInvalidLength(sfAssetClass, kMaxOracleSymbolClass))
-        return temMALFORMED;
+        return temBAD_FIELD_LENGTH;
 
     return tesSUCCESS;
 }
@@ -97,7 +97,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
-            return temMALFORMED;
+            return temDUPLICATE;
         if (entry[~sfScale] > kMaxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
