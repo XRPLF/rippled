@@ -24,8 +24,9 @@ VaultVersion
 VaultEntry<ViewT>::version() const
 {
     XRPL_ASSERT(
-        *this && (**this).getType() == ltVAULT, "xrpl::VaultEntry::version : valid Vault sle");
-    return decodeVaultVersion((**this).at(~sfLEVersion));
+        *this && this->sleRef().getType() == ltVAULT,
+        "xrpl::VaultEntry::version : valid Vault sle");
+    return decodeVaultVersion(this->sleRef().at(~sfLEVersion));
 }
 
 template <typename ViewT>
@@ -48,9 +49,9 @@ VaultEntry<ViewT>::phase() const
         *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
     return getVaultPhase(
         this->readView(),
-        (**this)[~sfVaultKind],
-        (**this)[~sfSubscriptionDate],
-        (**this)[~sfRedemptionDate]);
+        this->sleRef()[~sfVaultKind],
+        this->sleRef()[~sfSubscriptionDate],
+        this->sleRef()[~sfRedemptionDate]);
 }
 
 template <typename ViewT>
@@ -66,7 +67,7 @@ VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
 {
     Number assetTotal = getAssetsTotal(this->rawSle());
     if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= (**this).at(sfLossUnrealized);
+        assetTotal -= this->sleRef().at(sfLossUnrealized);
     return assetTotal;
 }
 
