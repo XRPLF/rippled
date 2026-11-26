@@ -113,10 +113,10 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
-    (**this)[sfMPTAmount] = amt - pay;
+    this->sleRef()[sfMPTAmount] = amt - pay;
 
     // Overflow check for addition
-    uint64_t const locked = (**this)[~sfLockedAmount].valueOr(0);
+    uint64_t const locked = this->sleRef()[~sfLockedAmount].valueOr(0);
 
     if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
     {  // LCOV_EXCL_START
@@ -127,7 +127,7 @@ MPTokenEntry<ViewT>::lockEscrow(STAmount const& amount)
 
     if (this->sleRef().isFieldPresent(sfLockedAmount))
     {
-        (**this)[sfLockedAmount] += pay;
+        this->sleRef()[sfLockedAmount] += pay;
     }
     else
     {
