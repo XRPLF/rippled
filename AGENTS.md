@@ -23,9 +23,12 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md#pre-commit-hooks) for `pre-commit` setup
 
 ## Code Style
 
-New file placement and header levelization: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md#source-layout). Braces, whitespace, member order, and other conventions: see [docs/CodingStyle.md](./docs/CodingStyle.md). `XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md). Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages). New public functions/methods need a Doxygen-style comment.
+C++ conventions: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md).
+Formatting: see [docs/cpp/formatting.md](./docs/cpp/formatting.md).
+`XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md).
+Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
 
-Comments should explain _why_, not _what_/_how_ — the code already shows that. Only describe what/how when the code itself would otherwise be confusing (a non-obvious workaround, a subtle invariant, a surprising constraint). Write new or changed comments as full sentences: start with a capital letter and end with a period.
+Comment rules: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md#comments); they apply to comments in any language.
 
 ## Architecture
 
