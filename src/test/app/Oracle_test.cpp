@@ -241,7 +241,10 @@ private:
             std::string assetClass(17, '0');
             oracle.set(
                 CreateArg{
-                    .assetClass = assetClass, .fee = baseFee, .err = Ter(temBAD_FIELD_LENGTH)});
+                    .assetClass = assetClass,
+                    .fee = baseFee,
+                    .err = Ter(temBAD_FIELD_LENGTH),
+                });
             // provider
             std::string const large(257, '0');
             oracle.set(
