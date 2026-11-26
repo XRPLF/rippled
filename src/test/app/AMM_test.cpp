@@ -2676,6 +2676,25 @@ private:
                 Ter(temMALFORMED));
         });
 
+        // Auth accounts include the bidder or a duplicate.
+        testAMM([&](AMM& ammAlice, Env& env) {
+            env.fund(XRP(1'000), bob_);
+            env.close();
+            ammAlice.deposit(carol_, 1'000'000);
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 100,
+                    .authAccounts = {carol_},
+                }),
+                Ter(temDST_IS_SRC));
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 100,
+                    .authAccounts = {bob_, bob_},
+                }),
+                Ter(temDUPLICATE));
+        });
+
         // Bid price exceeds LP owned tokens
         testAMM([&](AMM& ammAlice, Env& env) {
             fund(env, gw_, {bob_}, XRP(1'000), {USD(100)}, Fund::Acct);

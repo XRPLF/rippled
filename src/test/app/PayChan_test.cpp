@@ -445,6 +445,7 @@ struct PayChan_test : public beast::unit_test::Suite
             Ter(temBAD_EXPIRATION));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
+        env(claim(alice, chan), Txflags(tfClose | tfRenew), Ter(temMUTUALLY_EXCLUSIVE));
         env(claim(bob, chan), Txflags(tfRenew), Ter(tecNO_PERMISSION));
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(*channelExpiration(*env.current(), chan) == counts(minExpiration) + 50);
