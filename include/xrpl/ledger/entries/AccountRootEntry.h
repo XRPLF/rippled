@@ -111,11 +111,11 @@ public:
      * If sponsorSle is provided, this also adjusts the account's sponsored count
      * and the sponsor's sponsoring count.
      *
-     * @param sponsorSle The sponsor's ledger entry (if applicable)
+     * @param sponsorSle The sponsor's ledger entry, or nullptr if unsponsored
      * @param count Amount to add to the owner count
      */
     void
-    increaseOwnerCount(std::optional<AccountRootEntry<ApplyView>>& sponsorSle, std::uint32_t count)
+    increaseOwnerCount(AccountRootEntry<ApplyView>* sponsorSle, std::uint32_t count)
         requires Base::kIsWritable;
 
     /**
@@ -136,9 +136,7 @@ public:
 
 private:
     void
-    adjustOwnerCountSigned(
-        std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
-        std::int32_t adjustment)
+    adjustOwnerCountSigned(AccountRootEntry<ApplyView>* sponsorSle, std::int32_t adjustment)
         requires Base::kIsWritable;
 
     // Temporary: decreaseOwnerCount still lives in AccountRootHelpers and
@@ -147,7 +145,7 @@ private:
     decreaseOwnerCount(
         ApplyView& view,
         AccountRootEntry<ApplyView>& accountSle,
-        std::optional<AccountRootEntry<ApplyView>>& sponsorSle,
+        AccountRootEntry<ApplyView>* sponsorSle,
         std::uint32_t count,
         beast::Journal j);
 };

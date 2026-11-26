@@ -636,8 +636,7 @@ LoanSet::doApply()
         }
     }
 
-    std::optional<AccountRootEntryW> noSponsor;
-    borrowerSle.increaseOwnerCount(noSponsor, 1);
+    borrowerSle.increaseOwnerCount(nullptr, 1);
 
     {
         auto const balance =

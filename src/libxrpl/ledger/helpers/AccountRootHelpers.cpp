@@ -178,7 +178,7 @@ void
 decreaseOwnerCount(
     ApplyView&,
     AccountRootEntryW& accountSle,
-    std::optional<AccountRootEntryW>& sponsorSle,
+    AccountRootEntryW* sponsorSle,
     std::uint32_t count,
     beast::Journal)
 {
@@ -209,7 +209,7 @@ decreaseOwnerCountForObject(
         return;  // LCOV_EXCL_LINE
 
     auto sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+    decreaseOwnerCount(view, accountSle, sponsorSle ? &*sponsorSle : nullptr, count, j);
 }
 
 void
