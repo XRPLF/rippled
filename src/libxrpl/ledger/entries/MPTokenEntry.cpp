@@ -26,14 +26,15 @@ bool
 MPTokenEntry<ViewT>::isFrozen(AccountID const& account, std::uint8_t depth) const
 {
     auto const& view = this->readView();
-    auto const& sle = **this;
 
-    XRPL_ASSERT(sle[sfAccount] == account, "xrpl::MPTokenEntry::isFrozen : valid MPToken holder");
+    XRPL_ASSERT(
+        this->sleRef()[sfAccount] == account,
+        "xrpl::MPTokenEntry::isFrozen : valid MPToken holder");
 
-    MPTID const mptID = sle[sfMPTokenIssuanceID];
+    MPTID const mptID = this->sleRef()[sfMPTokenIssuanceID];
     auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
 
-    if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || sle.isFlag(lsfMPTLocked))
+    if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || this->sleRef().isFlag(lsfMPTLocked))
         return true;
 
     if (issuanceSle)
@@ -61,10 +62,10 @@ MPTokenEntry<ViewT>::create(
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     mptoken.newSle();
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
+    mptoken->at(sfAccount) = account;
+    mptoken->at(sfMPTokenIssuanceID) = mptIssuanceID;
+    mptoken->at(sfFlags) = flags;
+    mptoken->at(sfOwnerNode) = *ownerNode;
 
     addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
 
