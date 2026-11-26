@@ -160,7 +160,7 @@ adjustOwnerCountSigned(
         OwnerCounts const currentOwnerCount(accountSle.rawSle());
         OwnerCounts totalOwnerCount(currentOwnerCount);
 
-        if (sponsorSle)
+        if (sponsorSle != nullptr)
         {
             AccountRootEntryW& sponsor = *sponsorSle;
             auto const sponsorID = sponsor->getAccountID(sfAccount);
@@ -203,7 +203,7 @@ adjustOwnerCountSigned(
         if (!accountSle.exists())
             return;
         // the remaining are only asserts to preserve existing behavior
-        XRPL_ASSERT(!sponsorSle, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(sponsorSle == nullptr, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
         XRPL_ASSERT(
             accountSle->getType() == ltACCOUNT_ROOT,
             "xrpl::adjustOwnerCountSigned : valid account sle type");
