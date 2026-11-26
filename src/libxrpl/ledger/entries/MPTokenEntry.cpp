@@ -78,9 +78,9 @@ template <typename ViewT>
 bool
 MPTokenEntry<ViewT>::hasObligations() const
 {
-    auto const& sle = **this;
+    auto const& sle = this->sleRef();
 
-    if (sle.at(sfMPTAmount) != 0 ||
+    if (sle[sfMPTAmount] != 0 ||
         (this->readView().rules().enabled(fixCleanup3_1_3) &&
          sle[~sfLockedAmount].value_or(0) != 0))
         return true;
