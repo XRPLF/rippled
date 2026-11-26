@@ -20,9 +20,7 @@ AccountRootEntry<ViewT>::reserve(Adjustment adj) const
     auto const& view = this->readView();
     auto const j = this->journal();
 
-    XRPL_ASSERT(
-        this->exists() && this->sleRef().getType() == ltACCOUNT_ROOT,
-        "xrpl::accountReserve : valid sle");
+    XRPL_ASSERT(this->exists(), "xrpl::accountReserve : valid sle");
 
     if (!view.rules().enabled(featureSponsor))
     {
