@@ -410,22 +410,22 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                ctx.view,                                             // payment sandbox
-                recvLow,                                              // is dest low?
-                issuer,                                               // source
-                receiver,                                             // destination
-                trustLineKey.key,                                     // ledger index
-                sleDest,                                              // Account to add to
-                false,                                                // authorize account
-                !sleDest->isFlag(lsfDefaultRipple),                   //
-                false,                                                // freeze trust line
-                false,                                                // deep freeze trust line
-                initialBalance,                                       // zero initial balance
-                Issue(currency, receiver),                            // limit of zero
-                0,                                                    // quality in
-                0,                                                    // quality out
-                sponsor ? sponsor->mutableRawSle() : SLE::pointer(),  // sponsor
-                journal);                                             // journal
+                ctx.view,                            // payment sandbox
+                recvLow,                             // is dest low?
+                issuer,                              // source
+                receiver,                            // destination
+                trustLineKey.key,                    // ledger index
+                sleDest,                             // Account to add to
+                false,                               // authorize account
+                !sleDest->isFlag(lsfDefaultRipple),  //
+                false,                               // freeze trust line
+                false,                               // deep freeze trust line
+                initialBalance,                      // zero initial balance
+                Issue(currency, receiver),           // limit of zero
+                0,                                   // quality in
+                0,                                   // quality out
+                rawSleOrNull(sponsor),               // sponsor
+                journal);                            // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -533,8 +533,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(
-                ctx.view, mptID, receiver, sponsor ? sponsor->mutableRawSle() : SLE::pointer(), 0);
+        if (auto const ter = createMPToken(ctx.view, mptID, receiver, rawSleOrNull(sponsor), 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -542,7 +541,7 @@ escrowUnlockApplyHelper<MPTIssue>(
 
         // update owner count.
         AccountRootEntryW receiverSle(receiver, ctx.view, journal);
-        receiverSle.increaseOwnerCount(sponsor, 1);
+        receiverSle.increaseOwnerCount(sponsor ? &*sponsor : nullptr, 1);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)

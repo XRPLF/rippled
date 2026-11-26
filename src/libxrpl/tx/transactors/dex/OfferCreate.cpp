@@ -970,8 +970,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    std::optional<AccountRootEntryW> noSponsor;
-    sleCreator.increaseOwnerCount(noSponsor, 1);
+    sleCreator.increaseOwnerCount(nullptr, 1);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
