@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -105,8 +106,8 @@ MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
         return isAnyFrozen(view, {issuer, account}, assetOfHolding(*this, *sleHolding), depth + 1);
     }
 
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    AccountRootEntryR const mptIssuer(issuer, view);
+    if (!mptIssuer)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
