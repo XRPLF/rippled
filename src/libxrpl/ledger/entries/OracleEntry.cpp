@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -22,9 +23,8 @@ OracleEntry<ViewT>::removeFromLedger(AccountID const& owner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto& view = this->applyView();
-    auto const& sle = this->mutableRawSle();
 
-    if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
+    if (!view.dirRemove(keylet::ownerDir(owner), this->sleRef()[sfOwnerNode], this->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(this->journal().fatal()) << "Unable to delete Oracle from owner.";
@@ -32,12 +32,13 @@ OracleEntry<ViewT>::removeFromLedger(AccountID const& owner)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
+    AccountRootEntryW sleOwner(owner, view, this->journal());
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const count = reserveCount();
-    decreaseOwnerCountForObject(view, sleOwner, sle, count, this->journal());
+    decreaseOwnerCountForObject(
+        view, sleOwner.mutableRawSle(), this->mutableRawSle(), count, this->journal());
     this->eraseFromView();
 
     return tesSUCCESS;
