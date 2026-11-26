@@ -32,7 +32,7 @@ CredentialEntry<ViewT>::removeFromLedger()
             // LCOV_EXCL_STOP
         }
 
-        std::uint64_t const page = Base::operator->()->getFieldU64(node);
+        std::uint64_t const page = this->sleRef().getFieldU64(node);
         if (!this->applyView().dirRemove(keylet::ownerDir(account), page, this->key(), false))
         {
             // LCOV_EXCL_START
@@ -50,9 +50,9 @@ CredentialEntry<ViewT>::removeFromLedger()
         return tesSUCCESS;
     };
 
-    auto const issuer = Base::operator->()->getAccountID(sfIssuer);
-    auto const subject = Base::operator->()->getAccountID(sfSubject);
-    bool const accepted = Base::operator->()->isFlag(lsfAccepted);
+    auto const issuer = this->sleRef().getAccountID(sfIssuer);
+    auto const subject = this->sleRef().getAccountID(sfSubject);
+    bool const accepted = this->sleRef().isFlag(lsfAccepted);
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
