@@ -2,7 +2,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -40,10 +39,6 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
-
-    // Interface used by AccountDelete
-    static TER
-    deleteDelegate(ApplyView& view, SLE::Ref sle, beast::Journal j);
 };
 
 }  // namespace xrpl
