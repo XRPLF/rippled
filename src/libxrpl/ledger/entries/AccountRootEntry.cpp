@@ -201,7 +201,7 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
         OwnerCounts const currentOwnerCount(this->rawSle());
         OwnerCounts totalOwnerCount(currentOwnerCount);
 
-        if (sponsorSle)
+        if (sponsorSle != nullptr)
         {
             AccountRootEntry<ApplyView>& sponsor = *sponsorSle;
             auto const sponsorID = sponsor->getAccountID(sfAccount);
@@ -244,7 +244,7 @@ AccountRootEntry<ViewT>::adjustOwnerCountSigned(
         if (!this->exists())
             return;
         // the remaining are only asserts to preserve existing behavior
-        XRPL_ASSERT(!sponsorSle, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(sponsorSle == nullptr, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
         XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
         std::uint32_t const current{this->sleRef().getFieldU32(sfOwnerCount)};
         AccountID const id = this->sleRef().getAccountID(sfAccount);
