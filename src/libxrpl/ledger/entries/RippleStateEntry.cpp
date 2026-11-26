@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -121,7 +122,7 @@ RippleStateEntry<ViewT>::create(
     XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) == (bSetHigh ? uHighAccountID : uLowAccountID),
         "xrpl::trustCreate : matching account ID");
-    auto const slePeer = view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
+    AccountRootEntryW const slePeer(bSetHigh ? uLowAccountID : uHighAccountID, view);
     if (!slePeer)
         return tecNO_TARGET;
 
@@ -188,22 +189,22 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
     auto const j = this->journal();
 
     bool const accountIsIssuer = account == issuer;
-    if (!accountIsIssuer && this->sleRef().at(sfBalance)->iou() != beast::kZero)
+    if (!accountIsIssuer && this->sleRef().getFieldAmount(sfBalance).iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
     if (this->sleRef().isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto const sleLowAccount =
-            view.peek(keylet::account(this->sleRef().at(sfLowLimit)->getIssuer()));
+        AccountRootEntryW sleLowAccount(
+            this->sleRef().getFieldAmount(sfLowLimit).getIssuer(), view);
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const currentLowSponsor =
             getLedgerEntryReserveSponsor(view, this->rawSle(), sfLowSponsor);
 
-        decreaseOwnerCount(view, sleLowAccount, currentLowSponsor, 1, j);
+        decreaseOwnerCount(view, sleLowAccount.mutableRawSle(), currentLowSponsor, 1, j);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -214,15 +215,15 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
     if (this->sleRef().isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto const sleHighAccount =
-            view.peek(keylet::account(this->sleRef().at(sfHighLimit)->getIssuer()));
+        AccountRootEntryW sleHighAccount(
+            this->sleRef().getFieldAmount(sfHighLimit).getIssuer(), view);
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const currentHighSponsor =
             getLedgerEntryReserveSponsor(view, this->rawSle(), sfHighSponsor);
 
-        decreaseOwnerCount(view, sleHighAccount, currentHighSponsor, 1, j);
+        decreaseOwnerCount(view, sleHighAccount.mutableRawSle(), currentHighSponsor, 1, j);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -231,7 +232,8 @@ RippleStateEntry<ViewT>::removeIfEmpty(AccountID const& account, AccountID const
     }
 
     return this->removeFromLedger(
-        this->sleRef().at(sfLowLimit)->getIssuer(), this->sleRef().at(sfHighLimit)->getIssuer());
+        this->sleRef().getFieldAmount(sfLowLimit).getIssuer(),
+        this->sleRef().getFieldAmount(sfHighLimit).getIssuer());
 }
 
 template class RippleStateEntry<ReadView>;
