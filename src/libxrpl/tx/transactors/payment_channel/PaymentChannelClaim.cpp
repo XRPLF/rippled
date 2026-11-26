@@ -78,7 +78,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 
         Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
-            return telBAD_PUBLIC_KEY;
+            return temBAD_SIGNATURE;
 
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;

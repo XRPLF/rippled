@@ -180,9 +180,9 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create({
                 .maxAmt = 0,
                 .assetScale = 1,
-                .transferFee = 1,
+                .transferFee = 0,
                 .metadata = "test",
-                .err = temINVALID_FLAG,
+                .err = temBAD_AMOUNT,
             });
 
             // MaximumAmount larger than 63 bit returns error

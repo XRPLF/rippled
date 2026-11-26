@@ -1922,14 +1922,14 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
         jv = claim(bob, chan, authAmt.value(), authAmt.value(), Slice(sig), alice.pk());
         jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
-        env(jv, Ter(telBAD_PUBLIC_KEY));
+        env(jv, Ter(temBAD_SIGNATURE));
         jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);
-        env(jv, Ter(telBAD_PUBLIC_KEY));
+        env(jv, Ter(temBAD_SIGNATURE));
         badPrefix = pkHex;
         badPrefix[0] = 'f';
         badPrefix[1] = 'f';
         jv["PublicKey"] = badPrefix;
-        env(jv, Ter(telBAD_PUBLIC_KEY));
+        env(jv, Ter(temBAD_SIGNATURE));
 
         // missing public key
         jv.removeMember("PublicKey");
