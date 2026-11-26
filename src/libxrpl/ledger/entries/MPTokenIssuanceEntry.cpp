@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -116,8 +117,8 @@ MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
         return isAnyFrozen(view, {issuer, account}, assetOfHolding(*this, *sleHolding), depth + 1);
     }
 
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    AccountRootEntryR const mptIssuer(issuer, view);
+    if (!mptIssuer)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -143,12 +144,11 @@ template <typename ViewT>
 bool
 MPTokenIssuanceEntry<ViewT>::isSoleShareholder(AccountID const& account) const
 {
-    std::uint64_t const outstanding = this->sleRef().at(sfOutstandingAmount);
+    std::uint64_t const outstanding = this->sleRef()[sfOutstandingAmount];
     if (outstanding == 0)
         return false;
 
-    auto const shareMPTID =
-        makeMptID(this->sleRef().getFieldU32(sfSequence), this->sleRef().getAccountID(sfIssuer));
+    auto const shareMPTID = makeMptID(this->sleRef()[sfSequence], this->sleRef()[sfIssuer]);
     auto const sleToken = this->readView().read(keylet::mptoken(shareMPTID, account));
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
@@ -195,8 +195,7 @@ MPTokenIssuanceEntry<ViewT>::canTransfer(
             // LCOV_EXCL_STOP
         }
 
-        auto const sleHolding =
-            view.read(keylet::unchecked(this->sleRef().getFieldH256(sfReferenceHolding)));
+        auto const sleHolding = view.read(keylet::unchecked(this->sleRef()[sfReferenceHolding]));
         if (!sleHolding)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
