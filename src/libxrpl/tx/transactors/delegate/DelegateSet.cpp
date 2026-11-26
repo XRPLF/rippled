@@ -118,7 +118,7 @@ DelegateSet::doApply()
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    (*entry)[sfOwnerNode] = *page;
+    entry->setFieldU64(sfOwnerNode, *page);
 
     // Add to authorized account's owner directory so AccountDelete can find
     // and clean up inbound delegations when the authorized account is deleted.
@@ -128,7 +128,7 @@ DelegateSet::doApply()
     if (!destPage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    (*entry)[sfDestinationNode] = *destPage;
+    entry->setFieldU64(sfDestinationNode, *destPage);
 
     entry.insertIntoView();
     increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);

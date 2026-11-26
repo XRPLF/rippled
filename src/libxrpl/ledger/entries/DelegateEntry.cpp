@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -95,12 +96,12 @@ DelegateEntry<ViewT>::removeFromLedger(AccountID const&)
     }
 
     // Only the delegating account's owner count was incremented on creation
-    auto const sleOwner = this->applyView().peek(keylet::account(delegator));
+    AccountRootEntryW sleOwner(delegator, this->applyView(), this->journal());
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     decreaseOwnerCountForObject(
-        this->applyView(), sleOwner, this->mutableRawSle(), 1, this->journal());
+        this->applyView(), sleOwner.mutableRawSle(), this->mutableRawSle(), 1, this->journal());
 
     this->eraseFromView();
 
