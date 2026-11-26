@@ -538,11 +538,12 @@ TrustSet::doApply()
                         ctx_.getApplyViewContext(),
                         sleLowAccount,
                         preFeeBalance_,
-                        lowSponsor ? std::optional<AccountRootEntryR>(*lowSponsor) : std::nullopt,
+                        lowSponsor != nullptr ? std::optional<AccountRootEntryR>(*lowSponsor)
+                                              : std::nullopt,
                         {.ownerCountDelta = 1},
                         j_,
                         tecINSUF_RESERVE_LINE);
-                    lowSponsor && !isTesSuccess(ret))
+                    lowSponsor != nullptr && !isTesSuccess(ret))
                 {
                     return ret;
                 }
@@ -552,7 +553,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            if (lowSponsor)
+            if (lowSponsor != nullptr)
                 addSponsorToLedgerEntry(sleRippleState, lowSponsor->rawSle(), sfLowSponsor);
 
             if (!bHigh)
@@ -582,11 +583,12 @@ TrustSet::doApply()
                         ctx_.getApplyViewContext(),
                         sleHighAccount,
                         preFeeBalance_,
-                        highSponsor ? std::optional<AccountRootEntryR>(*highSponsor) : std::nullopt,
+                        highSponsor != nullptr ? std::optional<AccountRootEntryR>(*highSponsor)
+                                               : std::nullopt,
                         {.ownerCountDelta = 1},
                         j_,
                         tecINSUF_RESERVE_LINE);
-                    highSponsor && !isTesSuccess(ret))
+                    highSponsor != nullptr && !isTesSuccess(ret))
                 {
                     return ret;
                 }
@@ -596,7 +598,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            if (highSponsor)
+            if (highSponsor != nullptr)
                 addSponsorToLedgerEntry(sleRippleState, highSponsor->rawSle(), sfHighSponsor);
 
             if (bHigh)
