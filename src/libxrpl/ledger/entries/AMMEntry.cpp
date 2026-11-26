@@ -100,8 +100,8 @@ AMMEntry<ViewT>::lpHolds(AccountID const& lpAccount) const
 
     auto const& view = this->readView();
     auto const j = this->journal();
-    AccountID const ammAccount = Base::operator*()[sfAccount];
-    auto const currency = ammLPTCurrency(Base::operator*()[sfAsset], Base::operator*()[sfAsset2]);
+    AccountID const ammAccount = this->sleRef()[sfAccount];
+    auto const currency = ammLPTCurrency(this->sleRef()[sfAsset], this->sleRef()[sfAsset2]);
     STAmount amount;
 
     auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
