@@ -133,12 +133,11 @@ template <typename ViewT>
 bool
 MPTokenIssuanceEntry<ViewT>::isSoleShareholder(AccountID const& account) const
 {
-    std::uint64_t const outstanding = this->sleRef().at(sfOutstandingAmount);
+    std::uint64_t const outstanding = this->sleRef()[sfOutstandingAmount];
     if (outstanding == 0)
         return false;
 
-    auto const shareMPTID =
-        makeMptID(this->sleRef().getFieldU32(sfSequence), this->sleRef().getAccountID(sfIssuer));
+    auto const shareMPTID = makeMptID(this->sleRef()[sfSequence], this->sleRef()[sfIssuer]);
     auto const sleToken = this->readView().read(keylet::mptoken(shareMPTID, account));
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
