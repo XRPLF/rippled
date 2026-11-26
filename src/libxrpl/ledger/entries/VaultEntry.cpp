@@ -4,7 +4,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 
@@ -14,10 +13,8 @@ template <typename ViewT>
 VaultVersion
 VaultEntry<ViewT>::version() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT,
-        "xrpl::VaultEntry::version : valid Vault sle");
-    return decodeVaultVersion(this->sleRef().at(~sfLEVersion));
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::version : valid Vault sle");
+    return decodeVaultVersion(this->sleRef()[~sfLEVersion]);
 }
 
 template class VaultEntry<ReadView>;
