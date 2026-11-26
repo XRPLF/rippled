@@ -196,7 +196,7 @@ getPageForToken(
     {
         np->setFieldH256(sfPreviousPageMin, *ppm);
 
-        if (NFTokenPageEntryW p3(Keylet(ltNFTOKEN_PAGE, *ppm), view); p3)
+        if (NFTokenPageEntryW p3{Keylet(ltNFTOKEN_PAGE, *ppm), view})
         {
             p3->setFieldH256(sfNextPageMin, np->key());
             p3.updateInView();
@@ -357,21 +357,21 @@ removeToken(
     auto const& arr = *remaining;
 
     // Page management:
-    auto const loadPage = [&view](NFTokenPageEntryW const& page1, SF_UINT256 const& field) {
-        std::optional<NFTokenPageEntryW> page2;
+    auto const loadPage = [&view](
+                              NFTokenPageEntryW const& page1,
+                              SF_UINT256 const& field) -> std::optional<NFTokenPageEntryW> {
+        auto const id = page1->at(~field);
+        if (!id)
+            return std::nullopt;
 
-        if (auto const id = (*page1)[~field])
+        NFTokenPageEntryW page2(Keylet(ltNFTOKEN_PAGE, *id), view);
+        if (!page2)
         {
-            page2.emplace(Keylet(ltNFTOKEN_PAGE, *id), view);
-
-            if (!*page2)
-            {
-                Throw<std::runtime_error>(std::format(
-                    "page {} has a broken {} field pointing to {}",
-                    to_string(page1->key()),
-                    field.getName(),
-                    to_string(*id)));
-            }
+            Throw<std::runtime_error>(std::format(
+                "page {} has a broken {} field pointing to {}",
+                to_string(page1->key()),
+                field.getName(),
+                to_string(*id)));
         }
 
         return page2;
@@ -406,6 +406,8 @@ removeToken(
 
     if (prev)
     {
+        NFTokenPageEntryW& prevPage = *prev;
+
         // With fixNFTokenPageLinks...
         // The page is empty and there is a prev.  If the last page of the
         // directory is empty then we need to:
@@ -417,9 +419,9 @@ removeToken(
             ((curr->key() & nft::kPageMask) == kPageMask))
         {
             // Copy all relevant information from prev to curr.
-            curr->peekFieldArray(sfNFTokens) = (*prev)->peekFieldArray(sfNFTokens);
+            curr->peekFieldArray(sfNFTokens) = prevPage->peekFieldArray(sfNFTokens);
 
-            if (auto const prevLink = (*prev)->at(~sfPreviousPageMin))
+            if (auto const prevLink = prevPage->at(~sfPreviousPageMin))
             {
                 curr->at(sfPreviousPageMin) = *prevLink;
 
@@ -437,7 +439,7 @@ removeToken(
             decreaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
 
             curr.updateInView();
-            prev->eraseFromView();
+            prevPage.eraseFromView();
             return tesSUCCESS;
         }
 
@@ -445,29 +447,31 @@ removeToken(
         // and then remove it.
         if (next)
         {
-            (*prev)->setFieldH256(sfNextPageMin, (*next)->key());
+            prevPage->setFieldH256(sfNextPageMin, next->key());
         }
         else
         {
-            (*prev)->makeFieldAbsent(sfNextPageMin);
+            prevPage->makeFieldAbsent(sfNextPageMin);
         }
 
-        prev->updateInView();
+        prevPage.updateInView();
     }
 
     if (next)
     {
+        NFTokenPageEntryW& nextPage = *next;
+
         // Make our next page point to our previous page:
         if (prev)
         {
-            (*next)->setFieldH256(sfPreviousPageMin, (*prev)->key());
+            nextPage->setFieldH256(sfPreviousPageMin, prev->key());
         }
         else
         {
-            (*next)->makeFieldAbsent(sfPreviousPageMin);
+            nextPage->makeFieldAbsent(sfPreviousPageMin);
         }
 
-        next->updateInView();
+        nextPage.updateInView();
     }
 
     curr.eraseFromView();
@@ -484,9 +488,7 @@ removeToken(
     // just in case.
     if (prev && next)
     {
-        NFTokenPageEntryW p1(Keylet(ltNFTOKEN_PAGE, (*prev)->key()), view);
-        NFTokenPageEntryW p2(Keylet(ltNFTOKEN_PAGE, (*next)->key()), view);
-        if (mergePages(view, p1, p2))
+        if (mergePages(view, *prev, *next))
             cnt++;
     }
 
