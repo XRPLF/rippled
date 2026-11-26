@@ -15,9 +15,7 @@ template <typename ViewT>
 LoanState
 LoanEntry<ViewT>::state() const
 {
-    XRPL_ASSERT(
-        this->exists() && this->sleRef().getType() == ltLOAN,
-        "xrpl::constructLoanState : valid loan SLE");
+    XRPL_ASSERT(this->exists(), "xrpl::constructLoanState : valid loan SLE");
 
     return constructLoanState(
         this->sleRef().at(sfTotalValueOutstanding),
