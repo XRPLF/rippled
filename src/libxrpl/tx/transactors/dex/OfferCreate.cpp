@@ -525,9 +525,9 @@ OfferCreate::flowCross(
         // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
-            if (OfferEntryW otr(toRemove, psb, j_))
+            if (auto otr = OfferEntryW(toRemove, psb, j_))
                 otr.removeFromLedger();
-            if (OfferEntryW otr(toRemove, psbCancel, j_))
+            if (auto otr = OfferEntryW(toRemove, psbCancel, j_))
                 otr.removeFromLedger();
         }
 

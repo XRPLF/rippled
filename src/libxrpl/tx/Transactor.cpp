@@ -1249,7 +1249,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<UInt256> const& offers, beast:
 
     for (auto const& index : offers)
     {
-        if (OfferEntryW sleOffer(index, view, viewJ))
+        if (auto sleOffer = OfferEntryW(index, view, viewJ))
         {
             // offer is unfunded
             sleOffer.removeFromLedger();

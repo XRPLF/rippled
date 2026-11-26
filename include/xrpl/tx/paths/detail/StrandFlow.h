@@ -779,7 +779,7 @@ flow(
             setUnion(ofrsToRmOnFail, ofrsToRm);
             for (auto const& o : ofrsToRm)
             {
-                if (OfferEntryW ok(o, sb, j))
+                if (auto ok = OfferEntryW(o, sb, j))
                     ok.removeFromLedger();
             }
         }
