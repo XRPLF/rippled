@@ -53,7 +53,7 @@ public:
     isExpired(NetClock::time_point const& closed) const
     {
         std::uint32_t const exp =
-            Base::operator*()[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+            this->sleRef()[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
         std::uint32_t const now = closed.time_since_epoch().count();
         return now > exp;
     }
