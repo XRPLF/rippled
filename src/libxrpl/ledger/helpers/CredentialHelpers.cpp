@@ -40,7 +40,7 @@ bool
 checkExpired(CredentialEntryR const& sleCredential, NetClock::time_point const& closed)
 {
     std::uint32_t const exp =
-        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+        sleCredential->at(~sfExpiration).value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
