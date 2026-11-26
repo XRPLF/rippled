@@ -35,7 +35,7 @@ Header includes must be [levelized](../../.github/scripts/levelization).
   `getFlags()` rather than `getFieldU32(sfFlags)`. When two places must stay
   consistent, make both call one helper instead of keeping two copies in sync.
 - Delete dead code rather than disabling it with `#if 0` or commenting it out.
-  Don't add functions, overloads or parameters that nothing uses yet.
+- Don't add functions, overloads or parameters that nothing uses yet.
 - Give magic numbers a named constant, or reuse the existing one.
 - Avoid global variables, especially objects with static storage duration:
   their initialization and destruction order across files is unspecified.
