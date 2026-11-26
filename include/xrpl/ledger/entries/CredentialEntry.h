@@ -70,13 +70,13 @@ public:
     [[nodiscard]] TER
     isValid(AccountID const& src) const
     {
-        if (Base::operator->()->getAccountID(sfSubject) != src)
+        if (this->sleRef().getAccountID(sfSubject) != src)
         {
             JLOG(this->journal().trace()) << "Credential doesn't belong to the source account.";
             return tecBAD_CREDENTIALS;
         }
 
-        if (!Base::operator->()->isFlag(lsfAccepted))
+        if (!this->sleRef().isFlag(lsfAccepted))
         {
             JLOG(this->journal().trace()) << "Credential isn't accepted.";
             return tecBAD_CREDENTIALS;
