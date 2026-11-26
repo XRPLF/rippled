@@ -23,19 +23,16 @@ template <typename ViewT>
 VaultVersion
 VaultEntry<ViewT>::version() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT,
-        "xrpl::VaultEntry::version : valid Vault sle");
-    return decodeVaultVersion(this->sleRef().at(~sfLEVersion));
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::version : valid Vault sle");
+    return decodeVaultVersion(this->sleRef()[~sfLEVersion]);
 }
 
 template <typename ViewT>
 VaultKind
 VaultEntry<ViewT>::kind() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::kind : valid Vault sle");
-    auto const vaultKind = this->sleRef().at(~sfVaultKind);
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::kind : valid Vault sle");
+    auto const vaultKind = this->sleRef()[~sfVaultKind];
     if (vaultKind && *vaultKind == std::to_underlying(VaultKind::ClosedEnded))
         return VaultKind::ClosedEnded;
     return VaultKind::OpenEnded;
@@ -45,8 +42,7 @@ template <typename ViewT>
 VaultPhase
 VaultEntry<ViewT>::phase() const
 {
-    XRPL_ASSERT(
-        *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::phase : valid Vault sle");
     return getVaultPhase(
         this->readView(),
         this->sleRef()[~sfVaultKind],
@@ -67,7 +63,7 @@ VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
 {
     Number assetTotal = getAssetsTotal(this->rawSle());
     if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= this->sleRef().at(sfLossUnrealized);
+        assetTotal -= this->sleRef()[sfLossUnrealized];
     return assetTotal;
 }
 
