@@ -247,9 +247,9 @@ AMMEntry<ViewT>::verifyAndAdjustLPTokenBalance(STAmount const& lpTokens, Account
     if (res.value())
     {
         if (withinRelativeDistance(
-                lpTokens, Base::operator->()->getFieldAmount(sfLPTokenBalance), Number{1, -3}))
+                lpTokens, this->sleRef().getFieldAmount(sfLPTokenBalance), Number{1, -3}))
         {
-            Base::operator->()->setFieldAmount(sfLPTokenBalance, lpTokens);
+            this->sleRef().setFieldAmount(sfLPTokenBalance, lpTokens);
             this->updateInView();
         }
         else
