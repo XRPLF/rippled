@@ -859,12 +859,10 @@ getCurrentNetworkFee(
 }
 
 [[nodiscard]] XRPAmount
-// this is purposefully a copy
 getTxFee(ReadView const& view, json::Value tx)
 {
-    // autofilling only needed in this function so that the `STParsedJSONObject`
-    // parsing works properly
-    // it should not be modifying the actual `tx` object
+    // Fill in the fields that `STParsedJSONObject` needs to parse the transaction. `tx` is a
+    // copy, so the caller's transaction is not changed.
     if (!tx.isMember(jss::Fee))
     {
         tx[jss::Fee] = "0";
