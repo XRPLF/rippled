@@ -467,7 +467,7 @@ getTradingFee(ReadView const& view, AMMEntryR const& ammSle, AccountID const& ac
             }
         }
     }
-    return (*ammSle)[sfTradingFee];
+    return ammSle->at(sfTradingFee);
 }
 
 STAmount
