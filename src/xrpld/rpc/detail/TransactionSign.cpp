@@ -925,7 +925,7 @@ getTxFee(ReadView const& view, json::Value tx)
             return view.fees().base;
 
         // This fee is only a suggestion returned to the caller, so fall back to
-        // the reference fee as the other failure paths in this function do.
+        // the ledger's base fee as the other failure paths in this function do.
         return calculateBaseFee(view, stTx).value_or(view.fees().base);
     }
     catch (std::exception& e)
