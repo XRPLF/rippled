@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SponsorshipEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -430,8 +431,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     // If the transaction contains sfDelegate, the Sponsorship object should be
     // between the sponsor and the delegate.
-    auto const sponsorshipSle =
-        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getInitiator()));
+    SponsorshipEntryR const sponsorshipSle(tx.getAccountID(sfSponsor), tx.getInitiator(), view);
 
     // sponsorship object missing for pre-funded (no co-signing) tx
     if (!sponsorshipSle)
