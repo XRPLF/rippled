@@ -26,7 +26,7 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 ### Bugfixes
 
-- `sign`, `sign_for`, `submit`, and `simulate`: When fee autofill cannot calculate a fee for the transaction, it uses the open ledger's base fee instead of the server's configured reference fee. The `fee_mult_max` and `fee_div_max` limit uses the same value. ([#8725](https://github.com/XRPLF/rippled/pull/8725))
+- `sign`, `submit`, and `simulate`: When fee autofill cannot calculate a fee for the transaction, it uses the open ledger's base fee instead of the server's configured reference fee. The `fee_mult_max` and `fee_div_max` limit uses the same value. ([#8725](https://github.com/XRPLF/rippled/pull/8725))
 
 ## XRP Ledger server version 3.6.0
 
