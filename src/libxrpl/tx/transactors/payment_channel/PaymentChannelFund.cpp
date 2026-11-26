@@ -53,7 +53,7 @@ PaymentChannelFund::doApply()
     auto const txAccount = ctx_.tx[sfAccount];
     auto const curExpiration = (*slep)[~sfExpiration];
 
-    if (slep.isExpired((*slep)[~sfCancelAfter]) || slep.isExpired(curExpiration))
+    if (slep.isExpired(slep->at(~sfCancelAfter)) || slep.isExpired(curExpiration))
     {
         return slep.removeFromLedger();
     }

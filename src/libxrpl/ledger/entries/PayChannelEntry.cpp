@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -19,12 +20,11 @@ PayChannelEntry<ViewT>::removeFromLedger()
 {
     auto& view = this->applyView();
     auto const j = this->journal();
-    auto const& slep = this->mutableRawSle();
 
-    AccountID const src = (*slep)[sfAccount];
+    AccountID const src = this->sleRef()[sfAccount];
 
     // Remove PayChan from owner directory
-    if (!view.dirRemove(keylet::ownerDir(src), (*slep)[sfOwnerNode], this->key(), true))
+    if (!view.dirRemove(keylet::ownerDir(src), this->sleRef()[sfOwnerNode], this->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not remove paychan from src owner directory";
@@ -33,9 +33,9 @@ PayChannelEntry<ViewT>::removeFromLedger()
     }
 
     // Remove PayChan from recipient's owner directory, if present.
-    if (auto const page = (*slep)[~sfDestinationNode])
+    if (auto const page = this->sleRef()[~sfDestinationNode])
     {
-        auto const dst = (*slep)[sfDestination];
+        auto const dst = this->sleRef()[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, this->key(), true))
         {
             // LCOV_EXCL_START
@@ -46,16 +46,17 @@ PayChannelEntry<ViewT>::removeFromLedger()
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
+    AccountRootEntryW sle(src, view, j);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
-        (*slep)[sfAmount] >= (*slep)[sfBalance],
+        this->sleRef()[sfAmount] >= this->sleRef()[sfBalance],
         "xrpl::PayChannelEntry::removeFromLedger : minimum channel amount");
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    decreaseOwnerCountForObject(view, sle, slep, 1, j);
-    view.update(sle);
+    sle->at(sfBalance) =
+        sle->getFieldAmount(sfBalance) + this->sleRef()[sfAmount] - this->sleRef()[sfBalance];
+    decreaseOwnerCountForObject(view, sle.mutableRawSle(), this->mutableRawSle(), 1, j);
+    sle.updateInView();
 
     // Remove PayChan from ledger
     this->eraseFromView();
