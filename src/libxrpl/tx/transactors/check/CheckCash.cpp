@@ -487,10 +487,8 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
-                                sponsorSle->has_value()             // sponsor
-                                    ? (*sponsorSle)->mutableRawSle()
-                                    : SLE::pointer{},
-                                viewJ);  // journal
+                                rawSleOrNull(*sponsorSle),          // sponsor
+                                viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -537,13 +535,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err = checkCreateMPT(
-                                    psb,
-                                    mptID,
-                                    accountID_,
-                                    sponsorSle->has_value() ? (*sponsorSle)->mutableRawSle()
-                                                            : SLE::pointer{},
-                                    0,
-                                    j_);
+                                    psb, mptID, accountID_, rawSleOrNull(*sponsorSle), 0, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

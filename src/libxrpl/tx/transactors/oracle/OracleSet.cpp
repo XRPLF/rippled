@@ -191,14 +191,13 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
     if (!sleAccount)
         return false;  // LCOV_EXCL_LINE
 
-    std::optional<AccountRootEntryW> noSponsor;
     if (count > 0)
     {
-        sleAccount.increaseOwnerCount(noSponsor, static_cast<std::uint32_t>(count));
+        sleAccount.increaseOwnerCount(nullptr, static_cast<std::uint32_t>(count));
     }
     else if (count < 0)
     {
-        sleAccount.decreaseOwnerCount(noSponsor, static_cast<std::uint32_t>(-count));
+        sleAccount.decreaseOwnerCount(nullptr, static_cast<std::uint32_t>(-count));
     }
     return true;
 }
