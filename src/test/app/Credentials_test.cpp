@@ -19,6 +19,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -925,7 +926,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 auto const view =
                     std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
                 CredentialEntryW sleCred(UInt256{}, *view);
-                auto const ter = xrpl::credentials::deleteSLE(*view, sleCred, env.journal);
+                auto const ter = sleCred.removeFromLedger();
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
         }
