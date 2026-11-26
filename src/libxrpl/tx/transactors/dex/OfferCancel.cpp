@@ -59,8 +59,7 @@ OfferCancel::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const seqProxy = SeqProxy::rawSequence(offerSequence);
-    if (OfferEntryW sleOffer(accountID_, seqProxy, view(), ctx_.registry.get().getJournal("View"));
-        sleOffer)
+    if (OfferEntryW sleOffer(accountID_, seqProxy, view(), ctx_.registry.get().getJournal("View")))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return sleOffer.removeFromLedger();
