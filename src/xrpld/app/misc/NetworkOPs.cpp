@@ -4503,7 +4503,7 @@ NetworkOPsImp::subAccountHistoryStart(
     }
     if (accountId == kGenesisAccountId)
     {
-        if (auto const sleAcct = AccountRootEntryR(accountKeylet, *ledger); sleAcct)
+        if (auto const sleAcct = AccountRootEntryR(accountKeylet, *ledger))
         {
             if (sleAcct->getFieldU32(sfSequence) == 1)
             {
