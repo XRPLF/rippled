@@ -559,10 +559,7 @@ assetOfHolding(MPTokenIssuanceEntryR const& sleShareIssuance, SLE const& sleHold
         sleHolding.getType() == ltRIPPLE_STATE || sleHolding.getType() == ltMPTOKEN,
         "xrpl::assetOfHolding",
         "unexpected holding type");
-    XRPL_ASSERT_PARTS(
-        sleShareIssuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::assetOfHolding",
-        "not SLE MPTokenIssuance");
+    XRPL_ASSERT_PARTS(sleShareIssuance.exists(), "xrpl::assetOfHolding", "not SLE MPTokenIssuance");
 
     if (sleHolding.getType() == ltMPTOKEN)
         return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
