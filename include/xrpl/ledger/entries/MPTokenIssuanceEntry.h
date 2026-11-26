@@ -82,7 +82,7 @@ public:
     availableAmount() const
     {
         auto const max = maxAmount();
-        auto const outstanding = (**this)[sfOutstandingAmount];
+        auto const outstanding = this->sleRef()[sfOutstandingAmount];
         return max - outstanding;
     }
 };
