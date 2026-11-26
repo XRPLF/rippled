@@ -17,19 +17,19 @@ NFTokenOfferEntry<ViewT>::removeFromLedger()
     if (!this->exists())
         return false;
 
-    auto const sle = this->rawSle();
-    auto const owner = (*sle)[sfOwner];
+    auto const owner = this->sleRef()[sfOwner];
 
     if (!this->applyView().dirRemove(
-            keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), false))
+            keylet::ownerDir(owner), this->sleRef()[sfOwnerNode], this->key(), false))
         return false;
 
-    auto const nftokenID = (*sle)[sfNFTokenID];
+    auto const nftokenID = this->sleRef()[sfNFTokenID];
 
     if (!this->applyView().dirRemove(
-            sle->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID) : keylet::nftBuys(nftokenID),
-            (*sle)[sfNFTokenOfferNode],
-            sle->key(),
+            this->sleRef().isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
+                                                  : keylet::nftBuys(nftokenID),
+            this->sleRef()[sfNFTokenOfferNode],
+            this->key(),
             false))
         return false;
 
