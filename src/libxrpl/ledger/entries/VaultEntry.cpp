@@ -42,9 +42,9 @@ VaultEntry<ViewT>::phase() const
         *this && this->sleRef().getType() == ltVAULT, "xrpl::VaultEntry::phase : valid Vault sle");
     return getVaultPhase(
         this->readView(),
-        (**this)[~sfVaultKind],
-        (**this)[~sfSubscriptionDate],
-        (**this)[~sfRedemptionDate]);
+        this->sleRef()[~sfVaultKind],
+        this->sleRef()[~sfSubscriptionDate],
+        this->sleRef()[~sfRedemptionDate]);
 }
 
 template class VaultEntry<ReadView>;
