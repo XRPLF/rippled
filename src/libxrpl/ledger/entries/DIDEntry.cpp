@@ -42,7 +42,7 @@ DIDEntry<ViewT>::addToLedger(AccountID const& owner)
         auto page = view.dirInsert(keylet::ownerDir(owner), this->key(), describeOwnerDir(owner));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (**this)[sfOwnerNode] = *page;
+        this->sleRef()[sfOwnerNode] = *page;
     }
     increaseOwnerCount(view, sleAccount, {}, 1, j);
     view.update(sleAccount);
@@ -59,7 +59,7 @@ DIDEntry<ViewT>::removeFromLedger(AccountID const& owner)
     auto const j = this->journal();
 
     // Remove object from owner directory
-    if (!view.dirRemove(keylet::ownerDir(owner), (**this)[sfOwnerNode], this->key(), true))
+    if (!view.dirRemove(keylet::ownerDir(owner), this->sleRef()[sfOwnerNode], this->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DID from owner.";
