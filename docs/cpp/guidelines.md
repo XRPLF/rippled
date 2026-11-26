@@ -129,7 +129,9 @@ Header includes must be [levelized](../../.github/scripts/levelization).
 
 ## Comments
 
-- Comment code whose purpose or behavior isn't obvious from reading it.
+- Explain _why_, not _what_ or _how_; the code already shows that. Describe
+  what or how only where the code would otherwise be confusing (a
+  non-obvious workaround, a subtle invariant, a surprising constraint).
 - Prefer clearer code to a comment: rename a function or variable, or extract
   a well-named helper or variable (e.g. for a complex condition), instead of
   explaining it in a comment.
@@ -139,6 +141,8 @@ Header includes must be [levelized](../../.github/scripts/levelization).
   constant values or spec section numbers. When you change behavior, update
   the comments that describe it.
 - Keep comments short.
+- Write comments as full sentences: start with a capital letter and end with a
+  period.
 - Give every new public function or method a Doxygen comment. Document every
   `@tparam`, `@param` and `@return`, and separate the brief from the details
   with a blank line. Document each overload; use `@copydoc` for the parts they

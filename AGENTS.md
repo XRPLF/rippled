@@ -28,7 +28,7 @@ Braces, whitespace, and member order: see [docs/CodingStyle.md](./docs/CodingSty
 `XRPL_ASSERT`/`UNREACHABLE` contracts: see [docs/cpp/antithesis.md](./docs/cpp/antithesis.md).
 Commit messages: see [CONTRIBUTING.md](./CONTRIBUTING.md#good-commit-messages).
 
-Comments should explain _why_, not _what_/_how_ — the code already shows that. Only describe what/how when the code itself would otherwise be confusing (a non-obvious workaround, a subtle invariant, a surprising constraint). Write new or changed comments as full sentences: start with a capital letter and end with a period.
+Comment rules: see [docs/cpp/guidelines.md](./docs/cpp/guidelines.md#comments); they apply to comments in any language.
 
 ## Architecture
 
