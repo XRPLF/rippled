@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenIssuanceEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Indexes.h>
@@ -40,7 +41,7 @@ ConfidentialMPTMergeInbox::calculateBaseFee(ReadView const& view, STTx const& tx
 TER
 ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    MPTokenIssuanceEntryR const sleIssuance(ctx.tx[sfMPTokenIssuanceID], ctx.view);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
