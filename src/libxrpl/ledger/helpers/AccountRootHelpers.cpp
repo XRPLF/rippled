@@ -16,7 +16,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
@@ -261,20 +260,6 @@ getPseudoAccountFields()
         return pseudoFields;
     }();
     return kPseudoFields;
-}
-
-[[nodiscard]] TER
-checkDestinationAndTag(AccountRootEntryR const& toSle, bool hasDestinationTag)
-{
-    if (!toSle.exists())
-        return tecNO_DST;
-
-    // The tag is basically account-specific information we don't
-    // understand, but we can require someone to fill it in.
-    if (toSle->isFlag(lsfRequireDestTag) && !hasDestinationTag)
-        return tecDST_TAG_NEEDED;  // Cannot send without a tag
-
-    return tesSUCCESS;
 }
 
 }  // namespace xrpl

@@ -13,7 +13,6 @@
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -445,7 +444,7 @@ canWithdraw(
     bool hasDestinationTag,
     std::optional<std::vector<UInt256>> const& credentialIDs)
 {
-    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+    if (auto const ret = toSle.checkDestinationAndTag(hasDestinationTag))
         return ret;
 
     if (from == to)
