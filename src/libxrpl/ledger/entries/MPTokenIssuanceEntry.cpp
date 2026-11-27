@@ -66,6 +66,15 @@ MPTokenIssuanceEntry<ViewT>::issuerSelfDebitHook(std::uint64_t amount)
 
 template <typename ViewT>
 bool
+MPTokenIssuanceEntry<ViewT>::isFrozen(AccountID const& account, std::uint8_t depth) const
+{
+    MPTIssue const mptIssue{this->sleRef()[sfSequence], this->sleRef()[sfIssuer]};
+    return isGlobalFrozen() || isIndividualFrozen(this->readView(), account, mptIssue) ||
+        isVaultPseudoAccountFrozen(account, depth);
+}
+
+template <typename ViewT>
+bool
 MPTokenIssuanceEntry<ViewT>::isVaultPseudoAccountFrozen(
     AccountID const& account,
     std::uint8_t depth) const

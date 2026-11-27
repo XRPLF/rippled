@@ -99,10 +99,8 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& sle, std::ui
 
     // Non-owning pointer (aliasing constructor): the caller owns sle for the
     // whole call, so this avoids copying the SLE.
-    MPTokenIssuanceEntryR const issuanceSle(SLE::const_pointer(SLE::const_pointer{}, &sle), view);
-    MPTIssue const mptIssue{sle[sfSequence], sle[sfIssuer]};
-    return issuanceSle.isGlobalFrozen() || isIndividualFrozen(view, account, mptIssue) ||
-        issuanceSle.isVaultPseudoAccountFrozen(account, depth);
+    return MPTokenIssuanceEntryR(SLE::const_pointer(SLE::const_pointer{}, &sle), view)
+        .isFrozen(account, depth);
 }
 
 [[nodiscard]] bool
