@@ -4,12 +4,16 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -36,6 +40,37 @@ MPTokenEntry<ViewT>::isFrozen(AccountID const& account, std::uint8_t depth) cons
         return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
 
     return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
+}
+
+template <typename ViewT>
+TER
+MPTokenEntry<ViewT>::create(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    SLE::Ref sponsorSle,
+    std::uint32_t flags)
+    requires Base::kIsWritable
+{
+    MPTokenEntry mptoken(mptIssuanceID, account, view);
+
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptoken.keylet(), describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    mptoken.newSle();
+    mptoken->at(sfAccount) = account;
+    mptoken->at(sfMPTokenIssuanceID) = mptIssuanceID;
+    mptoken->at(sfFlags) = flags;
+    mptoken->at(sfOwnerNode) = *ownerNode;
+
+    addSponsorToLedgerEntry(mptoken.mutableRawSle(), sponsorSle);
+
+    mptoken.insertIntoView();
+
+    return tesSUCCESS;
 }
 
 template class MPTokenEntry<ReadView>;

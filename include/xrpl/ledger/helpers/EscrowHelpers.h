@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -504,7 +505,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(ctx.view, mptID, receiver, *sponsorSle, 0);
+        if (auto const ter = MPTokenEntryW::create(ctx.view, mptID, receiver, *sponsorSle, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
