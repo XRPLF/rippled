@@ -277,6 +277,22 @@ AccountRootEntry<ViewT>::increaseOwnerCount(ApplyViewContext ctx, std::uint32_t 
     increaseOwnerCount(sponsorExp && *sponsorExp ? &**sponsorExp : nullptr, count);
 }
 
+template <typename ViewT>
+void
+AccountRootEntry<ViewT>::decreaseOwnerCount(
+    AccountRootEntry<ApplyView>* sponsorSle,
+    std::uint32_t count)
+    requires Base::kIsWritable
+{
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::decreaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountSigned(sponsorSle, -static_cast<std::int32_t>(count));
+}
+
 template class AccountRootEntry<ReadView>;
 template class AccountRootEntry<ApplyView>;
 

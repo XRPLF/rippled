@@ -4,7 +4,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -198,8 +197,7 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
     }
     else if (count < 0)
     {
-        decreaseOwnerCount(
-            ctx.view(), sleAccount, nullptr, static_cast<std::uint32_t>(-count), ctx.journal);
+        sleAccount.decreaseOwnerCount(nullptr, static_cast<std::uint32_t>(-count));
     }
     return true;
 }
