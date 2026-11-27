@@ -190,8 +190,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         if (lpTokenBalance == beast::kZero)
             return tecAMM_BALANCE;
 
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
-            !res)
+        if (auto const res = ammSle.verifyAndAdjustLPTokenBalance(lpTokenBalance, holder); !res)
             return res.error();  // LCOV_EXCL_LINE
     }
 
