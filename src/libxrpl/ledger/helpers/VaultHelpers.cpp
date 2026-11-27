@@ -764,13 +764,6 @@ getVaultDefaultVersion(Rules const& rules)
 }
 
 [[nodiscard]] VaultKind
-getVaultKind(VaultEntryR const& vault)
-{
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::getVaultKind : valid Vault sle");
-    return decodeVaultKind(vault->at(~sfVaultKind));
-}
-
-[[nodiscard]] VaultKind
 getVaultKind(STTx const& tx)
 {
     return decodeVaultKind(tx[~sfVaultKind]);
