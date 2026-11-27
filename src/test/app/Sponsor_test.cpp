@@ -2560,7 +2560,7 @@ public:
             BEAST_EXPECT(env.balance(sponsor2) == sponsor2BalanceBefore - drops(1) - XRP(1));
         }
         {
-            // insufficient reserve to sponsor acount
+            // insufficient reserve to sponsor account
 
             auto const sendAmount = drops(1);
             // 2 account reserve + send amount

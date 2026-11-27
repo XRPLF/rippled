@@ -165,9 +165,6 @@ function(corrosion_add_cxxbridge cxx_target)
     )
 endfunction()
 
-function(_unlink_libgcc_s crate)
-endfunction()
-
 function(add_xrpl_crate name)
     set(options)
     set(oneValueArgs CRATE)

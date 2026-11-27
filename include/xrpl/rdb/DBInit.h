@@ -120,7 +120,7 @@ inline constexpr std::array<char const*, 6> kWalletDbInit{
         // A node's identity must be persisted, including
         // for clustering purposes. This table holds one
         // entry: the server's unique identity, but the
-        // value can be overriden by specifying a node
+        // value can be overridden by specifying a node
         // identity in the config file using a [node_seed]
         // entry.
         "CREATE TABLE IF NOT EXISTS NodeIdentity (			\

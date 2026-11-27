@@ -23,6 +23,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/JsonRpc.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -637,6 +638,16 @@ private:
         return rpcError(RpcInvalidParams);
     }
 
+    /**
+     * Reports whether @p jv is a request this client accepts as JSON-RPC 2.0:
+     * an object whose `jsonrpc` is rpc::kJsonRpcVersion and `ripplerpc` is
+     * rpc::kRippleRpcVersion2, carrying an `id` and a `method`, with `params`
+     * absent, null, an array or an object; or a non-empty array of such
+     * objects.
+     *
+     * @param jv The parsed argument.
+     * @return True when the shape is accepted.
+     */
     bool
     isValidJson2(json::Value const& jv)
     {
@@ -651,8 +662,8 @@ private:
         }
         if (jv.isObject())
         {
-            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0" &&
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
+            if (jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == rpc::kJsonRpcVersion &&
+                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == rpc::kRippleRpcVersion2 &&
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
                 return !jv.isMember(jss::params) ||

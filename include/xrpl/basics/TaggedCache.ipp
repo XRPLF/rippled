@@ -212,11 +212,11 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     auto const iter(cache_.find(key));
     if (iter == cache_.end())
     {
-        ++stats_.misses;
+        ++misses_;
         return false;
     }
     iter->second.touch(clock_.now());
-    ++stats_.hits;
+    ++hits_;
     return true;
 }
 
@@ -566,8 +566,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     ClockType::time_point const now(clock_.now());
     auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
-    if (!inserted)
+    if (inserted)
+    {
+        ++cacheCount_;
+    }
+    else
+    {
         it->second.lastAccess = now;
+    }
     return inserted;
 }
 
@@ -913,10 +919,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::scoped_lock<std::recursive_mutex> const&)
 {
     return std::thread([&, this] {
-        // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
         int cacheRemovals = 0;
         int mapRemovals = 0;
-        // NOLINTEND
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -931,6 +935,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 }
                 else if (cit->second.lastAccess <= whenExpire)
                 {
+                    // A key-only entry is never held weakly, so an expired one leaves the
+                    // cache and the map at the same time.
+                    ++cacheRemovals;
+                    ++mapRemovals;
                     cit = partition.erase(cit);
                 }
                 else

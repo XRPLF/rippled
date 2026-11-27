@@ -203,7 +203,7 @@ public:
      * Return the number of offers consumed or partially consumed the last time
      * the step ran, including expired and unfunded offers.
      *
-     * N.B. This this not the total number offers consumed by this step for the
+     * N.B. This is not the total number of offers consumed by this step for the
      * entire payment, it is only the number the last time it ran. Offers may
      * be partially consumed multiple times during a payment.
      */

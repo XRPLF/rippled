@@ -1,3 +1,4 @@
+# cspell:words bstatic dndebug dtags fstack latomic nologo nominmax rdynamic relro
 #[===================================================================[
    setup project-wide compiler settings
 #]===================================================================]
@@ -148,13 +149,12 @@ else()
         INTERFACE
             -rdynamic
             $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-            # link to static libc/c++ if:
+            # link to static libstdc++ if:
             # * static option set and
-            # * NOT APPLE (AppleClang does not support static libc/c++)
-            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:
-            -static-libstdc++
-            -static-libgcc
-            >
+            # * NOT APPLE (AppleClang does not support static libc++)
+            # libgcc stays dynamic: with -static-libgcc, an exception thrown from
+            # a std::call_once callable hangs or crashes, depending on glibc.
+            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:-static-libstdc++>
     )
 
     # On aarch64, libatomic is required for atomic operations. It is not needed on x86_64.

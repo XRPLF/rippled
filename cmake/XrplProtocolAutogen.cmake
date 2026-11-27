@@ -1,3 +1,4 @@
+# cspell:words ucodegen
 #[===================================================================[
    Protocol Autogen - Code generation for protocol wrapper classes
 #]===================================================================]

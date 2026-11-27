@@ -35,6 +35,8 @@ template <typename TIn, typename TOut>
 class AMMLiquidity
 {
 private:
+    // Safe to store: it is exactly representable in both mantissa ranges and
+    // is only used in multiplication. Do not change it without an amendment.
     inline static Number const kInitialFibSeqPct = Number(5) / 20000;
     AMMContext& ammContext_;
     AccountID const ammAccountID_;

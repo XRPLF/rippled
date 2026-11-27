@@ -477,7 +477,7 @@ public:
     }
 
     /**
-     * @see Consensus::mode
+     * @see Adaptor::mode
      */
     ConsensusMode
     mode() const
@@ -541,7 +541,7 @@ public:
         std::optional<std::chrono::milliseconds> consensusDelay);
 
     /**
-     * @see Consensus::proposal
+     * @see Consensus::peerProposal
      */
     bool
     peerProposal(NetClock::TimePoint const& now, RCLCxPeerPos const& newProposal);

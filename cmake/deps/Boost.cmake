@@ -1,3 +1,4 @@
+# cspell:words wuninitialized
 include(CompilationEnv)
 include(XrplSanitizers)
 

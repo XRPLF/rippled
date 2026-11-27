@@ -197,7 +197,7 @@ SHAMap::visitDifferences(
     }
 }
 
-// Starting at the position referred to by the specfied
+// Starting at the position referred to by the specified
 // StackEntry, process that node and its first resident
 // children, descending the SHAMap until we complete the
 // processing of a node.

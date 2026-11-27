@@ -38,6 +38,8 @@ namespace detail {
 Number
 reduceOffer(auto const& amount)
 {
+    // Safe to store: it is exactly representable in both mantissa ranges and
+    // is only used in multiplication. Do not change it without an amendment.
     static Number const kReducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
@@ -49,6 +51,9 @@ reduceOffer(auto const& amount)
 
 enum class IsDeposit : bool { No = false, Yes = true };
 
+// This constant is built at startup under the Large MantissaRange. Under the
+// Small range it compares as about 1e-13, not 1e-11. See the note on storing a
+// Number in the Number.h class comment.
 inline Number const kAMMInvariantRelativeTolerance{1, -11};
 
 /**

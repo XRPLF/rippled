@@ -146,7 +146,7 @@ NFTokenMint::createNFTokenID(
     taxon = nft::cipheredTaxon(tokenSeq, taxon);
 
     // The values are packed inside a 32-byte buffer, so we need to make sure
-    // that the endianess is fixed.
+    // that the endianness is fixed.
     flags = boost::endian::native_to_big(flags);
     fee = boost::endian::native_to_big(fee);
     taxon = nft::toTaxon(boost::endian::native_to_big(nft::toUInt32(taxon)));

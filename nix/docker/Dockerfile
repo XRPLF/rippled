@@ -117,7 +117,7 @@ COPY --from=final /nix/ci-env/etc/ssl/certs/ca-bundle.crt /tmp/ca-bundle.crt
 RUN <<EOF
 /tmp/check-distrusted-roots.sh /tmp/ca-bundle.crt
 if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
-    echo "Skipping runnning binaries on NixOS."
+    echo "Skipping running binaries on NixOS."
 else
     /tmp/install-sanitizer-libs.sh
     /tmp/test_files/cpp/run-binaries.sh /tmp/cpp-bins

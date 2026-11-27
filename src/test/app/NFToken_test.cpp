@@ -2697,7 +2697,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, minter) == 3);
             BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
-            // Both the offer creator and and destination should be able to
+            // Both the offer creator and destination should be able to
             // cancel the offers.
             env(token::cancelOffer(buyer, {offerMinterToBuyer}));
             env(token::cancelOffer(minter, {offerMinterToIssuer}));

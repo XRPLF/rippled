@@ -355,7 +355,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         testRelay("feature disabled & skip", false, 10, 0, 10, 25, 5, 0, 5);
         // relay to all peers because min is greater than nPeers
         testRelay("relay all 1", true, 10, 0, 20, 25, 10, 0);
-        // relay to all peers because min + disabled is greater thant nPeers
+        // relay to all peers because min + disabled is greater than nPeers
         testRelay("relay all 2", true, 20, 15, 10, 25, 20, 0);
         // relay to minPeers + 25% of nPeers-minPeers (20+0.25*(60-20)=30),
         // queue the rest (30)

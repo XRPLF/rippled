@@ -473,7 +473,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             BEAST_EXPECT(nftCount(env, alice) == 96);
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
-            // Verify that that all three pages are present and remember the
+            // Verify that all three pages are present and remember the
             // indexes.
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             if (!BEAST_EXPECT(lastNFTokenPage))
@@ -577,7 +577,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             BEAST_EXPECT(nftCount(env, alice) == 96);
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
-            // Verify that that all three pages are present and remember the
+            // Verify that all three pages are present and remember the
             // indexes.
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             if (!BEAST_EXPECT(lastNFTokenPage))
@@ -638,7 +638,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             BEAST_EXPECT(nftCount(env, alice) == 96);
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
-            // Verify that that all three pages are present and remember the
+            // Verify that all three pages are present and remember the
             // indexes.
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             if (!BEAST_EXPECT(lastNFTokenPage))
@@ -1094,7 +1094,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         BEAST_EXPECT(nftCount(env, alice) == 96);
         BEAST_EXPECT(ownerCount(env, alice) == 3);
 
-        // Verify that that all three pages are present and remember the
+        // Verify that all three pages are present and remember the
         // indexes.
         auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
         if (!BEAST_EXPECT(lastNFTokenPage))

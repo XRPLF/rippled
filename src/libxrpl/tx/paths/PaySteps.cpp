@@ -82,11 +82,11 @@ toStep(
 
     // MPTEndpointStep is created in following cases:
     // 1 Direct payment between an issuer and a holder
-    //   e1 is issuer and e2 is holder or vise versa
+    //   e1 is issuer and e2 is holder or vice versa
     //   There is only one step in this case: holder->issuer or
     //   issuer->holder
     // 2 Direct payment between the holders
-    //   e1 is issuer and e2 is holder or vise versa
+    //   e1 is issuer and e2 is holder or vice versa
     //   There are two steps in this case: holder->issuer->holder1
     // 3 Cross-token payment with Amount or SendMax or both MPT
     //   If destination is an issuer then the last step is BookStep,

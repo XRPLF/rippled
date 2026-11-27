@@ -3119,7 +3119,7 @@ private:
             //    test: direct redemptions can be sent
             env(pay(a2, g1, g1["USD"](1)));
 
-            //    test: via rippling cant be sent
+            //    test: via rippling can't be sent
             env(pay(a2, a1, g1["USD"](1)), Ter(tecPATH_DRY));
         }
     }

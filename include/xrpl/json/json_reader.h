@@ -13,8 +13,7 @@
 namespace json {
 
 /**
- * @brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
- * Value.
+ * @brief Unserialize a [JSON](https://www.json.org) document into a Value.
  */
 class Reader
 {
@@ -29,23 +28,22 @@ public:
     Reader() = default;
 
     /**
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. @param document UTF-8 encoded string containing the document to
-     * read. @param root [out] Contains the root value of the document if it was
-     *             successfully parsed.
-     * @return @c true if the document was successfully parsed, @c false if an
-     * error occurred.
+     * @brief Read a Value from a [JSON](https://www.json.org) document.
+     *
+     * @param document UTF-8 encoded string containing the document to read.
+     * @param root [out] Contains the root value of the document if it was successfully parsed.
+     * @return @c true if the document was successfully parsed, @c false if an error occurred.
      */
     bool
     parse(std::string const& document, Value& root);
 
     /**
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
-     * document. @param document UTF-8 encoded string containing the document to
-     * read. @param root [out] Contains the root value of the document if it was
-     *             successfully parsed.
-     * @return @c true if the document was successfully parsed, @c false if an
-     * error occurred.
+     * @brief Read a Value from a [JSON](https://www.json.org) document.
+     *
+     * @param beginDoc Pointer to the first character of the UTF-8 encoded document.
+     * @param endDoc Pointer one past the last character of the document.
+     * @param root [out] Contains the root value of the document if it was successfully parsed.
+     * @return @c true if the document was successfully parsed, @c false if an error occurred.
      */
     bool
     parse(char const* beginDoc, char const* endDoc, Value& root);
@@ -58,21 +56,21 @@ public:
     parse(std::istream& is, Value& root);
 
     /**
-     * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
-     * sequence. @param root [out] Contains the root value of the document if it
-     * was successfully parsed. @param UTF-8 encoded buffer sequence. @return @c
-     * true if the buffer was successfully parsed, @c false if an error
-     * occurred.
+     * @brief Read a Value from a [JSON](https://www.json.org) buffer sequence.
+     *
+     * @param root [out] Contains the root value of the document if it was successfully parsed.
+     * @param bs UTF-8 encoded buffer sequence.
+     * @return @c true if the buffer was successfully parsed, @c false if an error occurred.
      */
     template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
     /**
-     * @brief Returns a user friendly string that list errors in the parsed
-     * document. @return Formatted error message with the list of errors with
-     * their location in the parsed document. An empty string is returned if no
-     * error occurred during parsing.
+     * @brief Returns a user friendly string that lists errors in the parsed document.
+     *
+     * @return Formatted error message with the list of errors with their location in the
+     * parsed document. An empty string is returned if no error occurred during parsing.
      */
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;

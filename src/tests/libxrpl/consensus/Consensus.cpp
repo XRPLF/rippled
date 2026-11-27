@@ -962,7 +962,7 @@ TEST(ConsensusTest, preferred_by_branch)
     // - In the old approach, 2 votes for D outweighs 1 vote for each C'
     //   so the network would avalanche towards D and fully validate it
     //   EVEN though C was fully validated by one node
-    // - In the new approach, 2 votes for D are not enough to outweight the
+    // - In the new approach, 2 votes for D are not enough to outweigh the
     //   8 implicit votes for C, so nodes will avalanche to C instead
 
     ConsensusParms const parms{};

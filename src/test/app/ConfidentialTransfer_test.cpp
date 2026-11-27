@@ -1133,7 +1133,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // Verification of Issuer and and holder ciphertexts
+        // Verification of Issuer and holder ciphertexts
         {
             Env env{*this, features};
             Account const alice("alice");
