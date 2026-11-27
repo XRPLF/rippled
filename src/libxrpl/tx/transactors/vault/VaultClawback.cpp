@@ -366,7 +366,7 @@ VaultClawback::assetsToClawback(
         // On a coarsened Vault, an AssetsDeployed below half a unit of AssetsAvailable's grid
         // rounds away: the conversion equals AssetsAvailable exactly, the clamp above never runs,
         // and every share would be burned while AssetsDeployed is still outstanding.
-        if (getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+        if (vault.version() == VaultVersion::FixedPrecision &&
             sharesDestroyed == STAmount{share, sleShareIssuance->at(sfOutstandingAmount)} &&
             Number(vault->at(sfAssetsDeployed)) != beast::kZero)
         {

@@ -103,7 +103,7 @@ checkFixedPrecisionVaultAssetsDeployed(
     auto const vaultSle = env.le(vaultKeylet);
     if (!suite.expect(static_cast<bool>(vaultSle)))
         return;
-    if (getVaultVersion(VaultEntryR(vaultSle, *env.current())) != VaultVersion::FixedPrecision)
+    if (VaultEntryR(vaultSle, *env.current()).version() != VaultVersion::FixedPrecision)
         return;
 
     Number const vaultAssetsDeployed = vaultSle->at(sfAssetsDeployed);
@@ -458,7 +458,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(VaultEntryR(vaultSle, *env.current())) >=
+                            VaultEntryR(vaultSle, *env.current()).version() >=
                                 VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
@@ -564,7 +564,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(VaultEntryR(vaultSle, *env.current())) >=
+                                         VaultEntryR(vaultSle, *env.current()).version() >=
                                              VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
@@ -804,7 +804,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(VaultEntryR(vaultSle, *env.current())) >=
+                             VaultEntryR(vaultSle, *env.current()).version() >=
                                  VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);

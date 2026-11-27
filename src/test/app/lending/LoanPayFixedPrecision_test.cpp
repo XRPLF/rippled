@@ -1583,8 +1583,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         auto const vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return;
-        BEAST_EXPECT(
-            getVaultVersion(VaultEntryR(vaultSle, *env.current())) == VaultVersion::CashBasis);
+        BEAST_EXPECT(VaultEntryR(vaultSle, *env.current()).version() == VaultVersion::CashBasis);
         Number const ownerBefore = env.balance(owner, asset).value();
 
         env(pay(borrower, loanKeylet.key, asset(Number{1} + fee).value()));

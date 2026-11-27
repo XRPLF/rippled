@@ -106,7 +106,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     STAmount roundedAmount{amount};
-    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    if (vault.version() == VaultVersion::FixedPrecision)
     {
         // FixedPrecision outflows are rounded at the posterior exponent here
         // instead of going through canApplyToBrokerCover: the live
@@ -251,7 +251,7 @@ LoanBrokerCoverWithdraw::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
-    auto const amount = getVaultVersion(vault) == VaultVersion::FixedPrecision
+    auto const amount = vault.version() == VaultVersion::FixedPrecision
         ? debitToPosteriorBrokerCoverScale(
               vault.rawSle(), broker, requestedAmount, Number::RoundingMode::TowardsZero)
         : requestedAmount;
