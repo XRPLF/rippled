@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -1587,7 +1588,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto const sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
+                    RippleStateEntryR const sle(*prev, cur, issue.currency, view);
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))

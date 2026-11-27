@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/RippleStateEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -75,7 +76,7 @@ escrowLockPreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, issue.currency));
+    RippleStateEntryR const sleRippleState(account, issuer, issue.currency, view);
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -440,7 +441,7 @@ escrowUnlockApplyHelper<Issue>(
     // of the funds
     if (!createAsset)
     {
-        auto const sleRippleState = ctx.view.peek(trustLineKey);
+        RippleStateEntryW const sleRippleState(trustLineKey, ctx.view, journal);
         if (!sleRippleState)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
