@@ -9,7 +9,11 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+
+#include <expected>
 
 namespace xrpl {
 
@@ -76,6 +80,35 @@ public:
      */
     [[nodiscard]] VaultPhase
     phase() const;
+
+    /**
+     * Adjusts a requested asset change (delta) to match the decimal scale of the
+     * updated total vault assets. This ensures sfAssetsTotal, sfAssetsAvailable,
+     * and the actual asset transfer change by the exact same representable amount.
+     *
+     * Rounding strategy:
+     * - Legacy/CashBasis debits (withdrawals): rounds down the magnitude of delta
+     *   on the new scale to prevent paying out more than requested.
+     * - Legacy/CashBasis credits: floors the resulting total asset balance and
+     *   returns the difference from the current total.
+     * - FixedPrecision credits only (VaultDeposit): rounds the delta toward zero
+     *   at the scale getAssetsTotal (AssetsAvailable + AssetsDeployed, derived,
+     *   not the stored AssetsTotal cache) would have after applying delta.
+     *   FixedPrecision outflows (VaultWithdraw, VaultClawback) never call this;
+     *   they use clampVaultOutflow instead.
+     *
+     * Key rules:
+     * - The returned magnitude never exceeds the magnitude of delta.
+     * - Returns tecPRECISION_LOSS if the change is smaller than 1 ULP of the target scale
+     *   (prevents share operations when totals cannot change).
+     * - For integer assets (XRP, MPT), rounding is a no-op.
+     *
+     * @param delta The requested signed change to sfAssetsTotal.
+     * @return The rounded, positive magnitude, or tecPRECISION_LOSS if the
+     *         change is below representable precision.
+     */
+    [[nodiscard]] std::expected<STAmount, TER>
+    clampToAssetsTotalScale(STAmount const& delta) const;
 };
 
 using VaultEntryR = VaultEntry<ReadView>;
