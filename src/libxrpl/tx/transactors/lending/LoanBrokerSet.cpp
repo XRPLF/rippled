@@ -310,7 +310,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqProxy();
 
-        auto owner = AccountRootEntryW(accountID_, view);
+        auto owner = AccountRootEntryW(accountID_, view, j_);
         if (!owner)
         {
             // This should be impossible
@@ -329,7 +329,7 @@ LoanBrokerSet::doApply()
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
         increaseOwnerCount(view, owner, nullptr, 2, j_);
-        if (preFeeBalance_ < accountReserve(view, owner, j_))
+        if (preFeeBalance_ < owner.reserve())
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);

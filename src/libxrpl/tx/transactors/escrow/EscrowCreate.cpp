@@ -302,7 +302,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto sle = AccountRootEntryW(accountID_, ctx_.view());
+    auto sle = AccountRootEntryW(accountID_, ctx_.view(), j_);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -335,11 +335,8 @@ EscrowCreate::doApply()
         //                the source only owes reserve for its current owners.
         // - unsponsored: reserveToAdd — source owes reserve including the new
         //                increment, which Bytecode can make larger than one unit.
-        auto const sourceReserve = accountReserve(
-            ctx_.view(),
-            sle,
-            j_,
-            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : reserveToAdd});
+        auto const sourceReserve =
+            sle.reserve({.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : reserveToAdd});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }

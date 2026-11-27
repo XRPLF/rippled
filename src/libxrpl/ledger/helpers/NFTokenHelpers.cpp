@@ -938,8 +938,8 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags)
 {
-    if (auto const acct = AccountRootEntryW(acctID, view);
-        priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
+    if (auto const acct = AccountRootEntryW(acctID, view, j);
+        priorBalance < acct.reserve({.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
     auto const offerID = keylet::nftokenOffer(acctID, seqProxy);

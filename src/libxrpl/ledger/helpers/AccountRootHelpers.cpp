@@ -92,8 +92,10 @@ confineOwnerCount(
     return totalOwnerCount;
 }
 
-// Returns the number of account reserves funded by this account: 1 for itself (0 if sponsored by
-// another account) plus the count of accounts it sponsors.
+}  // namespace
+
+namespace detail {
+
 std::uint32_t
 accountCountImpl(AccountRootEntryR const& sle, std::int32_t accountCountAdj, beast::Journal j)
 {
@@ -120,6 +122,10 @@ accountCountImpl(AccountRootEntryR const& sle, std::int32_t accountCountAdj, bea
 
     return totalAccountCount;
 }
+
+}  // namespace detail
+
+namespace {
 
 std::uint32_t
 adjustOwnerCountImpl(
@@ -278,7 +284,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Return balance minus reserve
     std::uint32_t const currentOwnerCount = confineOwnerCount(
         view.ownerCountHook(id, OwnerCounts(sle.rawSle())).count(), ownerCountAdj);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, 0, j);
+    std::uint32_t const currentAccountCount = detail::accountCountImpl(sle, 0, j);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
@@ -405,22 +411,6 @@ adjustLoanBrokerOwnerCount(
         view, brokerSle, sfOwnerCount, brokerSle->getAccountID(sfAccount), delta, j);
 }
 
-XRPAmount
-accountReserve(ReadView const& view, AccountRootEntryR const& sle, beast::Journal j, Adjustment adj)
-{
-    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
-
-    if (!view.rules().enabled(featureSponsor))
-    {
-        XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::accountReserve : no account count delta");
-        return view.fees().accountReserve(sle->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
-    }
-    std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
-
-    return view.fees().accountReserve(currentOwnerCount, currentAccountCount);
-}
-
 TER
 checkReserve(
     ApplyViewContext ctx,
@@ -460,14 +450,14 @@ checkReserve(
             }
 
             auto const sponsorBalance = sponsor->getFieldAmount(sfBalance).xrp();
-            XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsor, j, adj);
+            XRPAmount const sponsorReserve = sponsor.reserve(adj);
 
             if (sponsorBalance < sponsorReserve)
                 return insufReserveCode;
         }
         else
         {
-            XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+            XRPAmount const reserve = accSle.reserve(adj);
             if (accBalance < reserve)
                 return insufReserveCode;
         }

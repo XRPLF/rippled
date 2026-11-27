@@ -67,15 +67,14 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
 {
-    auto sleAccount = AccountRootEntryW(owner, ctx.view());
+    auto sleAccount = AccountRootEntryW(owner, ctx.view(), ctx.journal);
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     {
         auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve =
-            accountReserve(ctx.view(), sleAccount, ctx.journal, {.ownerCountDelta = 1});
+        auto const reserve = sleAccount.reserve({.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;

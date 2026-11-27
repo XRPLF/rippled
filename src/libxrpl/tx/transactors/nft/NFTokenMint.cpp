@@ -5,7 +5,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -333,14 +332,14 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    auto const sleAccount = AccountRootEntryW(accountID_, view());
+    auto const sleAccount = AccountRootEntryW(accountID_, view(), j_);
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ownerCountAfter = sleAccount->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (preFeeBalance_ < accountReserve(view(), sleAccount, j_))
+        if (preFeeBalance_ < sleAccount.reserve())
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
