@@ -133,7 +133,7 @@ isFrozen(
     {
         // Check if the issuer froze the line
         RippleStateEntryR const sleLine(account, issuer, currency, view);
-        if (sleLine && sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        if (sleLine && sleLine.isIndividualFrozen(account, issuer))
             return true;
     }
     return false;
