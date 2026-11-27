@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
@@ -118,8 +119,8 @@ isVaultPseudoAccountFrozenForIssuance(
             view, {issuer, account}, assetOfHolding(issuanceSle, *sleHolding), depth + 1);
     }
 
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    auto const mptIssuer = AccountRootEntryR(issuer, view);
+    if (!mptIssuer.exists())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -192,7 +193,7 @@ canTransferLPToken(
 {
     // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
     // is the AMM account; if it is not an AMM, this is not an LPToken.
-    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    auto const sleIssuer = AccountRootEntryR(lpTokenIssuer, view);
     if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
         return tesSUCCESS;
 
@@ -439,7 +440,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    SLE::ConstRef toSle,
+    AccountRootEntryR const& toSle,
     STAmount const& amount,
     bool hasDestinationTag,
     std::optional<std::vector<UInt256>> const& credentialIDs)
@@ -489,7 +490,7 @@ canWithdraw(
     bool hasDestinationTag,
     std::optional<std::vector<UInt256>> const& credentialIDs)
 {
-    auto const toSle = view.read(keylet::account(to));
+    auto const toSle = AccountRootEntryR(to, view);
 
     return canWithdraw(view, from, to, toSle, amount, hasDestinationTag, credentialIDs);
 }
@@ -519,7 +520,7 @@ doWithdraw(
         destinationAmount.asset() == sourceAmount.asset(),
         "xrpl::doWithdraw : delivered and source amounts use the same asset");
 
-    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+    auto const dstSle = AccountRootEntryR(dstAcct, ctx.view);
 
     // Create a trust line or MPToken for a self-destination only when there
     // is a payout to credit. Post-fixCleanup3_4_0, a zero-value withdraw
@@ -538,7 +539,8 @@ doWithdraw(
     }
     else
     {
-        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
+        if (auto err =
+                verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle.rawSle(), j))
             return err;
     }
 
@@ -577,14 +579,21 @@ doWithdraw(
     // sponsor against the destination. accountSend can auto-create a holding
     // for dstAcct; keying on the destination ensures a third-party destination's
     // holding is never stamped with the tx's reserve sponsor.
-    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
+    auto sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
+    auto& sponsor = *sponsorSle;
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, destinationAmount, j, *sponsorSle, WaiveTransferFee::Yes);
+        ctx.view,
+        sourceAcct,
+        dstAcct,
+        destinationAmount,
+        j,
+        rawSleOrNull(sponsor),
+        WaiveTransferFee::Yes);
 }
 
 TER

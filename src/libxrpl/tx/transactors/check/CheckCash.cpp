@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -35,7 +36,6 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -113,8 +113,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     {
-        auto const sleSrc = ctx.view.read(keylet::account(srcId));
-        auto const sleDst = ctx.view.read(keylet::account(dstId));
+        auto const sleSrc = AccountRootEntryR(srcId, ctx.view);
+        auto const sleDst = AccountRootEntryR(dstId, ctx.view);
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
@@ -206,7 +206,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     auto const sleTrustLine =
                         ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
 
-                    auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+                    auto const sleIssuer = AccountRootEntryR(issuerId, ctx.view);
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.debug()) << "Can't receive IOUs from "
@@ -258,7 +258,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     return tesSUCCESS;
                 },
                 [&](MPTIssue const& issue) -> TER {
-                    auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+                    auto const sleIssuer = AccountRootEntryR(issuerId, ctx.view);
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.debug()) << "Can't receive MPTs from "
@@ -412,14 +412,14 @@ CheckCash::doApply()
             };
 
             auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
-            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+            auto sponsorSle = getTxReserveSponsor(applyViewContext);
             if (!sponsorSle)
                 return sponsorSle.error();  // LCOV_EXCL_LINE
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkDstReserve = [&] -> SLE::pointer {
-                auto sleDst = psb.peek(keylet::account(accountID_));
+                auto sleDst = AccountRootEntryW(accountID_, psb);
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkReserve(
@@ -436,7 +436,7 @@ CheckCash::doApply()
 
                     return nullptr;
                 }
-                return sleDst;
+                return sleDst.mutableRawSle();
             };
 
             std::optional<Keylet> trustLineKey;
@@ -492,7 +492,7 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
-                                *sponsorSle,                        // sponsor
+                                rawSleOrNull(*sponsorSle),          // sponsor
                                 viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
@@ -539,8 +539,8 @@ CheckCash::doApply()
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
-                            if (auto const err =
-                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, 0, j_);
+                            if (auto const err = checkCreateMPT(
+                                    psb, mptID, accountID_, rawSleOrNull(*sponsorSle), 0, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

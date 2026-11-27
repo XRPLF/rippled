@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -113,7 +114,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
         {
-            if (!ctx.view.read(keylet::account(account[sfAccount])))
+            if (!AccountRootEntryR(account[sfAccount], ctx.view))
             {
                 JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
                 return terNO_ACCOUNT;
@@ -202,7 +203,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
-        return timeSlot && *timeSlot < kTailingSlot && sb.read(keylet::account(account));
+        return timeSlot && *timeSlot < kTailingSlot && AccountRootEntryR(account, sb);
     };
 
     auto const updateSlot =

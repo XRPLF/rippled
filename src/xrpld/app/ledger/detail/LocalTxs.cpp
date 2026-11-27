@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -143,7 +144,7 @@ public:
                 return true;
 
             AccountID const acctID = txn.getAccount();
-            auto const sleAcct = view.read(keylet::account(acctID));
+            auto const sleAcct = AccountRootEntryR(acctID, view);
 
             if (!sleAcct)
                 return false;

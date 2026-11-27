@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -307,7 +308,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
-    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower)); !borrowerSle)
+    if (auto const borrowerSle = AccountRootEntryR(borrower, ctx.view); !borrowerSle)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
@@ -462,7 +463,7 @@ LoanSet::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+    auto const brokerOwnerSle = AccountRootEntryW(brokerOwner, view);
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -475,14 +476,14 @@ LoanSet::doApply()
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
-    auto const borrowerSle = view.peek(keylet::account(borrower));
+    auto borrowerSle = AccountRootEntryW(borrower, view);
     if (!borrowerSle)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     auto const brokerPseudo = brokerSle->at(sfAccount);
-    auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
+    auto const brokerPseudoSle = AccountRootEntryW(brokerPseudo, view);
     if (!brokerPseudoSle)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
@@ -635,7 +636,7 @@ LoanSet::doApply()
         }
     }
 
-    increaseOwnerCount(view, borrowerSle, {}, 1, j_);
+    increaseOwnerCount(view, borrowerSle, nullptr, 1, j_);
 
     {
         auto const balance =

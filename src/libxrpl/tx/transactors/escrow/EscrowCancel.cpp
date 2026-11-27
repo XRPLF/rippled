@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/EscrowEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
@@ -107,7 +108,7 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = AccountRootEntryW(account, ctx_.view());
     STAmount const amount = escrow->getFieldAmount(sfAmount);
 
     auto const reserveToSubtract = calculateAdditionalReserve((*escrow)[~sfBytecode]);
@@ -138,7 +139,8 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : escrow.mutableRawSle(),
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle.mutableRawSle()
+                                                                     : escrow.mutableRawSle(),
                         preFeeBalance_,
                         amount,
                         issuer,

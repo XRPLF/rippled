@@ -21,6 +21,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -1147,10 +1148,10 @@ struct Credentials_test : public beast::unit_test::Suite
         ApplyViewImpl av(&*open, TapNone);
 
         // Erase the issuer's account to simulate ledger corruption
-        auto const sleIssuer = av.peek(keylet::account(issuer.id()));
+        auto sleIssuer = AccountRootEntryW(issuer.id(), av);
         if (!BEAST_EXPECT(sleIssuer))
             return;
-        av.erase(sleIssuer);
+        sleIssuer.eraseFromView();
         BEAST_EXPECT(!av.exists(keylet::account(issuer.id())));
 
         // Credential still exists before removeExpired

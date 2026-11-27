@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -122,7 +123,7 @@ deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal 
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
+    auto sleOwner = AccountRootEntryW(owner, view);
     if (!sleOwner)
     {
         // LCOV_EXCL_START

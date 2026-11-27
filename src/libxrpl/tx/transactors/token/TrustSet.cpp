@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -26,6 +27,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <optional>
 #include <unordered_set>
 
 namespace {
@@ -157,7 +159,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    auto const sle = AccountRootEntryR(id, ctx.view);
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -178,8 +180,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         return temDST_IS_SRC;
 
     // This might be nullptr
-    auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if (sleDst == nullptr)
+    auto const sleDst = AccountRootEntryR(uDstAccountID, ctx.view);
+    if (!sleDst)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
@@ -293,7 +295,7 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = accountID_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(accountID_));
+    auto sle = AccountRootEntryW(accountID_, view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -315,13 +317,13 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    auto const sponsorExp = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto sponsorExp = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
-    auto const sponsorSle = *sponsorExp;
+    auto& sponsorSle = *sponsorExp;
 
-    auto const getSponsor = [&sponsorSle, this](AccountID const& account) {
-        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
+    auto const getSponsor = [&sponsorSle, this](AccountID const& account) -> AccountRootEntryW* {
+        return (sponsorSle && account == accountID_) ? &*sponsorSle : nullptr;
     };
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
@@ -349,7 +351,7 @@ TrustSet::doApply()
 
     auto const viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
+    auto sleDst = AccountRootEntryW(uDstAccountID, view());
 
     if (!sleDst)
     {
@@ -375,8 +377,8 @@ TrustSet::doApply()
         std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
-        SLE::Ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::Ref sleHighAccount = bHigh ? sle : sleDst;
+        AccountRootEntryW& sleLowAccount = !bHigh ? sle : sleDst;
+        AccountRootEntryW& sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances
@@ -517,10 +519,9 @@ TrustSet::doApply()
 
         bool bReserveIncrease = false;
 
-        auto const currentHighSponsor =
+        auto currentHighSponsor =
             getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
-        auto const currentLowSponsor =
-            getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
+        auto currentLowSponsor = getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
 
         if (bSetAuth)
         {
@@ -529,7 +530,7 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
+            AccountRootEntryW* const lowSponsor = getSponsor(uLowAccountID);
 
             if (view().rules().enabled(featureSponsor))
             {
@@ -537,11 +538,12 @@ TrustSet::doApply()
                         ctx_.getApplyViewContext(),
                         sleLowAccount,
                         preFeeBalance_,
-                        lowSponsor,
+                        lowSponsor != nullptr ? std::optional<AccountRootEntryR>(*lowSponsor)
+                                              : std::nullopt,
                         {.ownerCountDelta = 1},
                         j_,
                         tecINSUF_RESERVE_LINE);
-                    lowSponsor && !isTesSuccess(ret))
+                    lowSponsor != nullptr && !isTesSuccess(ret))
                 {
                     return ret;
                 }
@@ -551,7 +553,8 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, lowSponsor, sfLowSponsor);
+            if (lowSponsor != nullptr)
+                addSponsorToLedgerEntry(sleRippleState, lowSponsor->rawSle(), sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -560,7 +563,8 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
+            decreaseOwnerCount(
+                view(), sleLowAccount, currentLowSponsor ? &*currentLowSponsor : nullptr, 1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
@@ -568,7 +572,7 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
-            SLE::pointer const highSponsor = getSponsor(uHighAccountID);
+            AccountRootEntryW* const highSponsor = getSponsor(uHighAccountID);
 
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
@@ -579,11 +583,12 @@ TrustSet::doApply()
                         ctx_.getApplyViewContext(),
                         sleHighAccount,
                         preFeeBalance_,
-                        highSponsor,
+                        highSponsor != nullptr ? std::optional<AccountRootEntryR>(*highSponsor)
+                                               : std::nullopt,
                         {.ownerCountDelta = 1},
                         j_,
                         tecINSUF_RESERVE_LINE);
-                    highSponsor && !isTesSuccess(ret))
+                    highSponsor != nullptr && !isTesSuccess(ret))
                 {
                     return ret;
                 }
@@ -593,7 +598,8 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, highSponsor, sfHighSponsor);
+            if (highSponsor != nullptr)
+                addSponsorToLedgerEntry(sleRippleState, highSponsor->rawSle(), sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -602,7 +608,12 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
+            decreaseOwnerCount(
+                view(),
+                sleHighAccount,
+                currentHighSponsor ? &*currentHighSponsor : nullptr,
+                1,
+                viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
@@ -731,7 +742,7 @@ TrustSet::doApply()
             accountID_,
             uDstAccountID,
             k.key,
-            sle,
+            sle.mutableRawSle(),
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,
@@ -740,7 +751,7 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
-            sponsorSle,
+            rawSleOrNull(sponsorSle),
             viewJ);
     }
 

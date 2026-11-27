@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/EscrowEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -35,7 +36,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -240,7 +240,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    auto const sled = ctx.view.read(keylet::account(dest));
+    auto const sled = AccountRootEntryR(dest, ctx.view);
     if (!sled)
         return tecNO_DST;
 
@@ -302,7 +302,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(accountID_));
+    auto sle = AccountRootEntryW(accountID_, ctx_.view());
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -346,7 +346,7 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        auto const sled = AccountRootEntryW(ctx_.tx[sfDestination], ctx_.view());
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
         if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
@@ -437,7 +437,7 @@ EscrowCreate::doApply()
     // increment owner count
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, reserveToAdd, ctx_.journal);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), escrow.mutableRawSle());
-    ctx_.view().update(sle);
+    sle.updateInView();
     return tesSUCCESS;
 }
 

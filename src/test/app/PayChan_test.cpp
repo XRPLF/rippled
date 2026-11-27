@@ -29,6 +29,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
@@ -66,7 +67,7 @@ struct PayChan_test : public beast::unit_test::Suite
     static std::pair<UInt256, SLE::const_pointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
-        auto const sle = view.read(keylet::account(account));
+        auto const sle = AccountRootEntryR(account, view);
         if (!sle)
             return {};
         auto const k =

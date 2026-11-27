@@ -3,6 +3,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -20,6 +21,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -65,7 +67,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
 {
-    auto const sleAccount = ctx.view().peek(keylet::account(owner));
+    auto sleAccount = AccountRootEntryW(owner, ctx.view());
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -90,8 +92,8 @@ addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    increaseOwnerCount(ctx.view(), sleAccount, {}, 1, ctx.journal);
-    ctx.view().update(sleAccount);
+    increaseOwnerCount(ctx.view(), sleAccount, nullptr, 1, ctx.journal);
+    sleAccount.updateInView();
 
     return tesSUCCESS;
 }

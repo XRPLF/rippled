@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -297,7 +298,7 @@ getLineIfUsable(
         // we need to check if the associated assets have been frozen
         if (view.rules().enabled(fixFrozenLPTokenTransfer))
         {
-            auto const sleIssuer = view.read(keylet::account(issuer));
+            auto const sleIssuer = AccountRootEntryR(issuer, view);
             if (!sleIssuer)
             {
                 return nullptr;  // LCOV_EXCL_LINE
@@ -582,7 +583,7 @@ canAddHolding(ReadView const& view, Issue const& issue)
         return tesSUCCESS;  // No special checks for XRP
     }
 
-    auto const issuer = view.read(keylet::account(issue.getIssuer()));
+    auto const issuer = AccountRootEntryR(issue.getIssuer(), view);
     if (!issuer)
     {
         return terNO_ACCOUNT;
@@ -758,6 +759,8 @@ directSendNoFeeIOU(
         auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
         auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
+        AccountRootEntryW senderSle(uSenderID, view);
+
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
         if (saBefore > beast::kZero
@@ -766,8 +769,7 @@ directSendNoFeeIOU(
             // Sender is zero or negative.
             && sleRippleState->isFlag(senderReserveFlag)
             // Sender reserve is set.
-            && sleRippleState->isFlag(senderNoRippleFlag) !=
-                view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
+            && sleRippleState->isFlag(senderNoRippleFlag) != senderSle->isFlag(lsfDefaultRipple) &&
             !sleRippleState->isFlag(senderFreezeFlag) &&
             !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
             // Sender trust limit is 0.
@@ -778,9 +780,9 @@ directSendNoFeeIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            auto const currentSponsor = getLedgerEntryReserveSponsor(
+            auto currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            decreaseOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, 1, j);
+            decreaseOwnerCount(view, senderSle, currentSponsor ? &*currentSponsor : nullptr, 1, j);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
@@ -825,7 +827,7 @@ directSendNoFeeIOU(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
 
-    auto const sleAccount = view.peek(keylet::account(uReceiverID));
+    auto sleAccount = AccountRootEntryW(uReceiverID, view);
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -837,7 +839,7 @@ directSendNoFeeIOU(
         uSenderID,
         uReceiverID,
         index.key,
-        sleAccount,
+        sleAccount.mutableRawSle(),
         false,
         noRipple,
         false,
@@ -1022,10 +1024,12 @@ accountSendIOU(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer const sender =
-        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
-    SLE::pointer const receiver =
-        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+    SLE::pointer const sender = uSenderID != beast::kZero
+        ? AccountRootEntryW(uSenderID, view).mutableRawSle()
+        : SLE::pointer();
+    SLE::pointer const receiver = uReceiverID != beast::kZero
+        ? AccountRootEntryW(uReceiverID, view).mutableRawSle()
+        : SLE::pointer();
 
     if (auto const stream = j.trace())
     {
@@ -1118,8 +1122,9 @@ accountSendMultiIOU(
      * ensure that transfers are balanced.
      */
 
-    SLE::pointer const sender =
-        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+    SLE::pointer const sender = senderID != beast::kZero
+        ? AccountRootEntryW(senderID, view).mutableRawSle()
+        : SLE::pointer();
 
     if (auto const stream = j.trace())
     {
@@ -1150,8 +1155,9 @@ accountSendMultiIOU(
         if (!amount || (senderID == receiverID))
             continue;
 
-        SLE::pointer const receiver =
-            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+        SLE::pointer const receiver = receiverID != beast::kZero
+            ? AccountRootEntryW(receiverID, view).mutableRawSle()
+            : SLE::pointer();
 
         if (auto const stream = j.trace())
         {
@@ -1642,8 +1648,8 @@ transferXRP(
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    SLE::pointer const sender = AccountRootEntryW(from, view).mutableRawSle();
+    SLE::pointer const receiver = AccountRootEntryW(to, view).mutableRawSle();
     if (!sender || !receiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

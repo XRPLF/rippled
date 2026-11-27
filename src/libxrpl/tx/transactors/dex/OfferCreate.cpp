@@ -9,6 +9,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -183,7 +184,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
-    auto const sleCreator = ctx.view.read(keylet::account(id));
+    auto const sleCreator = AccountRootEntryR(id, ctx.view);
     if (!sleCreator)
         return terNO_ACCOUNT;
 
@@ -290,7 +291,7 @@ OfferCreate::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(asset), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
-    auto const issuerAccount = view.read(keylet::account(asset.getIssuer()));
+    auto const issuerAccount = AccountRootEntryR(asset.getIssuer(), view);
 
     if (!issuerAccount)
     {
@@ -737,14 +738,14 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // Not XRP or MPT
         if (!saTakerPays.integral())
         {
-            auto const sle = sb.read(keylet::account(uPaysIssuerID));
+            auto const sle = AccountRootEntryR(uPaysIssuerID, sb);
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
         // Not XRP or MPT
         if (!saTakerGets.integral())
         {
-            auto const sle = sb.read(keylet::account(uGetsIssuerID));
+            auto const sle = AccountRootEntryR(uGetsIssuerID, sb);
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
@@ -931,7 +932,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    auto const sleCreator = sb.peek(keylet::account(accountID_));
+    auto sleCreator = AccountRootEntryW(accountID_, sb);
     if (!sleCreator)
         return {tefINTERNAL, false};
 
@@ -970,7 +971,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, nullptr, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
