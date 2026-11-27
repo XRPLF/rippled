@@ -34,7 +34,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     if (isXRP(issuer))
         return false;
     if (auto const sle = AccountRootEntryR(issuer, view))
-        return sle->isFlag(lsfGlobalFreeze);
+        return sle.isGlobalFrozen();
     return false;
 }
 
