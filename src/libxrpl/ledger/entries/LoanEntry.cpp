@@ -6,7 +6,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 
 namespace xrpl {
