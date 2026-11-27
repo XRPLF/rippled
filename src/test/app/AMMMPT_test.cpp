@@ -28,8 +28,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -7656,7 +7656,7 @@ private:
 
         usd.destroy();
         BEAST_EXPECT(env.le(keylet::mptokenIssuance(usd.issuanceID())) == nullptr);
-        BEAST_EXPECT(!isFrozen(*env.current(), amm.ammAccount(), *ammToken));
+        BEAST_EXPECT(!MPTokenEntryR(ammToken, *env.current()).isFrozen(amm.ammAccount()));
         // A Payment cannot cross this empty AMM because BookStep skips AMMs
         // with zero LPTokenBalance. Probe the same ZeroIfFrozen balance read
         // used by AMM accounting.
