@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -54,6 +55,10 @@ public:
         std::optional<Asset> const& optAsset2,
         FreezeHandling freezeHandling,
         AuthHandling authHandling) const;
+
+    // Get the LP token balance that lpAccount holds in this AMM.
+    [[nodiscard]] STAmount
+    lpHolds(AccountID const& lpAccount) const;
 };
 
 using AMMEntryR = AMMEntry<ReadView>;
