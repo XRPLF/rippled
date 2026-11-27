@@ -90,6 +90,17 @@ public:
     {
         return this->sleRef().isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze);
     }
+
+    /**
+     * Returns true if either side deep-froze this line.
+     *
+     * @return true if either side deep-froze this line.
+     */
+    [[nodiscard]] bool
+    isDeepFrozen() const
+    {
+        return this->sleRef().isFlag(lsfHighDeepFreeze) || this->sleRef().isFlag(lsfLowDeepFreeze);
+    }
 };
 
 using RippleStateEntryR = RippleStateEntry<ReadView>;
