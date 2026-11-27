@@ -282,19 +282,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     if (!page)
         return tecNO_SUITABLE_NFTOKEN_PAGE;
 
-    NFTokenPageEntryW& entry = *page;
-    {
-        auto arr = entry->getFieldArray(sfNFTokens);
-        arr.pushBack(std::move(nft));
-
-        arr.sort([](STObject const& o1, STObject const& o2) {
-            return compareTokens(o1.getFieldH256(sfNFTokenID), o2.getFieldH256(sfNFTokenID));
-        });
-
-        entry->setFieldArray(sfNFTokens, arr);
-    }
-
-    entry.updateInView();
+    page->insertToken(std::move(nft));
 
     return tesSUCCESS;
 }
