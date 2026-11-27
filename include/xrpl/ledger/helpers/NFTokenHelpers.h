@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/NFTokenOfferEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -70,19 +69,6 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID);
 
 TER
 removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, SLE::Ref page);
-
-/**
- * Deletes the given token offer.
- *
- * An offer is tracked in two separate places:
- *     - The token's 'buy' directory, if it's a buy offer; or
- *     - The token's 'sell' directory, if it's a sell offer; and
- *     - The owner directory of the account that placed the offer.
- *
- * The offer also consumes one incremental reserve.
- */
-bool
-deleteTokenOffer(ApplyView& view, NFTokenOfferEntryW& offer);
 
 /**
  * Repairs the links in an NFTokenPage directory.

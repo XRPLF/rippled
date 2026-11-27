@@ -471,7 +471,7 @@ NFTokenAcceptOffer::doApply()
             if (hasExpired(view(), offer->at(~sfExpiration)))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer.key();
-                if (!nft::deleteTokenOffer(view(), offer))
+                if (!offer.removeFromLedger())
                 {
                     // LCOV_EXCL_START
                     JLOG(j_.fatal())
@@ -494,14 +494,14 @@ NFTokenAcceptOffer::doApply()
             return tecEXPIRED;
     }
 
-    // deleteTokenOffer() erases the writable entries, but the offers' fields
+    // removeFromLedger() erases the writable entries, but the offers' fields
     // are still read below: keep read-only handles to the same SLEs.
     NFTokenOfferEntryR const buyOffer =
         bo ? NFTokenOfferEntryR(*bo) : NFTokenOfferEntryR(SLE::const_pointer{}, view());
     NFTokenOfferEntryR const sellOffer =
         so ? NFTokenOfferEntryR(*so) : NFTokenOfferEntryR(SLE::const_pointer{}, view());
 
-    if (bo && !nft::deleteTokenOffer(view(), *bo))
+    if (bo && !bo->removeFromLedger())
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete buy offer '" << to_string(bo->key()) << "': ignoring";
@@ -509,7 +509,7 @@ NFTokenAcceptOffer::doApply()
         // LCOV_EXCL_STOP
     }
 
-    if (so && !nft::deleteTokenOffer(view(), *so))
+    if (so && !so->removeFromLedger())
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete sell offer '" << to_string(so->key())
