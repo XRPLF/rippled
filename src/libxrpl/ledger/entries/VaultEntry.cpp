@@ -1,5 +1,6 @@
 #include <xrpl/ledger/entries/VaultEntry.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -7,6 +8,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 
 #include <expected>
@@ -50,6 +52,16 @@ std::expected<STAmount, TER>
 VaultEntry<ViewT>::clampToAssetsTotalScale(STAmount const& delta) const
 {
     return xrpl::clampToAssetsTotalScale(this->rawSle(), delta);
+}
+
+template <typename ViewT>
+Number
+VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
+{
+    Number assetTotal = getAssetsTotal(this->rawSle());
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= this->sleRef()[sfLossUnrealized];
+    return assetTotal;
 }
 
 template class VaultEntry<ReadView>;

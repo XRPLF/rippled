@@ -655,15 +655,6 @@ checkAssetsMaximum(SLE::ConstRef vault, Number const& amount)
         : TER{tecPRECISION_LOSS};
 }
 
-[[nodiscard]] Number
-assetsTotalForWithdrawal(VaultEntryR const& vault, WaiveUnrealizedLoss waive)
-{
-    Number assetTotal = getAssetsTotal(vault.rawSle());
-    if (waive == WaiveUnrealizedLoss::No)
-        assetTotal -= vault->at(sfLossUnrealized);
-    return assetTotal;
-}
-
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     VaultEntryR const& vault,
@@ -679,7 +670,7 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
+    Number const assetTotal = vault.assetsTotalForWithdrawal(waive);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
@@ -705,7 +696,7 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
+    Number const assetTotal = vault.assetsTotalForWithdrawal(waive);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
