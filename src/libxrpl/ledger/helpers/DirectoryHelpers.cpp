@@ -19,7 +19,7 @@ bool
 dirFirst(
     ApplyView& view,
     UInt256 const& root,
-    SLE::pointer& page,
+    SLE::Pointer& page,
     unsigned int& index,
     UInt256& entry)
 {
@@ -30,7 +30,7 @@ bool
 dirNext(
     ApplyView& view,
     UInt256 const& root,
-    SLE::pointer& page,
+    SLE::Pointer& page,
     unsigned int& index,
     UInt256& entry)
 {
@@ -41,7 +41,7 @@ bool
 cdirFirst(
     ReadView const& view,
     UInt256 const& root,
-    SLE::const_pointer& page,
+    SLE::ConstPointer& page,
     unsigned int& index,
     UInt256& entry)
 {
@@ -52,7 +52,7 @@ bool
 cdirNext(
     ReadView const& view,
     UInt256 const& root,
-    SLE::const_pointer& page,
+    SLE::ConstPointer& page,
     unsigned int& index,
     UInt256& entry)
 {

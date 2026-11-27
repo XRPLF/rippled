@@ -127,7 +127,7 @@ protected:
     // every SoeDefault field the invariants read via `at()` materialized, so
     // rawInsert-based tests don't accidentally trip an unrelated invariant
     // or throw from a missing SoeDefault field.
-    static SLE::pointer
+    static SLE::Pointer
     makeLoanSle(UInt256 const& loanBrokerID, std::uint32_t loanSeq, AccountID const& borrower);
 };
 

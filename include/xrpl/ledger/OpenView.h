@@ -83,10 +83,10 @@ private:
     // Use boost::pmr functionality instead of std::pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using TxsMap = std::map<
-        key_type,
+        Key,
         TxData,
         std::less<>,
-        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, TxData>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<Key const, TxData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
@@ -218,10 +218,10 @@ public:
     bool
     exists(Keylet const& k) const override;
 
-    std::optional<key_type>
-    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
+    std::optional<Key>
+    succ(Key const& key, std::optional<Key> const& last = std::nullopt) const override;
 
-    SLE::const_pointer
+    SLE::ConstPointer
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::IterBase>
@@ -240,10 +240,10 @@ public:
     txsEnd() const override;
 
     bool
-    txExists(key_type const& key) const override;
+    txExists(Key const& key) const override;
 
     TxType
-    txRead(key_type const& key) const override;
+    txRead(Key const& key) const override;
 
     // RawView
 
@@ -263,7 +263,7 @@ public:
 
     void
     rawTxInsert(
-        key_type const& key,
+        Key const& key,
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 };

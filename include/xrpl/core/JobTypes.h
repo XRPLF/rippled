@@ -16,7 +16,7 @@ class JobTypes
 {
 public:
     using Map = std::map<JobType, JobTypeInfo>;
-    using const_iterator = Map::const_iterator;
+    using ConstIterator = Map::const_iterator;
 
 private:
     JobTypes()
@@ -139,25 +139,25 @@ public:
         return map.size();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const
     {
         return map.cbegin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const
     {
         return map.cbegin();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const
     {
         return map.cend();
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const
     {
         return map.cend();

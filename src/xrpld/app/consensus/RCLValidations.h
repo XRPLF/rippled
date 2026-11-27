@@ -69,7 +69,7 @@ public:
     /**
      * Validation's signing time
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     signTime() const
     {
         return val_->getSignTime();
@@ -78,7 +78,7 @@ public:
     /**
      * Validated ledger's first seen time
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     seenTime() const
     {
         return val_->getSeenTime();
@@ -241,7 +241,7 @@ public:
     /**
      * Current time used to determine if validations are stale.
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     now() const;
 
     /**

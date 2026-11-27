@@ -296,7 +296,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    del(key_type const& key, bool valid)
+    del(KeyType const& key, bool valid)
 {
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
     std::scoped_lock const lock(mutex_);
@@ -336,7 +336,7 @@ template <class Policy, class Callback>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeImpl(
-        key_type const& key,
+        KeyType const& key,
         CanonicalizeClientPointerType<Policy> data,
         Policy policy,
         Callback&& replaceCallback)
@@ -359,7 +359,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeImpl(
         std::scoped_lock<MutexType> const&,
-        key_type const& key,
+        KeyType const& key,
         CanonicalizeClientPointerType<Policy> data,
         [[maybe_unused]] Policy policy,
         [[maybe_unused]] Callback&& replaceCallback)
@@ -458,7 +458,7 @@ template <
 template <class Callback>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback)
+    canonicalize(KeyType const& key, SharedPointerType& data, Callback&& replaceCallback)
 {
     return canonicalizeImpl(
         key, data, detail::ReplaceDynamically{}, std::forward<Callback>(replaceCallback));
@@ -475,7 +475,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data)
+    canonicalizeReplaceCache(KeyType const& key, SharedPointerType const& data)
 {
     return canonicalizeImpl(key, data, detail::ReplaceCached{});
 }
@@ -491,7 +491,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalizeReplaceClient(key_type const& key, SharedPointerType& data)
+    canonicalizeReplaceClient(KeyType const& key, SharedPointerType& data)
 {
     return canonicalizeImpl(key, data, detail::ReplaceClient{});
 }
@@ -507,7 +507,7 @@ template <
     class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    fetch(key_type const& key)
+    fetch(KeyType const& key)
 {
     std::scoped_lock<MutexType> const l(mutex_);
     auto ret = initialFetch(key, l);
@@ -528,7 +528,7 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key, T const& value) -> ReturnType
+    insert(KeyType const& key, T const& value) -> ReturnType
     requires(!IsKeyCache)
 {
     static_assert(
@@ -559,7 +559,7 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key) -> ReturnType
+    insert(KeyType const& key) -> ReturnType
     requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
@@ -588,7 +588,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    retrieve(key_type const& key, T& data)
+    retrieve(KeyType const& key, T& data)
 {
     // retrieve the value of the stored data
     auto const entry = fetch(key);
@@ -611,9 +611,9 @@ template <
     class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    getKeys() const -> std::vector<key_type>
+    getKeys() const -> std::vector<KeyType>
 {
-    std::vector<key_type> v;
+    std::vector<KeyType> v;
 
     {
         // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
@@ -691,7 +691,7 @@ template <
 template <class Handler>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    fetch(key_type const& digest, Handler const& h)
+    fetch(KeyType const& digest, Handler const& h)
 {
     {
         std::scoped_lock const l(mutex_);
@@ -724,7 +724,7 @@ template <
 template <class Callback>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    fetchAndModify(key_type const& key, Callback&& callback)
+    fetchAndModify(KeyType const& key, Callback&& callback)
 {
     static_assert(
         !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
@@ -766,7 +766,7 @@ template <
     class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l)
+    initialFetch(KeyType const& key, std::scoped_lock<MutexType> const& l)
 {
     auto const cit = cache_.find(key);
     if (cit == cache_.end())
@@ -808,7 +808,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     stats_.size.set(getCacheSize());
 
     {
-        beast::insight::Gauge::value_type hitRate(0);
+        beast::insight::Gauge::ValueType hitRate(0);
         {
             std::scoped_lock const lock(mutex_);
             auto const total(hits_ + misses_);

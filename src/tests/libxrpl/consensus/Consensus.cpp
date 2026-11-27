@@ -784,18 +784,18 @@ TEST(ConsensusTest, consensus_close_time_rounding)
     // network delay settings, the round of consensus will take 5s, so
     // the next ledger's close time will
 
-    NetClock::duration when = network[0]->now().time_since_epoch();
+    NetClock::Duration when = network[0]->now().time_since_epoch();
 
     // Check we are before the 30s to 20s transition
-    NetClock::duration const resolution = network[0]->lastClosedLedger.closeTimeResolution();
-    EXPECT_TRUE(resolution == NetClock::duration{30s});
+    NetClock::Duration const resolution = network[0]->lastClosedLedger.closeTimeResolution();
+    EXPECT_TRUE(resolution == NetClock::Duration{30s});
 
-    while (((when % NetClock::duration{30s}) != NetClock::duration{15s}) ||
-           ((when % NetClock::duration{20s}) != NetClock::duration{15s}))
+    while (((when % NetClock::Duration{30s}) != NetClock::Duration{15s}) ||
+           ((when % NetClock::Duration{20s}) != NetClock::Duration{15s}))
         when += 1s;
     // Advance the clock without consensus running (IS THIS WHAT
     // PREVENTS IT IN PRACTICE?)
-    sim.scheduler.stepFor(NetClock::time_point{when} - network[0]->now());
+    sim.scheduler.stepFor(NetClock::TimePoint{when} - network[0]->now());
 
     // Run one more ledger with 30s resolution
     sim.run(1);

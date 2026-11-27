@@ -18,7 +18,7 @@ namespace beast {
 class Xxhasher
 {
 public:
-    using result_type = std::size_t;
+    using ResultType = std::size_t;
 
 private:
     static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
@@ -87,7 +87,7 @@ private:
         }
     }
 
-    result_type
+    ResultType
     retrieveHash()
     {
         if (state_ != nullptr)
@@ -147,7 +147,7 @@ public:
     }
 
     explicit
-    operator result_type() noexcept
+    operator ResultType() noexcept
     {
         return retrieveHash();
     }

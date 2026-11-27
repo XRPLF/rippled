@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getAssetScale() const
     {
         if (hasAssetScale())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTransferFee() const
     {
         if (hasTransferFee())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getMaximumAmount() const
     {
         if (hasMaximumAmount())
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMPTokenMetadata() const
     {
         if (hasMPTokenMetadata())
@@ -156,7 +156,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -182,7 +182,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getImmutableFlags() const
     {
         if (hasImmutableFlags())
@@ -220,9 +220,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    MPTokenIssuanceCreateBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    MPTokenIssuanceCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<MPTokenIssuanceCreateBuilder>(ttMPTOKEN_ISSUANCE_CREATE, account, sequence, fee)
     {
@@ -251,7 +251,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setAssetScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setAssetScale(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfAssetScale] = value;
         return *this;
@@ -262,7 +262,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setTransferFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTransferFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTransferFee] = value;
         return *this;
@@ -273,7 +273,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setMaximumAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setMaximumAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfMaximumAmount] = value;
         return *this;
@@ -284,7 +284,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setMPTokenMetadata(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMPTokenMetadata(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMPTokenMetadata] = value;
         return *this;
@@ -295,7 +295,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
@@ -306,7 +306,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceCreateBuilder&
-    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setImmutableFlags(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfImmutableFlags] = value;
         return *this;

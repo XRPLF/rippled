@@ -456,11 +456,11 @@ public:
 template <class CharT, class Traits = std::char_traits<CharT>>
 class BasicLogstream : public std::basic_ostream<CharT, Traits>
 {
-    using char_type = CharT;
-    using traits_type = Traits;
-    using int_type = traits_type::int_type;
-    using pos_type = traits_type::pos_type;
-    using off_type = traits_type::off_type;
+    using CharType = CharT;
+    using TraitsType = Traits;
+    using IntType = TraitsType::int_type;
+    using PosType = TraitsType::pos_type;
+    using OffType = TraitsType::off_type;
 
     detail::LogStreamBuf<CharT, Traits> buf_;
 

@@ -20,8 +20,8 @@ namespace beast::insight {
 class Gauge final
 {
 public:
-    using value_type = GaugeImpl::value_type;
-    using difference_type = GaugeImpl::difference_type;
+    using ValueType = GaugeImpl::ValueType;
+    using DifferenceType = GaugeImpl::DifferenceType;
 
     /**
      * Create a null metric.
@@ -47,7 +47,7 @@ public:
      */
     /** @{ */
     void
-    set(value_type value) const
+    set(ValueType value) const
     {
         if (impl_)
             impl_->set(value);
@@ -59,7 +59,7 @@ public:
     // the conventional assignment-operator signature.
     // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     Gauge const&
-    operator=(value_type value) const
+    operator=(ValueType value) const
     {
         set(value);
         return *this;
@@ -71,21 +71,21 @@ public:
      */
     /** @{ */
     void
-    increment(difference_type amount) const
+    increment(DifferenceType amount) const
     {
         if (impl_)
             impl_->increment(amount);
     }
 
     Gauge const&
-    operator+=(difference_type amount) const
+    operator+=(DifferenceType amount) const
     {
         increment(amount);
         return *this;
     }
 
     Gauge const&
-    operator-=(difference_type amount) const
+    operator-=(DifferenceType amount) const
     {
         increment(-amount);
         return *this;

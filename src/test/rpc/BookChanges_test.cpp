@@ -188,7 +188,7 @@ public:
 
             auto const ledger = std::make_shared<Ledger>(
                 2,
-                NetClock::time_point{},
+                NetClock::TimePoint{},
                 Rules{features},
                 env.current()->fees(),
                 env.app().getNodeFamily());
@@ -241,7 +241,7 @@ public:
     {
         auto const ledger = std::make_shared<Ledger>(
             2,
-            NetClock::time_point{},
+            NetClock::TimePoint{},
             Rules{std::unordered_set<UInt256, beast::Uhash<>>{featureMPTokensV2}},
             env.current()->fees(),
             env.app().getNodeFamily());

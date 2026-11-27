@@ -216,18 +216,18 @@ parseUnsigned(
         {
             ret = detail::makeStvar<STResult>(
                 field,
-                safeCast<typename STResult::value_type>(
+                safeCast<typename STResult::ValueType>(
                     beast::lexicalCastThrow<Integer>(value.asString())));
         }
         else if (value.isInt())
         {
             ret = detail::makeStvar<STResult>(
-                field, toUnsigned<typename STResult::value_type>(value.asInt()));
+                field, toUnsigned<typename STResult::ValueType>(value.asInt()));
         }
         else if (value.isUInt())
         {
             ret = detail::makeStvar<STResult>(
-                field, toUnsigned<typename STResult::value_type>(value.asUInt()));
+                field, toUnsigned<typename STResult::ValueType>(value.asUInt()));
         }
         else
         {
@@ -268,7 +268,7 @@ parseUInt16(
                 {
                     ret = detail::makeStvar<STResult>(
                         field,
-                        safeCast<typename STResult::value_type>(static_cast<Integer>(
+                        safeCast<typename STResult::ValueType>(static_cast<Integer>(
                             TxFormats::getInstance().findTypeByName(strValue))));
 
                     if (*name == sfGeneric)
@@ -278,7 +278,7 @@ parseUInt16(
                 {
                     ret = detail::makeStvar<STResult>(
                         field,
-                        safeCast<typename STResult::value_type>(static_cast<Integer>(
+                        safeCast<typename STResult::ValueType>(static_cast<Integer>(
                             LedgerFormats::getInstance().findTypeByName(strValue))));
 
                     if (*name == sfGeneric)
@@ -341,7 +341,7 @@ parseUInt32(
             {
                 ret = detail::makeStvar<STResult>(
                     field,
-                    safeCast<typename STResult::value_type>(
+                    safeCast<typename STResult::ValueType>(
                         beast::lexicalCastThrow<Integer>(value.asString())));
             }
         }

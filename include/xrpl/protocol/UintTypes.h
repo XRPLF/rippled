@@ -122,25 +122,25 @@ operator<<(std::ostream& os, Currency const& x)
 namespace std {
 
 template <>
-struct hash<xrpl::Currency> : xrpl::Currency::hasher
+struct hash<xrpl::Currency> : xrpl::Currency::Hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<xrpl::NodeID> : xrpl::NodeID::hasher
+struct hash<xrpl::NodeID> : xrpl::NodeID::Hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<xrpl::Directory> : xrpl::Directory::hasher
+struct hash<xrpl::Directory> : xrpl::Directory::Hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<xrpl::UInt256> : xrpl::UInt256::hasher
+struct hash<xrpl::UInt256> : xrpl::UInt256::Hasher
 {
     hash() = default;
 };

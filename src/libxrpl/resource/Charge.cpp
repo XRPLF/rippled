@@ -8,7 +8,7 @@
 
 namespace xrpl::resource {
 
-Charge::Charge(value_type cost, std::string label) : cost_(cost), label_(std::move(label))
+Charge::Charge(ValueType cost, std::string label) : cost_(cost), label_(std::move(label))
 {
 }
 
@@ -18,7 +18,7 @@ Charge::label() const
     return label_;
 }
 
-Charge::value_type
+Charge::ValueType
 Charge::cost() const
 {
     return cost_;
@@ -52,7 +52,7 @@ Charge::operator<=>(Charge const& c) const
 }
 
 Charge
-Charge::operator*(value_type m) const
+Charge::operator*(ValueType m) const
 {
     return Charge(cost_ * m, label_);
 }

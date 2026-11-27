@@ -23,7 +23,7 @@ private:
     Asset asset_{xrpIssue()};
 
 public:
-    using value_type = Asset;
+    using ValueType = Asset;
 
     STIssue() = default;
     STIssue(STIssue const& rhs) = default;
@@ -46,7 +46,7 @@ public:
     [[nodiscard]] bool
     holds() const;
 
-    [[nodiscard]] value_type const&
+    [[nodiscard]] ValueType const&
     value() const noexcept;
 
     void
@@ -116,7 +116,7 @@ STIssue::get() const
     return std::get<TIss>(asset_);
 }
 
-inline STIssue::value_type const&
+inline STIssue::ValueType const&
 STIssue::value() const noexcept
 {
     return asset_;

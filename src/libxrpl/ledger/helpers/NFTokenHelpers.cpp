@@ -43,7 +43,7 @@
 
 namespace xrpl::nft {
 
-static SLE::const_pointer
+static SLE::ConstPointer
 locatePage(ReadView const& view, AccountID const& owner, UInt256 const& id)
 {
     auto const first = keylet::nftokenPage(keylet::nftokenPageMin(owner), id);
@@ -56,7 +56,7 @@ locatePage(ReadView const& view, AccountID const& owner, UInt256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static SLE::pointer
+static SLE::Pointer
 locatePage(ApplyView& view, AccountID const& owner, UInt256 const& id)
 {
     auto const first = keylet::nftokenPage(keylet::nftokenPageMin(owner), id);
@@ -69,7 +69,7 @@ locatePage(ApplyView& view, AccountID const& owner, UInt256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static SLE::pointer
+static SLE::Pointer
 getPageForToken(
     ApplyView& view,
     AccountID const& owner,
@@ -232,7 +232,7 @@ changeTokenURI(
     UInt256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri)
 {
-    SLE::pointer const page = locatePage(view, owner, nftokenID);
+    SLE::Pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -271,7 +271,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    SLE::pointer const page =
+    SLE::Pointer const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
             increaseOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
         });
@@ -357,7 +357,7 @@ mergePages(ApplyView& view, SLE::Ref p1, SLE::Ref p2)
 TER
 removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID)
 {
-    SLE::pointer const page = locatePage(view, owner, nftokenID);
+    SLE::Pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -387,7 +387,7 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
 
     // Page management:
     auto const loadPage = [&view](SLE::Ref page1, SF_UINT256 const& field) {
-        SLE::pointer page2;
+        SLE::Pointer page2;
 
         if (auto const id = (*page1)[~field])
         {
@@ -525,7 +525,7 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID)
 {
-    SLE::const_pointer const page = locatePage(view, owner, nftokenID);
+    SLE::ConstPointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -544,7 +544,7 @@ findToken(ReadView const& view, AccountID const& owner, UInt256 const& nftokenID
 std::optional<TokenAndPage>
 findTokenAndPage(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID)
 {
-    SLE::pointer page = locatePage(view, owner, nftokenID);
+    SLE::Pointer page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -646,7 +646,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 
     auto const last = keylet::nftokenPageMax(owner);
 
-    SLE::pointer page = view.peek(Keylet(
+    SLE::Pointer page = view.peek(Keylet(
         ltNFTOKEN_PAGE,
         view.succ(keylet::nftokenPageMin(owner).key, last.key.next()).value_or(last.key)));
 
@@ -680,7 +680,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         view.update(page);
     }
 
-    SLE::pointer nextPage;
+    SLE::Pointer nextPage;
     while (
         (nextPage = view.peek(Keylet(
              ltNFTOKEN_PAGE, view.succ(page->key().next(), last.key.next()).value_or(last.key)))))

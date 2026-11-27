@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->tx_->at(sfDestination);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->tx_->at(sfAmount);
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSettleDelay() const
     {
         return this->tx_->at(sfSettleDelay);
@@ -85,7 +85,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getPublicKey() const
     {
         return this->tx_->at(sfPublicKey);
@@ -96,7 +96,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCancelAfter() const
     {
         if (hasCancelAfter())
@@ -122,7 +122,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -164,9 +164,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    PaymentChannelCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                     std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,                     std::decay_t<typename SF_VL::type::value_type> const& publicKey,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    PaymentChannelCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,                     std::decay_t<typename SF_UINT32::Type::ValueType> const& settleDelay,                     std::decay_t<typename SF_VL::Type::ValueType> const& publicKey,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelCreateBuilder>(ttPAYCHAN_CREATE, account, sequence, fee)
     {
@@ -199,7 +199,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -210,7 +210,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -221,7 +221,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setSettleDelay(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSettleDelay(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSettleDelay] = value;
         return *this;
@@ -232,7 +232,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setPublicKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setPublicKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfPublicKey] = value;
         return *this;
@@ -243,7 +243,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setCancelAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCancelAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCancelAfter] = value;
         return *this;
@@ -254,7 +254,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;

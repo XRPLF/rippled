@@ -29,7 +29,7 @@ private:
 public:
     static constexpr auto kDefaultCacheTargetSize = 0;
 
-    using key_type = UInt256;
+    using KeyType = UInt256;
     using ClockType = CacheType::ClockType;
 
     /**
@@ -90,7 +90,7 @@ public:
      * @return `true` If the key exists.
      */
     bool
-    touchIfExists(key_type const& key)
+    touchIfExists(KeyType const& key)
     {
         return cache_.touchIfExists(key);
     }
@@ -104,7 +104,7 @@ public:
      * @param key The key to insert.
      */
     void
-    insert(key_type const& key)
+    insert(KeyType const& key)
     {
         cache_.insert(key);
     }

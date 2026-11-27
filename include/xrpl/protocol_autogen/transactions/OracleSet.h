@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getOracleDocumentID() const
     {
         return this->tx_->at(sfOracleDocumentID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getProvider() const
     {
         if (hasProvider())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAssetClass() const
     {
         if (hasAssetClass())
@@ -141,7 +141,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getLastUpdateTime() const
     {
         return this->tx_->at(sfLastUpdateTime);
@@ -178,9 +178,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    OracleSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID,                     std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,                     STArray const& priceDataSeries,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    OracleSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& oracleDocumentID,                     std::decay_t<typename SF_UINT32::Type::ValueType> const& lastUpdateTime,                     STArray const& priceDataSeries,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<OracleSetBuilder>(ttORACLE_SET, account, sequence, fee)
     {
@@ -212,7 +212,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
-    setOracleDocumentID(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOracleDocumentID(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOracleDocumentID] = value;
         return *this;
@@ -223,7 +223,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
-    setProvider(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setProvider(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfProvider] = value;
         return *this;
@@ -234,7 +234,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;
@@ -245,7 +245,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
-    setAssetClass(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAssetClass(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAssetClass] = value;
         return *this;
@@ -256,7 +256,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleSetBuilder&
-    setLastUpdateTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLastUpdateTime(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLastUpdateTime] = value;
         return *this;

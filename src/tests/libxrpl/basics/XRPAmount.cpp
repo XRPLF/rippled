@@ -203,8 +203,8 @@ class XRPAmountMulRatioTest : public ::testing::Test
 {
 protected:
     static constexpr auto kMaxUInt32 = std::numeric_limits<std::uint32_t>::max();
-    static constexpr auto kMaxXrp = std::numeric_limits<XRPAmount::value_type>::max();
-    static constexpr auto kMinXrp = std::numeric_limits<XRPAmount::value_type>::min();
+    static constexpr auto kMaxXrp = std::numeric_limits<XRPAmount::ValueType>::max();
+    static constexpr auto kMinXrp = std::numeric_limits<XRPAmount::ValueType>::min();
 };
 
 TEST_F(XRPAmountMulRatioTest, scaling_the_maximum_by_one_is_lossless)
@@ -323,8 +323,8 @@ TEST_F(XRPAmountMulRatioTest, underflow_saturates_at_the_minimum)
 
 namespace {
 
-constexpr auto kMaxDrops = std::numeric_limits<XRPAmount::value_type>::max();
-constexpr auto kMinDrops = std::numeric_limits<XRPAmount::value_type>::min();
+constexpr auto kMaxDrops = std::numeric_limits<XRPAmount::ValueType>::max();
+constexpr auto kMinDrops = std::numeric_limits<XRPAmount::ValueType>::min();
 
 Rules
 makeRules(bool withFix)
@@ -347,7 +347,7 @@ expectBoundariesDoNotThrow()
     EXPECT_EQ(min - min, XRPAmount(0));
 
     XRPAmount a(kMaxDrops - 1);
-    a += XRPAmount::value_type{1};
+    a += XRPAmount::ValueType{1};
     EXPECT_EQ(a, max);
     a -= kMaxDrops;
     EXPECT_EQ(a, XRPAmount(0));
@@ -397,19 +397,19 @@ expectOverflowsThrow()
     // += and -= with a scalar
     {
         XRPAmount a(kMaxDrops);
-        EXPECT_THROW(a += XRPAmount::value_type{1}, std::overflow_error);
+        EXPECT_THROW(a += XRPAmount::ValueType{1}, std::overflow_error);
         EXPECT_EQ(a, XRPAmount(kMaxDrops));
 
         XRPAmount b(kMinDrops);
-        EXPECT_THROW(b -= XRPAmount::value_type{1}, std::overflow_error);
+        EXPECT_THROW(b -= XRPAmount::ValueType{1}, std::overflow_error);
         EXPECT_EQ(b, XRPAmount(kMinDrops));
 
         XRPAmount c(kMinDrops);
-        EXPECT_THROW(c += XRPAmount::value_type{-1}, std::overflow_error);
+        EXPECT_THROW(c += XRPAmount::ValueType{-1}, std::overflow_error);
         EXPECT_EQ(c, XRPAmount(kMinDrops));
 
         XRPAmount d(kMaxDrops);
-        EXPECT_THROW(d -= XRPAmount::value_type{-1}, std::overflow_error);
+        EXPECT_THROW(d -= XRPAmount::ValueType{-1}, std::overflow_error);
         EXPECT_EQ(d, XRPAmount(kMaxDrops));
     }
 

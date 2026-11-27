@@ -44,7 +44,7 @@ private:
     Number value_;
 
 public:
-    using value_type = Number;
+    using ValueType = Number;
 
     STNumber() = default;
     explicit STNumber(SField const& field, Number const& value = Number());

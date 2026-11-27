@@ -1181,7 +1181,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
         // they send us a public key we can't parse
         if (publicKey)
         {
-            auto const reportTime = NetClock::time_point{NetClock::duration{node.reporttime()}};
+            auto const reportTime = NetClock::TimePoint{NetClock::Duration{node.reporttime()}};
 
             app_.getCluster().update(*publicKey, name, node.nodeload(), reportTime);
         }
@@ -1941,7 +1941,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     UInt256 const proposeHash = UInt256::fromRaw(set.currenttxhash());
     UInt256 const prevLedger = UInt256::fromRaw(set.previousledger());
 
-    NetClock::time_point const closeTime{NetClock::duration{set.closetime()}};
+    NetClock::TimePoint const closeTime{NetClock::Duration{set.closetime()}};
 
     UInt256 const suppression = proposalUniqueId(
         proposeHash, prevLedger, set.proposeseq(), closeTime, publicKey.slice(), sig);

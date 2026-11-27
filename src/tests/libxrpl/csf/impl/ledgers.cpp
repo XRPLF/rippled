@@ -21,8 +21,8 @@ json::Value
 Ledger::getJson() const
 {
     json::Value res(json::ValueType::Object);
-    res["id"] = static_cast<ID::value_type>(id());
-    res["seq"] = static_cast<Seq::value_type>(seq());
+    res["id"] = static_cast<ID::ValueType>(id());
+    res["seq"] = static_cast<Seq::ValueType>(seq());
     return res;
 }
 
@@ -41,7 +41,7 @@ Ledger::operator[](Seq s) const
         return {};
     if (s == seq())
         return id();
-    return instance_->ancestors[static_cast<Seq::value_type>(s)];
+    return instance_->ancestors[static_cast<Seq::ValueType>(s)];
 }
 
 Ledger::Seq
@@ -82,22 +82,22 @@ LedgerOracle::LedgerOracle()
 Ledger::ID
 LedgerOracle::nextID() const
 {
-    return Ledger::ID{static_cast<Ledger::ID::value_type>(instances_.size())};
+    return Ledger::ID{static_cast<Ledger::ID::ValueType>(instances_.size())};
 }
 
 Ledger
 LedgerOracle::accept(
     Ledger const& parent,
     TxSetType const& txs,
-    NetClock::duration closeTimeResolution,
-    NetClock::time_point const& consensusCloseTime)
+    NetClock::Duration closeTimeResolution,
+    NetClock::TimePoint const& consensusCloseTime)
 {
     using namespace std::chrono_literals;
     Ledger::Instance next(*parent.instance_);
     next.txs.insert(txs.begin(), txs.end());
     next.seq = parent.seq() + Ledger::Seq{1};
     next.closeTimeResolution = closeTimeResolution;
-    next.closeTimeAgree = consensusCloseTime != NetClock::time_point{};
+    next.closeTimeAgree = consensusCloseTime != NetClock::TimePoint{};
     if (next.closeTimeAgree)
     {
         next.closeTime = effCloseTime(consensusCloseTime, closeTimeResolution, parent.closeTime());

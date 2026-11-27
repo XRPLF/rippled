@@ -91,12 +91,12 @@ public:
     ~StatsDCounterImpl() override;
 
     void
-    increment(CounterImpl::value_type amount) override;
+    increment(CounterImpl::ValueType amount) override;
 
     void
     flush();
     void
-    doIncrement(CounterImpl::value_type amount);
+    doIncrement(CounterImpl::ValueType amount);
     void
     doProcess() override;
 
@@ -106,7 +106,7 @@ public:
 private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
-    CounterImpl::value_type value_{0};
+    CounterImpl::ValueType value_{0};
     bool dirty_{false};
 };
 
@@ -120,10 +120,10 @@ public:
     ~StatsDEventImpl() override = default;
 
     void
-    notify(EventImpl::value_type const& value) override;
+    notify(EventImpl::ValueType const& value) override;
 
     void
-    doNotify(EventImpl::value_type const& value);
+    doNotify(EventImpl::ValueType const& value);
     void
     doProcess();
 
@@ -145,16 +145,16 @@ public:
     ~StatsDGaugeImpl() override;
 
     void
-    set(GaugeImpl::value_type value) override;
+    set(GaugeImpl::ValueType value) override;
     void
-    increment(GaugeImpl::difference_type amount) override;
+    increment(GaugeImpl::DifferenceType amount) override;
 
     void
     flush();
     void
-    doSet(GaugeImpl::value_type value);
+    doSet(GaugeImpl::ValueType value);
     void
-    doIncrement(GaugeImpl::difference_type amount);
+    doIncrement(GaugeImpl::DifferenceType amount);
     void
     doProcess() override;
 
@@ -164,8 +164,8 @@ public:
 private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
-    GaugeImpl::value_type lastValue_{0};
-    GaugeImpl::value_type value_{0};
+    GaugeImpl::ValueType lastValue_{0};
+    GaugeImpl::ValueType value_{0};
     bool dirty_{false};
 };
 
@@ -179,12 +179,12 @@ public:
     ~StatsDMeterImpl() override;
 
     void
-    increment(MeterImpl::value_type amount) override;
+    increment(MeterImpl::ValueType amount) override;
 
     void
     flush();
     void
-    doIncrement(MeterImpl::value_type amount);
+    doIncrement(MeterImpl::ValueType amount);
     void
     doProcess() override;
 
@@ -194,7 +194,7 @@ public:
 private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
-    MeterImpl::value_type value_{0};
+    MeterImpl::ValueType value_{0};
     bool dirty_{false};
 };
 
@@ -505,7 +505,7 @@ StatsDCounterImpl::~StatsDCounterImpl()
 }
 
 void
-StatsDCounterImpl::increment(CounterImpl::value_type amount)
+StatsDCounterImpl::increment(CounterImpl::ValueType amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
@@ -529,7 +529,7 @@ StatsDCounterImpl::flush()
 }
 
 void
-StatsDCounterImpl::doIncrement(CounterImpl::value_type amount)
+StatsDCounterImpl::doIncrement(CounterImpl::ValueType amount)
 {
     value_ += amount;
     dirty_ = true;
@@ -549,7 +549,7 @@ StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollect
 }
 
 void
-StatsDEventImpl::notify(EventImpl::value_type const& value)
+StatsDEventImpl::notify(EventImpl::ValueType const& value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
@@ -559,7 +559,7 @@ StatsDEventImpl::notify(EventImpl::value_type const& value)
 }
 
 void
-StatsDEventImpl::doNotify(EventImpl::value_type const& value)
+StatsDEventImpl::doNotify(EventImpl::ValueType const& value)
 {
     std::stringstream ss;
     ss << impl_->prefix() << "." << name_ << ":" << value.count() << "|ms"
@@ -581,7 +581,7 @@ StatsDGaugeImpl::~StatsDGaugeImpl()
 }
 
 void
-StatsDGaugeImpl::set(GaugeImpl::value_type value)
+StatsDGaugeImpl::set(GaugeImpl::ValueType value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
@@ -591,7 +591,7 @@ StatsDGaugeImpl::set(GaugeImpl::value_type value)
 }
 
 void
-StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
+StatsDGaugeImpl::increment(GaugeImpl::DifferenceType amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
@@ -614,7 +614,7 @@ StatsDGaugeImpl::flush()
 }
 
 void
-StatsDGaugeImpl::doSet(GaugeImpl::value_type value)
+StatsDGaugeImpl::doSet(GaugeImpl::ValueType value)
 {
     value_ = value;
 
@@ -626,20 +626,20 @@ StatsDGaugeImpl::doSet(GaugeImpl::value_type value)
 }
 
 void
-StatsDGaugeImpl::doIncrement(GaugeImpl::difference_type amount)
+StatsDGaugeImpl::doIncrement(GaugeImpl::DifferenceType amount)
 {
-    GaugeImpl::value_type value(value_);
+    GaugeImpl::ValueType value(value_);
 
     if (amount > 0)
     {
-        auto const d = static_cast<GaugeImpl::value_type>(amount);
-        value += (d >= std::numeric_limits<GaugeImpl::value_type>::max() - value_)
-            ? std::numeric_limits<GaugeImpl::value_type>::max() - value_
+        auto const d = static_cast<GaugeImpl::ValueType>(amount);
+        value += (d >= std::numeric_limits<GaugeImpl::ValueType>::max() - value_)
+            ? std::numeric_limits<GaugeImpl::ValueType>::max() - value_
             : d;
     }
     else if (amount < 0)
     {
-        auto const d = static_cast<GaugeImpl::value_type>(-amount);
+        auto const d = static_cast<GaugeImpl::ValueType>(-amount);
         value = (d >= value) ? 0 : value - d;
     }
 
@@ -666,7 +666,7 @@ StatsDMeterImpl::~StatsDMeterImpl()
 }
 
 void
-StatsDMeterImpl::increment(MeterImpl::value_type amount)
+StatsDMeterImpl::increment(MeterImpl::ValueType amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
@@ -690,7 +690,7 @@ StatsDMeterImpl::flush()
 }
 
 void
-StatsDMeterImpl::doIncrement(MeterImpl::value_type amount)
+StatsDMeterImpl::doIncrement(MeterImpl::ValueType amount)
 {
     value_ += amount;
     dirty_ = true;

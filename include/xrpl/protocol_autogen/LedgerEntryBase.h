@@ -27,7 +27,7 @@ public:
      * @brief Construct a ledger entry wrapper from an existing SLE object.
      * @param sle The underlying serialized ledger entry to wrap
      */
-    explicit LedgerEntryBase(SLE::const_pointer sle) : sle_(std::move(sle))
+    explicit LedgerEntryBase(SLE::ConstPointer sle) : sle_(std::move(sle))
     {
     }
 
@@ -151,7 +151,7 @@ public:
      * @return A constant reference to the underlying SLE object
      */
     [[nodiscard]]
-    SLE::const_pointer
+    SLE::ConstPointer
     getSle() const
     {
         return sle_;
@@ -161,7 +161,7 @@ protected:
     /**
      * @brief The underlying serialized ledger entry being wrapped.
      */
-    SLE::const_pointer sle_;
+    SLE::ConstPointer sle_;
 };
 
 }  // namespace xrpl::ledger_entries

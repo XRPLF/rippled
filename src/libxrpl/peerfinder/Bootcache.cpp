@@ -41,28 +41,28 @@ Bootcache::size() const
     return map_.size();
 }
 
-Bootcache::const_iterator
+Bootcache::ConstIterator
 Bootcache::begin() const
 {
-    return const_iterator(map_.right.begin());
+    return ConstIterator(map_.right.begin());
 }
 
-Bootcache::const_iterator
+Bootcache::ConstIterator
 Bootcache::cbegin() const
 {
-    return const_iterator(map_.right.begin());
+    return ConstIterator(map_.right.begin());
 }
 
-Bootcache::const_iterator
+Bootcache::ConstIterator
 Bootcache::end() const
 {
-    return const_iterator(map_.right.end());
+    return ConstIterator(map_.right.end());
 }
 
-Bootcache::const_iterator
+Bootcache::ConstIterator
 Bootcache::cend() const
 {
-    return const_iterator(map_.right.end());
+    return ConstIterator(map_.right.end());
 }
 
 void
@@ -79,7 +79,7 @@ Bootcache::load()
 {
     clear();
     auto const n(store_.load([this](beast::ip::Endpoint const& endpoint, int valence) {
-        auto const result(this->map_.insert(value_type(endpoint, valence)));
+        auto const result(this->map_.insert(ValueType(endpoint, valence)));
         if (!result.second)
         {
             JLOG(this->journal_.error())
@@ -98,7 +98,7 @@ Bootcache::load()
 bool
 Bootcache::insert(beast::ip::Endpoint const& endpoint)
 {
-    auto const result(map_.insert(value_type(endpoint, 0)));
+    auto const result(map_.insert(ValueType(endpoint, 0)));
     if (result.second)
     {
         JLOG(journal_.trace()) << std::left << std::setw(18) << "Bootcache insert " << endpoint;
@@ -111,13 +111,13 @@ Bootcache::insert(beast::ip::Endpoint const& endpoint)
 bool
 Bootcache::insertStatic(beast::ip::Endpoint const& endpoint)
 {
-    auto result(map_.insert(value_type(endpoint, kStaticValence)));
+    auto result(map_.insert(ValueType(endpoint, kStaticValence)));
 
     if (!result.second && (result.first->right.valence() < kStaticValence))
     {
         // An existing entry has too low a valence, replace it
         map_.erase(result.first);
-        result = map_.insert(value_type(endpoint, kStaticValence));
+        result = map_.insert(ValueType(endpoint, kStaticValence));
     }
 
     if (result.second)
@@ -132,7 +132,7 @@ Bootcache::insertStatic(beast::ip::Endpoint const& endpoint)
 void
 Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
 {
-    auto result(map_.insert(value_type(endpoint, 1)));
+    auto result(map_.insert(ValueType(endpoint, 1)));
     if (result.second)
     {
         prune();
@@ -143,7 +143,7 @@ Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
         entry.valence() = std::max(entry.valence(), 0);
         ++entry.valence();
         map_.erase(result.first);
-        result = map_.insert(value_type(endpoint, entry));
+        result = map_.insert(ValueType(endpoint, entry));
         XRPL_ASSERT(result.second, "xrpl::peer_finder::Bootcache::onSuccess : endpoint inserted");
     }
     Entry const& entry(result.first->right);
@@ -156,7 +156,7 @@ Bootcache::onSuccess(beast::ip::Endpoint const& endpoint)
 void
 Bootcache::onFailure(beast::ip::Endpoint const& endpoint)
 {
-    auto result(map_.insert(value_type(endpoint, -1)));
+    auto result(map_.insert(ValueType(endpoint, -1)));
     if (result.second)
     {
         prune();
@@ -167,7 +167,7 @@ Bootcache::onFailure(beast::ip::Endpoint const& endpoint)
         entry.valence() = std::min(entry.valence(), 0);
         --entry.valence();
         map_.erase(result.first);
-        result = map_.insert(value_type(endpoint, entry));
+        result = map_.insert(ValueType(endpoint, entry));
         XRPL_ASSERT(result.second, "xrpl::peer_finder::Bootcache::onFailure : endpoint inserted");
     }
     Entry const& entry(result.first->right);

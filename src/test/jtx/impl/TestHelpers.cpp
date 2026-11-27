@@ -484,10 +484,10 @@ expectOffers(
     return size == cnt && ((toMatch.empty() && size != 0) || (matched == toMatch.size()));
 }
 
-std::vector<SLE::const_pointer>
+std::vector<SLE::ConstPointer>
 ownerDirEntries(ReadView const& view, AccountID const& account)
 {
-    std::vector<SLE::const_pointer> result;
+    std::vector<SLE::ConstPointer> result;
     forEachItem(view, account, [&result](SLE::ConstRef sle) { result.push_back(sle); });
     return result;
 }

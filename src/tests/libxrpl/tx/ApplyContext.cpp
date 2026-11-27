@@ -50,7 +50,7 @@ protected:
      * @param seq The raw ticket sequence.
      * @return The new entry.
      */
-    SLE::pointer
+    SLE::Pointer
     makeTicket(std::uint32_t seq) const
     {
         auto sle = std::make_shared<SLE>(keylet::ticket(alice_.id(), SeqProxy::rawTicket(seq)));

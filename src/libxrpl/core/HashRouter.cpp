@@ -45,7 +45,7 @@ HashRouter::addSuppressionPeer(UInt256 const& key, PeerShortID peer)
     return addSuppressionPeerWithStatus(key, peer).first;
 }
 
-std::pair<bool, std::optional<Stopwatch::time_point>>
+std::pair<bool, std::optional<Stopwatch::TimePoint>>
 HashRouter::addSuppressionPeerWithStatus(UInt256 const& key, PeerShortID peer)
 {
     std::scoped_lock const lock(mutex_);

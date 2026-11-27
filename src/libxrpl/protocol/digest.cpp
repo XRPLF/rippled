@@ -22,10 +22,10 @@ OpensslRipemd160Hasher::operator()(void const* data, std::size_t size) noexcept
 }
 
 OpensslRipemd160Hasher::
-operator result_type() noexcept
+operator ResultType() noexcept
 {
     auto const ctx = reinterpret_cast<RIPEMD160_CTX*>(ctx_);
-    result_type digest;
+    ResultType digest;
     RIPEMD160_Final(digest.data(), ctx);
     return digest;
 }
@@ -47,10 +47,10 @@ OpensslSha512Hasher::operator()(void const* data, std::size_t size) noexcept
 }
 
 OpensslSha512Hasher::
-operator result_type() noexcept
+operator ResultType() noexcept
 {
     auto const ctx = reinterpret_cast<SHA512_CTX*>(ctx_);
-    result_type digest;
+    ResultType digest;
     SHA512_Final(digest.data(), ctx);
     return digest;
 }
@@ -72,10 +72,10 @@ OpensslSha256Hasher::operator()(void const* data, std::size_t size) noexcept
 }
 
 OpensslSha256Hasher::
-operator result_type() noexcept
+operator ResultType() noexcept
 {
     auto const ctx = reinterpret_cast<SHA256_CTX*>(ctx_);
-    result_type digest;
+    ResultType digest;
     SHA256_Final(digest.data(), ctx);
     return digest;
 }

@@ -104,7 +104,7 @@ class Slot final
 private:
     friend class Slots<ClockType>;
     using ID = Peer::ID;
-    using time_point = ClockType::time_point;
+    using TimePoint = ClockType::time_point;
 
     // a callback to report ignored squelches
     using IgnoredSquelchCallback = std::function<void()>;
@@ -168,7 +168,7 @@ private:
     /**
      * Get the time of the last peer selection round
      */
-    [[nodiscard]] time_point const&
+    [[nodiscard]] TimePoint const&
     getLastSelected() const
     {
         return lastSelected_;
@@ -245,10 +245,10 @@ private:
      */
     struct PeerInfo
     {
-        PeerState state;         // peer's state
-        std::size_t count;       // message count
-        time_point expire;       // squelch expiration time
-        time_point lastMessage;  // time last message received
+        PeerState state;        // peer's state
+        std::size_t count;      // message count
+        TimePoint expire;       // squelch expiration time
+        TimePoint lastMessage;  // time last message received
     };
 
     std::unordered_map<ID, PeerInfo> peers_;  // peer's data
@@ -571,7 +571,7 @@ Slot<ClockType>::getPeers() const
 template <typename ClockType>
 class Slots final
 {
-    using time_point = ClockType::time_point;
+    using TimePoint = ClockType::time_point;
     using ID = Peer::ID;
     using Messages = beast::AgedUnorderedMap<
         UInt256,

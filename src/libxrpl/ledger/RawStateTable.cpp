@@ -20,10 +20,10 @@ namespace xrpl::detail {
 class RawStateTable::SlesIterImpl : public ReadView::SlesType::IterBase
 {
 private:
-    SLE::const_pointer sle0_;
+    SLE::ConstPointer sle0_;
     ReadView::SlesType::Iterator iter0_;
     ReadView::SlesType::Iterator end0_;
-    SLE::const_pointer sle1_;
+    SLE::ConstPointer sle1_;
     ItemsT::const_iterator iter1_;
     ItemsT::const_iterator end1_;
 
@@ -103,7 +103,7 @@ public:
         skip();
     }
 
-    value_type
+    ValueType
     dereference() const override
     {
         if (!sle1_)
@@ -208,10 +208,10 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     the lower of the two.
 */
 auto
-RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last)
-    const -> std::optional<key_type>
+RawStateTable::succ(ReadView const& base, Key const& key, std::optional<Key> const& last) const
+    -> std::optional<Key>
 {
-    std::optional<key_type> next = key;
+    std::optional<Key> next = key;
     ItemsT::const_iterator iter;
     // Find base successor that is
     // not also deleted in our list
@@ -313,7 +313,7 @@ RawStateTable::replace(SLE::Ref sle)
     }
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 RawStateTable::read(ReadView const& base, Keylet const& k) const
 {
     auto const iter = items_.find(k.key);
@@ -323,7 +323,7 @@ RawStateTable::read(ReadView const& base, Keylet const& k) const
     if (item.action == Action::Erase)
         return nullptr;
     // Convert to SLE const
-    SLE::const_pointer sle = item.sle;
+    SLE::ConstPointer sle = item.sle;
     if (!k.check(*sle))
         return nullptr;
     return sle;

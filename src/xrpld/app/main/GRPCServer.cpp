@@ -206,7 +206,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                     usage,
                     role,
                     coro,
-                    InfoSub::pointer(),
+                    InfoSub::Pointer(),
                     kApiVersion,
                 },
                 request_,

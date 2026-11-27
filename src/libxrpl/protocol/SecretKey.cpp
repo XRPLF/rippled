@@ -245,7 +245,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
         case KeyType::Secp256k1: {
             Sha512HalfHasher h;
             h(m.data(), m.size());
-            auto const digest = Sha512HalfHasher::result_type(h);
+            auto const digest = Sha512HalfHasher::ResultType(h);
 
             secp256k1_ecdsa_signature sigImp;
             if (secp256k1_ecdsa_sign(

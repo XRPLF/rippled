@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT16::type::value_type
+    SF_UINT16::Type::ValueType
     getLedgerFixType() const
     {
         return this->tx_->at(sfLedgerFixType);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getOwner() const
     {
         if (hasOwner())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getBookDirectory() const
     {
         if (hasBookDirectory())
@@ -128,9 +128,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    LedgerStateFixBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT16::type::value_type> const& ledgerFixType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    LedgerStateFixBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT16::Type::ValueType> const& ledgerFixType,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<LedgerStateFixBuilder>(ttLEDGER_STATE_FIX, account, sequence, fee)
     {
@@ -160,7 +160,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
-    setLedgerFixType(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setLedgerFixType(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfLedgerFixType] = value;
         return *this;
@@ -171,7 +171,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -182,7 +182,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
-    setBookDirectory(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setBookDirectory(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfBookDirectory] = value;
         return *this;

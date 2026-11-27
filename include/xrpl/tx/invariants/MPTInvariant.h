@@ -172,7 +172,7 @@ class ValidConfidentialMPToken
         std::int64_t mptAmountDelta = 0;
         std::int64_t coaDelta = 0;
         std::int64_t outstandingDelta = 0;
-        SLE::const_pointer issuance;
+        SLE::ConstPointer issuance;
         bool deletedWithEncrypted = false;
         // True when an erased MPToken had a non-zero pre-tx public balance.
         bool deletedWithBalanceBefore = false;

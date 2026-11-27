@@ -32,9 +32,9 @@ create(
     AccountID const& account,
     AccountID const& to,
     STAmount const& amount,
-    NetClock::duration const& settleDelay,
+    NetClock::Duration const& settleDelay,
     PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter,
+    std::optional<NetClock::TimePoint> const& cancelAfter,
     std::optional<std::uint32_t> const& dstTag)
 {
     json::Value jv;
@@ -56,7 +56,7 @@ fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
-    std::optional<NetClock::time_point> const& expiration)
+    std::optional<NetClock::TimePoint> const& expiration)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelFund;

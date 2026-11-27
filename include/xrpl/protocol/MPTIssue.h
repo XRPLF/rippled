@@ -149,7 +149,7 @@ operator<<(std::ostream& os, MPTIssue const& x);
 namespace std {
 
 template <>
-struct hash<xrpl::MPTID> : xrpl::MPTID::hasher
+struct hash<xrpl::MPTID> : xrpl::MPTID::Hasher
 {
     hash() = default;
 };

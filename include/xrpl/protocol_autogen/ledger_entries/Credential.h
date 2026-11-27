@@ -33,7 +33,7 @@ public:
      * @brief Construct a Credential ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Credential(SLE::const_pointer sle)
+    explicit Credential(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getSubject() const
     {
         return this->sle_->at(sfSubject);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getIssuer() const
     {
         return this->sle_->at(sfIssuer);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getCredentialType() const
     {
         return this->sle_->at(sfCredentialType);
@@ -83,7 +83,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -107,7 +107,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -131,7 +131,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getIssuerNode() const
     {
         return this->sle_->at(sfIssuerNode);
@@ -142,7 +142,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getSubjectNode() const
     {
         if (hasSubjectNode())
@@ -166,7 +166,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -177,7 +177,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -203,7 +203,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    CredentialBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& subject,std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_VL::type::value_type> const& credentialType,std::decay_t<typename SF_UINT64::type::value_type> const& issuerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    CredentialBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& subject,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& issuer,std::decay_t<typename SF_VL::Type::ValueType> const& credentialType,std::decay_t<typename SF_UINT64::Type::ValueType> const& issuerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<CredentialBuilder>(ltCREDENTIAL)
     {
         setSubject(subject);
@@ -219,7 +219,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    CredentialBuilder(SLE::const_pointer sle)
+    CredentialBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCREDENTIAL)
         {
@@ -237,7 +237,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setSubject(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setSubject(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfSubject] = value;
         return *this;
@@ -248,7 +248,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setIssuer(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setIssuer(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfIssuer] = value;
         return *this;
@@ -259,7 +259,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setCredentialType(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCredentialType(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCredentialType] = value;
         return *this;
@@ -270,7 +270,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -281,7 +281,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;
@@ -292,7 +292,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setIssuerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setIssuerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfIssuerNode] = value;
         return *this;
@@ -303,7 +303,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setSubjectNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setSubjectNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfSubjectNode] = value;
         return *this;
@@ -314,7 +314,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -325,7 +325,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

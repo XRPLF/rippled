@@ -59,7 +59,7 @@ Cluster::update(
     PublicKey const& identity,
     std::string name,
     std::uint32_t loadFee,
-    NetClock::time_point reportTime)
+    NetClock::TimePoint reportTime)
 {
     std::scoped_lock const lock(mutex_);
 

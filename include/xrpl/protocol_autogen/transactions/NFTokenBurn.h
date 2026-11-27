@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getNFTokenID() const
     {
         return this->tx_->at(sfNFTokenID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getOwner() const
     {
         if (hasOwner())
@@ -102,9 +102,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    NFTokenBurnBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    NFTokenBurnBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& nFTokenID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenBurnBuilder>(ttNFTOKEN_BURN, account, sequence, fee)
     {
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&
-    setNFTokenID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenID] = value;
         return *this;
@@ -145,7 +145,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenBurnBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;

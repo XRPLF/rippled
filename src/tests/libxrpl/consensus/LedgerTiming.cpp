@@ -67,7 +67,7 @@ TEST(LedgerTimingTest, round_close_time)
 {
     using namespace std::chrono_literals;
     // A closeTime equal to the epoch is not modified
-    using Tp = NetClock::time_point;
+    using Tp = NetClock::TimePoint;
     Tp const def;
     EXPECT_TRUE(def == roundCloseTime(def, 30s));
 
@@ -85,7 +85,7 @@ TEST(LedgerTimingTest, round_close_time)
 TEST(LedgerTimingTest, eff_close_time)
 {
     using namespace std::chrono_literals;
-    using Tp = NetClock::time_point;
+    using Tp = NetClock::TimePoint;
     Tp close = effCloseTime(Tp{10s}, 30s, Tp{0s});
     EXPECT_TRUE(close == Tp{1s});
 

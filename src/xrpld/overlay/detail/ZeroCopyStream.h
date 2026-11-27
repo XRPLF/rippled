@@ -21,12 +21,12 @@ template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
-    using iterator = Buffers::const_iterator;
+    using Iterator = Buffers::const_iterator;
     using ConstBuffer = boost::asio::const_buffer;
 
     std::int64_t count_ = 0;
-    iterator last_;
-    iterator first_;   // Where pos_ comes from
+    Iterator last_;
+    Iterator first_;   // Where pos_ comes from
     ConstBuffer pos_;  // What Next() will return
 
 public:
@@ -116,7 +116,7 @@ class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
     using BuffersType = Streambuf::mutable_buffers_type;
-    using iterator = BuffersType::const_iterator;
+    using Iterator = BuffersType::const_iterator;
     using MutableBuffer = boost::asio::mutable_buffer;
 
     Streambuf& streambuf_;
@@ -124,7 +124,7 @@ private:
     std::int64_t count_ = 0;
     std::size_t commit_ = 0;
     BuffersType buffers_;
-    iterator pos_;
+    Iterator pos_;
 
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);

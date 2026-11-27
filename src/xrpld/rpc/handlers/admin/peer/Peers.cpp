@@ -62,7 +62,7 @@ doPeers(rpc::JsonContext& context)
         if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
             json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
 
-        if (node.getReportTime() != NetClock::time_point{})
+        if (node.getReportTime() != NetClock::TimePoint{})
         {
             json[jss::age] =
                 (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count();

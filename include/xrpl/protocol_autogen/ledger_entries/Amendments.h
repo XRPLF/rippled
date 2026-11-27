@@ -33,7 +33,7 @@ public:
      * @brief Construct a Amendments ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Amendments(SLE::const_pointer sle)
+    explicit Amendments(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    protocol_autogen::Optional<SF_VECTOR256::Type::ValueType>
     getAmendments() const
     {
         if (hasAmendments())
@@ -99,7 +99,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousTxnID() const
     {
         if (hasPreviousTxnID())
@@ -123,7 +123,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousTxnLgrSeq() const
     {
         if (hasPreviousTxnLgrSeq())
@@ -166,7 +166,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    AmendmentsBuilder(SLE::const_pointer sle)
+    AmendmentsBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltAMENDMENTS)
         {
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
-    setAmendments(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setAmendments(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfAmendments] = value;
         return *this;
@@ -206,7 +206,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -217,7 +217,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

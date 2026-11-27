@@ -51,7 +51,7 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     // that use manifests this will be derived from the master public key.
     NodeID const nodeID_;
 
-    NetClock::time_point seenTime_;
+    NetClock::TimePoint seenTime_;
 
 public:
     /**
@@ -98,7 +98,7 @@ public:
      */
     template <typename F>
     STValidation(
-        NetClock::time_point signTime,
+        NetClock::TimePoint signTime,
         PublicKey const& pk,
         SecretKey const& sk,
         NodeID const& nodeID,
@@ -112,10 +112,10 @@ public:
     [[nodiscard]] UInt256
     getConsensusHash() const;
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     getSignTime() const;
 
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     getSeenTime() const noexcept;
 
     [[nodiscard]] PublicKey const&
@@ -150,7 +150,7 @@ public:
     setUntrusted();
 
     void
-    setSeen(NetClock::time_point s);
+    setSeen(NetClock::TimePoint s);
 
     [[nodiscard]] Blob
     getSerialized() const;
@@ -219,7 +219,7 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, Deseria
  */
 template <typename F>
 STValidation::STValidation(
-    NetClock::time_point signTime,
+    NetClock::TimePoint signTime,
     PublicKey const& pk,
     SecretKey const& sk,
     NodeID const& nodeID,
@@ -291,7 +291,7 @@ STValidation::setUntrusted()
 }
 
 inline void
-STValidation::setSeen(NetClock::time_point s)
+STValidation::setSeen(NetClock::TimePoint s)
 {
     seenTime_ = s;
 }

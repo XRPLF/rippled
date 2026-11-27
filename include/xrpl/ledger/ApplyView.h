@@ -180,7 +180,7 @@ public:
      *
      * @return `nullptr` if the key is not present
      */
-    virtual SLE::pointer
+    virtual SLE::Pointer
     peek(Keylet const& k) = 0;
 
     /**
@@ -485,7 +485,7 @@ std::optional<std::uint64_t>
 insertPage(
     ApplyView& view,
     std::uint64_t page,
-    SLE::pointer node,
+    SLE::Pointer node,
     std::uint64_t nextPage,
     SLE::Ref next,
     UInt256 const& key,

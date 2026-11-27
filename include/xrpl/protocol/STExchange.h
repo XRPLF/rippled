@@ -29,7 +29,7 @@ struct STExchange<STInteger<U>, T>
 {
     explicit STExchange() = default;
 
-    using value_type = U;
+    using ValueType = U;
 
     static void
     get(std::optional<T>& t, STInteger<U> const& u)
@@ -49,10 +49,10 @@ struct STExchange<STBlob, Slice>
 {
     explicit STExchange() = default;
 
-    using value_type = Slice;
+    using ValueType = Slice;
 
     static void
-    get(std::optional<value_type>& t, STBlob const& u)
+    get(std::optional<ValueType>& t, STBlob const& u)
     {
         t.emplace(u.data(), u.size());
     }
@@ -69,7 +69,7 @@ struct STExchange<STBlob, Buffer>
 {
     explicit STExchange() = default;
 
-    using value_type = Buffer;
+    using ValueType = Buffer;
 
     static void
     get(std::optional<Buffer>& t, STBlob const& u)
@@ -116,10 +116,10 @@ get(STObject const& st, TypedField<U> const& f)
 }
 
 template <class U>
-std::optional<typename STExchange<U, typename U::value_type>::value_type>
+std::optional<typename STExchange<U, typename U::ValueType>::ValueType>
 get(STObject const& st, TypedField<U> const& f)
 {
-    return get<typename U::value_type>(st, f);
+    return get<typename U::ValueType>(st, f);
 }
 /** @} */
 

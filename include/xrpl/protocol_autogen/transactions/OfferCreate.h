@@ -53,7 +53,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getTakerPays() const
     {
         return this->tx_->at(sfTakerPays);
@@ -65,7 +65,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getTakerGets() const
     {
         return this->tx_->at(sfTakerGets);
@@ -76,7 +76,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -102,7 +102,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getOfferSequence() const
     {
         if (hasOfferSequence())
@@ -128,7 +128,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -168,9 +168,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    OfferCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerPays,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& takerGets,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    OfferCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& takerPays,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& takerGets,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCreateBuilder>(ttOFFER_CREATE, account, sequence, fee)
     {
@@ -202,7 +202,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
-    setTakerPays(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setTakerPays(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfTakerPays] = value;
         return *this;
@@ -214,7 +214,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
-    setTakerGets(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setTakerGets(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfTakerGets] = value;
         return *this;
@@ -225,7 +225,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -236,7 +236,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
-    setOfferSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOfferSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOfferSequence] = value;
         return *this;
@@ -247,7 +247,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;

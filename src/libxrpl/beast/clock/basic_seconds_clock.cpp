@@ -78,7 +78,7 @@ SecondsClockThread::run()
 
 }  // unnamed namespace
 
-BasicSecondsClock::time_point
+BasicSecondsClock::TimePoint
 BasicSecondsClock::now()
 {
     static SecondsClockThread kClk;

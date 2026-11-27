@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getChannel() const
     {
         return this->tx_->at(sfChannel);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getAmount() const
     {
         if (hasAmount())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getBalance() const
     {
         if (hasBalance())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getSignature() const
     {
         if (hasSignature())
@@ -141,7 +141,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getPublicKey() const
     {
         if (hasPublicKey())
@@ -167,7 +167,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VECTOR256::type::value_type>
+    protocol_autogen::Optional<SF_VECTOR256::Type::ValueType>
     getCredentialIDs() const
     {
         if (hasCredentialIDs())
@@ -206,9 +206,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    PaymentChannelClaimBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& channel,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    PaymentChannelClaimBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& channel,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<PaymentChannelClaimBuilder>(ttPAYCHAN_CLAIM, account, sequence, fee)
     {
@@ -238,7 +238,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setChannel(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setChannel(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfChannel] = value;
         return *this;
@@ -249,7 +249,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -260,7 +260,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setBalance(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBalance(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBalance] = value;
         return *this;
@@ -271,7 +271,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setSignature(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setSignature(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfSignature] = value;
         return *this;
@@ -282,7 +282,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setPublicKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setPublicKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfPublicKey] = value;
         return *this;
@@ -293,7 +293,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelClaimBuilder&
-    setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setCredentialIDs(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfCredentialIDs] = value;
         return *this;

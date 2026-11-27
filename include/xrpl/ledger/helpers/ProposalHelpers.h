@@ -127,7 +127,7 @@ isTerminal(
  *         the ledger contradicts the entry
  */
 TER
-deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j);
+deleteProposal(ApplyView& view, SLE::Pointer const& sleProposal, beast::Journal j);
 
 /**
  * Whether tx carries the same payload as a proposal's stored

@@ -33,7 +33,7 @@ public:
      * @brief Construct a RippleState ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit RippleState(SLE::const_pointer sle)
+    explicit RippleState(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getBalance() const
     {
         return this->sle_->at(sfBalance);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getLowLimit() const
     {
         return this->sle_->at(sfLowLimit);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getHighLimit() const
     {
         return this->sle_->at(sfHighLimit);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -94,7 +94,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -105,7 +105,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getLowNode() const
     {
         if (hasLowNode())
@@ -129,7 +129,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getLowQualityIn() const
     {
         if (hasLowQualityIn())
@@ -153,7 +153,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getLowQualityOut() const
     {
         if (hasLowQualityOut())
@@ -177,7 +177,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getHighNode() const
     {
         if (hasHighNode())
@@ -201,7 +201,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getHighQualityIn() const
     {
         if (hasHighQualityIn())
@@ -225,7 +225,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getHighQualityOut() const
     {
         if (hasHighQualityOut())
@@ -249,7 +249,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getHighSponsor() const
     {
         if (hasHighSponsor())
@@ -273,7 +273,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getLowSponsor() const
     {
         if (hasLowSponsor())
@@ -311,7 +311,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    RippleStateBuilder(std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_AMOUNT::type::value_type> const& lowLimit,std::decay_t<typename SF_AMOUNT::type::value_type> const& highLimit,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    RippleStateBuilder(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& balance,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& lowLimit,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& highLimit,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<RippleStateBuilder>(ltRIPPLE_STATE)
     {
         setBalance(balance);
@@ -326,7 +326,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    RippleStateBuilder(SLE::const_pointer sle)
+    RippleStateBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltRIPPLE_STATE)
         {
@@ -344,7 +344,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setBalance(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBalance(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBalance] = value;
         return *this;
@@ -355,7 +355,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setLowLimit(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setLowLimit(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfLowLimit] = value;
         return *this;
@@ -366,7 +366,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setHighLimit(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setHighLimit(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfHighLimit] = value;
         return *this;
@@ -377,7 +377,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -388,7 +388,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -399,7 +399,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setLowNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setLowNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfLowNode] = value;
         return *this;
@@ -410,7 +410,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setLowQualityIn(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLowQualityIn(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLowQualityIn] = value;
         return *this;
@@ -421,7 +421,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setLowQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLowQualityOut(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLowQualityOut] = value;
         return *this;
@@ -432,7 +432,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setHighNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setHighNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfHighNode] = value;
         return *this;
@@ -443,7 +443,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setHighQualityIn(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setHighQualityIn(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfHighQualityIn] = value;
         return *this;
@@ -454,7 +454,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setHighQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setHighQualityOut(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfHighQualityOut] = value;
         return *this;
@@ -465,7 +465,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setHighSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setHighSponsor(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfHighSponsor] = value;
         return *this;
@@ -476,7 +476,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
-    setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setLowSponsor(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfLowSponsor] = value;
         return *this;

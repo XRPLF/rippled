@@ -142,7 +142,7 @@ class TxQApplyImpl
 
     AccountID const accID_;
     Keylet const accKey_;
-    SLE::const_pointer accSle_;
+    SLE::ConstPointer accSle_;
     SeqProxy accSeq_ = SeqProxy(SeqProxy::Type::Seq, 0);
 
     uint256 const txID_;

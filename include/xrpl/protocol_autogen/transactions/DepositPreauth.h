@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getAuthorize() const
     {
         if (hasAuthorize())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getUnauthorize() const
     {
         if (hasUnauthorize())
@@ -164,9 +164,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    DepositPreauthBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    DepositPreauthBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<DepositPreauthBuilder>(ttDEPOSIT_PREAUTH, account, sequence, fee)
     {
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
-    setAuthorize(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAuthorize(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAuthorize] = value;
         return *this;
@@ -206,7 +206,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
-    setUnauthorize(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setUnauthorize(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfUnauthorize] = value;
         return *this;

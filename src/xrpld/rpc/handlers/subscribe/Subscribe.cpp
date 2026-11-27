@@ -49,7 +49,7 @@ wouldExceedSubscriptionCap(InfoSub::Ref ispSub, std::size_t additional, std::siz
 json::Value
 doSubscribe(rpc::JsonContext& context)
 {
-    InfoSub::pointer ispSub;
+    InfoSub::Pointer ispSub;
     json::Value jvResult(json::ValueType::Object);
 
     if (!context.infoSub && !context.params.isMember(jss::url))

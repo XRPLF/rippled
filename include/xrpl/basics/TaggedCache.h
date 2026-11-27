@@ -67,8 +67,8 @@ class TaggedCache
 {
 public:
     using MutexType = Mutex;
-    using key_type = Key;
-    using mapped_type = T;
+    using KeyType = Key;
+    using MappedType = T;
     using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
     using SharedWeakComboPointerType = SharedWeakUnionPointerType;
     using SharedPointerType = SharedPointer;
@@ -131,7 +131,7 @@ public:
     sweep();
 
     bool
-    del(key_type const& key, bool valid);
+    del(KeyType const& key, bool valid);
 
 private:
     // Selects the `data` parameter type of canonicalizeImpl from the replace
@@ -155,7 +155,7 @@ private:
     template <class Policy, class Callback = std::nullptr_t>
     bool
     canonicalizeImpl(
-        key_type const& key,
+        KeyType const& key,
         CanonicalizeClientPointerType<Policy> data,
         Policy policy,
         Callback&& replaceCallback = nullptr);
@@ -173,7 +173,7 @@ private:
     bool
     canonicalizeImpl(
         std::scoped_lock<MutexType> const&,
-        key_type const& key,
+        KeyType const& key,
         CanonicalizeClientPointerType<Policy> data,
         Policy policy,
         Callback&& replaceCallback = nullptr);
@@ -201,7 +201,7 @@ public:
      */
     template <class Callback>
     bool
-    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback);
+    canonicalize(KeyType const& key, SharedPointerType& data, Callback&& replaceCallback);
 
     /**
      * Insert/update the canonical entry for `key`, always replacing the
@@ -218,7 +218,7 @@ public:
      *         inserted or an expired tracked entry was re-cached.
      */
     bool
-    canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
+    canonicalizeReplaceCache(KeyType const& key, SharedPointerType const& data);
 
     /**
      * Insert the canonical entry for `key`, keeping any existing cached value.
@@ -236,10 +236,10 @@ public:
      *         inserted or an expired tracked entry was re-cached.
      */
     bool
-    canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
+    canonicalizeReplaceClient(KeyType const& key, SharedPointerType& data);
 
     SharedPointerType
-    fetch(key_type const& key);
+    fetch(KeyType const& key);
 
     /**
      * Insert the element into the container.
@@ -248,7 +248,7 @@ public:
      */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value) -> ReturnType
+    insert(KeyType const& key, T const& value) -> ReturnType
         requires(!IsKeyCache);
 
     /**
@@ -264,7 +264,7 @@ public:
      */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key) -> ReturnType
+    insert(KeyType const& key) -> ReturnType
         requires IsKeyCache;
 
     // VFALCO NOTE It looks like this returns a copy of the data in
@@ -273,9 +273,9 @@ public:
     //             simply return an iterator.
     //
     bool
-    retrieve(key_type const& key, T& data);
+    retrieve(KeyType const& key, T& data);
 
-    std::vector<key_type>
+    std::vector<KeyType>
     getKeys() const;
 
     // CachedSLEs functions.
@@ -289,11 +289,11 @@ public:
      * Fetch an item from the cache.
      * If the digest was not found, Handler
      * will be called with this signature:
-     *     SLE::const_pointer(void)
+     *     SLE::ConstPointer(void)
      */
     template <class Handler>
     SharedPointerType
-    fetch(key_type const& digest, Handler const& h);
+    fetch(KeyType const& digest, Handler const& h);
     // End CachedSLEs functions.
 
     /**
@@ -310,11 +310,11 @@ public:
      */
     template <class Callback>
     void
-    fetchAndModify(key_type const& key, Callback&& callback);
+    fetchAndModify(KeyType const& key, Callback&& callback);
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l);
+    initialFetch(KeyType const& key, std::scoped_lock<MutexType> const& l);
 
     void
     collectMetrics();
@@ -397,11 +397,11 @@ private:
 
     using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
-    using KeyOnlyCacheType = HardenedPartitionedHashMap<key_type, KeyOnlyEntry, Hash, KeyEqual>;
+    using KeyOnlyCacheType = HardenedPartitionedHashMap<KeyType, KeyOnlyEntry, Hash, KeyEqual>;
 
-    using KeyValueCacheType = HardenedPartitionedHashMap<key_type, ValueEntry, Hash, KeyEqual>;
+    using KeyValueCacheType = HardenedPartitionedHashMap<KeyType, ValueEntry, Hash, KeyEqual>;
 
-    using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
+    using CacheType = HardenedPartitionedHashMap<KeyType, Entry, Hash, KeyEqual>;
 
     [[nodiscard]] std::thread
     sweepHelper(

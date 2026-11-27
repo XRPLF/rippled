@@ -157,7 +157,7 @@ TEST(TaggedInteger, arithmetic_operators)
     EXPECT_EQ(TagInt{8} / TagInt{4}, TagInt{2});
     EXPECT_EQ(TagInt{7} % TagInt{4}, TagInt{3});
 
-    EXPECT_EQ(~TagInt{8}, TagInt{~TagInt::value_type{8}});
+    EXPECT_EQ(~TagInt{8}, TagInt{~TagInt::ValueType{8}});
     EXPECT_EQ((TagInt{6} & TagInt{3}), TagInt{2});
     EXPECT_EQ((TagInt{6} | TagInt{3}), TagInt{7});
     EXPECT_EQ((TagInt{6} ^ TagInt{3}), TagInt{5});

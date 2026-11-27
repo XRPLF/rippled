@@ -126,9 +126,9 @@ def parse_sfields_macro(sfields_path):
                 "getter_method": "at",
                 "setter_method": "",
                 "setter_use_brackets": True,
-                "setter_type": f"std::decay_t<typename SF_{sti_suffix}::type::value_type> const&",
-                "return_type": f"SF_{sti_suffix}::type::value_type",
-                "return_type_optional": f"protocol_autogen::Optional<SF_{sti_suffix}::type::value_type>",
+                "setter_type": f"std::decay_t<typename SF_{sti_suffix}::Type::ValueType> const&",
+                "return_type": f"SF_{sti_suffix}::Type::ValueType",
+                "return_type_optional": f"protocol_autogen::Optional<SF_{sti_suffix}::Type::ValueType>",
             },
         }
 

@@ -69,7 +69,7 @@ CsprngEngine::operator()(void* ptr, std::size_t count)
         Throw<std::runtime_error>("CSPRNG: Insufficient entropy");
 }
 
-CsprngEngine::result_type
+CsprngEngine::ResultType
 CsprngEngine::operator()()
 {
     result_type ret = 0;

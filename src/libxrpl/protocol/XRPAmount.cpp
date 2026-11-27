@@ -10,7 +10,7 @@
 namespace xrpl {
 
 XRPAmount&
-XRPAmount::operator+=(value_type const& rhs)
+XRPAmount::operator+=(ValueType const& rhs)
 {
     if (auto const result = checkedAdd(drops_, rhs))
     {
@@ -24,7 +24,7 @@ XRPAmount::operator+=(value_type const& rhs)
 }
 
 XRPAmount&
-XRPAmount::operator-=(value_type const& rhs)
+XRPAmount::operator-=(ValueType const& rhs)
 {
     if (auto const result = checkedSub(drops_, rhs))
     {
@@ -38,7 +38,7 @@ XRPAmount::operator-=(value_type const& rhs)
 }
 
 XRPAmount&
-XRPAmount::operator*=(value_type const& rhs)
+XRPAmount::operator*=(ValueType const& rhs)
 {
     if (auto const result = checkedMul(drops_, rhs))
     {

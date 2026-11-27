@@ -34,11 +34,11 @@ public:
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;        ///< The ledger the request selected.
-        std::optional<ErrorCodeI> error;               ///< An error written with the ledger fields.
-        AccountID account;                             ///< The account; written only if not found.
-        SLE::const_pointer accountRoot;                ///< The account root, once it was read.
-        std::optional<SLE::const_pointer> signerList;  ///< The requested signer list, or null.
+        std::shared_ptr<ReadView const> ledger;       ///< The ledger the request selected.
+        std::optional<ErrorCodeI> error;              ///< An error written with the ledger fields.
+        AccountID account;                            ///< The account; written only if not found.
+        SLE::ConstPointer accountRoot;                ///< The account root, once it was read.
+        std::optional<SLE::ConstPointer> signerList;  ///< The requested signer list, or null.
         std::optional<std::vector<TxQ::TxDetails>> queue;  ///< The requested queued transactions.
     };
 

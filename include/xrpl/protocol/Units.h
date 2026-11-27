@@ -48,7 +48,7 @@ class TenthBipsTag;
 
 template <class T>
 concept Valid = std::is_class_v<T> && std::is_object_v<typename T::UnitType> &&
-    std::is_object_v<typename T::value_type>;
+    std::is_object_v<typename T::ValueType>;
 
 /**
  * `Usable` is checked to ensure that only values with
@@ -68,14 +68,14 @@ concept Usable = Valid<T> &&
 
 template <class Other, class VU>
 concept Compatible =
-    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
-    std::is_convertible_v<Other, typename VU::value_type>;
+    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::ValueType> &&
+    std::is_convertible_v<Other, typename VU::ValueType>;
 
 template <class T>
 concept Integral = std::is_integral_v<T>;
 
 template <class VU>
-concept IntegralValue = Integral<typename VU::value_type>;
+concept IntegralValue = Integral<typename VU::ValueType>;
 
 template <class VU1, class VU2>
 concept CastableValue = IntegralValue<VU1> && IntegralValue<VU2> &&
@@ -91,10 +91,10 @@ class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
 {
 public:
     using UnitType = UnitTag;
-    using value_type = T;
+    using ValueType = T;
 
 private:
-    value_type value_;
+    ValueType value_;
 
 public:
     ValueUnit() = default;
@@ -113,12 +113,12 @@ public:
         return *this;
     }
 
-    constexpr explicit ValueUnit(value_type value) : value_(value)
+    constexpr explicit ValueUnit(ValueType value) : value_(value)
     {
     }
 
     constexpr ValueUnit&
-    operator=(value_type value)
+    operator=(ValueType value)
     {
         value_ = value;
         return *this;
@@ -131,32 +131,32 @@ public:
      */
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<UnitType, Other> const& value)
-        requires SafeToCast<Other, value_type>
-        : ValueUnit(safeCast<value_type>(value.value()))
+        requires SafeToCast<Other, ValueType>
+        : ValueUnit(safeCast<ValueType>(value.value()))
     {
     }
 
     constexpr ValueUnit
-    operator+(value_type const& rhs) const
+    operator+(ValueType const& rhs) const
     {
         return ValueUnit{value_ + rhs};
     }
 
     friend constexpr ValueUnit
-    operator+(value_type lhs, ValueUnit const& rhs)
+    operator+(ValueType lhs, ValueUnit const& rhs)
     {
         // addition is commutative
         return rhs + lhs;
     }
 
     constexpr ValueUnit
-    operator-(value_type const& rhs) const
+    operator-(ValueType const& rhs) const
     {
         return ValueUnit{value_ - rhs};
     }
 
     friend constexpr ValueUnit
-    operator-(value_type lhs, ValueUnit const& rhs)
+    operator-(ValueType lhs, ValueUnit const& rhs)
     {
         // subtraction is NOT commutative, but (lhs + (-rhs)) is addition, which
         // is
@@ -164,19 +164,19 @@ public:
     }
 
     constexpr ValueUnit
-    operator*(value_type const& rhs) const
+    operator*(ValueType const& rhs) const
     {
         return ValueUnit{value_ * rhs};
     }
 
     friend constexpr ValueUnit
-    operator*(value_type lhs, ValueUnit const& rhs)
+    operator*(ValueType lhs, ValueUnit const& rhs)
     {
         // multiplication is commutative
         return rhs * lhs;
     }
 
-    constexpr value_type
+    constexpr ValueType
     operator/(ValueUnit const& rhs) const
     {
         return value_ / rhs.value_;
@@ -211,22 +211,22 @@ public:
     }
 
     ValueUnit&
-    operator*=(value_type const& rhs)
+    operator*=(ValueType const& rhs)
     {
         value_ *= rhs;
         return *this;
     }
 
     ValueUnit&
-    operator/=(value_type const& rhs)
+    operator/=(ValueType const& rhs)
     {
         value_ /= rhs;
         return *this;
     }
 
-    template <Integral Transparent = value_type>
+    template <Integral Transparent = ValueType>
     ValueUnit&
-    operator%=(value_type const& rhs)
+    operator%=(ValueType const& rhs)
     {
         value_ %= rhs;
         return *this;
@@ -253,7 +253,7 @@ public:
     }
 
     constexpr bool
-    operator==(value_type other) const
+    operator==(ValueType other) const
     {
         return value_ == other;
     }
@@ -288,7 +288,7 @@ public:
      * Returns the number of drops
      */
     // TODO: Move this to a new class, maybe with the old "TaggedFee" name
-    [[nodiscard]] constexpr value_type
+    [[nodiscard]] constexpr ValueType
     fee() const
     {
         return value_;
@@ -309,10 +309,9 @@ public:
     jsonClipped() const
         requires Usable<ValueUnit>
     {
-        if constexpr (std::is_integral_v<value_type>)
+        if constexpr (std::is_integral_v<ValueType>)
         {
-            using JsonType =
-                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
+            using JsonType = std::conditional_t<std::is_signed_v<ValueType>, json::Int, json::UInt>;
 
             constexpr auto kMin = std::numeric_limits<JsonType>::min();
             constexpr auto kMax = std::numeric_limits<JsonType>::max();
@@ -334,7 +333,7 @@ public:
      * function unless the type has been abstracted away,
      * e.g. in a templated function.
      */
-    [[nodiscard]] constexpr value_type
+    [[nodiscard]] constexpr ValueType
     value() const
     {
         return value_;
@@ -365,12 +364,12 @@ to_string(ValueUnit<UnitTag, T> const& amount)
 
 template <class Source>
 concept muldivSource =
-    Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
+    Valid<Source> && std::is_convertible_v<typename Source::ValueType, std::uint64_t>;
 
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
-    std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
-    sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
+    std::is_convertible_v<std::uint64_t, typename Dest::ValueType> &&
+    sizeof(typename Dest::ValueType) >= sizeof(std::uint64_t);
 
 template <class Source2, class Source1>
 concept muldivSources = muldivSource<Source1> && muldivSource<Source2> &&
@@ -406,7 +405,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         return std::nullopt;
     }
 
-    using DestType = Dest::value_type;
+    using DestType = Dest::ValueType;
     constexpr auto kMax = std::numeric_limits<DestType>::max();
 
     // Shortcuts, since these happen a lot in the real world
@@ -512,7 +511,7 @@ constexpr Dest
 safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safeCast<typename Dest::value_type>(s.value())};
+    return Dest{safeCast<typename Dest::ValueType>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
@@ -520,7 +519,7 @@ constexpr Dest
 safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safeCast<typename Dest::value_type>(s)};
+    return Dest{safeCast<typename Dest::ValueType>(s)};
 }
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
@@ -528,7 +527,7 @@ constexpr Dest
 unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafeCast<typename Dest::value_type>(s.value())};
+    return Dest{unsafeCast<typename Dest::ValueType>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
@@ -536,7 +535,7 @@ constexpr Dest
 unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafeCast<typename Dest::value_type>(s)};
+    return Dest{unsafeCast<typename Dest::ValueType>(s)};
 }
 
 }  // namespace xrpl

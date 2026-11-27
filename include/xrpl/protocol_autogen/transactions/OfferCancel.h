@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getOfferSequence() const
     {
         return this->tx_->at(sfOfferSequence);
@@ -76,9 +76,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    OfferCancelBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    OfferCancelBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& offerSequence,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<OfferCancelBuilder>(ttOFFER_CANCEL, account, sequence, fee)
     {
@@ -108,7 +108,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OfferCancelBuilder&
-    setOfferSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOfferSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOfferSequence] = value;
         return *this;

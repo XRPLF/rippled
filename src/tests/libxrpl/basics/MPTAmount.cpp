@@ -15,8 +15,8 @@ namespace xrpl {
 
 namespace {
 
-constexpr auto kMaxMpt = std::numeric_limits<MPTAmount::value_type>::max();
-constexpr auto kMinMpt = std::numeric_limits<MPTAmount::value_type>::min();
+constexpr auto kMaxMpt = std::numeric_limits<MPTAmount::ValueType>::max();
+constexpr auto kMinMpt = std::numeric_limits<MPTAmount::ValueType>::min();
 
 Rules
 makeRules(bool withFix)

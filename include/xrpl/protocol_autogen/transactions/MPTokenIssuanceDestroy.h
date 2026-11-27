@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->tx_->at(sfMPTokenIssuanceID);
@@ -76,9 +76,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    MPTokenIssuanceDestroyBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    MPTokenIssuanceDestroyBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<MPTokenIssuanceDestroyBuilder>(ttMPTOKEN_ISSUANCE_DESTROY, account, sequence, fee)
     {
@@ -108,7 +108,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceDestroyBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;

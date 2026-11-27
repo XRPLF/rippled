@@ -62,7 +62,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 return BEAST_EXPECT(env.le(*liveProposalKeylet));
             };
 
-        auto peekLiveProposal = [&](ApplyContext& ac) -> SLE::pointer {
+        auto peekLiveProposal = [&](ApplyContext& ac) -> SLE::Pointer {
             if (!liveProposalKeylet)
                 return nullptr;
             return ac.view().peek(*liveProposalKeylet);

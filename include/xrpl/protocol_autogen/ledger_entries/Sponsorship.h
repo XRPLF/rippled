@@ -33,7 +33,7 @@ public:
      * @brief Construct a Sponsorship ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Sponsorship(SLE::const_pointer sle)
+    explicit Sponsorship(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->sle_->at(sfOwner);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getSponsee() const
     {
         return this->sle_->at(sfSponsee);
@@ -94,7 +94,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getFeeAmount() const
     {
         if (hasFeeAmount())
@@ -118,7 +118,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getMaxFee() const
     {
         if (hasMaxFee())
@@ -142,7 +142,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getRemainingOwnerCount() const
     {
         if (hasRemainingOwnerCount())
@@ -166,7 +166,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -177,7 +177,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getSponseeNode() const
     {
         return this->sle_->at(sfSponseeNode);
@@ -203,7 +203,7 @@ public:
      * @param ownerNode The sfOwnerNode field value.
      * @param sponseeNode The sfSponseeNode field value.
      */
-    SponsorshipBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& sponsee,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& sponseeNode)
+    SponsorshipBuilder(std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& sponsee,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT64::Type::ValueType> const& sponseeNode)
         : LedgerEntryBuilderBase<SponsorshipBuilder>(ltSPONSORSHIP)
     {
         setPreviousTxnID(previousTxnID);
@@ -219,7 +219,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    SponsorshipBuilder(SLE::const_pointer sle)
+    SponsorshipBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltSPONSORSHIP)
         {
@@ -237,7 +237,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -248,7 +248,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -259,7 +259,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -270,7 +270,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setSponsee(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setSponsee(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfSponsee] = value;
         return *this;
@@ -281,7 +281,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setFeeAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setFeeAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfFeeAmount] = value;
         return *this;
@@ -292,7 +292,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setMaxFee(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setMaxFee(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfMaxFee] = value;
         return *this;
@@ -303,7 +303,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setRemainingOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setRemainingOwnerCount(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfRemainingOwnerCount] = value;
         return *this;
@@ -314,7 +314,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -325,7 +325,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
-    setSponseeNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setSponseeNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfSponseeNode] = value;
         return *this;

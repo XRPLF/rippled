@@ -27,7 +27,7 @@ class TransfersNotFrozen
 {
     struct BalanceChange
     {
-        SLE::const_pointer const line;
+        SLE::ConstPointer const line;
         int const balanceChangeSign;
     };
 
@@ -40,7 +40,7 @@ class TransfersNotFrozen
     using ByIssuer = std::map<Issue, IssuerChanges>;
     ByIssuer balanceChanges_;
 
-    std::map<AccountID, SLE::const_pointer const> possibleIssuers_;
+    std::map<AccountID, SLE::ConstPointer const> possibleIssuers_;
 
 public:
     void
@@ -62,7 +62,7 @@ private:
     void
     recordBalanceChanges(SLE::ConstRef after, STAmount const& balanceChange);
 
-    SLE::const_pointer
+    SLE::ConstPointer
     findIssuer(AccountID const& issuerID, ReadView const& view);
 
     static bool

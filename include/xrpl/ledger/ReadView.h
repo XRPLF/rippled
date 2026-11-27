@@ -42,11 +42,11 @@ class ReadView
 public:
     using TxType = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
-    using key_type = UInt256;
+    using Key = UInt256;
 
-    using mapped_type = SLE::const_pointer;
+    using MappedType = SLE::ConstPointer;
 
-    struct SlesType : detail::ReadViewFwdRange<SLE::const_pointer>
+    struct SlesType : detail::ReadViewFwdRange<SLE::ConstPointer>
     {
         explicit SlesType(ReadView const& view);
         [[nodiscard]] Iterator
@@ -54,7 +54,7 @@ public:
         [[nodiscard]] Iterator
         end() const;
         [[nodiscard]] Iterator
-        upperBound(key_type const& key) const;
+        upperBound(Key const& key) const;
     };
 
     struct TxsType : detail::ReadViewFwdRange<TxType>
@@ -102,7 +102,7 @@ public:
     /**
      * Returns the close time of the previous ledger.
      */
-    [[nodiscard]] NetClock::time_point
+    [[nodiscard]] NetClock::TimePoint
     parentCloseTime() const
     {
         return header().parentCloseTime;
@@ -151,8 +151,8 @@ public:
      * the key returned would be outside the open
      * interval (key, last).
      */
-    [[nodiscard]] virtual std::optional<key_type>
-    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
+    [[nodiscard]] virtual std::optional<Key>
+    succ(Key const& key, std::optional<Key> const& last = std::nullopt) const = 0;
 
     /**
      * Return the state item associated with a key.
@@ -168,7 +168,7 @@ public:
      * @return `nullptr` if the key is not present or
      *         if the type does not match.
      */
-    [[nodiscard]] virtual SLE::const_pointer
+    [[nodiscard]] virtual SLE::ConstPointer
     read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that
@@ -223,7 +223,7 @@ public:
 
     // used by the implementation
     [[nodiscard]] virtual std::unique_ptr<SlesType::IterBase>
-    slesUpperBound(key_type const& key) const = 0;
+    slesUpperBound(Key const& key) const = 0;
 
     // used by the implementation
     [[nodiscard]] virtual std::unique_ptr<TxsType::IterBase>
@@ -240,7 +240,7 @@ public:
      * base ledger, or if it is a newly inserted tx.
      */
     [[nodiscard]] virtual bool
-    txExists(key_type const& key) const = 0;
+    txExists(Key const& key) const = 0;
 
     /**
      * Read a transaction from the tx map.
@@ -252,7 +252,7 @@ public:
      *         key is not found in the tx map.
      */
     [[nodiscard]] virtual TxType
-    txRead(key_type const& key) const = 0;
+    txRead(Key const& key) const = 0;
 
     //
     // Memberspaces
@@ -289,7 +289,7 @@ public:
      * @return std::nullopt if the item does not exist.
      */
     [[nodiscard]] virtual std::optional<DigestType>
-    digest(key_type const& key) const = 0;
+    digest(Key const& key) const = 0;
 };
 
 //------------------------------------------------------------------------------

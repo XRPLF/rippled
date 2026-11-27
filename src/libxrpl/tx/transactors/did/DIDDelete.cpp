@@ -35,7 +35,7 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 }
 
 TER
-DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j)
+DIDDelete::deleteSLE(ApplyView& view, SLE::Pointer sle, AccountID const owner, beast::Journal j)
 {
     // Remove object from owner directory
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))

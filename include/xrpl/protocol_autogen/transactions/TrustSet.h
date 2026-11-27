@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getLimitAmount() const
     {
         if (hasLimitAmount())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getQualityIn() const
     {
         if (hasQualityIn())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getQualityOut() const
     {
         if (hasQualityOut())
@@ -142,9 +142,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    TrustSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    TrustSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<TrustSetBuilder>(ttTRUST_SET, account, sequence, fee)
     {
@@ -173,7 +173,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
-    setLimitAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setLimitAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfLimitAmount] = value;
         return *this;
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
-    setQualityIn(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setQualityIn(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfQualityIn] = value;
         return *this;
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TrustSetBuilder&
-    setQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setQualityOut(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfQualityOut] = value;
         return *this;

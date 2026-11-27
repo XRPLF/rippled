@@ -33,7 +33,7 @@ public:
      * @brief Construct a AMM ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit AMM(SLE::const_pointer sle)
+    explicit AMM(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTradingFee() const
     {
         if (hasTradingFee())
@@ -135,7 +135,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getLPTokenBalance() const
     {
         return this->sle_->at(sfLPTokenBalance);
@@ -146,7 +146,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset() const
     {
         return this->sle_->at(sfAsset);
@@ -157,7 +157,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset2() const
     {
         return this->sle_->at(sfAsset2);
@@ -168,7 +168,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -179,7 +179,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getPreviousTxnID() const
     {
         if (hasPreviousTxnID())
@@ -203,7 +203,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getPreviousTxnLgrSeq() const
     {
         if (hasPreviousTxnLgrSeq())
@@ -241,7 +241,7 @@ public:
      * @param asset2 The sfAsset2 field value.
      * @param ownerNode The sfOwnerNode field value.
      */
-    AMMBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_AMOUNT::type::value_type> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode)
+    AMMBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& lPTokenBalance,std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset,std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset2,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode)
         : LedgerEntryBuilderBase<AMMBuilder>(ltAMM)
     {
         setAccount(account);
@@ -256,7 +256,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    AMMBuilder(SLE::const_pointer sle)
+    AMMBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltAMM)
         {
@@ -274,7 +274,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -285,7 +285,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setTradingFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTradingFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTradingFee] = value;
         return *this;
@@ -318,7 +318,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setLPTokenBalance(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setLPTokenBalance(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfLPTokenBalance] = value;
         return *this;
@@ -329,7 +329,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
         return *this;
@@ -340,7 +340,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setAsset2(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset2(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset2] = STIssue(sfAsset2, value);
         return *this;
@@ -351,7 +351,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -362,7 +362,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -373,7 +373,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

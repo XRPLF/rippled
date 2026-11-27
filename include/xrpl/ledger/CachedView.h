@@ -26,7 +26,7 @@ private:
     DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    std::unordered_map<key_type, UInt256, HardenedHash<>> mutable map_;
+    std::unordered_map<Key, UInt256, HardenedHash<>> mutable map_;
 
 public:
     CachedViewImpl() = delete;
@@ -45,7 +45,7 @@ public:
     bool
     exists(Keylet const& k) const override;
 
-    SLE::const_pointer
+    SLE::ConstPointer
     read(Keylet const& k) const override;
 
     bool
@@ -72,8 +72,8 @@ public:
         return base_.rules();
     }
 
-    std::optional<key_type>
-    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override
+    std::optional<Key>
+    succ(Key const& key, std::optional<Key> const& last = std::nullopt) const override
     {
         return base_.succ(key, last);
     }
@@ -109,13 +109,13 @@ public:
     }
 
     bool
-    txExists(key_type const& key) const override
+    txExists(Key const& key) const override
     {
         return base_.txExists(key);
     }
 
     TxType
-    txRead(key_type const& key) const override
+    txRead(Key const& key) const override
     {
         return base_.txRead(key);
     }
@@ -125,7 +125,7 @@ public:
     //
 
     std::optional<DigestType>
-    digest(key_type const& key) const override
+    digest(Key const& key) const override
     {
         return base_.digest(key);
     }

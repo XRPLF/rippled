@@ -60,7 +60,7 @@ exceedsSubscriptionCap(
 class InfoSubRequest : public CountedObject<InfoSubRequest>
 {
 public:
-    using pointer = std::shared_ptr<InfoSubRequest>;
+    using Pointer = std::shared_ptr<InfoSubRequest>;
 
     virtual ~InfoSubRequest() = default;
 
@@ -89,7 +89,7 @@ public:
 class InfoSub : public CountedObject<InfoSub>
 {
 public:
-    using pointer = std::shared_ptr<InfoSub>;
+    using Pointer = std::shared_ptr<InfoSub>;
 
     // VFALCO TODO Standardize on the names of weak / strong pointer type
     // aliases.
@@ -295,9 +295,9 @@ public:
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
         //
-        virtual pointer
+        virtual Pointer
         findRpcSub(std::string const& strUrl) = 0;
-        virtual pointer
+        virtual Pointer
         addRpcSub(std::string const& strUrl, Ref rspEntry) = 0;
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;

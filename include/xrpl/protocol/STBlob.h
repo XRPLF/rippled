@@ -20,7 +20,7 @@ class STBlob : public STBase, public CountedObject<STBlob>
     Buffer value_;
 
 public:
-    using value_type = Slice;
+    using ValueType = Slice;
 
     STBlob() = default;
     STBlob(STBlob const& rhs);
@@ -54,7 +54,7 @@ public:
     STBlob&
     operator=(Slice const& slice);
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     value() const noexcept;
 
     STBlob&
@@ -109,7 +109,7 @@ STBlob::operator=(Slice const& slice)
     return *this;
 }
 
-inline STBlob::value_type
+inline STBlob::ValueType
 STBlob::value() const noexcept
 {
     return value_;

@@ -295,11 +295,11 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 NodeID
 calcNodeID(PublicKey const& pk)
 {
-    static_assert(NodeID::kBytes == sizeof(RipeshaHasher::result_type));
+    static_assert(NodeID::kBytes == sizeof(RipeshaHasher::ResultType));
 
     RipeshaHasher h;
     h(pk.data(), pk.size());
-    return NodeID::fromRaw(static_cast<RipeshaHasher::result_type>(h));
+    return NodeID::fromRaw(static_cast<RipeshaHasher::ResultType>(h));
 }
 
 }  // namespace xrpl

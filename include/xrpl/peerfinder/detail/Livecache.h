@@ -68,7 +68,7 @@ public:
         struct Transform
         {
             using FirstArgument = Element;
-            using result_type = Endpoint;
+            using ResultType = Endpoint;
 
             explicit Transform() = default;
 
@@ -80,66 +80,66 @@ public:
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform, ListType::const_iterator>;
+        using Iterator = boost::transform_iterator<Transform, ListType::const_iterator>;
 
-        using const_iterator = iterator;
+        using ConstIterator = Iterator;
 
-        using reverse_iterator =
+        using ReverseIterator =
             boost::transform_iterator<Transform, ListType::const_reverse_iterator>;
 
-        using const_reverse_iterator = reverse_iterator;
+        using ConstReverseIterator = ReverseIterator;
 
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         begin() const
         {
-            return iterator(list_.get().cbegin(), Transform());
+            return Iterator(list_.get().cbegin(), Transform());
         }
 
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         cbegin() const
         {
-            return iterator(list_.get().cbegin(), Transform());
+            return Iterator(list_.get().cbegin(), Transform());
         }
 
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         end() const
         {
-            return iterator(list_.get().cend(), Transform());
+            return Iterator(list_.get().cend(), Transform());
         }
 
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         cend() const
         {
-            return iterator(list_.get().cend(), Transform());
+            return Iterator(list_.get().cend(), Transform());
         }
 
-        [[nodiscard]] reverse_iterator
+        [[nodiscard]] ReverseIterator
         rbegin() const
         {
-            return reverse_iterator(list_.get().crbegin(), Transform());
+            return ReverseIterator(list_.get().crbegin(), Transform());
         }
 
-        [[nodiscard]] reverse_iterator
+        [[nodiscard]] ReverseIterator
         crbegin() const
         {
-            return reverse_iterator(list_.get().crbegin(), Transform());
+            return ReverseIterator(list_.get().crbegin(), Transform());
         }
 
-        [[nodiscard]] reverse_iterator
+        [[nodiscard]] ReverseIterator
         rend() const
         {
-            return reverse_iterator(list_.get().crend(), Transform());
+            return ReverseIterator(list_.get().crend(), Transform());
         }
 
-        [[nodiscard]] reverse_iterator
+        [[nodiscard]] ReverseIterator
         crend() const
         {
-            return reverse_iterator(list_.get().crend(), Transform());
+            return ReverseIterator(list_.get().crend(), Transform());
         }
 
         // move the element to the end of the container
         void
-        moveBack(const_iterator pos)
+        moveBack(ConstIterator pos)
         {
             auto& e(const_cast<Element&>(*pos.base()));
             list_.get().erase(list_.get().iterator_to(e));
@@ -147,20 +147,20 @@ public:
         }
 
     private:
-        explicit Hop(beast::MaybeConst<IsConst, ListType>::type& list) : list_(list)
+        explicit Hop(beast::MaybeConst<IsConst, ListType>::Type& list) : list_(list)
         {
         }
 
         friend class LivecacheBase;
 
-        std::reference_wrapper<typename beast::MaybeConst<IsConst, ListType>::type> list_;
+        std::reference_wrapper<typename beast::MaybeConst<IsConst, ListType>::Type> list_;
     };
 
 protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
     static Hop<IsConst>
-    makeHop(beast::MaybeConst<IsConst, ListType>::type& list)
+    makeHop(beast::MaybeConst<IsConst, ListType>::Type& list)
     {
         return Hop<IsConst>(list);
     }
@@ -198,7 +198,7 @@ private:
     CacheType cache_;
 
 public:
-    using allocator_type = Allocator;
+    using AllocatorType = Allocator;
 
     /**
      * Create the cache.
@@ -227,99 +227,98 @@ public:
         struct Transform
         {
             using FirstArgument = ListsType::value_type;
-            using result_type = Hop<IsConst>;
+            using ResultType = Hop<IsConst>;
 
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(beast::MaybeConst<IsConst, ListsType::value_type>::type& list) const
+            operator()(beast::MaybeConst<IsConst, ListsType::value_type>::Type& list) const
             {
                 return makeHop<IsConst>(list);
             }
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform<false>, ListsType::iterator>;
+        using Iterator = boost::transform_iterator<Transform<false>, ListsType::iterator>;
 
-        using const_iterator =
-            boost::transform_iterator<Transform<true>, ListsType::const_iterator>;
+        using ConstIterator = boost::transform_iterator<Transform<true>, ListsType::const_iterator>;
 
-        using reverse_iterator =
+        using ReverseIterator =
             boost::transform_iterator<Transform<false>, ListsType::reverse_iterator>;
 
-        using const_reverse_iterator =
+        using ConstReverseIterator =
             boost::transform_iterator<Transform<true>, ListsType::const_reverse_iterator>;
 
-        iterator
+        Iterator
         begin()
         {
-            return iterator(lists_.begin(), Transform<false>());
+            return Iterator(lists_.begin(), Transform<false>());
         }
 
-        [[nodiscard]] const_iterator
+        [[nodiscard]] ConstIterator
         begin() const
         {
-            return const_iterator(lists_.cbegin(), Transform<true>());
+            return ConstIterator(lists_.cbegin(), Transform<true>());
         }
 
-        [[nodiscard]] const_iterator
+        [[nodiscard]] ConstIterator
         cbegin() const
         {
-            return const_iterator(lists_.cbegin(), Transform<true>());
+            return ConstIterator(lists_.cbegin(), Transform<true>());
         }
 
-        iterator
+        Iterator
         end()
         {
-            return iterator(lists_.end(), Transform<false>());
+            return Iterator(lists_.end(), Transform<false>());
         }
 
-        [[nodiscard]] const_iterator
+        [[nodiscard]] ConstIterator
         end() const
         {
-            return const_iterator(lists_.cend(), Transform<true>());
+            return ConstIterator(lists_.cend(), Transform<true>());
         }
 
-        [[nodiscard]] const_iterator
+        [[nodiscard]] ConstIterator
         cend() const
         {
-            return const_iterator(lists_.cend(), Transform<true>());
+            return ConstIterator(lists_.cend(), Transform<true>());
         }
 
-        reverse_iterator
+        ReverseIterator
         rbegin()
         {
-            return reverse_iterator(lists_.rbegin(), Transform<false>());
+            return ReverseIterator(lists_.rbegin(), Transform<false>());
         }
 
-        [[nodiscard]] const_reverse_iterator
+        [[nodiscard]] ConstReverseIterator
         rbegin() const
         {
-            return const_reverse_iterator(lists_.crbegin(), Transform<true>());
+            return ConstReverseIterator(lists_.crbegin(), Transform<true>());
         }
 
-        [[nodiscard]] const_reverse_iterator
+        [[nodiscard]] ConstReverseIterator
         crbegin() const
         {
-            return const_reverse_iterator(lists_.crbegin(), Transform<true>());
+            return ConstReverseIterator(lists_.crbegin(), Transform<true>());
         }
 
-        reverse_iterator
+        ReverseIterator
         rend()
         {
-            return reverse_iterator(lists_.rend(), Transform<false>());
+            return ReverseIterator(lists_.rend(), Transform<false>());
         }
 
-        [[nodiscard]] const_reverse_iterator
+        [[nodiscard]] ConstReverseIterator
         rend() const
         {
-            return const_reverse_iterator(lists_.crend(), Transform<true>());
+            return ConstReverseIterator(lists_.crend(), Transform<true>());
         }
 
-        [[nodiscard]] const_reverse_iterator
+        [[nodiscard]] ConstReverseIterator
         crend() const
         {
-            return const_reverse_iterator(lists_.crend(), Transform<true>());
+            return ConstReverseIterator(lists_.crend(), Transform<true>());
         }
 
         /**
@@ -361,7 +360,7 @@ public:
     /**
      * Returns the number of entries in the cache.
      */
-    CacheType::size_type
+    CacheType::SizeType
     size() const
     {
         return cache_.size();
@@ -399,7 +398,7 @@ void
 Livecache<Allocator>::expire()
 {
     std::size_t n(0);
-    typename CacheType::time_point const expired(
+    typename CacheType::TimePoint const expired(
         cache_.clock().now() - tuning::kLiveCacheSecondsToLive);
     for (auto iter(cache_.chronological.begin());
          iter != cache_.chronological.end() && iter.when() <= expired;)
@@ -467,7 +466,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
-    typename CacheType::time_point const expired(
+    typename CacheType::TimePoint const expired(
         cache_.clock().now() - tuning::kLiveCacheSecondsToLive);
     map["size"] = size();
     map["hist"] = hops.histogram();

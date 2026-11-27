@@ -20,7 +20,7 @@ namespace xrpl {
 static void
 textTime(
     std::string& text,
-    UptimeClock::time_point& seconds,
+    UptimeClock::TimePoint& seconds,
     char const* unitName,
     std::chrono::seconds unitVal)
 {

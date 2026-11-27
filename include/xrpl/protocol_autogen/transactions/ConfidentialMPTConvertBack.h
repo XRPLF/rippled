@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->tx_->at(sfMPTokenIssuanceID);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getMPTAmount() const
     {
         return this->tx_->at(sfMPTAmount);
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getHolderEncryptedAmount() const
     {
         return this->tx_->at(sfHolderEncryptedAmount);
@@ -85,7 +85,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getIssuerEncryptedAmount() const
     {
         return this->tx_->at(sfIssuerEncryptedAmount);
@@ -96,7 +96,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptedAmount() const
     {
         if (hasAuditorEncryptedAmount())
@@ -122,7 +122,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getBlindingFactor() const
     {
         return this->tx_->at(sfBlindingFactor);
@@ -133,7 +133,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getZKProof() const
     {
         return this->tx_->at(sfZKProof);
@@ -144,7 +144,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getBalanceCommitment() const
     {
         return this->tx_->at(sfBalanceCommitment);
@@ -174,9 +174,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTConvertBackBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_UINT64::type::value_type> const& mPTAmount,                     std::decay_t<typename SF_VL::type::value_type> const& holderEncryptedAmount,                     std::decay_t<typename SF_VL::type::value_type> const& issuerEncryptedAmount,                     std::decay_t<typename SF_UINT256::type::value_type> const& blindingFactor,                     std::decay_t<typename SF_VL::type::value_type> const& zKProof,                     std::decay_t<typename SF_VL::type::value_type> const& balanceCommitment,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    ConfidentialMPTConvertBackBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,                     std::decay_t<typename SF_UINT64::Type::ValueType> const& mPTAmount,                     std::decay_t<typename SF_VL::Type::ValueType> const& holderEncryptedAmount,                     std::decay_t<typename SF_VL::Type::ValueType> const& issuerEncryptedAmount,                     std::decay_t<typename SF_UINT256::Type::ValueType> const& blindingFactor,                     std::decay_t<typename SF_VL::Type::ValueType> const& zKProof,                     std::decay_t<typename SF_VL::Type::ValueType> const& balanceCommitment,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<ConfidentialMPTConvertBackBuilder>(ttCONFIDENTIAL_MPT_CONVERT_BACK, account, sequence, fee)
     {
@@ -212,7 +212,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;
@@ -223,7 +223,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setMPTAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setMPTAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfMPTAmount] = value;
         return *this;
@@ -234,7 +234,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setHolderEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setHolderEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfHolderEncryptedAmount] = value;
         return *this;
@@ -245,7 +245,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptedAmount] = value;
         return *this;
@@ -256,7 +256,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptedAmount] = value;
         return *this;
@@ -267,7 +267,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setBlindingFactor(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setBlindingFactor(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfBlindingFactor] = value;
         return *this;
@@ -278,7 +278,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setZKProof(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setZKProof(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfZKProof] = value;
         return *this;
@@ -289,7 +289,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTConvertBackBuilder&
-    setBalanceCommitment(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBalanceCommitment(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfBalanceCommitment] = value;
         return *this;

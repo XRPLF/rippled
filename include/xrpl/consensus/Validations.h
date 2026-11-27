@@ -93,9 +93,9 @@ struct ValidationParms
 template <class Seq>
 class SeqEnforcer
 {
-    using time_point = std::chrono::steady_clock::time_point;
+    using TimePoint = std::chrono::steady_clock::time_point;
     Seq seq_{0};
-    time_point when_;
+    TimePoint when_;
 
 public:
     /**
@@ -112,7 +112,7 @@ public:
      * @return Whether the validation satisfies the invariant
      */
     bool
-    operator()(time_point now, Seq s, ValidationParms const& p)
+    operator()(TimePoint now, Seq s, ValidationParms const& p)
     {
         if (now > (when_ + p.validationSetExpires))
             seq_ = Seq{0};
@@ -145,9 +145,9 @@ public:
 inline bool
 isCurrent(
     ValidationParms const& p,
-    NetClock::time_point now,
-    NetClock::time_point signTime,
-    NetClock::time_point seenTime)
+    NetClock::TimePoint now,
+    NetClock::TimePoint signTime,
+    NetClock::TimePoint seenTime)
 {
     // Because this can be called on untrusted, possibly
     // malicious validations, we do our math in a way
@@ -158,7 +158,7 @@ isCurrent(
 
     return (signTime > (now - p.validationCurrentEarly)) &&
         (signTime < (now + p.validationCurrentWall)) &&
-        ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCurrentLocal)));
+        ((seenTime == NetClock::TimePoint{}) || (seenTime < (now + p.validationCurrentLocal)));
 }
 
 /**
@@ -245,10 +245,10 @@ to_string(ValStatus m)
  *     Ledger::Seq seq() const
  *
  *     // When the validation was signed
- *     NetClock::time_point signTime() const;
+ *     NetClock::TimePoint signTime() const;
  *
  *     // When the validation was first observed by this node
- *     NetClock::time_point seenTime() const;
+ *     NetClock::TimePoint seenTime() const;
  *
  *     // Signing key of node that published the validation
  *     NodeKey key() const;
@@ -283,7 +283,7 @@ to_string(ValStatus m)
  *     using Ledger = Ledger;
  *
  *     // Return the current network time (used to determine staleness)
- *     NetClock::time_point now() const;
+ *     NetClock::TimePoint now() const;
  *
  *     // Attempt to acquire a specific ledger.
  *     std::optional<Ledger> acquire(Ledger::ID const & ledgerID);
@@ -516,7 +516,7 @@ private:
     void
     current(std::scoped_lock<Mutex> const& lock, Pre&& pre, F&& f)
     {
-        NetClock::time_point const t = adaptor_.now();
+        NetClock::TimePoint const t = adaptor_.now();
         pre(current_.size());
         auto it = current_.begin();
         while (it != current_.end())

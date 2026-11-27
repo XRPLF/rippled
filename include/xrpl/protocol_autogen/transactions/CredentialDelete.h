@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getSubject() const
     {
         if (hasSubject())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getIssuer() const
     {
         if (hasIssuer())
@@ -104,7 +104,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getCredentialType() const
     {
         return this->tx_->at(sfCredentialType);
@@ -128,9 +128,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    CredentialDeleteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_VL::type::value_type> const& credentialType,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    CredentialDeleteBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_VL::Type::ValueType> const& credentialType,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<CredentialDeleteBuilder>(ttCREDENTIAL_DELETE, account, sequence, fee)
     {
@@ -160,7 +160,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&
-    setSubject(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setSubject(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfSubject] = value;
         return *this;
@@ -171,7 +171,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&
-    setIssuer(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setIssuer(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfIssuer] = value;
         return *this;
@@ -182,7 +182,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&
-    setCredentialType(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCredentialType(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCredentialType] = value;
         return *this;

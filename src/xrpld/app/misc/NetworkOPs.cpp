@@ -654,9 +654,9 @@ public:
     bool
     unsubConsensus(std::uint64_t uListener) override;
 
-    InfoSub::pointer
+    InfoSub::Pointer
     findRpcSub(std::string const& strUrl) override;
-    InfoSub::pointer
+    InfoSub::Pointer
     addRpcSub(std::string const& strUrl, InfoSub::Ref) override;
     bool
     tryRemoveRpcSub(std::string const& strUrl) override;
@@ -672,7 +672,7 @@ public:
      * @param strUrl The subscription URL key into rpcSubMap_.
      * @return The matching InfoSub, or an empty pointer if not found.
      */
-    InfoSub::pointer
+    InfoSub::Pointer
     findRpcSubLocked(std::string const& strUrl);
 
     beast::Journal const&
@@ -819,7 +819,7 @@ private:
 private:
     using SubMapType = HashMap<std::uint64_t, InfoSub::Wptr>;
     using SubInfoMapType = HashMap<AccountID, SubMapType>;
-    using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
+    using SubRpcMapType = HashMap<std::string, InfoSub::Pointer>;
     using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
 
     /*
@@ -849,7 +849,7 @@ private:
     };
     struct SubAccountHistoryInfo
     {
-        InfoSub::pointer sink;
+        InfoSub::Pointer sink;
         std::shared_ptr<SubAccountHistoryIndex> index;
     };
     struct SubAccountHistoryInfoWeak
@@ -2403,7 +2403,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
     // if this is the last reference, ~InfoSub re-acquires streamLock_ (via its
     // unsub* calls), which would self-deadlock on this non-recursive mutex.
     // Declared before the lock so it is destroyed after the lock is dropped.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     // VFALCO consider std::shared_mutex
     std::scoped_lock const sl(streamLock_);
@@ -2484,7 +2484,7 @@ NetworkOPsImp::pubServer()
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
     // mutex and self-deadlock. Declared before the lock, destroyed after it.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
     //             list into a local array while holding the lock then release
@@ -2528,7 +2528,7 @@ NetworkOPsImp::pubServer()
 
         for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
-            InfoSub::pointer p = i->second.lock();
+            InfoSub::Pointer p = i->second.lock();
 
             // VFALCO TODO research the possibility of using thread queues and
             //             linearizing the deletion of subscribers with the
@@ -2553,7 +2553,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
     // mutex and self-deadlock. Declared before the lock, destroyed after it.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     std::scoped_lock const sl(streamLock_);
 
@@ -2586,7 +2586,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
     // mutex and self-deadlock. Declared before the lock, destroyed after it.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     // VFALCO consider std::shared_mutex
     std::scoped_lock const sl(streamLock_);
@@ -2698,7 +2698,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
     // mutex and self-deadlock. Declared before the lock, destroyed after it.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     std::scoped_lock const sl(streamLock_);
 
@@ -2710,7 +2710,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 
         for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
-            InfoSub::pointer p = i->second.lock();
+            InfoSub::Pointer p = i->second.lock();
 
             if (p)
             {
@@ -3283,14 +3283,14 @@ NetworkOPsImp::pubProposedTransaction(
         // released; a last-reference ~InfoSub would otherwise re-acquire this
         // non-recursive mutex and self-deadlock. Declared before the lock,
         // destroyed after the block ends.
-        std::vector<InfoSub::pointer> toRelease;
+        std::vector<InfoSub::Pointer> toRelease;
 
         std::scoped_lock const sl(streamLock_);
 
         auto it = streamMaps_[SRtTransactions].begin();
         while (it != streamMaps_[SRtTransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::Pointer p = it->second.lock();
 
             if (p)
             {
@@ -3356,7 +3356,7 @@ NetworkOPsImp::publishLedgerStreams(
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
     // mutex and self-deadlock. Declared before the lock, destroyed after it;
     // covers both the ledger and book-changes loops below.
-    std::vector<InfoSub::pointer> toRelease;
+    std::vector<InfoSub::Pointer> toRelease;
 
     std::scoped_lock const sl(streamLock_);
 
@@ -3391,7 +3391,7 @@ NetworkOPsImp::publishLedgerStreams(
         auto it = streamMaps_[SLedger].begin();
         while (it != streamMaps_[SLedger].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::Pointer p = it->second.lock();
             if (p)
             {
                 p->send(jvObj, true);
@@ -3412,7 +3412,7 @@ NetworkOPsImp::publishLedgerStreams(
         auto it = streamMaps_[SBookChanges].begin();
         while (it != streamMaps_[SBookChanges].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::Pointer p = it->second.lock();
             if (p)
             {
                 p->send(jvObj, true);
@@ -3615,14 +3615,14 @@ NetworkOPsImp::pubValidatedTransaction(
         // released; a last-reference ~InfoSub would otherwise re-acquire this
         // non-recursive mutex and self-deadlock. Declared before the lock,
         // destroyed after the block ends; covers both loops below.
-        std::vector<InfoSub::pointer> toRelease;
+        std::vector<InfoSub::Pointer> toRelease;
 
         std::scoped_lock const sl(streamLock_);
 
         auto it = streamMaps_[STransactions].begin();
         while (it != streamMaps_[STransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::Pointer p = it->second.lock();
 
             if (p)
             {
@@ -3642,7 +3642,7 @@ NetworkOPsImp::pubValidatedTransaction(
 
         while (it != streamMaps_[SRtTransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::Pointer p = it->second.lock();
 
             if (p)
             {
@@ -3687,11 +3687,11 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     //     ~InfoSub() in-line, which re-enters unsubBook() and mutates the very
     //     subBook_/SubMapType being iterated -> dangling iterator UB.
     //
-    // Releasing bookLock_ before any InfoSub::pointer can decay solves both.
+    // Releasing bookLock_ before any InfoSub::Pointer can decay solves both.
     // ~InfoSub() reacquires bookLock_ via unsubBook() on its own and serializes
     // safely with concurrent traffic.
 
-    std::vector<InfoSub::pointer> listeners;
+    std::vector<InfoSub::Pointer> listeners;
     HashSet<std::uint64_t> seen;
 
     // Sized for the common case where every affected book has at most
@@ -3750,7 +3750,7 @@ NetworkOPsImp::pubAccountTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
-    HashSet<InfoSub::pointer> notify;
+    HashSet<InfoSub::Pointer> notify;
     int iProposed = 0;
     int iAccepted = 0;
 
@@ -3770,7 +3770,7 @@ NetworkOPsImp::pubAccountTransaction(
 
                     while (it != simiIt->second.end())
                     {
-                        InfoSub::pointer const p = it->second.lock();
+                        InfoSub::Pointer const p = it->second.lock();
 
                         if (p)
                         {
@@ -3791,7 +3791,7 @@ NetworkOPsImp::pubAccountTransaction(
                     auto it = simiIt->second.begin();
                     while (it != simiIt->second.end())
                     {
-                        InfoSub::pointer const p = it->second.lock();
+                        InfoSub::Pointer const p = it->second.lock();
 
                         if (p)
                         {
@@ -3885,7 +3885,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::shared_ptr<STTx const> const& tx,
     TER result)
 {
-    HashSet<InfoSub::pointer> notify;
+    HashSet<InfoSub::Pointer> notify;
     int iProposed = 0;
 
     {
@@ -3903,7 +3903,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
                 while (it != simiIt->second.end())
                 {
-                    InfoSub::pointer const p = it->second.lock();
+                    InfoSub::Pointer const p = it->second.lock();
 
                     if (p)
                     {
@@ -4155,7 +4155,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
 
     // Declared before the lock so a last-reference ~InfoSub runs after
     // mptLock_ is released (see the deferred-destruction rule).
-    HashSet<InfoSub::pointer> notify;
+    HashSet<InfoSub::Pointer> notify;
 
     {
         std::scoped_lock const sl(mptLock_);
@@ -4167,7 +4167,7 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
                 auto it = simiIt->second.begin();
                 while (it != simiIt->second.end())
                 {
-                    InfoSub::pointer const p = it->second.lock();
+                    InfoSub::Pointer const p = it->second.lock();
 
                     if (p)
                     {
@@ -4860,7 +4860,7 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
     return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
 }
 
-InfoSub::pointer
+InfoSub::Pointer
 NetworkOPsImp::findRpcSubLocked(std::string const& strUrl)
 {
     // Caller already holds streamLock_; this performs the lookup only.
@@ -4869,17 +4869,17 @@ NetworkOPsImp::findRpcSubLocked(std::string const& strUrl)
     if (it != rpcSubMap_.end())
         return it->second;
 
-    return InfoSub::pointer();
+    return InfoSub::Pointer();
 }
 
-InfoSub::pointer
+InfoSub::Pointer
 NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
     std::scoped_lock const sl(streamLock_);
     return findRpcSubLocked(strUrl);
 }
 
-InfoSub::pointer
+InfoSub::Pointer
 NetworkOPsImp::addRpcSub(std::string const& strUrl, InfoSub::Ref rspEntry)
 {
     std::scoped_lock const sl(streamLock_);
@@ -4897,7 +4897,7 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     // strong reference; if so, ~InfoSub runs and its unsub* calls re-acquire
     // the non-recursive streamLock_. Destroying pInfo inside the lock would
     // self-deadlock.
-    InfoSub::pointer pInfo;
+    InfoSub::Pointer pInfo;
     {
         std::scoped_lock const sl(streamLock_);
         // Use the no-lock helper: we already hold streamLock_ and the mutex is
@@ -4970,7 +4970,7 @@ NetworkOPsImp::getBookPage(
     bool bDone = false;
     bool bDirectAdvance = true;
 
-    SLE::const_pointer sleOfferDir;
+    SLE::ConstPointer sleOfferDir;
     UInt256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
@@ -5222,7 +5222,7 @@ NetworkOPsImp::getBookPage(
 
     while (iLimit-- > 0 && obIterator.nextOffer())
     {
-        SLE::pointer sleOffer = obIterator.getCurrentOffer();
+        SLE::Pointer sleOffer = obIterator.getCurrentOffer();
         if (sleOffer)
         {
             auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
