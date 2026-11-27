@@ -5,9 +5,16 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+
+#include <expected>
+#include <optional>
+#include <tuple>
 
 namespace xrpl {
 
@@ -37,6 +44,16 @@ public:
         : Base(keylet::amm(ammID), view, j)
     {
     }
+
+    // Get the AMM pool and LP token balances. If both optAsset1 and optAsset2
+    // are set, they are used as the AMM token pair assets. Otherwise the
+    // missing assets are read from this AMM.
+    [[nodiscard]] std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+    holds(
+        std::optional<Asset> const& optAsset1,
+        std::optional<Asset> const& optAsset2,
+        FreezeHandling freezeHandling,
+        AuthHandling authHandling) const;
 };
 
 using AMMEntryR = AMMEntry<ReadView>;
