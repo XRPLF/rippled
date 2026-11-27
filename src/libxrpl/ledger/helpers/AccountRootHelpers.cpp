@@ -144,7 +144,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     std::uint32_t const currentAccountCount = detail::accountCountImpl(sle, 0, j);
 
     // Pseudo-accounts have no reserve requirement
-    auto const reserve = isPseudoAccount(sle)
+    auto const reserve = sle.isPseudoAccount()
         ? XRPAmount{0}
         : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
@@ -265,17 +265,6 @@ getPseudoAccountFields()
         return pseudoFields;
     }();
     return kPseudoFields;
-}
-
-[[nodiscard]] bool
-isPseudoAccount(AccountRootEntryR const& sleAcct)
-{
-    // Intentionally use defensive coding here because it's cheap and makes the
-    // semantics of true return value clean.
-    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::ranges::any_of(getPseudoAccountFields(), [&sleAcct](SField const* sf) {
-               return sleAcct->isFieldPresent(*sf);
-           });
 }
 
 std::expected<SLE::pointer, TER>

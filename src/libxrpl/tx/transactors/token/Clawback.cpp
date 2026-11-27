@@ -3,7 +3,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -194,7 +193,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     // Note the order of checks - when SAV is active, this check here will make
     // the one which follows `sleHolder->isFieldPresent(sfAMMID)` redundant.
-    if (ctx.view.rules().enabled(featureSingleAssetVault) && isPseudoAccount(sleHolder))
+    if (ctx.view.rules().enabled(featureSingleAssetVault) && sleHolder.isPseudoAccount())
     {
         return tecPSEUDO_ACCOUNT;
     }

@@ -5,7 +5,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -99,7 +98,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(subjectSle))
+    if (ctx.view.rules().enabled(fixCleanup3_3_0) && subjectSle.isPseudoAccount())
     {
         JLOG(ctx.j.trace()) << "Subject is a pseudo-account.";
         return tecPSEUDO_ACCOUNT;

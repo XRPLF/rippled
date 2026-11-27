@@ -4,7 +4,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -134,7 +133,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, AccountRootEntryR const& acco
             "xrpl::getEffectiveTxReserveSponsor : accountSle exists and is account type");
     }
 
-    if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
+    if (accountSle.isPseudoAccount() || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
         return std::nullopt;
     return getTxReserveSponsor(ctx);
 }
