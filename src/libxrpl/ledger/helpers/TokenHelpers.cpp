@@ -803,12 +803,8 @@ directSendNoFeeIOU(
 
         if (bDelete)
         {
-            return trustDelete(
-                view,
-                sleRippleState,
-                bSenderHigh ? uReceiverID : uSenderID,
-                bSenderHigh ? uSenderID : uReceiverID,
-                j);
+            return sleRippleState.removeFromLedger(
+                bSenderHigh ? uReceiverID : uSenderID, bSenderHigh ? uSenderID : uReceiverID);
         }
 
         sleRippleState.updateInView();
