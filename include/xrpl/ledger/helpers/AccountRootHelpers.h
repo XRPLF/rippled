@@ -41,8 +41,11 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
  * @param j Journal for logging
  * @return The liquid XRP amount available to the account
  */
-[[nodiscard]] XRPAmount
-xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
+[[nodiscard]] inline XRPAmount
+xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
+{
+    return AccountRootEntryR(id, view, j).xrpLiquid(ownerCountAdj);
+}
 
 namespace detail {
 

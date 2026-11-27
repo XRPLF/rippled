@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -16,7 +15,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
 #include <cstdint>
@@ -125,38 +123,6 @@ adjustOwnerCountImpl(
 }
 
 }  // namespace detail
-
-XRPAmount
-xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
-{
-    auto const sle = AccountRootEntryR(id, view);
-    if (!sle.exists())
-        return beast::kZero;
-
-    // Return balance minus reserve
-    std::uint32_t const currentOwnerCount = detail::confineOwnerCount(
-        view.ownerCountHook(id, OwnerCounts(sle.rawSle())).count(), ownerCountAdj);
-    std::uint32_t const currentAccountCount = detail::accountCountImpl(sle, 0, j);
-
-    // Pseudo-accounts have no reserve requirement
-    auto const reserve = sle.isPseudoAccount()
-        ? XRPAmount{0}
-        : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
-
-    auto const fullBalance = sle->getFieldAmount(sfBalance);
-
-    auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
-
-    STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
-
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
-                    << " amount=" << amount.getFullText()
-                    << " fullBalance=" << fullBalance.getFullText()
-                    << " balance=" << balance.getFullText() << " reserve=" << reserve
-                    << " ownerCount=" << currentOwnerCount << " ownerCountAdj=" << ownerCountAdj;
-
-    return amount.xrp();
-}
 
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
