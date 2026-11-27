@@ -4,12 +4,14 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
 #include <expected>
 #include <utility>
@@ -62,6 +64,13 @@ VaultEntry<ViewT>::assetsTotalForWithdrawal(WaiveUnrealizedLoss waive) const
     if (waive == WaiveUnrealizedLoss::No)
         assetTotal -= this->sleRef()[sfLossUnrealized];
     return assetTotal;
+}
+
+template <typename ViewT>
+Number
+VaultEntry<ViewT>::minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum) const
+{
+    return xrpl::minimumBrokerCover(debtTotal, coverRateMinimum, this->rawSle());
 }
 
 template class VaultEntry<ReadView>;
