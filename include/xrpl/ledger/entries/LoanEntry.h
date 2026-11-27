@@ -46,6 +46,12 @@ public:
     // always holds rounded values.
     [[nodiscard]] LoanState
     state() const;
+
+    // Returns true if the loan's next payment is late per protocol rules. The
+    // boundary is amendment-gated: with fixCleanup3_4_0 the due date must be
+    // strictly in the past, otherwise the exact due-date instant counts as late.
+    [[nodiscard]] bool
+    isPaymentLate() const;
 };
 
 using LoanEntryR = LoanEntry<ReadView>;

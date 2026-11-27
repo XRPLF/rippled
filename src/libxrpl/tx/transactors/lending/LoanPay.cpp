@@ -170,7 +170,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (isPaymentLate(view, loanSle))
+    if (loanSle.isPaymentLate())
     {
         // If the payment is late, and the late payment flag is not set, it'll
         // fail. Uses isPaymentLate() so the fee matches apply at the exact

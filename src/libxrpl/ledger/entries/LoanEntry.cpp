@@ -3,7 +3,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 
 namespace xrpl {
@@ -18,6 +20,18 @@ LoanEntry<ViewT>::state() const
         this->sleRef().at(sfTotalValueOutstanding),
         this->sleRef().at(sfPrincipalOutstanding),
         this->sleRef().at(sfManagementFeeOutstanding));
+}
+
+template <typename ViewT>
+bool
+LoanEntry<ViewT>::isPaymentLate() const
+{
+    auto const& view = this->readView();
+    return hasExpired(
+        view,
+        this->sleRef().at(sfNextPaymentDueDate),
+        view.rules().enabled(fixCleanup3_4_0) ? ExpiryComparison::Exclusive
+                                              : ExpiryComparison::Inclusive);
 }
 
 template class LoanEntry<ReadView>;
