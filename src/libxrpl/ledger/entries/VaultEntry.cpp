@@ -30,6 +30,18 @@ VaultEntry<ViewT>::kind() const
     return VaultKind::OpenEnded;
 }
 
+template <typename ViewT>
+VaultPhase
+VaultEntry<ViewT>::phase() const
+{
+    XRPL_ASSERT(this->exists(), "xrpl::VaultEntry::phase : valid Vault sle");
+    return getVaultPhase(
+        this->readView(),
+        this->sleRef()[~sfVaultKind],
+        this->sleRef()[~sfSubscriptionDate],
+        this->sleRef()[~sfRedemptionDate]);
+}
+
 template class VaultEntry<ReadView>;
 template class VaultEntry<ApplyView>;
 
