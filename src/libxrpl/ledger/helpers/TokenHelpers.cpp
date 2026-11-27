@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AMMEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -304,7 +305,7 @@ getLineIfUsable(
             }
             if (sleIssuer->isFieldPresent(sfAMMID))
             {
-                auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+                AMMEntryR const sleAmm((*sleIssuer)[sfAMMID], view);
 
                 if (!sleAmm ||
                     isLPTokenFrozen(view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
