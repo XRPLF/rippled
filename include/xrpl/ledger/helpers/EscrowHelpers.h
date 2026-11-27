@@ -385,7 +385,7 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(issue);
         initialBalance.get<Issue>().account = noAccount();
 
-        if (TER const ter = trustCreate(
+        if (TER const ter = RippleStateEntryW::create(
                 ctx.view,                            // payment sandbox
                 recvLow,                             // is dest low?
                 issuer,                              // source
