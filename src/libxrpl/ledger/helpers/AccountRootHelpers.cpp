@@ -129,8 +129,8 @@ transferRate(ReadView const& view, AccountID const& issuer)
 {
     auto const sle = AccountRootEntryR(issuer, view);
 
-    if (sle && sle->isFieldPresent(sfTransferRate))
-        return Rate{sle->getFieldU32(sfTransferRate)};
+    if (sle)
+        return sle.transferRate();
 
     return kParityRate;
 }
