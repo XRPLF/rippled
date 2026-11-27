@@ -207,7 +207,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    auto sleAcct = AccountRootEntryW(account, ctx.view);
+    auto sleAcct = AccountRootEntryW(account, ctx.view, journal);
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -256,7 +256,7 @@ authorizeMPToken(
         // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
         // the tx — the sponsor must always cover the reserve (via balance or prefunded
         // budget), so this check always runs for sponsored transactions.
-        if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
+        if (sponsorSle || sleAcct.ownerCount() >= 2)
         {
             if (auto const ret = checkReserve(
                     ctx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);

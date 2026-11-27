@@ -52,6 +52,16 @@ public:
      */
     [[nodiscard]] XRPAmount
     reserve(Adjustment adj = {}) const;
+
+    /**
+     * Return number of the objects which reserve is covered by the account (so called "owner
+     * count"). Actual owner count can be adjusted by delta in ownerCountAdj.
+     *
+     * @param ownerCountAdj Adjustment to the owner count (default: 0)
+     * @return The adjusted owner count
+     */
+    [[nodiscard]] std::uint32_t
+    ownerCount(std::int32_t ownerCountAdj = 0) const;
 };
 
 using AccountRootEntryR = AccountRootEntry<ReadView>;
