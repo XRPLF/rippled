@@ -4,7 +4,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -91,7 +90,7 @@ addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    increaseOwnerCount(ctx.view(), sleAccount, nullptr, 1, ctx.journal);
+    sleAccount.increaseOwnerCount(nullptr, 1);
     sleAccount.updateInView();
 
     return tesSUCCESS;

@@ -547,7 +547,7 @@ TrustSet::doApply()
             }
 
             // Set reserve for low account.
-            increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
+            sleLowAccount.increaseOwnerCount(lowSponsor, 1);
             uFlagsOut |= lsfLowReserve;
 
             if (lowSponsor != nullptr)
@@ -590,7 +590,7 @@ TrustSet::doApply()
             }
 
             // Set reserve for high account.
-            increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
+            sleHighAccount.increaseOwnerCount(highSponsor, 1);
             uFlagsOut |= lsfHighReserve;
 
             if (highSponsor != nullptr)

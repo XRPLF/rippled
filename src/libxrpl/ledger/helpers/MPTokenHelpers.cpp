@@ -286,7 +286,7 @@ authorizeMPToken(
         ctx.view.insert(mptoken);
 
         // Update owner count.
-        increaseOwnerCount(ctx.view, sleAcct, sponsorSle ? &*sponsorSle : nullptr, 1, journal);
+        sleAcct.increaseOwnerCount(sponsorSle ? &*sponsorSle : nullptr, 1);
         addSponsorToLedgerEntry(mptoken, rawSleOrNull(sponsorSle));
 
         return tesSUCCESS;
@@ -1021,7 +1021,7 @@ checkCreateMPT(
         {
             return err;
         }
-        auto sleAcct = AccountRootEntryW(holder, view);
+        auto sleAcct = AccountRootEntryW(holder, view, j);
         if (!sleAcct)
         {
             return tecINTERNAL;
@@ -1030,7 +1030,7 @@ checkCreateMPT(
         std::optional<AccountRootEntryW> sponsorAccSle;
         if (sponsorSle)
             sponsorAccSle.emplace(sponsorSle->getAccountID(sfAccount), view);
-        increaseOwnerCount(view, sleAcct, sponsorAccSle ? &*sponsorAccSle : nullptr, 1, j);
+        sleAcct.increaseOwnerCount(sponsorAccSle ? &*sponsorAccSle : nullptr, 1);
     }
     return tesSUCCESS;
 }

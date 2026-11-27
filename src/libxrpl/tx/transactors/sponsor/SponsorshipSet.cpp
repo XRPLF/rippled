@@ -322,12 +322,7 @@ SponsorshipSet::createSponsorship(
     (*newSle)[sfSponseeNode] = *sponseePage;
 
     // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    increaseOwnerCount(
-        view(),
-        sponsorAccSle,
-        reserveSponsorAccSle ? &*reserveSponsorAccSle : nullptr,
-        1,
-        ctx_.journal);
+    sponsorAccSle.increaseOwnerCount(reserveSponsorAccSle ? &*reserveSponsorAccSle : nullptr, 1);
     if (reserveSponsorAccSle.has_value())
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle->rawSle());
 

@@ -130,7 +130,7 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);
+    sleOwner.increaseOwnerCount(ctx_.getApplyViewContext(), 1);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sle);
 
     return tesSUCCESS;

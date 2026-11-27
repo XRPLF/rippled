@@ -10,7 +10,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -971,7 +970,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    increaseOwnerCount(sb, sleCreator, nullptr, 1, viewJ);
+    sleCreator.increaseOwnerCount(nullptr, 1);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())

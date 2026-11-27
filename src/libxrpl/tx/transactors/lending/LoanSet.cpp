@@ -636,7 +636,7 @@ LoanSet::doApply()
         }
     }
 
-    increaseOwnerCount(view, borrowerSle, nullptr, 1, j_);
+    borrowerSle.increaseOwnerCount(nullptr, 1);
 
     {
         auto const balance =

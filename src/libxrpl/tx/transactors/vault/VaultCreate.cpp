@@ -217,7 +217,7 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    increaseOwnerCount(view(), owner, nullptr, 2, j_);
+    owner.increaseOwnerCount(nullptr, 2);
     if (preFeeBalance_ < owner.reserve())
         return tecINSUFFICIENT_RESERVE;
 

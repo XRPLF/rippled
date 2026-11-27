@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AccountRootEntry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -541,8 +540,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        AccountRootEntryW receiverSle(receiver, ctx.view);
-        increaseOwnerCount(ctx.view, receiverSle, sponsor ? &*sponsor : nullptr, 1, journal);
+        AccountRootEntryW receiverSle(receiver, ctx.view, journal);
+        receiverSle.increaseOwnerCount(sponsor ? &*sponsor : nullptr, 1);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
