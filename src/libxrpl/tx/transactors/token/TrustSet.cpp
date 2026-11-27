@@ -350,7 +350,7 @@ TrustSet::doApply()
 
     auto const viewJ = ctx_.registry.get().getJournal("View");
 
-    auto sleDst = AccountRootEntryW(uDstAccountID, view());
+    auto sleDst = AccountRootEntryW(uDstAccountID, view(), j_);
 
     if (!sleDst)
     {
@@ -533,14 +533,12 @@ TrustSet::doApply()
 
             if (view().rules().enabled(featureSponsor))
             {
-                if (auto const ret = checkReserve(
+                if (auto const ret = sleLowAccount.checkReserve(
                         ctx_.getApplyViewContext(),
-                        sleLowAccount,
                         preFeeBalance_,
                         lowSponsor != nullptr ? std::optional<AccountRootEntryR>(*lowSponsor)
                                               : std::nullopt,
                         {.ownerCountDelta = 1},
-                        j_,
                         tecINSUF_RESERVE_LINE);
                     lowSponsor != nullptr && !isTesSuccess(ret))
                 {
@@ -578,14 +576,12 @@ TrustSet::doApply()
             // calling increaseOwnerCount().
             if (view().rules().enabled(featureSponsor))
             {
-                if (auto const ret = checkReserve(
+                if (auto const ret = sleHighAccount.checkReserve(
                         ctx_.getApplyViewContext(),
-                        sleHighAccount,
                         preFeeBalance_,
                         highSponsor != nullptr ? std::optional<AccountRootEntryR>(*highSponsor)
                                                : std::nullopt,
                         {.ownerCountDelta = 1},
-                        j_,
                         tecINSUF_RESERVE_LINE);
                     highSponsor != nullptr && !isTesSuccess(ret))
                 {
@@ -632,14 +628,12 @@ TrustSet::doApply()
             }
             // Reserve is not scaled by load
             else if (
-                auto const ret = checkReserve(
+                auto const ret = sle.checkReserve(
                     ctx_.getApplyViewContext(),
-                    sle,
                     preFeeBalance_,
                     sponsorSle,
                     // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                     {},
-                    j_,
                     tecINSUF_RESERVE_LINE);
                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
             {
@@ -707,13 +701,11 @@ TrustSet::doApply()
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
     else if (
-        auto const ret = checkReserve(
+        auto const ret = sle.checkReserve(
             ctx_.getApplyViewContext(),
-            sle,
             preFeeBalance_,
             sponsorSle,
             {.ownerCountDelta = 1},
-            j_,
             tecNO_LINE_INSUF_RESERVE);
         view().rules().enabled(featureSponsor) && !freeTrustLine &&
         !isTesSuccess(ret))  // Reserve is not scaled by load.

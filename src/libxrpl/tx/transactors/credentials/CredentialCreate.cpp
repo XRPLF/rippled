@@ -135,12 +135,12 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto sleIssuer = AccountRootEntryW(accountID_, view());
+    auto sleIssuer = AccountRootEntryW(accountID_, view(), j_);
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+    if (auto const ret = sleIssuer.checkReserve(
+            ctx_.getApplyViewContext(), preFeeBalance_, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
 

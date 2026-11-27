@@ -298,7 +298,7 @@ TransactionProposalCreate::preclaim(PreclaimContext const& ctx)
 TER
 TransactionProposalCreate::doApply()
 {
-    auto sle = AccountRootEntryW(accountID_, view());
+    auto sle = AccountRootEntryW(accountID_, view(), ctx_.journal);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -308,12 +308,10 @@ TransactionProposalCreate::doApply()
     // The proposal holds a full transaction plus its collected signatures, so
     // it reserves more than a typical ledger entry (5 increments; 10 for a
     // proposed Batch).
-    if (auto const ret = checkReserve(
+    if (auto const ret = sle.checkReserve(
             ctx_.getApplyViewContext(),
-            sle,
             preFeeBalance_,
-            {.ownerCountDelta = static_cast<int>(ownerCount)},
-            ctx_.journal);
+            {.ownerCountDelta = static_cast<int>(ownerCount)});
         !isTesSuccess(ret))
         return ret;
 
