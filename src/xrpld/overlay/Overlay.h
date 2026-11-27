@@ -19,7 +19,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <set>
@@ -186,7 +185,7 @@ public:
     virtual void
     relay(
         UInt256 const& hash,
-        std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
+        protocol::TMTransaction const* m,
         std::set<Peer::ID> const& toSkip) = 0;
 
     /**

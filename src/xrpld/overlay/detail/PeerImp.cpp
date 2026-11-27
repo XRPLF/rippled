@@ -3089,7 +3089,7 @@ PeerImp::checkTransaction(
                 {
                     JLOG(pJournal_.debug())
                         << "Passing skipped pseudo pseudo-transaction tx " << tx->getID();
-                    app_.getOverlay().relay(tx->getID(), {}, *toSkip);
+                    app_.getOverlay().relay(tx->getID(), nullptr, *toSkip);
                 }
                 if (!batch)
                 {

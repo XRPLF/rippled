@@ -219,7 +219,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
             m.set_rawtransaction(s.data(), s.size());
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
-            env.app().getOverlay().relay(UInt256{0}, m, toSkip);
+            env.app().getOverlay().relay(UInt256{0}, &m, toSkip);
 
             std::size_t sendTx = 0;
             std::size_t queueTx = 0;
@@ -234,7 +234,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
 
     /**
      * Exercises the branch that only queues, reached when relay() is handed no transaction to
-     * send: a pseudo-transaction, or an explicit nullopt as here.
+     * send: a pseudo-transaction, or an explicit nullptr as here.
      *
      * A queued hash is announced later in a TMHaveTransactions, a type only a peer that negotiated
      * tx reduce-relay recognizes, so a peer without it must not be queued. The relay branch below
@@ -264,7 +264,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         for (int i = 0; i < nPeers; i++)
             addPeer(env, peers, nDisabled);
 
-        env.app().getOverlay().relay(uint256{0}, std::nullopt, {});
+        env.app().getOverlay().relay(uint256{0}, nullptr, {});
 
         std::size_t sendTx = 0;
         std::size_t queueTx = 0;
@@ -324,7 +324,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         }
         else
         {
-            env.app().getOverlay().relay(UInt256{0}, m, {});
+            env.app().getOverlay().relay(UInt256{0}, &m, {});
         }
 
         std::size_t sendTx = 0;

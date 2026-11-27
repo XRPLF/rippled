@@ -44,7 +44,6 @@
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -243,10 +242,8 @@ public:
     relay(protocol::TMValidation const& m, UInt256 const& uid, PublicKey const& validator) override;
 
     void
-    relay(
-        UInt256 const&,
-        std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
-        std::set<Peer::ID> const& skip) override;
+    relay(UInt256 const&, protocol::TMTransaction const* m, std::set<Peer::ID> const& skip)
+        override;
 
     void
     relay(STTx const& tx, protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip)
@@ -462,7 +459,7 @@ private:
     void
     relayChecked(
         UInt256 const& hash,
-        std::optional<std::reference_wrapper<protocol::TMTransaction const>> tx,
+        protocol::TMTransaction const* tx,
         std::set<Peer::ID> const& toSkip);
 
     void
