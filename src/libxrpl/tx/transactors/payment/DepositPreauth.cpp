@@ -178,11 +178,11 @@ DepositPreauth::doApply()
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
         DepositPreauthEntryW entryPreauth(accountID_, auth, view(), j_);
-        entryPreauth.newSLE();
+        entryPreauth.newSle();
 
         entryPreauth->setAccountID(sfAccount, accountID_);
         entryPreauth->setAccountID(sfAuthorize, auth);
-        entryPreauth.insert();
+        entryPreauth.insertIntoView();
 
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), entryPreauth.keylet(), describeOwnerDir(accountID_));
@@ -234,14 +234,14 @@ DepositPreauth::doApply()
         }
 
         DepositPreauthEntryW entryPreauth(accountID_, sortedTX, view(), j_);
-        entryPreauth.newSLE();
+        entryPreauth.newSle();
         if (!entryPreauth)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         entryPreauth->setAccountID(sfAccount, accountID_);
         entryPreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
 
-        entryPreauth.insert();
+        entryPreauth.insertIntoView();
 
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), entryPreauth.keylet(), describeOwnerDir(accountID_));
@@ -296,7 +296,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, b
 
     decreaseOwnerCountForObject(view, sleOwner, slePreauth.mutableRawSle(), 1, j);
     // Remove DepositPreauth from ledger.
-    slePreauth.erase();
+    slePreauth.eraseFromView();
 
     return tesSUCCESS;
 }

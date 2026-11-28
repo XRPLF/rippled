@@ -42,9 +42,9 @@ public:
     {
         std::set<UInt256> amendments;
 
-        if (this->exists() && (*this)->isFieldPresent(sfAmendments))
+        if (this->exists() && this->sleRef().isFieldPresent(sfAmendments))
         {
-            auto const& v = (*this)->getFieldV256(sfAmendments);
+            auto const& v = this->sleRef().getFieldV256(sfAmendments);
             amendments.insert_range(v);
         }
 
@@ -62,12 +62,12 @@ public:
     {
         std::map<UInt256, NetClock::time_point> ret;
 
-        if (this->exists() && (*this)->isFieldPresent(sfMajorities))
+        if (this->exists() && this->sleRef().isFieldPresent(sfMajorities))
         {
             using TimePoint = NetClock::time_point;
             using Duration = TimePoint::duration;
 
-            auto const majorities = (*this)->getFieldArray(sfMajorities);
+            auto const majorities = this->sleRef().getFieldArray(sfMajorities);
 
             for (auto const& m : majorities)
             {

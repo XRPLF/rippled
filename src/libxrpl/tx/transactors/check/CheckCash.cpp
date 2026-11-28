@@ -301,9 +301,8 @@ CheckCash::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    std::optional<CheckEntryW> sleCheck;
-    sleCheck.emplace(ctx_.tx[sfCheckID], psb, j_);
-    if (!*sleCheck)
+    CheckEntryW sleCheck(ctx_.tx[sfCheckID], psb, j_);
+    if (!sleCheck)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
@@ -311,7 +310,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    AccountID const srcId{(*sleCheck)->getAccountID(sfAccount)};
+    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(accountID_)))
     {
         // LCOV_EXCL_START
@@ -320,7 +319,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck->rawSle());
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck.rawSle());
 
     // Preclaim already checked that source has at least the requested
     // funds.
@@ -337,7 +336,7 @@ CheckCash::doApply()
 
     if (srcId != accountID_)
     {
-        STAmount const sendMax = (*sleCheck)->at(sfSendMax);
+        STAmount const sendMax = sleCheck->at(sfSendMax);
 
         // Flow() doesn't do XRP to XRP transfers.
         if (sendMax.native())
@@ -576,7 +575,7 @@ CheckCash::doApply()
                 true,                              // owner pays transfer fee
                 OfferCrossing::No,
                 std::nullopt,
-                (*sleCheck)->getFieldAmount(sfSendMax),
+                sleCheck->getFieldAmount(sfSendMax),
                 std::nullopt,  // check does not support domain
                 viewJ);
 
@@ -601,7 +600,7 @@ CheckCash::doApply()
             // for DeliverMin.
             ctx_.deliver(result.actualAmountOut);
 
-            sleCheck.emplace(ctx_.tx[sfCheckID], psb, j_);
+            sleCheck = CheckEntryW(ctx_.tx[sfCheckID], psb, j_);
         }
     }
 
@@ -609,10 +608,7 @@ CheckCash::doApply()
     // check link from destination directory.
     if (srcId != accountID_ &&
         !psb.dirRemove(
-            keylet::ownerDir(accountID_),
-            (*sleCheck)->at(sfDestinationNode),
-            (*sleCheck)->key(),
-            true))
+            keylet::ownerDir(accountID_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
@@ -621,8 +617,7 @@ CheckCash::doApply()
     }
 
     // Remove check from check owner's directory.
-    if (!psb.dirRemove(
-            keylet::ownerDir(srcId), (*sleCheck)->at(sfOwnerNode), (*sleCheck)->key(), true))
+    if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from owner.";
@@ -631,10 +626,10 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    decreaseOwnerCountForObject(psb, srcId, sleCheck->mutableRawSle(), 1, viewJ);
+    decreaseOwnerCountForObject(psb, srcId, sleCheck.mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    sleCheck->erase();
+    sleCheck.eraseFromView();
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;

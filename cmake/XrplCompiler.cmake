@@ -1,3 +1,4 @@
+# cspell:words bstatic dndebug dtags fstack latomic nologo nominmax rdynamic relro
 #[===================================================================[
    setup project-wide compiler settings
 #]===================================================================]

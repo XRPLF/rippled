@@ -90,7 +90,7 @@ operator==(StaticString x, std::string const& y)
 }
 
 /**
- * @brief Represents a <a HREF="http://www.json.org">JSON</a> value.
+ * @brief Represents a [JSON](https://www.json.org) value.
  *
  * This class is a discriminated union wrapper that can represent a:
  * - signed integer [range: Value::kMinInt - Value::kMaxInt]

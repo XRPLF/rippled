@@ -48,7 +48,7 @@ public:
      * is called, it will report stalls using a separate thread whenever
      * the reset function is not called at least once per 10 seconds.
      *
-     * @see resetStallDetector
+     * @see heartbeat
      */
     // VFALCO NOTE it seems that the stall detector has an "armed" state
     //             to prevent it from going off during program startup if

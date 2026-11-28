@@ -152,7 +152,7 @@ private:
  * Intrusive doubly linked list.
  *
  * This intrusive List is a container similar in operation to std::list in the
- * Standard Template Library (STL). Like all @ref intrusive containers, List
+ * Standard Template Library (STL). Like all intrusive containers, List
  * requires you to first derive your class from List<>::Node:
  *
  * @code

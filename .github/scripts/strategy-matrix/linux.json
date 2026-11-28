@@ -75,6 +75,13 @@
         ],
         "sanitizers": ["address", "undefinedbehavior"]
       },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "events": ["schedule", "workflow_dispatch"],
+        "sanitizers": ["thread"]
+      },
 
       {
         "compiler": ["clang"],
