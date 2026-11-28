@@ -105,6 +105,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const fix340Enabled = ctx.view.rules().enabled(fixCleanup3_4_0);
+    auto const fix360Enabled = ctx.view.rules().enabled(fixCleanup3_6_0);
 
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
@@ -188,8 +189,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+            // Match the payout rounding used in doApply so the limit check
+            // estimates the same asset amount the withdrawal will pay.
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault,
+                sleIssuance,
+                amount,
+                waiveUnrealizedLoss,
+                fix360Enabled ? VaultRounding::FavorVault : VaultRounding::Legacy);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -303,6 +310,7 @@ TER
 VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
+    bool const fix360Enabled = view().rules().enabled(fixCleanup3_6_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -338,6 +346,15 @@ VaultWithdraw::doApply()
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keeping future value in the vault.
     auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
+
+    // Post-fixCleanup3_6_0, for XRP and MPT: the payout is the exact fair value of the burned
+    // shares, rounded down, so the withdrawer receives at most what the shares are worth.
+    // Round-to-nearest could round the payout above that value, dropping the assets-per-share
+    // price and diluting the shareholders who remain. IOU payouts are unchanged; the
+    // fixCleanup3_4_0 clamp below handles them (clampVaultOutflow returns integral amounts
+    // unchanged).
+    auto const rounding = fix360Enabled ? VaultRounding::FavorVault : VaultRounding::Legacy;
+
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
@@ -353,15 +370,18 @@ VaultWithdraw::doApply()
             // Post-amendment: truncate shares so assetsWithdrawn <=
             // requested amount by construction. If truncation yields zero
             // shares, the tecPRECISION_LOSS guard below fires.
+            // Post-fixCleanup3_6_0 truncates too, independently of fixCleanup3_4_0, so the
+            // vault-favoring payout below never rests on a rounded-up share count.
             auto const truncate =
-                view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
+                fix340Enabled || fix360Enabled ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault,
                     sleIssuance,
                     addTransferFee(amount, rate),
                     truncate,
-                    waiveUnrealizedLoss);
+                    waiveUnrealizedLoss,
+                    rounding);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -373,8 +393,8 @@ VaultWithdraw::doApply()
                 return tecPRECISION_LOSS;
             // Convert shares back to assets so the payout matches the shares actually burned, not
             // the requested amount. The extra would otherwise be paid from the vault for free.
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, rounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -384,8 +404,8 @@ VaultWithdraw::doApply()
             // Fixed shares, variable assets. No round-trip: the share count is exactly what the
             // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, rounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -426,6 +446,17 @@ VaultWithdraw::doApply()
     {
         JLOG(j_.debug()) << "VaultWithdraw: cannot empty vault while AssetsDeployed is non-zero";
         return tecHAS_OBLIGATIONS;
+    }
+
+    // Post-fixCleanup3_6_0: when a share is worth less than one unit of an integral asset, the
+    // rounded-down payout can be zero on either branch. Reject a non-final withdrawal that would
+    // burn shares for nothing while the vault still has withdrawable value. A final withdrawal
+    // pays out sfAssetsAvailable below instead.
+    if (fix360Enabled && !isFinalWithdrawal && assetsWithdrawn == beast::kZero &&
+        assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: withdrawal rounds to zero assets";
+        return tecPRECISION_LOSS;
     }
 
     auto const assetsAvailable = vault->at(sfAssetsAvailable);

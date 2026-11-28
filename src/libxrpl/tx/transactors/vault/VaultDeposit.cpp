@@ -215,6 +215,10 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
+    // Post-fixCleanup3_6_0: convert in the vault's favor so the depositor can never be charged
+    // less than the fair value of the shares they receive; see VaultRounding.
+    auto const rounding =
+        view().rules().enabled(fixCleanup3_6_0) ? VaultRounding::FavorVault : VaultRounding::Legacy;
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -298,7 +302,7 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount, rounding);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -310,7 +314,14 @@ VaultDeposit::doApply()
         // Convert shares back to assets so the depositor is debited for the amount actually minted.
         // The truncated share count is worth <= amount; without this the difference would be
         // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        //
+        // Post-fixCleanup3_6_0, for XRP and MPT: the charge is the exact fair value of the minted
+        // shares, rounded up. Round-to-nearest could round it below that value, handing the
+        // depositor shares worth more than they paid and diluting the existing shareholders.
+        // Since the share count was floored from `amount` exactly, the ceiling never exceeds
+        // `amount`. IOU charges are unchanged; the fixCleanup3_4_0 clamp below handles them
+        // (clampToAssetsTotalScale returns integral amounts unchanged).
+        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated, rounding);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
