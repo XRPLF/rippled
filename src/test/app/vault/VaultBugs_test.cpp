@@ -48,6 +48,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -2811,7 +2812,8 @@ private:
         std::uint64_t aliceFunds,
         std::uint64_t bobFunds,
         std::uint64_t aliceDeposit,
-        RoundingScenario const& scenario)
+        RoundingScenario const& scenario,
+        std::source_location const& loc = std::source_location::current())
     {
         using namespace test::jtx;
 
@@ -2820,12 +2822,12 @@ private:
         env.fund(XRP(100'000), f.issuer, f.owner, f.alice, f.bob);
         env.close();
 
-        MPTTester mpt{env, f.issuer, kMptInitNoFund};
-        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanClawback});
+        MPTTester mpt{env, f.issuer, kMptInitNoFund, loc};
+        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanClawback}, loc);
         f.assetID = mpt.issuanceID();
         PrettyAsset const asset{f.assetID};
         for (auto const& account : {f.owner, f.alice, f.bob})
-            mpt.authorize({.account = account});
+            mpt.authorize({.account = account}, loc);
         env(pay(f.issuer, f.alice, asset(aliceFunds)));
         if (bobFunds != 0)
             env(pay(f.issuer, f.bob, asset(bobFunds)));
